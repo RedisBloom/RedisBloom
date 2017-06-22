@@ -68,3 +68,13 @@ to the filter
 > BF.TEST somebf lolwut
 0
 ```
+
+### Module Options
+
+You can adjust the default error ratio and the initial filter size using
+the `ERROR_RATE` and `INITIAL_SIZE` options respectively when loading the
+module, e.g.
+
+```
+$ redis-server --loadmodule /path/to/rebloom.so INITIAL_SIZE 400 ERROR_RATE 0.004
+```
