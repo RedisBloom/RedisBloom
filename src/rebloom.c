@@ -10,16 +10,16 @@
 /// Core                                                                     ///
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-static sbLink *sbCreateLink(size_t size, double error_rate) {
-    sbLink *lb = RedisModule_Calloc(1, sizeof(*lb));
+static SBLink *sbCreateLink(size_t size, double error_rate) {
+    SBLink *lb = RedisModule_Calloc(1, sizeof(*lb));
     bloom_init(&lb->inner, size, error_rate);
     return lb;
 }
 
-void sbFreeChain(sbChain *sb) {
-    sbLink *lb = sb->cur;
+void SBChain_Free(SBChain *sb) {
+    SBLink *lb = sb->cur;
     while (lb) {
-        sbLink *lb_next = lb->next;
+        SBLink *lb_next = lb->next;
         bloom_free(&lb->inner);
         RedisModule_Free(lb);
         lb = lb_next;
@@ -27,34 +27,34 @@ void sbFreeChain(sbChain *sb) {
     RedisModule_Free(sb);
 }
 
-static int sbAddToLink(sbLink *lb, const void *data, size_t len) {
+static int SBChain_AddToLink(SBLink *lb, const void *data, size_t len) {
     int newbits = bloom_add_retbits(&lb->inner, data, len);
     lb->fillbits += newbits;
     return newbits;
 }
 
-int sbAdd(sbChain *sb, const void *data, size_t len) {
+int SBChain_Add(SBChain *sb, const void *data, size_t len) {
     // Does it already exist?
 
-    if (sbCheck(sb, data, len)) {
+    if (SBChain_Check(sb, data, len)) {
         return 1;
     }
 
     // Determine if we need to add more items?
     if (sb->cur->fillbits * 2 > sb->cur->inner.bits) {
-        sbLink *new_lb = sbCreateLink(sb->cur->inner.entries * 2, sb->error);
+        SBLink *new_lb = sbCreateLink(sb->cur->inner.entries * 2, sb->error);
         new_lb->next = sb->cur;
         sb->cur = new_lb;
     }
-    int rv = sbAddToLink(sb->cur, data, len);
+    int rv = SBChain_AddToLink(sb->cur, data, len);
     if (rv) {
-        sb->total_entries++;
+        sb->size++;
     }
     return rv;
 }
 
-int sbCheck(const sbChain *sb, const void *data, size_t len) {
-    for (const sbLink *lb = sb->cur; lb; lb = lb->next) {
+int SBChain_Check(const SBChain *sb, const void *data, size_t len) {
+    for (const SBLink *lb = sb->cur; lb; lb = lb->next) {
         if (bloom_check(&lb->inner, data, len)) {
             return 1;
         }
@@ -62,11 +62,11 @@ int sbCheck(const sbChain *sb, const void *data, size_t len) {
     return 0;
 }
 
-sbChain *sbCreateChain(size_t initsize, double error_rate) {
+SBChain *SBChain_New(size_t initsize, double error_rate) {
     if (initsize == 0 || error_rate == 0) {
         return NULL;
     }
-    sbChain *sb = RedisModule_Calloc(1, sizeof(*sb));
+    SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
     sb->error = error_rate;
     sb->cur = sbCreateLink(initsize, error_rate);
     return sb;
@@ -83,7 +83,7 @@ static size_t BFDefaultInitCapacity = 100;
 
 typedef enum { SB_OK = 0, SB_MISSING, SB_EMPTY, SB_MISMATCH } lookupStatus;
 
-static int bfGetChain(RedisModuleKey *key, sbChain **sbout) {
+static int bfGetChain(RedisModuleKey *key, SBChain **sbout) {
     *sbout = NULL;
     if (key == NULL) {
         return SB_MISSING;
@@ -121,31 +121,31 @@ static int returnWithError(RedisModuleCtx *ctx, const char *errmsg) {
  * Common function for adding one or more items to a bloom filter.
  * @param key the key key associated with the filter
  * @param sb the actual bloom filter
- * @param is_fixed - for creating only, whether this filter is expected to
+ * @param fixed - for creating only, whether this filter is expected to
  *        be fixed
  * @param error_rate error rate for new filter
  * @param elems list of elements to add
  * @param nelems number of elements to add
  */
-static void bfAddCommon(RedisModuleKey *key, sbChain *sb, int is_fixed, double error_rate,
+static void bfAddCommon(RedisModuleKey *key, SBChain *sb, int fixed, double error_rate,
                         RedisModuleString **elems, int nelems) {
     if (sb == NULL) {
         if (!error_rate) {
             error_rate = BFDefaultErrorRate;
         }
         size_t capacity = nelems;
-        if (!is_fixed && capacity < BFDefaultInitCapacity) {
+        if (!fixed && capacity < BFDefaultInitCapacity) {
             capacity = BFDefaultInitCapacity;
         }
-        sb = sbCreateChain(capacity, error_rate);
+        sb = SBChain_New(capacity, error_rate);
         RedisModule_ModuleTypeSetValue(key, BFType, sb);
-        sb->is_fixed = is_fixed;
+        sb->fixed = fixed;
     }
     // Now, just add the items
     for (size_t ii = 0; ii < nelems; ++ii) {
         size_t n;
         const char *s = RedisModule_StringPtrLen(elems[ii], &n);
-        sbAdd(sb, s, n);
+        SBChain_Add(sb, s, n);
     }
 }
 
@@ -164,7 +164,7 @@ static int BFCreate_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     }
 
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
-    sbChain *sb;
+    SBChain *sb;
     int status = bfGetChain(key, &sb);
     if (status != SB_EMPTY) {
         return returnWithError(ctx, statusStrerror(status));
@@ -184,7 +184,7 @@ static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     }
 
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
-    sbChain *sb;
+    SBChain *sb;
     int status = bfGetChain(key, &sb);
     if (status != SB_OK) {
         return returnWithError(ctx, statusStrerror(status));
@@ -193,7 +193,7 @@ static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     // Check if it exists?
     size_t n;
     const char *s = RedisModule_StringPtrLen(argv[2], &n);
-    int exists = sbCheck(sb, s, n);
+    int exists = SBChain_Check(sb, s, n);
     RedisModule_ReplyWithLongLong(ctx, exists);
     return REDISMODULE_OK;
 }
@@ -207,10 +207,10 @@ static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     }
 
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
-    sbChain *sb;
+    SBChain *sb;
     int status = bfGetChain(key, &sb);
     if (status == SB_OK) {
-        if (sb->is_fixed) {
+        if (sb->fixed) {
             return returnWithError(ctx, "ERR cannot add: filter is fixed");
         }
         size_t namelen;
@@ -236,9 +236,9 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         return REDISMODULE_ERR;
     }
 
-    const sbChain *sb = NULL;
+    const SBChain *sb = NULL;
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
-    int status = bfGetChain(key, (sbChain **)&sb);
+    int status = bfGetChain(key, (SBChain **)&sb);
     if (status != SB_OK) {
         return returnWithError(ctx, statusStrerror(status));
     }
@@ -248,11 +248,11 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 
     // 2
     RedisModule_ReplyWithSimpleString(ctx, "size");
-    RedisModule_ReplyWithLongLong(ctx, sb->total_entries);
+    RedisModule_ReplyWithLongLong(ctx, sb->size);
 
     // 4
     RedisModule_ReplyWithSimpleString(ctx, "fixed");
-    RedisModule_ReplyWithLongLong(ctx, sb->is_fixed);
+    RedisModule_ReplyWithLongLong(ctx, sb->fixed);
 
     // 6
     RedisModule_ReplyWithSimpleString(ctx, "ratio");
@@ -263,7 +263,7 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 
     size_t num_elems = 0;
 
-    for (const sbLink *lb = sb->cur; lb; lb = lb->next, num_elems++) {
+    for (const SBLink *lb = sb->cur; lb; lb = lb->next, num_elems++) {
         RedisModule_ReplyWithArray(ctx, 10);
 
         // 2
@@ -298,12 +298,12 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 ////////////////////////////////////////////////////////////////////////////////
 static void BFRdbSave(RedisModuleIO *io, void *obj) {
     // Save the setting!
-    sbChain *sb = obj;
+    SBChain *sb = obj;
     // We don't know how many links are here thus far, so
-    RedisModule_SaveUnsigned(io, sb->total_entries);
+    RedisModule_SaveUnsigned(io, sb->size);
     RedisModule_SaveDouble(io, sb->error);
-    RedisModule_SaveUnsigned(io, sb->is_fixed);
-    for (const sbLink *lb = sb->cur; lb; lb = lb->next) {
+    RedisModule_SaveUnsigned(io, sb->fixed);
+    for (const SBLink *lb = sb->cur; lb; lb = lb->next) {
         const struct bloom *bm = &lb->inner;
         RedisModule_SaveUnsigned(io, bm->entries);
         // - SKIP: error ratio is fixed, and stored as part of the header
@@ -326,19 +326,19 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
     }
 
     // Load our modules
-    sbChain *sb = RedisModule_Calloc(1, sizeof(*sb));
-    sb->total_entries = RedisModule_LoadUnsigned(io);
+    SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
+    sb->size = RedisModule_LoadUnsigned(io);
     sb->error = RedisModule_LoadDouble(io);
-    sb->is_fixed = RedisModule_LoadUnsigned(io);
+    sb->fixed = RedisModule_LoadUnsigned(io);
 
     // Now load the individual nodes
-    sbLink *last = NULL;
+    SBLink *last = NULL;
     while (1) {
         unsigned entries = RedisModule_LoadUnsigned(io);
         if (!entries) {
             break;
         }
-        sbLink *lb = RedisModule_Calloc(1, sizeof(*lb));
+        SBLink *lb = RedisModule_Calloc(1, sizeof(*lb));
         struct bloom *bm = &lb->inner;
 
         bm->entries = entries;
@@ -371,12 +371,12 @@ static void BFAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value
     (void)value;
 }
 
-static void BFFree(void *value) { sbFreeChain(value); }
+static void BFFree(void *value) { SBChain_Free(value); }
 
 static size_t BFMemUsage(const void *value) {
-    const sbChain *sb = value;
+    const SBChain *sb = value;
     size_t rv = sizeof(*sb);
-    for (const sbLink *lb = sb->cur; lb; lb = lb->next) {
+    for (const SBLink *lb = sb->cur; lb; lb = lb->next) {
         rv += sizeof(*lb);
         rv += lb->inner.bytes;
     }

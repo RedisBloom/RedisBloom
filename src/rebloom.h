@@ -11,35 +11,35 @@ extern "C" {
 /**
  * Single link inside a scalable bloom filter.
  */
-typedef struct sbLink {
+typedef struct SBLink {
     struct bloom inner;  //< Inner structure
     size_t fillbits;     //< Number of bits currently filled
-    struct sbLink *next; //< Prior filter
-} sbLink;
+    struct SBLink *next; //< Prior filter
+} SBLink;
 
 /**
  * A chain of one or more bloom filters
  */
-typedef struct sbChain {
-    sbLink *cur;          //< Current filter
-    size_t total_entries; //< Total number of items in all filters
-    double error;         //< Desired error ratio
-    int is_fixed;         //< Whether new items can be added to the filter
-} sbChain;
+typedef struct SBChain {
+    SBLink *cur;  //< Current filter
+    size_t size;  //< Total number of items in all filters
+    double error; //< Desired error ratio
+    int fixed;    //< Whether new items can be added to the filter
+} SBChain;
 
 /**
  * Create a new chain
  * @param initsize The initial desired capacity of the chain
  * @param error_rate desired maximum error probability
- * @return a new chain. Release with @ref sbFreeChain()
+ * @return a new chain. Release with @ref SBChain_Free()
  */
-sbChain *sbCreateChain(size_t initsize, double error_rate);
+SBChain *SBChain_New(size_t initsize, double error_rate);
 
 /**
  * Free a created chain
  * @param sb the created chain
  */
-void sbFreeChain(sbChain *sb);
+void SBChain_Free(SBChain *sb);
 
 /**
  * Add an item to the chain
@@ -48,7 +48,7 @@ void sbFreeChain(sbChain *sb);
  * @param len length of item
  * @return 0 if newly added, nonzero if new.
  */
-int sbAdd(sbChain *sb, const void *data, size_t len);
+int SBChain_Add(SBChain *sb, const void *data, size_t len);
 
 /**
  * Check if an item was previously seen by the chain
@@ -57,7 +57,7 @@ int sbAdd(sbChain *sb, const void *data, size_t len);
  * @param len length of buffer
  * @return zero if the item is unknown to the chain, nonzero otherwise
  */
-int sbCheck(const sbChain *sb, const void *data, size_t len);
+int SBChain_Check(const SBChain *sb, const void *data, size_t len);
 
 #ifdef __cplusplus
 }
