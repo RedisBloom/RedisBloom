@@ -2,3 +2,4 @@
 *.o
 *.so
 *.dSYM
+tests/test-basic
