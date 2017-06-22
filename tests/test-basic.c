@@ -8,17 +8,17 @@ static void *calloc_wrap(size_t a, size_t b) { return calloc(a, b); }
 static void free_wrap(void *p) { free(p); }
 
 static void testSbValidation() {
-    SBChain *chain = SBChain_New(1, 0.01);
+    SBChain *chain = SB_NewChain(1, 0.01);
     ASSERT_NE(chain, NULL);
     ASSERT_EQ(0, chain->size);
     SBChain_Free(chain);
 
-    ASSERT_EQ(NULL, SBChain_New(0, 0.01));
-    ASSERT_EQ(NULL, SBChain_New(1, 0));
+    ASSERT_EQ(NULL, SB_NewChain(0, 0.01));
+    ASSERT_EQ(NULL, SB_NewChain(1, 0));
 }
 
 static void testSbBasic() {
-    SBChain *chain = SBChain_New(100, 0.01);
+    SBChain *chain = SB_NewChain(100, 0.01);
     ASSERT_NE(NULL, chain);
 
     const char *k1 = "hello";
@@ -34,7 +34,7 @@ static void testSbBasic() {
 }
 
 static void testSbExpansion() {
-    SBChain *chain = SBChain_New(5, 0.01);
+    SBChain *chain = SB_NewChain(5, 0.01);
     ASSERT_NE(NULL, chain);
 
     // Add the first item
