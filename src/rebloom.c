@@ -63,7 +63,7 @@ int SBChain_Check(const SBChain *sb, const void *data, size_t len) {
     return 0;
 }
 
-SBChain *SBChain_New(size_t initsize, double error_rate) {
+SBChain *SB_NewChain(size_t initsize, double error_rate) {
     if (initsize == 0 || error_rate == 0) {
         return NULL;
     }
@@ -138,7 +138,7 @@ static void bfAddCommon(RedisModuleKey *key, SBChain *sb, int fixed, double erro
         if (!fixed && capacity < BFDefaultInitCapacity) {
             capacity = BFDefaultInitCapacity;
         }
-        sb = SBChain_New(capacity, error_rate);
+        sb = SB_NewChain(capacity, error_rate);
         RedisModule_ModuleTypeSetValue(key, BFType, sb);
         sb->fixed = fixed;
     }

@@ -33,7 +33,7 @@ typedef struct SBChain {
  * @param error_rate desired maximum error probability
  * @return a new chain. Release with @ref SBChain_Free()
  */
-SBChain *SBChain_New(size_t initsize, double error_rate);
+SBChain *SB_NewChain(size_t initsize, double error_rate);
 
 /**
  * Free a created chain
