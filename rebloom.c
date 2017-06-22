@@ -11,29 +11,29 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef struct linkedBloom {
-    struct bloom inner;       //< Inner structure
-    size_t fillbits;          //< Number of bits currently filled
-    struct linkedBloom *next; //< Prior filter
-} linkedBloom;
+typedef struct sbLink {
+    struct bloom inner;  //< Inner structure
+    size_t fillbits;     //< Number of bits currently filled
+    struct sbLink *next; //< Prior filter
+} sbLink;
 
-typedef struct scalableBloom {
-    linkedBloom *cur;
+typedef struct sbChain {
+    sbLink *cur;
     size_t total_entries;
     double error;
     int is_fixed;
-} scalableBloom;
+} sbChain;
 
-static linkedBloom *lb_create(size_t size, double error_rate) {
-    linkedBloom *lb = RedisModule_Calloc(1, sizeof(*lb));
+static sbLink *sbCreateLink(size_t size, double error_rate) {
+    sbLink *lb = RedisModule_Calloc(1, sizeof(*lb));
     bloom_init(&lb->inner, size, error_rate);
     return lb;
 }
 
-static void sb_free(scalableBloom *sb) {
-    linkedBloom *lb = sb->cur;
+static void sbFreeChain(sbChain *sb) {
+    sbLink *lb = sb->cur;
     while (lb) {
-        linkedBloom *lb_next = lb->next;
+        sbLink *lb_next = lb->next;
         bloom_free(&lb->inner);
         RedisModule_Free(lb);
         lb = lb_next;
@@ -41,36 +41,36 @@ static void sb_free(scalableBloom *sb) {
     RedisModule_Free(sb);
 }
 
-static int lb_add(linkedBloom *lb, const void *data, size_t len) {
+static int sbAddTooLink(sbLink *lb, const void *data, size_t len) {
     int newbits = bloom_add_retbits(&lb->inner, data, len);
     lb->fillbits += newbits;
     return newbits;
 }
 
-static int sb_check(const scalableBloom *sb, const void *data, size_t len);
+static int sbCheck(const sbChain *sb, const void *data, size_t len);
 
-static int sb_add(scalableBloom *sb, const void *data, size_t len) {
+static int sbAddToChain(sbChain *sb, const void *data, size_t len) {
     // Does it already exist?
 
-    if (sb_check(sb, data, len)) {
+    if (sbCheck(sb, data, len)) {
         return 1;
     }
 
     // Determine if we need to add more items?
     if (sb->cur->fillbits * 2 > sb->cur->inner.bits) {
-        linkedBloom *new_lb = lb_create(sb->cur->inner.entries * 2, sb->error);
+        sbLink *new_lb = sbCreateLink(sb->cur->inner.entries * 2, sb->error);
         new_lb->next = sb->cur;
         sb->cur = new_lb;
     }
-    int rv = lb_add(sb->cur, data, len);
+    int rv = sbAddTooLink(sb->cur, data, len);
     if (rv) {
         sb->total_entries++;
     }
     return rv;
 }
 
-static int sb_check(const scalableBloom *sb, const void *data, size_t len) {
-    for (const linkedBloom *lb = sb->cur; lb; lb = lb->next) {
+static int sbCheck(const sbChain *sb, const void *data, size_t len) {
+    for (const sbLink *lb = sb->cur; lb; lb = lb->next) {
         if (bloom_check(&lb->inner, data, len)) {
             return 1;
         }
@@ -78,10 +78,10 @@ static int sb_check(const scalableBloom *sb, const void *data, size_t len) {
     return 0;
 }
 
-static scalableBloom *sb_create(size_t initsize, double error_rate) {
-    scalableBloom *sb = RedisModule_Calloc(1, sizeof(*sb));
+static sbChain *sbCreateChain(size_t initsize, double error_rate) {
+    sbChain *sb = RedisModule_Calloc(1, sizeof(*sb));
     sb->error = error_rate;
-    sb->cur = lb_create(initsize, error_rate);
+    sb->cur = sbCreateLink(initsize, error_rate);
     return sb;
 }
 
@@ -96,7 +96,7 @@ static size_t BFDefaultInitCapacity = 100;
 
 typedef enum { SB_OK = 0, SB_MISSING, SB_EMPTY, SB_MISMATCH } lookupStatus;
 
-static int bf_get_sb(RedisModuleKey *key, scalableBloom **sbout) {
+static int bfGetChain(RedisModuleKey *key, sbChain **sbout) {
     *sbout = NULL;
     if (key == NULL) {
         return SB_MISSING;
@@ -112,7 +112,7 @@ static int bf_get_sb(RedisModuleKey *key, scalableBloom **sbout) {
     }
 }
 
-static const char *status_strerror(int status) {
+static const char *statusStrerror(int status) {
     switch (status) {
     case SB_MISSING:
         return "ERR not found";
@@ -125,7 +125,7 @@ static const char *status_strerror(int status) {
     }
 }
 
-static int return_with_error(RedisModuleCtx *ctx, const char *errmsg) {
+static int returnWithError(RedisModuleCtx *ctx, const char *errmsg) {
     RedisModule_ReplyWithError(ctx, errmsg);
     return REDISMODULE_ERR;
 }
@@ -140,8 +140,8 @@ static int return_with_error(RedisModuleCtx *ctx, const char *errmsg) {
  * @param elems list of elements to add
  * @param nelems number of elements to add
  */
-static void bf_add_common(RedisModuleKey *key, scalableBloom *sb, int is_fixed, double error_rate,
-                          RedisModuleString **elems, int nelems) {
+static void bfAddCommon(RedisModuleKey *key, sbChain *sb, int is_fixed, double error_rate,
+                        RedisModuleString **elems, int nelems) {
     if (sb == NULL) {
         if (!error_rate) {
             error_rate = BFDefaultErrorRate;
@@ -150,7 +150,7 @@ static void bf_add_common(RedisModuleKey *key, scalableBloom *sb, int is_fixed, 
         if (!is_fixed && capacity < BFDefaultInitCapacity) {
             capacity = BFDefaultInitCapacity;
         }
-        sb = sb_create(capacity, error_rate);
+        sb = sbCreateChain(capacity, error_rate);
         RedisModule_ModuleTypeSetValue(key, BFType, sb);
         sb->is_fixed = is_fixed;
     }
@@ -158,7 +158,7 @@ static void bf_add_common(RedisModuleKey *key, scalableBloom *sb, int is_fixed, 
     for (size_t ii = 0; ii < nelems; ++ii) {
         size_t n;
         const char *s = RedisModule_StringPtrLen(elems[ii], &n);
-        sb_add(sb, s, n);
+        sbAddToChain(sb, s, n);
     }
 }
 
@@ -173,17 +173,17 @@ static int BFCreate_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
 
     double error_rate;
     if (RedisModule_StringToDouble(argv[2], &error_rate) != REDISMODULE_OK) {
-        return return_with_error(ctx, "ERR error rate required");
+        return returnWithError(ctx, "ERR error rate required");
     }
 
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
-    scalableBloom *sb;
-    int status = bf_get_sb(key, &sb);
+    sbChain *sb;
+    int status = bfGetChain(key, &sb);
     if (status != SB_EMPTY) {
-        return return_with_error(ctx, status_strerror(status));
+        return returnWithError(ctx, statusStrerror(status));
     }
 
-    bf_add_common(key, NULL, 1, error_rate, argv + 3, argc - 3);
+    bfAddCommon(key, NULL, 1, error_rate, argv + 3, argc - 3);
     RedisModule_ReplyWithNull(ctx);
     return REDISMODULE_OK;
 }
@@ -197,16 +197,16 @@ static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     }
 
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
-    scalableBloom *sb;
-    int status = bf_get_sb(key, &sb);
+    sbChain *sb;
+    int status = bfGetChain(key, &sb);
     if (status != SB_OK) {
-        return return_with_error(ctx, status_strerror(status));
+        return returnWithError(ctx, statusStrerror(status));
     }
 
     // Check if it exists?
     size_t n;
     const char *s = RedisModule_StringPtrLen(argv[2], &n);
-    int exists = sb_check(sb, s, n);
+    int exists = sbCheck(sb, s, n);
     RedisModule_ReplyWithLongLong(ctx, exists);
     return REDISMODULE_OK;
 }
@@ -220,23 +220,23 @@ static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     }
 
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
-    scalableBloom *sb;
-    int status = bf_get_sb(key, &sb);
+    sbChain *sb;
+    int status = bfGetChain(key, &sb);
     if (status == SB_OK) {
         if (sb->is_fixed) {
-            return return_with_error(ctx, "ERR cannot add: filter is fixed");
+            return returnWithError(ctx, "ERR cannot add: filter is fixed");
         }
         size_t namelen;
         const char *cmdname = RedisModule_StringPtrLen(argv[0], &namelen);
         static const char setnxcmd[] = "BF.SETNX";
         if (namelen == sizeof(setnxcmd) - 1 && !strncasecmp(cmdname, "BF.SETNX", namelen)) {
-            return return_with_error(ctx, "ERR filter already exists");
+            return returnWithError(ctx, "ERR filter already exists");
         }
     } else if (status != SB_EMPTY) {
-        return_with_error(ctx, status_strerror(status));
+        returnWithError(ctx, statusStrerror(status));
     }
 
-    bf_add_common(key, sb, 0, 0, argv + 2, argc - 2);
+    bfAddCommon(key, sb, 0, 0, argv + 2, argc - 2);
     RedisModule_ReplyWithNull(ctx);
     return REDISMODULE_OK;
 }
@@ -249,11 +249,11 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         return REDISMODULE_ERR;
     }
 
-    const scalableBloom *sb = NULL;
+    const sbChain *sb = NULL;
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
-    int status = bf_get_sb(key, (scalableBloom **)&sb);
+    int status = bfGetChain(key, (sbChain **)&sb);
     if (status != SB_OK) {
-        return return_with_error(ctx, status_strerror(status));
+        return returnWithError(ctx, statusStrerror(status));
     }
 
     // Start writing info
@@ -276,7 +276,7 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 
     size_t num_elems = 0;
 
-    for (const linkedBloom *lb = sb->cur; lb; lb = lb->next, num_elems++) {
+    for (const sbLink *lb = sb->cur; lb; lb = lb->next, num_elems++) {
         RedisModule_ReplyWithArray(ctx, 10);
 
         // 2
@@ -311,12 +311,12 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 ////////////////////////////////////////////////////////////////////////////////
 static void BFRdbSave(RedisModuleIO *io, void *obj) {
     // Save the setting!
-    scalableBloom *sb = obj;
+    sbChain *sb = obj;
     // We don't know how many links are here thus far, so
     RedisModule_SaveUnsigned(io, sb->total_entries);
     RedisModule_SaveDouble(io, sb->error);
     RedisModule_SaveUnsigned(io, sb->is_fixed);
-    for (const linkedBloom *lb = sb->cur; lb; lb = lb->next) {
+    for (const sbLink *lb = sb->cur; lb; lb = lb->next) {
         const struct bloom *bm = &lb->inner;
         RedisModule_SaveUnsigned(io, bm->entries);
         // - SKIP: error ratio is fixed, and stored as part of the header
@@ -339,19 +339,19 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
     }
 
     // Load our modules
-    scalableBloom *sb = RedisModule_Calloc(1, sizeof(*sb));
+    sbChain *sb = RedisModule_Calloc(1, sizeof(*sb));
     sb->total_entries = RedisModule_LoadUnsigned(io);
     sb->error = RedisModule_LoadDouble(io);
     sb->is_fixed = RedisModule_LoadUnsigned(io);
 
     // Now load the individual nodes
-    linkedBloom *last = NULL;
+    sbLink *last = NULL;
     while (1) {
         unsigned entries = RedisModule_LoadUnsigned(io);
         if (!entries) {
             break;
         }
-        linkedBloom *lb = RedisModule_Calloc(1, sizeof(*lb));
+        sbLink *lb = RedisModule_Calloc(1, sizeof(*lb));
         struct bloom *bm = &lb->inner;
 
         bm->entries = entries;
@@ -384,19 +384,19 @@ static void BFAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value
     (void)value;
 }
 
-static void BFFree(void *value) { sb_free(value); }
+static void BFFree(void *value) { sbFreeChain(value); }
 
 static size_t BFMemUsage(const void *value) {
-    const scalableBloom *sb = value;
+    const sbChain *sb = value;
     size_t rv = sizeof(*sb);
-    for (const linkedBloom *lb = sb->cur; lb; lb = lb->next) {
+    for (const sbLink *lb = sb->cur; lb; lb = lb->next) {
         rv += sizeof(*lb);
         rv += lb->inner.bytes;
     }
     return rv;
 }
 
-static int rm_strcasecmp(const RedisModuleString *rs1, const char *s2) {
+static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2) {
     size_t n1 = strlen(s2);
     size_t n2;
     const char *s1 = RedisModule_StringPtrLen(rs1, &n2);
@@ -422,7 +422,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     }
 
     for (int ii = 0; ii < argc; ii += 2) {
-        if (!rm_strcasecmp(argv[ii], "initial_size")) {
+        if (!rsStrcasecmp(argv[ii], "initial_size")) {
             long long v;
             if (RedisModule_StringToLongLong(argv[ii + 1], &v) == REDISMODULE_ERR) {
                 BAIL("Invalid argument for 'INITIAL_SIZE'");
@@ -432,7 +432,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
             } else {
                 BAIL("INITIAL_SIZE must be > 0");
             }
-        } else if (!rm_strcasecmp(argv[ii], "error_rate")) {
+        } else if (!rsStrcasecmp(argv[ii], "error_rate")) {
             double d;
             if (RedisModule_StringToDouble(argv[ii + 1], &d) == REDISMODULE_ERR) {
                 BAIL("Invalid argument for 'ERROR_RATE'");
