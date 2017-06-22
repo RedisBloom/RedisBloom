@@ -351,6 +351,7 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
     sb->is_fixed = RedisModule_LoadUnsigned(io);
 
     // Now load the individual nodes
+    linkedBloom *last = NULL;
     while (1) {
         unsigned entries = RedisModule_LoadUnsigned(io);
         if (!entries) {
@@ -369,8 +370,14 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
         bm->bytes = sztmp;
         bm->ready = 1;
         lb->fillbits = RedisModule_LoadUnsigned(io);
-        lb->next = sb->cur;
-        sb->cur = lb;
+        if (last) {
+            last->next = lb;
+        } else {
+            assert(sb->cur == NULL);
+            sb->cur = lb;
+        }
+
+        last = lb;
     }
 
     return sb;
