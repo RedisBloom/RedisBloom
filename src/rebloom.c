@@ -16,7 +16,7 @@ static sbLink *sbCreateLink(size_t size, double error_rate) {
     return lb;
 }
 
-static void sbFreeChain(sbChain *sb) {
+void sbFreeChain(sbChain *sb) {
     sbLink *lb = sb->cur;
     while (lb) {
         sbLink *lb_next = lb->next;
@@ -63,6 +63,9 @@ int sbCheck(const sbChain *sb, const void *data, size_t len) {
 }
 
 sbChain *sbCreateChain(size_t initsize, double error_rate) {
+    if (initsize == 0 || error_rate == 0) {
+        return NULL;
+    }
     sbChain *sb = RedisModule_Calloc(1, sizeof(*sb));
     sb->error = error_rate;
     sb->cur = sbCreateLink(initsize, error_rate);

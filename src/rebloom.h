@@ -39,14 +39,14 @@ sbChain *sbCreateChain(size_t initsize, double error_rate);
  * Free a created chain
  * @param sb the created chain
  */
-static void sbFreeChain(sbChain *sb);
+void sbFreeChain(sbChain *sb);
 
 /**
  * Add an item to the chain
  * @param sb the chain
  * @param data item to add
  * @param len length of item
- * @return nonzero if item had previously existed, 0 if newly added.
+ * @return 0 if newly added, nonzero if new.
  */
 int sbAdd(sbChain *sb, const void *data, size_t len);
 

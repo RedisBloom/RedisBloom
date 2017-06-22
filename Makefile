@@ -5,13 +5,22 @@ CPPFLAGS=-Wall
 #Flags for compiler
 CFLAGS=-g -fPIC -O3 -I$(ROOT) -I$(ROOT)/contrib
 
+MODULE_OBJ=$(ROOT)/src/rebloom.o
+MODULE_SO=$(ROOT)/rebloom.so
 
-DEPS=contrib/MurmurHash2.o
+DEPS=$(ROOT)/contrib/MurmurHash2.o
 
-all: rebloom.so
+export
 
-rebloom.so: src/rebloom.o $(DEPS)
+all: $(MODULE_SO)
+
+$(MODULE_SO): $(MODULE_OBJ) $(DEPS)
 	$(CC) $^ -o$@ -shared $(LDFLAGS)
 
+
+test:
+	$(MAKE) -C tests test
+
 clean:
-	$(RM) rebloom.so $(DEPS)
+	$(RM) $(MODULE_OBJ) $(MODULE_SO) $(DEPS)
+	$(MAKE) -C tests clean
