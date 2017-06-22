@@ -12,15 +12,13 @@
 extern "C" {
 #endif
 
-
 /** ***************************************************************************
  * Structure to keep track of one bloom filter.  Caller needs to
  * allocate this and pass it to the functions below. First call for
  * every struct must be to bloom_init().
  *
  */
-struct bloom
-{
+struct bloom {
   // These fields are part of the public interface of this structure.
   // Client code may read these values if desired. Client code MUST NOT
   // modify any of these.
@@ -34,10 +32,9 @@ struct bloom
   // change incompatibly at any moment. Client code MUST NOT access or rely
   // on these.
   double bpe;
-  unsigned char * bf;
+  unsigned char *bf;
   int ready;
 };
-
 
 /** ***************************************************************************
  * Initialize the bloom filter for use.
@@ -66,16 +63,14 @@ struct bloom
  *     1 - on failure
  *
  */
-int bloom_init(struct bloom * bloom, int entries, double error);
-
+int bloom_init(struct bloom *bloom, int entries, double error);
 
 /** ***************************************************************************
  * Deprecated, use bloom_init()
  *
  */
-int bloom_init_size(struct bloom * bloom, int entries, double error,
+int bloom_init_size(struct bloom *bloom, int entries, double error,
                     unsigned int cache_size);
-
 
 /** ***************************************************************************
  * Check if the given element is in the bloom filter. Remember this may
@@ -94,8 +89,7 @@ int bloom_init_size(struct bloom * bloom, int entries, double error,
  *    -1 - bloom not initialized
  *
  */
-int bloom_check(struct bloom * bloom, const void * buffer, int len);
-
+int bloom_check(const struct bloom *bloom, const void *buffer, int len);
 
 /** ***************************************************************************
  * Add the given element to the bloom filter.
@@ -115,8 +109,7 @@ int bloom_check(struct bloom * bloom, const void * buffer, int len);
  *    -1 - bloom not initialized
  *
  */
-int bloom_add(struct bloom * bloom, const void * buffer, int len);
-
+int bloom_add(struct bloom *bloom, const void *buffer, int len);
 
 /** ***************************************************************************
  * Add the given element to the bloom filter, returning the number of bits
@@ -125,13 +118,11 @@ int bloom_add(struct bloom * bloom, const void * buffer, int len);
  */
 int bloom_add_retbits(struct bloom *bloom, const void *buffer, int len);
 
-
 /** ***************************************************************************
  * Print (to stdout) info about this bloom filter. Debugging aid.
  *
  */
-void bloom_print(struct bloom * bloom);
-
+void bloom_print(struct bloom *bloom);
 
 /** ***************************************************************************
  * Deallocate internal storage.
@@ -146,8 +137,7 @@ void bloom_print(struct bloom * bloom);
  * Return: none
  *
  */
-void bloom_free(struct bloom * bloom);
-
+void bloom_free(struct bloom *bloom);
 
 /** ***************************************************************************
  * Returns version string compiled into library.
@@ -155,7 +145,7 @@ void bloom_free(struct bloom * bloom);
  * Return: version string
  *
  */
-const char * bloom_version();
+const char *bloom_version();
 
 #ifdef __cplusplus
 }

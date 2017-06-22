@@ -112,8 +112,8 @@ int bloom_init(struct bloom *bloom, int entries, double error) {
     return 0;
 }
 
-int bloom_check(struct bloom *bloom, const void *buffer, int len) {
-    int rv = bloom_check_add(bloom, buffer, len, MODE_READ);
+int bloom_check(const struct bloom *bloom, const void *buffer, int len) {
+    int rv = bloom_check_add((void *)bloom, buffer, len, MODE_READ);
     return rv <= 0 ? rv : 1;
 }
 
