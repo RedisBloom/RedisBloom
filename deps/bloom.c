@@ -81,7 +81,7 @@ int bloom_init_size(struct bloom *bloom, int entries, double error, unsigned int
 int bloom_init(struct bloom *bloom, int entries, double error) {
     bloom->ready = 0;
 
-    if (entries < 1000 || error == 0) {
+    if (entries < 1 || error == 0) {
         return 1;
     }
 

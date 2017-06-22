@@ -28,9 +28,6 @@ typedef struct scalableBloom {
 
 static linkedBloom *lb_create(size_t size, double error_rate) {
     linkedBloom *lb = RedisModule_Calloc(1, sizeof(*lb));
-    if (size < 1000) {
-        size = 1000;
-    }
     bloom_init(&lb->inner, size, error_rate);
     return lb;
 }
