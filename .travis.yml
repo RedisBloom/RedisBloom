@@ -4,4 +4,4 @@ compiler:
     - gcc
     - clang
 
-script: make && make check
+script: make && make test
