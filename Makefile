@@ -1,12 +1,17 @@
+ROOT=$(shell pwd)
+# Flags for preprocessor
+CPPFLAGS=-Wall
+
+#Flags for compiler
+CFLAGS=-g -fPIC -O3 -I$(ROOT) -I$(ROOT)/contrib
+
+
+DEPS=contrib/MurmurHash2.o
+
 all: rebloom.so
 
-CPPFLAGS=-Wall -fPIC
-CFLAGS=-g
-
-DEPS=deps/MurmurHash2.o
-
-rebloom.so: rebloom.o $(DEPS)
+rebloom.so: src/rebloom.o $(DEPS)
 	$(CC) $^ -o$@ -shared $(LDFLAGS)
 
 clean:
-	$(RM) rebloom.so
+	$(RM) rebloom.so $(DEPS)

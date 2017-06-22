@@ -1,7 +1,7 @@
 #ifndef REBLOOM_H
 #define REBLOOM_H
 
-#include "deps/bloom.h"
+#include "contrib/bloom.h"
 #include <stdlib.h>
 
 #ifdef __cplusplus
