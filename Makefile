@@ -1,6 +1,6 @@
 ROOT=$(shell pwd)
 # Flags for preprocessor
-CPPFLAGS=-Wall
+CPPFLAGS=-Wall -std=c99
 
 #Flags for compiler
 CFLAGS=-g -fPIC -O3 -I$(ROOT) -I$(ROOT)/contrib
