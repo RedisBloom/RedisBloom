@@ -1,4 +1,4 @@
-#include "deps/bloom.h"
+#include "rebloom.h"
 #include "redismodule.h"
 #define BLOOM_CALLOC RedisModule_Calloc
 #define BLOOM_FREE RedisModule_Free
@@ -10,20 +10,6 @@
 /// Core                                                                     ///
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-
-typedef struct sbLink {
-    struct bloom inner;  //< Inner structure
-    size_t fillbits;     //< Number of bits currently filled
-    struct sbLink *next; //< Prior filter
-} sbLink;
-
-typedef struct sbChain {
-    sbLink *cur;
-    size_t total_entries;
-    double error;
-    int is_fixed;
-} sbChain;
-
 static sbLink *sbCreateLink(size_t size, double error_rate) {
     sbLink *lb = RedisModule_Calloc(1, sizeof(*lb));
     bloom_init(&lb->inner, size, error_rate);
@@ -41,15 +27,13 @@ static void sbFreeChain(sbChain *sb) {
     RedisModule_Free(sb);
 }
 
-static int sbAddTooLink(sbLink *lb, const void *data, size_t len) {
+static int sbAddToLink(sbLink *lb, const void *data, size_t len) {
     int newbits = bloom_add_retbits(&lb->inner, data, len);
     lb->fillbits += newbits;
     return newbits;
 }
 
-static int sbCheck(const sbChain *sb, const void *data, size_t len);
-
-static int sbAddToChain(sbChain *sb, const void *data, size_t len) {
+int sbAdd(sbChain *sb, const void *data, size_t len) {
     // Does it already exist?
 
     if (sbCheck(sb, data, len)) {
@@ -62,14 +46,14 @@ static int sbAddToChain(sbChain *sb, const void *data, size_t len) {
         new_lb->next = sb->cur;
         sb->cur = new_lb;
     }
-    int rv = sbAddTooLink(sb->cur, data, len);
+    int rv = sbAddToLink(sb->cur, data, len);
     if (rv) {
         sb->total_entries++;
     }
     return rv;
 }
 
-static int sbCheck(const sbChain *sb, const void *data, size_t len) {
+int sbCheck(const sbChain *sb, const void *data, size_t len) {
     for (const sbLink *lb = sb->cur; lb; lb = lb->next) {
         if (bloom_check(&lb->inner, data, len)) {
             return 1;
@@ -78,7 +62,7 @@ static int sbCheck(const sbChain *sb, const void *data, size_t len) {
     return 0;
 }
 
-static sbChain *sbCreateChain(size_t initsize, double error_rate) {
+sbChain *sbCreateChain(size_t initsize, double error_rate) {
     sbChain *sb = RedisModule_Calloc(1, sizeof(*sb));
     sb->error = error_rate;
     sb->cur = sbCreateLink(initsize, error_rate);
@@ -158,7 +142,7 @@ static void bfAddCommon(RedisModuleKey *key, sbChain *sb, int is_fixed, double e
     for (size_t ii = 0; ii < nelems; ++ii) {
         size_t n;
         const char *s = RedisModule_StringPtrLen(elems[ii], &n);
-        sbAddToChain(sb, s, n);
+        sbAdd(sb, s, n);
     }
 }
 
