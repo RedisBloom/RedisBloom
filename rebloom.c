@@ -96,6 +96,7 @@ static scalableBloom *sb_create(size_t initsize, double error_rate) {
 ////////////////////////////////////////////////////////////////////////////////
 static RedisModuleType *BFType;
 static double BFDefaultErrorRate = 0.01;
+static size_t BFDefaultInitCapacity = 100;
 
 typedef enum { SB_OK = 0, SB_MISSING, SB_EMPTY, SB_MISMATCH } lookupStatus;
 
@@ -149,7 +150,11 @@ static void bf_add_common(RedisModuleKey *key, scalableBloom *sb, int is_fixed, 
         if (!error_rate) {
             error_rate = BFDefaultErrorRate;
         }
-        sb = sb_create(nelems, error_rate);
+        size_t capacity = nelems;
+        if (!is_fixed && capacity < BFDefaultInitCapacity) {
+            capacity = BFDefaultInitCapacity;
+        }
+        sb = sb_create(capacity, error_rate);
         RedisModule_ModuleTypeSetValue(key, BFType, sb);
         sb->is_fixed = is_fixed;
     }
@@ -390,9 +395,54 @@ static size_t BFMemUsage(const void *value) {
     return rv;
 }
 
+static int rm_strcasecmp(const RedisModuleString *rs1, const char *s2) {
+    size_t n1 = strlen(s2);
+    size_t n2;
+    const char *s1 = RedisModule_StringPtrLen(rs1, &n2);
+    if (n1 != n2) {
+        return -1;
+    }
+    return strncasecmp(s1, s2, n1);
+}
+
+#define BAIL(s, ...)                                                                               \
+    do {                                                                                           \
+        RedisModule_Log(ctx, "warning", s, ##__VA_ARGS__);                                         \
+        return REDISMODULE_ERR;                                                                    \
+    } while (0);
+
 int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (RedisModule_Init(ctx, "bf", 1, REDISMODULE_APIVER_1) != REDISMODULE_OK) {
         return REDISMODULE_ERR;
+    }
+
+    if (argc % 2) {
+        BAIL("Invalid number of arguments passed");
+    }
+
+    for (int ii = 0; ii < argc; ii += 2) {
+        if (!rm_strcasecmp(argv[ii], "initial_size")) {
+            long long v;
+            if (RedisModule_StringToLongLong(argv[ii + 1], &v) == REDISMODULE_ERR) {
+                BAIL("Invalid argument for 'INITIAL_SIZE'");
+            }
+            if (v > 0) {
+                BFDefaultInitCapacity = v;
+            } else {
+                BAIL("INITIAL_SIZE must be > 0");
+            }
+        } else if (!rm_strcasecmp(argv[ii], "error_rate")) {
+            double d;
+            if (RedisModule_StringToDouble(argv[ii + 1], &d) == REDISMODULE_ERR) {
+                BAIL("Invalid argument for 'ERROR_RATE'");
+            } else if (d <= 0) {
+                BAIL("ERROR_RATE must be > 0");
+            } else {
+                BFDefaultErrorRate = d;
+            }
+        } else {
+            BAIL("Unrecognized option");
+        }
     }
 
     if (RedisModule_CreateCommand(ctx, "BF.CREATE", BFCreate_RedisCommand, "write", 1, 1, 1) !=
