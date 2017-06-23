@@ -10,5 +10,4 @@ test-basic: test-basic.o $(DEPS) $(MODULE_OBJ)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 clean:
-	$(RM) test-basic
-	$(RM) *.o
+	$(RM) test-basic *.o *.rdb *.pyc
