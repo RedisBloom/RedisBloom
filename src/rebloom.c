@@ -105,7 +105,7 @@ static const char *statusStrerror(int status) {
     case SB_MISSING:
         return "ERR not found";
     case SB_MISMATCH:
-        return "ERR mismatched type";
+        return REDISMODULE_ERRORMSG_WRONGTYPE;
     case SB_OK:
         return "ERR item exists";
     default:
