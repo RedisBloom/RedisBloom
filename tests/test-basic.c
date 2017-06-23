@@ -4,10 +4,14 @@
 #include <stdio.h>
 #include <string.h>
 
+TEST_DEFINE_GLOBALS();
+
+TEST_CLASS(basic);
+
 static void *calloc_wrap(size_t a, size_t b) { return calloc(a, b); }
 static void free_wrap(void *p) { free(p); }
 
-static void testSbValidation() {
+TEST_F(basic, sbValidation) {
     SBChain *chain = SB_NewChain(1, 0.01);
     ASSERT_NE(chain, NULL);
     ASSERT_EQ(0, chain->size);
@@ -17,7 +21,7 @@ static void testSbValidation() {
     ASSERT_EQ(NULL, SB_NewChain(1, 0));
 }
 
-static void testSbBasic() {
+TEST_F(basic, sbBasic) {
     SBChain *chain = SB_NewChain(100, 0.01);
     ASSERT_NE(NULL, chain);
 
@@ -33,7 +37,7 @@ static void testSbBasic() {
     SBChain_Free(chain);
 }
 
-static void testSbExpansion() {
+TEST_F(basic, sbExpansion) {
     SBChain *chain = SB_NewChain(5, 0.01);
     ASSERT_NE(NULL, chain);
 
@@ -53,7 +57,6 @@ static void testSbExpansion() {
 int main(int argc, char **argv) {
     RedisModule_Calloc = calloc_wrap;
     RedisModule_Free = free_wrap;
-    testSbValidation();
-    testSbBasic();
-    testSbExpansion();
+    TEST_RUN_ALL_TESTS();
+    return 0;
 }
