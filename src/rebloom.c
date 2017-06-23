@@ -172,7 +172,7 @@ static int BFCreate_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     }
 
     bfAddCommon(key, NULL, 1, error_rate, argv + 3, argc - 3);
-    RedisModule_ReplyWithNull(ctx);
+    RedisModule_ReplyWithSimpleString(ctx, "OK");
     return REDISMODULE_OK;
 }
 
@@ -225,7 +225,7 @@ static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     }
 
     bfAddCommon(key, sb, 0, 0, argv + 2, argc - 2);
-    RedisModule_ReplyWithNull(ctx);
+    RedisModule_ReplyWithSimpleString(ctx, "OK");
     return REDISMODULE_OK;
 }
 
