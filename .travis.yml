@@ -2,6 +2,15 @@ language: c
 
 compiler:
     - gcc
-    - clang
 
-script: make && make test
+before_script:
+    - git clone --depth 1 https://github.com/antirez/redis.git
+    - sudo make -C redis install
+    - sudo apt-get -qq update
+    - sudo pip install redis
+    - sudo pip install git+https://github.com/mnunberg/rmtest
+
+script:
+    - make
+    - make test
+    - cd tests && python pytests.py
