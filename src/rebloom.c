@@ -11,6 +11,8 @@
 /// Core                                                                     ///
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+#define ERROR_TIGHTENING_RATIO 0.5
+
 static SBLink *sbCreateLink(size_t size, double error_rate) {
     SBLink *lb = RedisModule_Calloc(1, sizeof(*lb));
     bloom_init(&lb->inner, size, error_rate);
@@ -43,7 +45,8 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
 
     // Determine if we need to add more items?
     if (sb->cur->fillbits * 2 > sb->cur->inner.bits) {
-        SBLink *new_lb = sbCreateLink(sb->cur->inner.entries * 2, sb->error);
+        double error = sb->cur->inner.error * pow(ERROR_TIGHTENING_RATIO, ++sb->nlinks);
+        SBLink *new_lb = sbCreateLink(sb->cur->inner.entries * 2, error);
         new_lb->next = sb->cur;
         sb->cur = new_lb;
     }
@@ -68,8 +71,8 @@ SBChain *SB_NewChain(size_t initsize, double error_rate) {
         return NULL;
     }
     SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
-    sb->error = error_rate;
     sb->cur = sbCreateLink(initsize, error_rate);
+    sb->nlinks = 1;
     return sb;
 }
 
@@ -255,17 +258,13 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     RedisModule_ReplyWithSimpleString(ctx, "fixed");
     RedisModule_ReplyWithLongLong(ctx, sb->fixed);
 
-    // 6
-    RedisModule_ReplyWithSimpleString(ctx, "ratio");
-    RedisModule_ReplyWithDouble(ctx, sb->error);
-
     // 7
     RedisModule_ReplyWithSimpleString(ctx, "filters");
 
     size_t num_elems = 0;
 
     for (const SBLink *lb = sb->cur; lb; lb = lb->next, num_elems++) {
-        RedisModule_ReplyWithArray(ctx, 10);
+        RedisModule_ReplyWithArray(ctx, 12);
 
         // 2
         RedisModule_ReplyWithSimpleString(ctx, "bytes");
@@ -286,9 +285,13 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         // 10
         RedisModule_ReplyWithSimpleString(ctx, "capacity");
         RedisModule_ReplyWithLongLong(ctx, lb->inner.entries);
+
+        // 12
+        RedisModule_ReplyWithSimpleString(ctx, "error_ratio");
+        RedisModule_ReplyWithDouble(ctx, lb->inner.error);
     }
 
-    RedisModule_ReplySetArrayLength(ctx, 7 + num_elems);
+    RedisModule_ReplySetArrayLength(ctx, 5 + num_elems);
     return REDISMODULE_OK;
 }
 
@@ -302,12 +305,11 @@ static void BFRdbSave(RedisModuleIO *io, void *obj) {
     SBChain *sb = obj;
     // We don't know how many links are here thus far, so
     RedisModule_SaveUnsigned(io, sb->size);
-    RedisModule_SaveDouble(io, sb->error);
     RedisModule_SaveUnsigned(io, sb->fixed);
     for (const SBLink *lb = sb->cur; lb; lb = lb->next) {
         const struct bloom *bm = &lb->inner;
         RedisModule_SaveUnsigned(io, bm->entries);
-        // - SKIP: error ratio is fixed, and stored as part of the header
+        RedisModule_SaveDouble(io, bm->error);
         // - SKIP: bits is (double)entries * bpe
         RedisModule_SaveUnsigned(io, bm->hashes);
         RedisModule_SaveDouble(io, bm->bpe);
@@ -329,7 +331,6 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
     // Load our modules
     SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
     sb->size = RedisModule_LoadUnsigned(io);
-    sb->error = RedisModule_LoadDouble(io);
     sb->fixed = RedisModule_LoadUnsigned(io);
 
     // Now load the individual nodes
@@ -343,7 +344,7 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
         struct bloom *bm = &lb->inner;
 
         bm->entries = entries;
-        bm->error = sb->error;
+        bm->error = RedisModule_LoadDouble(io);
         bm->hashes = RedisModule_LoadUnsigned(io);
         bm->bpe = RedisModule_LoadDouble(io);
         bm->bits = (double)bm->entries * bm->bpe;
