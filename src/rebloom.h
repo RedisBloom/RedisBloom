@@ -24,7 +24,6 @@ typedef struct SBChain {
     SBLink *cur;   //< Current filter
     size_t size;   //< Total number of items in all filters
     size_t nlinks; //< Number of links in chain
-    int fixed;     //< Whether new items can be added to the filter
 } SBChain;
 
 /**

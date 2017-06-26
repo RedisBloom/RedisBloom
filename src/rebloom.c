@@ -125,39 +125,21 @@ static int returnWithError(RedisModuleCtx *ctx, const char *errmsg) {
  * Common function for adding one or more items to a bloom filter.
  * @param key the key key associated with the filter
  * @param sb the actual bloom filter
- * @param fixed - for creating only, whether this filter is expected to
- *        be fixed
  * @param error_rate error rate for new filter
  * @param elems list of elements to add
  * @param nelems number of elements to add
  */
-static void bfAddCommon(RedisModuleKey *key, SBChain *sb, int fixed, double error_rate,
-                        RedisModuleString **elems, int nelems) {
-    if (sb == NULL) {
-        if (!error_rate) {
-            error_rate = BFDefaultErrorRate;
-        }
-        size_t capacity = nelems;
-        if (!fixed && capacity < BFDefaultInitCapacity) {
-            capacity = BFDefaultInitCapacity;
-        }
-        sb = SB_NewChain(capacity, error_rate);
-        RedisModule_ModuleTypeSetValue(key, BFType, sb);
-        sb->fixed = fixed;
-    }
-    // Now, just add the items
-    for (size_t ii = 0; ii < nelems; ++ii) {
-        size_t n;
-        const char *s = RedisModule_StringPtrLen(elems[ii], &n);
-        SBChain_Add(sb, s, n);
-    }
+static SBChain *bfCreateChain(RedisModuleKey *key, double error_rate, size_t capacity) {
+    SBChain *sb = SB_NewChain(capacity, error_rate);
+    RedisModule_ModuleTypeSetValue(key, BFType, sb);
+    return sb;
 }
 
 static int BFCreate_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
-    if (argc < 3) {
-        // CMD, ERR, K1
+    if (argc != 4) {
+        // CMD, KEY, DESIRED_ERR DESIRED_SIZE
         RedisModule_WrongArity(ctx);
         return REDISMODULE_ERR;
     }
@@ -167,6 +149,11 @@ static int BFCreate_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
         return returnWithError(ctx, "ERR error rate required");
     }
 
+    long long capacity;
+    if (RedisModule_StringToLongLong(argv[3], &capacity) != REDISMODULE_OK) {
+        return returnWithError(ctx, "ERR capacity is required");
+    }
+
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
     SBChain *sb;
     int status = bfGetChain(key, &sb);
@@ -174,7 +161,7 @@ static int BFCreate_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
         return returnWithError(ctx, statusStrerror(status));
     }
 
-    bfAddCommon(key, NULL, 1, error_rate, argv + 3, argc - 3);
+    bfCreateChain(key, error_rate, capacity);
     RedisModule_ReplyWithSimpleString(ctx, "OK");
     return REDISMODULE_OK;
 }
@@ -214,21 +201,26 @@ static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     SBChain *sb;
     int status = bfGetChain(key, &sb);
     if (status == SB_OK) {
-        if (sb->fixed) {
-            return returnWithError(ctx, "ERR cannot add: filter is fixed");
-        }
         size_t namelen;
         const char *cmdname = RedisModule_StringPtrLen(argv[0], &namelen);
         static const char setnxcmd[] = "BF.SETNX";
         if (namelen == sizeof(setnxcmd) - 1 && !strncasecmp(cmdname, "BF.SETNX", namelen)) {
             return returnWithError(ctx, "ERR filter already exists");
         }
-    } else if (status != SB_EMPTY) {
+    } else if (status == SB_EMPTY) {
+        sb = bfCreateChain(key, BFDefaultErrorRate, BFDefaultInitCapacity);
+    } else {
         returnWithError(ctx, statusStrerror(status));
     }
 
-    bfAddCommon(key, sb, 0, 0, argv + 2, argc - 2);
-    RedisModule_ReplyWithSimpleString(ctx, "OK");
+    RedisModule_ReplyWithArray(ctx, argc - 2);
+
+    for (size_t ii = 2; ii < argc; ++ii) {
+        size_t n;
+        const char *s = RedisModule_StringPtrLen(argv[ii], &n);
+        int rv = SBChain_Add(sb, s, n);
+        RedisModule_ReplyWithLongLong(ctx, rv);
+    }
     return REDISMODULE_OK;
 }
 
@@ -250,8 +242,7 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     // Start writing info
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
 
-    RedisModuleString *info_s =
-        RedisModule_CreateStringPrintf(ctx, "size:%llu fixed:%d", sb->size, sb->fixed);
+    RedisModuleString *info_s = RedisModule_CreateStringPrintf(ctx, "size:%llu", sb->size);
     RedisModule_ReplyWithString(ctx, info_s);
     RedisModule_FreeString(ctx, info_s);
 
@@ -279,7 +270,6 @@ static void BFRdbSave(RedisModuleIO *io, void *obj) {
     SBChain *sb = obj;
     // We don't know how many links are here thus far, so
     RedisModule_SaveUnsigned(io, sb->size);
-    RedisModule_SaveUnsigned(io, sb->fixed);
     for (const SBLink *lb = sb->cur; lb; lb = lb->next) {
         const struct bloom *bm = &lb->inner;
         RedisModule_SaveUnsigned(io, bm->entries);
@@ -305,7 +295,6 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
     // Load our modules
     SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
     sb->size = RedisModule_LoadUnsigned(io);
-    sb->fixed = RedisModule_LoadUnsigned(io);
 
     // Now load the individual nodes
     SBLink *last = NULL;
@@ -417,13 +406,10 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         }
     }
 
-    if (RedisModule_CreateCommand(ctx, "BF.CREATE", BFCreate_RedisCommand, "write", 1, 1, 1) !=
+    if (RedisModule_CreateCommand(ctx, "BF.RESERVE", BFCreate_RedisCommand, "write", 1, 1, 1) !=
         REDISMODULE_OK)
         return REDISMODULE_ERR;
     if (RedisModule_CreateCommand(ctx, "BF.SET", BFAdd_RedisCommand, "write", 1, 1, 1) !=
-        REDISMODULE_OK)
-        return REDISMODULE_ERR;
-    if (RedisModule_CreateCommand(ctx, "BF.SETNX", BFAdd_RedisCommand, "write", 1, 1, 1) !=
         REDISMODULE_OK)
         return REDISMODULE_ERR;
     if (RedisModule_CreateCommand(ctx, "BF.TEST", BFCheck_RedisCommand, "readonly", 1, 1, 1) !=
