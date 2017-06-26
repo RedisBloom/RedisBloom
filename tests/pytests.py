@@ -51,3 +51,8 @@ class RebloomTestCase(ModuleTestCase('../rebloom.so')):
             self.assertEqual(1, self.cmd('bf.test', 'test', 'foo'))
             self.assertEqual(1, self.cmd('bf.test', 'test', 'bar'))
             self.assertEqual(0, self.cmd('bf.test', 'test', 'nonexist'))
+
+
+if __name__ == "__main__":
+    import unittest
+    unittest.main()
