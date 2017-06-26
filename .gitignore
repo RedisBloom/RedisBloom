@@ -3,4 +3,5 @@
 *.so
 *.dSYM
 *.rdb
+*.pyc
 tests/test-basic
