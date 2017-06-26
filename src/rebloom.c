@@ -250,48 +250,22 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     // Start writing info
     RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
 
-    // 2
-    RedisModule_ReplyWithSimpleString(ctx, "size");
-    RedisModule_ReplyWithLongLong(ctx, sb->size);
-
-    // 4
-    RedisModule_ReplyWithSimpleString(ctx, "fixed");
-    RedisModule_ReplyWithLongLong(ctx, sb->fixed);
-
-    // 7
-    RedisModule_ReplyWithSimpleString(ctx, "filters");
+    RedisModuleString *info_s =
+        RedisModule_CreateStringPrintf(ctx, "size:%llu fixed:%d", sb->size, sb->fixed);
+    RedisModule_ReplyWithString(ctx, info_s);
+    RedisModule_FreeString(ctx, info_s);
 
     size_t num_elems = 0;
 
     for (const SBLink *lb = sb->cur; lb; lb = lb->next, num_elems++) {
-        RedisModule_ReplyWithArray(ctx, 12);
-
-        // 2
-        RedisModule_ReplyWithSimpleString(ctx, "bytes");
-        RedisModule_ReplyWithLongLong(ctx, lb->inner.bytes);
-
-        // 4
-        RedisModule_ReplyWithSimpleString(ctx, "bits");
-        RedisModule_ReplyWithLongLong(ctx, lb->inner.bits);
-
-        // 6
-        RedisModule_ReplyWithSimpleString(ctx, "num_filled");
-        RedisModule_ReplyWithLongLong(ctx, lb->fillbits);
-
-        // 8
-        RedisModule_ReplyWithSimpleString(ctx, "hashes");
-        RedisModule_ReplyWithLongLong(ctx, lb->inner.hashes);
-
-        // 10
-        RedisModule_ReplyWithSimpleString(ctx, "capacity");
-        RedisModule_ReplyWithLongLong(ctx, lb->inner.entries);
-
-        // 12
-        RedisModule_ReplyWithSimpleString(ctx, "error_ratio");
-        RedisModule_ReplyWithDouble(ctx, lb->inner.error);
+        info_s = RedisModule_CreateStringPrintf(
+            ctx, "bytes:%d bits:%d filled:%lu hashes:%d capacity:%d ratio:%g", lb->inner.bytes,
+            lb->inner.bits, lb->fillbits, lb->inner.hashes, lb->inner.entries, lb->inner.error);
+        RedisModule_ReplyWithString(ctx, info_s);
+        RedisModule_FreeString(ctx, info_s);
     }
 
-    RedisModule_ReplySetArrayLength(ctx, 5 + num_elems);
+    RedisModule_ReplySetArrayLength(ctx, num_elems + 1);
     return REDISMODULE_OK;
 }
 
