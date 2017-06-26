@@ -4,7 +4,8 @@ CPPFLAGS=-Wall -std=c99
 LDFLAGS=-lm
 
 #Flags for compiler
-CFLAGS=-g -fPIC -O3 -I$(ROOT) -I$(ROOT)/contrib
+CFLAGS=-g -fPIC -O3
+CPPFLAGS+=-I$(ROOT) -I$(ROOT)/contrib
 
 MODULE_OBJ=$(ROOT)/src/rebloom.o
 MODULE_SO=$(ROOT)/rebloom.so
