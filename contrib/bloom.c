@@ -50,11 +50,6 @@ inline static int test_bit_set_bit(unsigned char *buf, unsigned int x, int mode)
 }
 
 static int bloom_check_add(struct bloom *bloom, const void *buffer, int len, int mode) {
-    if (bloom->ready == 0) {
-        printf("bloom at %p not initialized!\n", (void *)bloom);
-        return -1;
-    }
-
     int hits = 0;
     register unsigned int a = murmurhash2(buffer, len, 0x9747b28c);
     register unsigned int b = murmurhash2(buffer, len, a);
@@ -79,8 +74,6 @@ int bloom_init_size(struct bloom *bloom, int entries, double error, unsigned int
 }
 
 int bloom_init(struct bloom *bloom, int entries, double error) {
-    bloom->ready = 0;
-
     if (entries < 1 || error == 0) {
         return 1;
     }
@@ -108,7 +101,6 @@ int bloom_init(struct bloom *bloom, int entries, double error) {
         return 1;
     }
 
-    bloom->ready = 1;
     return 0;
 }
 
@@ -147,11 +139,6 @@ void bloom_print(struct bloom *bloom) {
     printf(" ->hash functions = %d\n", bloom->hashes);
 }
 
-void bloom_free(struct bloom *bloom) {
-    if (bloom->ready) {
-        BLOOM_FREE(bloom->bf);
-    }
-    bloom->ready = 0;
-}
+void bloom_free(struct bloom *bloom) { BLOOM_FREE(bloom->bf); }
 
 const char *bloom_version() { return MAKESTRING(BLOOM_VERSION); }

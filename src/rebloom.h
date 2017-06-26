@@ -12,18 +12,17 @@ extern "C" {
  * Single link inside a scalable bloom filter.
  */
 typedef struct SBLink {
-    struct bloom inner;  //< Inner structure
-    size_t fillbits;     //< Number of bits currently filled
-    struct SBLink *next; //< Prior filter
+    struct bloom inner; //< Inner structure
+    size_t fillbits;    //< Number of bits currently filled
 } SBLink;
 
 /**
  * A chain of one or more bloom filters
  */
 typedef struct SBChain {
-    SBLink *cur;   //< Current filter
-    size_t size;   //< Total number of items in all filters
-    size_t nlinks; //< Number of links in chain
+    SBLink *filters; //< Current filter
+    size_t size;     //< Total number of items in all filters
+    size_t nfitlers; //< Number of links in chain
 } SBChain;
 
 /**
