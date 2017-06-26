@@ -33,6 +33,8 @@ TEST_F(basic, sbBasic) {
     ASSERT_NE(0, SBChain_Add(chain, k1, n1));
     ASSERT_EQ(1, chain->size);
     ASSERT_NE(0, SBChain_Check(chain, k1, n1));
+    // Add the item again:
+    ASSERT_EQ(0, SBChain_Add(chain, k1, n1));
 
     SBChain_Free(chain);
 }

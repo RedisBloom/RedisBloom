@@ -48,7 +48,7 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
     // Does it already exist?
 
     if (SBChain_Check(sb, data, len)) {
-        return 1;
+        return 0;
     }
 
     // Determine if we need to add more items?
@@ -224,7 +224,7 @@ static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
         size_t n;
         const char *s = RedisModule_StringPtrLen(argv[ii], &n);
         int rv = SBChain_Add(sb, s, n);
-        RedisModule_ReplyWithLongLong(ctx, rv);
+        RedisModule_ReplyWithLongLong(ctx, !!rv);
     }
     return REDISMODULE_OK;
 }
