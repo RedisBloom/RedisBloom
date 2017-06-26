@@ -19,41 +19,38 @@ cost of searching for an element will remain linear across its lifetime, whereas
 a scalable bloom filter occupies more memory and lookups may degrade slightly
 over time as more elements are added.
 
-### `BF.CREATE KEY ERROR ELEM1 ... ELEMN`
+### `BF.RESERVE KEY ERROR CAPACITY`
 
-Create a new fixed bloom filter with the given elements.
-The `ERROR` is a fractional number between 0 and 1 which is the desired maximum
-error rate. A higher error rate will use less memory at the cost of more false
-positives. A lower error rate will use more memory but reduce the chance of
-a false positive.
-
-If `ERROR` is 0 then the module will use the default of `0.01`.
+Create an empty bloom filter with a custom error rate and initial capacity.
+This command is useful if you intend to create a large bloom filter, so that
+the initial capacity can be optimized for the ideal memory usage and CPU
+performance.
 
 ```
-> BF.CREATE newbf 0.05 foo bar baz mlem
+127.0.0.1:6379> BF.RESERVE test 0.0001 10000
+OK
 ```
 
 ### `BF.SET KEY ELEM1 ... ELEMN`
-### `BF.SETNX KEY ELEM1 ... ELEMN`
 
 Add elements to a bloom filter. If the bloom filter does not exist it will
 be created for you.
 
-It is an error to add elements to a bloom filter created with `BF.CREATE` and
-an error will be returned if this is the case.
-
-The `SETNX` variant does the same thing as `SET`, except it will fail if the
-filter already exists.
+The response is an array of integers that may be treated as booleans. A true
+value means that the corresponding input element did not exist, while a false
+value means that it (or its hashed equivalent) did exist.
 
 ```
-> BF.SET somebf foo bar
-(nil)
-> BF.SET somebf baz
-(nil)
-> BF.SETNX newbf bar
-(nil)
-> BF.SETNX newbf baz
-ERR already exists
+127.0.0.1:6379> BF.SET test foo
+1) (integer) 1
+127.0.0.1:6379> BF.SET test foo bar baz
+1) (integer) 0
+2) (integer) 1
+3) (integer) 1
+127.0.0.1:6379> BF.SET test new1 new2 new3
+1) (integer) 1
+2) (integer) 1
+3) (integer) 1
 ```
 
 ### `BF.TEST KEY`
@@ -63,10 +60,12 @@ Check if an item (possible) exists in the set. This command will return either
 to the filter
 
 ```
-> BF.TEST somebf foo
-1
-> BF.TEST somebf lolwut
-0
+127.0.0.1:6379> BF.TEST test foo
+(integer) 1
+127.0.0.1:6379> BF.TEST test bar
+(integer) 1
+127.0.0.1:6379> BF.TEST test nonexist
+(integer) 0
 ```
 
 ### Module Options
@@ -78,3 +77,5 @@ module, e.g.
 ```
 $ redis-server --loadmodule /path/to/rebloom.so INITIAL_SIZE 400 ERROR_RATE 0.004
 ```
+
+The default error rate is `0.01` and the default initial capacity is `100`.
