@@ -11,3 +11,4 @@ test-basic: test-basic.o $(DEPS) $(MODULE_OBJ)
 
 clean:
 	$(RM) test-basic *.o *.rdb *.pyc
+	$(RM) -fr *.dSYM
