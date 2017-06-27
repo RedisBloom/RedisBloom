@@ -13,7 +13,7 @@ extern "C" {
  */
 typedef struct SBLink {
     struct bloom inner; //< Inner structure
-    size_t fillbits;    //< Number of bits currently filled
+    size_t size;        // < Number of items in the link
 } SBLink;
 
 /**

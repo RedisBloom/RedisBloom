@@ -25,7 +25,7 @@ static void SBChain_AddLink(SBChain *chain, size_t size, double error_rate) {
     }
 
     SBLink *newlink = chain->filters;
-    newlink->fillbits = 0;
+    newlink->size = 0;
     chain->nfitlers++;
     bloom_init(&newlink->inner, size, error_rate);
 }
@@ -39,9 +39,13 @@ void SBChain_Free(SBChain *sb) {
 }
 
 static int SBChain_AddToLink(SBLink *lb, const void *data, size_t len, bloom_hashval hash) {
-    int newbits = bloom_add_retbits_h(&lb->inner, data, len, hash);
-    lb->fillbits += newbits;
-    return newbits;
+    if (!bloom_add_h(&lb->inner, data, len, hash)) {
+        // Element not previously present?
+        lb->size++;
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 int SBChain_Add(SBChain *sb, const void *data, size_t len) {
@@ -55,10 +59,11 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
     }
 
     // Determine if we need to add more items?
-    if (sb->filters->fillbits * 2 > sb->filters->inner.bits) {
+    if (sb->filters->size >= sb->filters->inner.entries) {
         double error = sb->filters->inner.error * pow(ERROR_TIGHTENING_RATIO, sb->nfitlers + 1);
         SBChain_AddLink(sb, sb->filters->inner.entries * 2, error);
     }
+
     int rv = SBChain_AddToLink(sb->filters, data, len, h);
     if (rv) {
         sb->size++;
@@ -258,8 +263,8 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     for (size_t ii = 0; ii < sb->nfitlers; ++ii) {
         const SBLink *lb = sb->filters + ii;
         info_s = RedisModule_CreateStringPrintf(
-            ctx, "bytes:%d bits:%d filled:%lu hashes:%d capacity:%d ratio:%g", lb->inner.bytes,
-            lb->inner.bits, lb->fillbits, lb->inner.hashes, lb->inner.entries, lb->inner.error);
+            ctx, "bytes:%d bits:%d hashes:%d capacity:%d size:%lu ratio:%g", lb->inner.bytes,
+            lb->inner.bits, lb->inner.hashes, lb->inner.entries, lb->size, lb->inner.error);
         RedisModule_ReplyWithString(ctx, info_s);
         RedisModule_FreeString(ctx, info_s);
     }
@@ -291,7 +296,7 @@ static void BFRdbSave(RedisModuleIO *io, void *obj) {
         RedisModule_SaveStringBuffer(io, (const char *)bm->bf, bm->bytes);
 
         // Save the number of actual entries stored thus far.
-        RedisModule_SaveUnsigned(io, lb->fillbits);
+        RedisModule_SaveUnsigned(io, lb->size);
     }
 }
 
@@ -321,7 +326,7 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
         size_t sztmp;
         bm->bf = (unsigned char *)RedisModule_LoadStringBuffer(io, &sztmp);
         bm->bytes = sztmp;
-        lb->fillbits = RedisModule_LoadUnsigned(io);
+        lb->size = RedisModule_LoadUnsigned(io);
     }
 
     return sb;
