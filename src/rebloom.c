@@ -38,8 +38,8 @@ void SBChain_Free(SBChain *sb) {
     RedisModule_Free(sb);
 }
 
-static int SBChain_AddToLink(SBLink *lb, const void *data, size_t len) {
-    int newbits = bloom_add_retbits(&lb->inner, data, len);
+static int SBChain_AddToLink(SBLink *lb, const void *data, size_t len, bloom_hashval hash) {
+    int newbits = bloom_add_retbits_h(&lb->inner, data, len, hash);
     lb->fillbits += newbits;
     return newbits;
 }
@@ -47,8 +47,11 @@ static int SBChain_AddToLink(SBLink *lb, const void *data, size_t len) {
 int SBChain_Add(SBChain *sb, const void *data, size_t len) {
     // Does it already exist?
 
-    if (SBChain_Check(sb, data, len)) {
-        return 0;
+    bloom_hashval h = bloom_calc_hash(data, len);
+    for (size_t ii = 0; ii < sb->nfitlers; ++ii) {
+        if (bloom_check_h(&sb->filters[ii].inner, data, len, h)) {
+            return 0;
+        }
     }
 
     // Determine if we need to add more items?
@@ -56,7 +59,7 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
         double error = sb->filters->inner.error * pow(ERROR_TIGHTENING_RATIO, sb->nfitlers + 1);
         SBChain_AddLink(sb, sb->filters->inner.entries * 2, error);
     }
-    int rv = SBChain_AddToLink(sb->filters, data, len);
+    int rv = SBChain_AddToLink(sb->filters, data, len, h);
     if (rv) {
         sb->size++;
     }

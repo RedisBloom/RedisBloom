@@ -7,6 +7,7 @@
 
 #ifndef _BLOOM_H
 #define _BLOOM_H
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -70,6 +71,13 @@ int bloom_init(struct bloom *bloom, int entries, double error);
  */
 int bloom_init_size(struct bloom *bloom, int entries, double error, unsigned int cache_size);
 
+typedef struct {
+    unsigned int a;
+    unsigned int b;
+} bloom_hashval;
+
+bloom_hashval bloom_calc_hash(const void *buffer, int len);
+
 /** ***************************************************************************
  * Check if the given element is in the bloom filter. Remember this may
  * return false positive if a collision occured.
@@ -87,6 +95,7 @@ int bloom_init_size(struct bloom *bloom, int entries, double error, unsigned int
  *    -1 - bloom not initialized
  *
  */
+int bloom_check_h(const struct bloom *bloom, const void *buffer, int len, bloom_hashval hash);
 int bloom_check(const struct bloom *bloom, const void *buffer, int len);
 
 /** ***************************************************************************
@@ -107,13 +116,14 @@ int bloom_check(const struct bloom *bloom, const void *buffer, int len);
  *    -1 - bloom not initialized
  *
  */
+int bloom_add_h(struct bloom *bloom, const void *buffer, int len, bloom_hashval hash);
 int bloom_add(struct bloom *bloom, const void *buffer, int len);
-
 /** ***************************************************************************
  * Add the given element to the bloom filter, returning the number of bits
  * actually added. If the return value is 0 then it means that the item either
  * exists or a collision has been encountered
  */
+int bloom_add_retbits_h(struct bloom *bloom, const void *buffer, int len, bloom_hashval hash);
 int bloom_add_retbits(struct bloom *bloom, const void *buffer, int len);
 
 /** ***************************************************************************

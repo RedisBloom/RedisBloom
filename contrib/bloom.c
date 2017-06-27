@@ -49,15 +49,26 @@ inline static int test_bit_set_bit(unsigned char *buf, unsigned int x, int mode)
     }
 }
 
-static int bloom_check_add(struct bloom *bloom, const void *buffer, int len, int mode) {
+bloom_hashval bloom_calc_hash(const void *buffer, int len) {
+    bloom_hashval rv;
+    rv.a = murmurhash2(buffer, len, 0x9747b28c);
+    rv.b = murmurhash2(buffer, len, rv.a);
+    return rv;
+}
+
+static int bloom_check_add(struct bloom *bloom, const void *buffer, int len, bloom_hashval hashval,
+                           int mode) {
     int hits = 0;
-    register unsigned int a = murmurhash2(buffer, len, 0x9747b28c);
-    register unsigned int b = murmurhash2(buffer, len, a);
+
+    if (hashval.a == 0 && hashval.b == 0) {
+        hashval = bloom_calc_hash(buffer, len);
+    }
+
     register unsigned int x;
     register unsigned int i;
 
     for (i = 0; i < bloom->hashes; i++) {
-        x = (a + i * b) % bloom->bits;
+        x = (hashval.a + i * hashval.b) % bloom->bits;
         if (test_bit_set_bit(bloom->bf, x, mode)) {
             hits++;
         } else if (mode == MODE_READ) {
@@ -104,13 +115,18 @@ int bloom_init(struct bloom *bloom, int entries, double error) {
     return 0;
 }
 
-int bloom_check(const struct bloom *bloom, const void *buffer, int len) {
-    int rv = bloom_check_add((void *)bloom, buffer, len, MODE_READ);
+int bloom_check_h(const struct bloom *bloom, const void *buffer, int len, bloom_hashval hash) {
+    int rv = bloom_check_add((void *)bloom, buffer, len, hash, MODE_READ);
     return rv <= 0 ? rv : 1;
 }
 
-int bloom_add(struct bloom *bloom, const void *buffer, int len) {
-    int rv = bloom_add_retbits(bloom, buffer, len);
+int bloom_check(const struct bloom *bloom, const void *buffer, int len) {
+    bloom_hashval hv = {0, 0};
+    return bloom_check_h(bloom, buffer, len, hv);
+}
+
+int bloom_add_h(struct bloom *bloom, const void *buffer, int len, bloom_hashval hash) {
+    int rv = bloom_add_retbits_h(bloom, buffer, len, hash);
     if (rv == 0) {
         return 1; // No new bits added
     } else if (rv < 0) {
@@ -120,13 +136,22 @@ int bloom_add(struct bloom *bloom, const void *buffer, int len) {
     }
 }
 
-int bloom_add_retbits(struct bloom *bloom, const void *buffer, int len) {
-    int rv = bloom_check_add(bloom, buffer, len, MODE_WRITE);
+int bloom_add(struct bloom *bloom, const void *buffer, int len) {
+    bloom_hashval hv = {0, 0};
+    return bloom_add_h(bloom, buffer, len, hv);
+}
+
+int bloom_add_retbits_h(struct bloom *bloom, const void *buffer, int len, bloom_hashval hashval) {
+    int rv = bloom_check_add(bloom, buffer, len, hashval, MODE_WRITE);
     if (rv < 0) {
         return -1;
     } else {
         return bloom->hashes - rv;
     }
+}
+int bloom_add_retbits(struct bloom *bloom, const void *buffer, int len) {
+    bloom_hashval hv = {0, 0};
+    return bloom_add_retbits_h(bloom, buffer, len, hv);
 }
 
 void bloom_print(struct bloom *bloom) {
