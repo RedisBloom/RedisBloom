@@ -67,8 +67,9 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
 }
 
 int SBChain_Check(const SBChain *sb, const void *data, size_t len) {
+    bloom_hashval hv = bloom_calc_hash(data, len);
     for (size_t ii = 0; ii < sb->nfitlers; ++ii) {
-        if (bloom_check(&sb->filters[ii].inner, data, len)) {
+        if (bloom_check_h(&sb->filters[ii].inner, data, len, hv)) {
             return 1;
         }
     }
