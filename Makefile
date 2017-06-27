@@ -23,6 +23,9 @@ $(MODULE_SO): $(MODULE_OBJ) $(DEPS)
 test:
 	$(MAKE) -C tests test
 
+perf:
+	$(MAKE) -C tests perf
+
 clean:
 	$(RM) $(MODULE_OBJ) $(MODULE_SO) $(DEPS)
 	$(MAKE) -C tests clean
