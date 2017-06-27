@@ -2,7 +2,7 @@
 #include <rebloom.h>
 #include <stdio.h>
 
-#define NUM_ITERATIONS 100000000
+#define NUM_ITERATIONS 50000000
 #define NUM_ITEMS 100000
 #define ERROR_RATE 0.0001
 
@@ -18,6 +18,7 @@ int main(int argc, char **argv) {
     for (size_t ii = 0; ii < NUM_ITERATIONS; ++ii) {
         size_t elem = ii % NUM_ITEMS;
         SBChain_Add(chain, &elem, sizeof elem);
+        SBChain_Check(chain, &elem, sizeof elem);
     }
     SBChain_Free(chain);
     return 0;
