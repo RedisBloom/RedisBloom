@@ -22,7 +22,7 @@ typedef struct SBLink {
 typedef struct SBChain {
     SBLink *filters; //< Current filter
     size_t size;     //< Total number of items in all filters
-    size_t nfitlers; //< Number of links in chain
+    size_t nfilters; //< Number of links in chain
 } SBChain;
 
 /**

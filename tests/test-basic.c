@@ -45,14 +45,14 @@ TEST_F(basic, sbExpansion) {
 
     // Add the first item
     ASSERT_NE(0, SBChain_Add(chain, "abc", 3));
-    ASSERT_EQ(1, chain->nfitlers);
+    ASSERT_EQ(1, chain->nfilters);
 
     // Insert 5 items
     for (size_t ii = 0; ii < 5; ++ii) {
         ASSERT_EQ(0, SBChain_Check(chain, &ii, sizeof ii));
         ASSERT_NE(0, SBChain_Add(chain, &ii, sizeof ii));
     }
-    ASSERT_GT(chain->nfitlers, 1);
+    ASSERT_GT(chain->nfilters, 1);
     SBChain_Free(chain);
 }
 

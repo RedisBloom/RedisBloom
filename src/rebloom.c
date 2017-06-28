@@ -12,28 +12,24 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 #define ERROR_TIGHTENING_RATIO 0.5
+#define CUR_FILTER(sb) ((sb)->filters + ((sb)->nfilters - 1))
 
 static void SBChain_AddLink(SBChain *chain, size_t size, double error_rate) {
     if (!chain->filters) {
         chain->filters = RedisModule_Calloc(1, sizeof(*chain->filters));
     } else {
         chain->filters =
-            RedisModule_Realloc(chain->filters, sizeof(*chain->filters) * (chain->nfitlers + 1));
-        // The newest filter is always at the beginning of the array. Move each existing filter over
-        // one spot
-        for (size_t ii = chain->nfitlers; ii; --ii) {
-            chain->filters[ii] = chain->filters[ii - 1];
-        }
+            RedisModule_Realloc(chain->filters, sizeof(*chain->filters) * (chain->nfilters + 1));
     }
 
-    SBLink *newlink = chain->filters;
+    SBLink *newlink = chain->filters + chain->nfilters;
     newlink->size = 0;
-    chain->nfitlers++;
+    chain->nfilters++;
     bloom_init(&newlink->inner, size, error_rate);
 }
 
 void SBChain_Free(SBChain *sb) {
-    for (size_t ii = 0; ii < sb->nfitlers; ++ii) {
+    for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         bloom_free(&sb->filters[ii].inner);
     }
     RedisModule_Free(sb->filters);
@@ -54,19 +50,21 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
     // Does it already exist?
 
     bloom_hashval h = bloom_calc_hash(data, len);
-    for (size_t ii = 0; ii < sb->nfitlers; ++ii) {
+    for (int ii = sb->nfilters - 1; ii >= 0; --ii) {
         if (bloom_check_h(&sb->filters[ii].inner, data, len, h)) {
             return 0;
         }
     }
 
     // Determine if we need to add more items?
-    if (sb->filters->size >= sb->filters->inner.entries) {
-        double error = sb->filters->inner.error * pow(ERROR_TIGHTENING_RATIO, sb->nfitlers + 1);
-        SBChain_AddLink(sb, sb->filters->inner.entries * 2, error);
+    SBLink *cur = CUR_FILTER(sb);
+    if (cur->size >= cur->inner.entries) {
+        double error = cur->inner.error * pow(ERROR_TIGHTENING_RATIO, sb->nfilters + 1);
+        SBChain_AddLink(sb, cur->inner.entries * 2, error);
+        cur = CUR_FILTER(sb);
     }
 
-    int rv = SBChain_AddToLink(sb->filters, data, len, h);
+    int rv = SBChain_AddToLink(cur, data, len, h);
     if (rv) {
         sb->size++;
     }
@@ -75,7 +73,7 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
 
 int SBChain_Check(const SBChain *sb, const void *data, size_t len) {
     bloom_hashval hv = bloom_calc_hash(data, len);
-    for (size_t ii = 0; ii < sb->nfitlers; ++ii) {
+    for (int ii = sb->nfilters - 1; ii >= 0; --ii) {
         if (bloom_check_h(&sb->filters[ii].inner, data, len, hv)) {
             return 1;
         }
@@ -256,13 +254,13 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     }
 
     // Start writing info
-    RedisModule_ReplyWithArray(ctx, 1 + sb->nfitlers);
+    RedisModule_ReplyWithArray(ctx, 1 + sb->nfilters);
 
     RedisModuleString *info_s = RedisModule_CreateStringPrintf(ctx, "size:%llu", sb->size);
     RedisModule_ReplyWithString(ctx, info_s);
     RedisModule_FreeString(ctx, info_s);
 
-    for (size_t ii = 0; ii < sb->nfitlers; ++ii) {
+    for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         const SBLink *lb = sb->filters + ii;
         info_s = RedisModule_CreateStringPrintf(
             ctx, "bytes:%d bits:%d hashes:%d capacity:%d size:%lu ratio:%g", lb->inner.bytes,
@@ -284,9 +282,9 @@ static void BFRdbSave(RedisModuleIO *io, void *obj) {
     SBChain *sb = obj;
 
     RedisModule_SaveUnsigned(io, sb->size);
-    RedisModule_SaveUnsigned(io, sb->nfitlers);
+    RedisModule_SaveUnsigned(io, sb->nfilters);
 
-    for (size_t ii = 0; ii < sb->nfitlers; ++ii) {
+    for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         const SBLink *lb = sb->filters + ii;
         const struct bloom *bm = &lb->inner;
 
@@ -310,13 +308,13 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
     // Load our modules
     SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
     sb->size = RedisModule_LoadUnsigned(io);
-    sb->nfitlers = RedisModule_LoadUnsigned(io);
+    sb->nfilters = RedisModule_LoadUnsigned(io);
 
     // Sanity:
-    assert(sb->nfitlers < 1000);
-    sb->filters = RedisModule_Calloc(sb->nfitlers, sizeof(*sb->filters));
+    assert(sb->nfilters < 1000);
+    sb->filters = RedisModule_Calloc(sb->nfilters, sizeof(*sb->filters));
 
-    for (size_t ii = 0; ii < sb->nfitlers; ++ii) {
+    for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         SBLink *lb = sb->filters + ii;
         struct bloom *bm = &lb->inner;
 
@@ -354,7 +352,7 @@ static void BFFree(void *value) { SBChain_Free(value); }
 static size_t BFMemUsage(const void *value) {
     const SBChain *sb = value;
     size_t rv = sizeof(*sb);
-    for (size_t ii = 0; ii < sb->nfitlers; ++ii) {
+    for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         rv += sizeof(*sb->filters);
         rv += sb->filters[ii].inner.bytes;
     }
