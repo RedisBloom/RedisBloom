@@ -36,7 +36,7 @@ void SBChain_Free(SBChain *sb) {
 }
 
 static int SBChain_AddToLink(SBLink *lb, const void *data, size_t len, bloom_hashval hash) {
-    if (!bloom_add_h(&lb->inner, data, len, hash)) {
+    if (!bloom_add_h(&lb->inner, hash)) {
         // Element not previously present?
         lb->size++;
         return 1;
@@ -50,7 +50,7 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
 
     bloom_hashval h = bloom_calc_hash(data, len);
     for (int ii = sb->nfilters - 1; ii >= 0; --ii) {
-        if (bloom_check_h(&sb->filters[ii].inner, data, len, h)) {
+        if (bloom_check_h(&sb->filters[ii].inner, h)) {
             return 0;
         }
     }
@@ -73,7 +73,7 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
 int SBChain_Check(const SBChain *sb, const void *data, size_t len) {
     bloom_hashval hv = bloom_calc_hash(data, len);
     for (int ii = sb->nfilters - 1; ii >= 0; --ii) {
-        if (bloom_check_h(&sb->filters[ii].inner, data, len, hv)) {
+        if (bloom_check_h(&sb->filters[ii].inner, hv)) {
             return 1;
         }
     }

@@ -56,8 +56,7 @@ bloom_hashval bloom_calc_hash(const void *buffer, int len) {
     return rv;
 }
 
-static int bloom_check_add(struct bloom *bloom, const void *buffer, int len, bloom_hashval hashval,
-                           int mode) {
+static int bloom_check_add(struct bloom *bloom, bloom_hashval hashval, int mode) {
     register unsigned int x;
     register unsigned int i;
     int found_unset = 0;
@@ -113,22 +112,20 @@ int bloom_init(struct bloom *bloom, int entries, double error) {
     return 0;
 }
 
-int bloom_check_h(const struct bloom *bloom, const void *buffer, int len, bloom_hashval hash) {
-    return bloom_check_add((void *)bloom, buffer, len, hash, MODE_READ);
+int bloom_check_h(const struct bloom *bloom, bloom_hashval hash) {
+    return bloom_check_add((void *)bloom, hash, MODE_READ);
 }
 
 int bloom_check(const struct bloom *bloom, const void *buffer, int len) {
-    bloom_hashval hv = {0, 0};
-    return bloom_check_h(bloom, buffer, len, hv);
+    return bloom_check_h(bloom, bloom_calc_hash(buffer, len));
 }
 
-int bloom_add_h(struct bloom *bloom, const void *buffer, int len, bloom_hashval hash) {
-    return !bloom_check_add(bloom, buffer, len, hash, MODE_WRITE);
+int bloom_add_h(struct bloom *bloom, bloom_hashval hash) {
+    return !bloom_check_add(bloom, hash, MODE_WRITE);
 }
 
 int bloom_add(struct bloom *bloom, const void *buffer, int len) {
-    bloom_hashval hv = {0, 0};
-    return bloom_add_h(bloom, buffer, len, hv);
+    return bloom_add_h(bloom, bloom_calc_hash(buffer, len));
 }
 
 void bloom_print(struct bloom *bloom) {

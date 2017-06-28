@@ -95,7 +95,7 @@ bloom_hashval bloom_calc_hash(const void *buffer, int len);
  *    -1 - bloom not initialized
  *
  */
-int bloom_check_h(const struct bloom *bloom, const void *buffer, int len, bloom_hashval hash);
+int bloom_check_h(const struct bloom *bloom, bloom_hashval hash);
 int bloom_check(const struct bloom *bloom, const void *buffer, int len);
 
 /** ***************************************************************************
@@ -116,7 +116,7 @@ int bloom_check(const struct bloom *bloom, const void *buffer, int len);
  *    -1 - bloom not initialized
  *
  */
-int bloom_add_h(struct bloom *bloom, const void *buffer, int len, bloom_hashval hash);
+int bloom_add_h(struct bloom *bloom, bloom_hashval hash);
 int bloom_add(struct bloom *bloom, const void *buffer, int len);
 
 /** ***************************************************************************
