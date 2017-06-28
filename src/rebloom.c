@@ -17,11 +17,13 @@ static void SBChain_AddLink(SBChain *chain, size_t size, double error_rate) {
     if (!chain->filters) {
         chain->filters = RedisModule_Calloc(1, sizeof(*chain->filters));
     } else {
-        // TODO: Check for alloc failure
         chain->filters =
             RedisModule_Realloc(chain->filters, sizeof(*chain->filters) * (chain->nfitlers + 1));
-        // To optimize array scanning:
-        memmove(chain->filters + 1, chain->filters, sizeof(*chain->filters) * chain->nfitlers);
+        // The newest filter is always at the beginning of the array. Move each existing filter over
+        // one spot
+        for (size_t ii = chain->nfitlers; ii; --ii) {
+            chain->filters[ii] = chain->filters[ii - 1];
+        }
     }
 
     SBLink *newlink = chain->filters;
