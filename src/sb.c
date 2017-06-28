@@ -35,7 +35,7 @@ void SBChain_Free(SBChain *sb) {
     RedisModule_Free(sb);
 }
 
-static int SBChain_AddToLink(SBLink *lb, const void *data, size_t len, bloom_hashval hash) {
+static int SBChain_AddToLink(SBLink *lb, bloom_hashval hash) {
     if (!bloom_add_h(&lb->inner, hash)) {
         // Element not previously present?
         lb->size++;
@@ -63,7 +63,7 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
         cur = CUR_FILTER(sb);
     }
 
-    int rv = SBChain_AddToLink(cur, data, len, h);
+    int rv = SBChain_AddToLink(cur, h);
     if (rv) {
         sb->size++;
     }
