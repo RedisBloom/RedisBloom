@@ -130,11 +130,6 @@ static const char *statusStrerror(int status) {
     }
 }
 
-static int returnWithError(RedisModuleCtx *ctx, const char *errmsg) {
-    RedisModule_ReplyWithError(ctx, errmsg);
-    return REDISMODULE_ERR;
-}
-
 /**
  * Common function for adding one or more items to a bloom filter.
  * @param key the key key associated with the filter
@@ -160,19 +155,19 @@ static int BFCreate_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
 
     double error_rate;
     if (RedisModule_StringToDouble(argv[2], &error_rate) != REDISMODULE_OK) {
-        return returnWithError(ctx, "ERR error rate required");
+        return RedisModule_ReplyWithError(ctx, "ERR bad error rate");
     }
 
     long long capacity;
     if (RedisModule_StringToLongLong(argv[3], &capacity) != REDISMODULE_OK) {
-        return returnWithError(ctx, "ERR capacity is required");
+        return RedisModule_ReplyWithError(ctx, "ERR bad capacity");
     }
 
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
     SBChain *sb;
     int status = bfGetChain(key, &sb);
     if (status != SB_EMPTY) {
-        return returnWithError(ctx, statusStrerror(status));
+        return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
 
     bfCreateChain(key, error_rate, capacity);
@@ -192,7 +187,7 @@ static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     SBChain *sb;
     int status = bfGetChain(key, &sb);
     if (status != SB_OK) {
-        return returnWithError(ctx, statusStrerror(status));
+        return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
 
     // Check if it exists?
@@ -219,12 +214,12 @@ static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
         const char *cmdname = RedisModule_StringPtrLen(argv[0], &namelen);
         static const char setnxcmd[] = "BF.SETNX";
         if (namelen == sizeof(setnxcmd) - 1 && !strncasecmp(cmdname, "BF.SETNX", namelen)) {
-            return returnWithError(ctx, "ERR filter already exists");
+            return RedisModule_ReplyWithError(ctx, "ERR filter already exists");
         }
     } else if (status == SB_EMPTY) {
         sb = bfCreateChain(key, BFDefaultErrorRate, BFDefaultInitCapacity);
     } else {
-        returnWithError(ctx, statusStrerror(status));
+        return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
 
     RedisModule_ReplyWithArray(ctx, argc - 2);
@@ -250,7 +245,7 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
     int status = bfGetChain(key, (SBChain **)&sb);
     if (status != SB_OK) {
-        return returnWithError(ctx, statusStrerror(status));
+        return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
 
     // Start writing info
