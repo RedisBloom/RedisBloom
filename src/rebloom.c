@@ -345,22 +345,22 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         }
     }
 
-    if (RedisModule_CreateCommand(ctx, "BF.RESERVE", BFReserve_RedisCommand, "write", 1, 1, 1) !=
+    if (RedisModule_CreateCommand(ctx, "BF.RESERVE", BFReserve_RedisCommand, "write deny-oom", 1, 1,
+                                  1) != REDISMODULE_OK)
+        return REDISMODULE_ERR;
+    if (RedisModule_CreateCommand(ctx, "BF.ADD", BFAdd_RedisCommand, "write deny-oom", 1, 1, 1) !=
         REDISMODULE_OK)
         return REDISMODULE_ERR;
-    if (RedisModule_CreateCommand(ctx, "BF.ADD", BFAdd_RedisCommand, "write", 1, 1, 1) !=
+    if (RedisModule_CreateCommand(ctx, "BF.MADD", BFAdd_RedisCommand, "write deny-oom", 1, 1, 1) !=
         REDISMODULE_OK)
         return REDISMODULE_ERR;
-    if (RedisModule_CreateCommand(ctx, "BF.MADD", BFAdd_RedisCommand, "write", 1, 1, 1) !=
-        REDISMODULE_OK)
+    if (RedisModule_CreateCommand(ctx, "BF.EXISTS", BFCheck_RedisCommand, "readonly fast", 1, 1,
+                                  1) != REDISMODULE_OK)
         return REDISMODULE_ERR;
-    if (RedisModule_CreateCommand(ctx, "BF.EXISTS", BFCheck_RedisCommand, "readonly", 1, 1, 1) !=
-        REDISMODULE_OK)
+    if (RedisModule_CreateCommand(ctx, "BF.MEXISTS", BFCheck_RedisCommand, "readonly fast", 1, 1,
+                                  1) != REDISMODULE_OK)
         return REDISMODULE_ERR;
-    if (RedisModule_CreateCommand(ctx, "BF.MEXISTS", BFCheck_RedisCommand, "readonly", 1, 1, 1) !=
-        REDISMODULE_OK)
-        return REDISMODULE_ERR;
-    if (RedisModule_CreateCommand(ctx, "BF.DEBUG", BFInfo_RedisCommand, "readonly", 1, 1, 1) !=
+    if (RedisModule_CreateCommand(ctx, "BF.DEBUG", BFInfo_RedisCommand, "readonly fast", 1, 1, 1) !=
         REDISMODULE_OK)
         return REDISMODULE_ERR;
 
