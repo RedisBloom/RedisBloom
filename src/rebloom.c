@@ -10,6 +10,7 @@
 static RedisModuleType *BFType;
 static double BFDefaultErrorRate = 0.01;
 static size_t BFDefaultInitCapacity = 100;
+static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2);
 
 typedef enum { SB_OK = 0, SB_MISSING, SB_EMPTY, SB_MISMATCH } lookupStatus;
 
@@ -74,6 +75,10 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         return RedisModule_ReplyWithError(ctx, "ERR bad capacity");
     }
 
+    if (error_rate == 0 || capacity == 0) {
+        return RedisModule_ReplyWithError(ctx, "ERR capacity and error must not be 0");
+    }
+
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
     SBChain *sb;
     int status = bfGetChain(key, &sb);
@@ -86,6 +91,12 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     return REDISMODULE_OK;
 }
 
+static int isMulti(const RedisModuleString *rs) {
+    size_t n;
+    const char *s = RedisModule_StringPtrLen(rs, &n);
+    return s[3] == 'm' || s[3] == 'M';
+}
+
 /**
  * Check for the existence of an item
  * BF.TEST <KEY>
@@ -93,8 +104,9 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
  */
 static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
+    int is_multi = isMulti(argv[0]);
 
-    if (argc != 3) {
+    if ((is_multi == 0 && argc != 3) || (is_multi && argc < 3)) {
         RedisModule_WrongArity(ctx);
         return REDISMODULE_ERR;
     }
@@ -107,10 +119,17 @@ static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     }
 
     // Check if it exists?
-    size_t n;
-    const char *s = RedisModule_StringPtrLen(argv[2], &n);
-    int exists = SBChain_Check(sb, s, n);
-    RedisModule_ReplyWithLongLong(ctx, exists);
+    if (is_multi) {
+        RedisModule_ReplyWithArray(ctx, argc - 2);
+    }
+
+    for (size_t ii = 2; ii < argc; ++ii) {
+        size_t n;
+        const char *s = RedisModule_StringPtrLen(argv[ii], &n);
+        int exists = SBChain_Check(sb, s, n);
+        RedisModule_ReplyWithLongLong(ctx, exists);
+    }
+
     return REDISMODULE_OK;
 }
 
@@ -122,8 +141,9 @@ static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
  */
 static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
+    int is_multi = isMulti(argv[0]);
 
-    if (argc < 3) {
+    if ((is_multi && argc < 3) || (is_multi == 0 && argc != 3)) {
         RedisModule_WrongArity(ctx);
         return REDISMODULE_ERR;
     }
@@ -137,7 +157,9 @@ static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
 
-    RedisModule_ReplyWithArray(ctx, argc - 2);
+    if (is_multi) {
+        RedisModule_ReplyWithArray(ctx, argc - 2);
+    }
 
     for (size_t ii = 2; ii < argc; ++ii) {
         size_t n;
@@ -326,10 +348,16 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     if (RedisModule_CreateCommand(ctx, "BF.RESERVE", BFReserve_RedisCommand, "write", 1, 1, 1) !=
         REDISMODULE_OK)
         return REDISMODULE_ERR;
-    if (RedisModule_CreateCommand(ctx, "BF.SET", BFAdd_RedisCommand, "write", 1, 1, 1) !=
+    if (RedisModule_CreateCommand(ctx, "BF.ADD", BFAdd_RedisCommand, "write", 1, 1, 1) !=
         REDISMODULE_OK)
         return REDISMODULE_ERR;
-    if (RedisModule_CreateCommand(ctx, "BF.TEST", BFCheck_RedisCommand, "readonly", 1, 1, 1) !=
+    if (RedisModule_CreateCommand(ctx, "BF.MADD", BFAdd_RedisCommand, "write", 1, 1, 1) !=
+        REDISMODULE_OK)
+        return REDISMODULE_ERR;
+    if (RedisModule_CreateCommand(ctx, "BF.EXISTS", BFCheck_RedisCommand, "readonly", 1, 1, 1) !=
+        REDISMODULE_OK)
+        return REDISMODULE_ERR;
+    if (RedisModule_CreateCommand(ctx, "BF.MEXISTS", BFCheck_RedisCommand, "readonly", 1, 1, 1) !=
         REDISMODULE_OK)
         return REDISMODULE_ERR;
     if (RedisModule_CreateCommand(ctx, "BF.DEBUG", BFInfo_RedisCommand, "readonly", 1, 1, 1) !=
