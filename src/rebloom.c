@@ -132,11 +132,7 @@ static const char *statusStrerror(int status) {
 
 /**
  * Common function for adding one or more items to a bloom filter.
- * @param key the key key associated with the filter
- * @param sb the actual bloom filter
- * @param error_rate error rate for new filter
- * @param elems list of elements to add
- * @param nelems number of elements to add
+ * capacity and error rate must not be 0.
  */
 static SBChain *bfCreateChain(RedisModuleKey *key, double error_rate, size_t capacity) {
     SBChain *sb = SB_NewChain(capacity, error_rate);
@@ -144,11 +140,14 @@ static SBChain *bfCreateChain(RedisModuleKey *key, double error_rate, size_t cap
     return sb;
 }
 
-static int BFCreate_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+/**
+ * Reserves a new empty filter with custom parameters:
+ * BF.CREATE <KEY> <ERROR_RATE (double)> <INITIAL_CAPACITY (int)>
+ */
+static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
     if (argc != 4) {
-        // CMD, KEY, DESIRED_ERR DESIRED_SIZE
         RedisModule_WrongArity(ctx);
         return REDISMODULE_ERR;
     }
@@ -175,6 +174,11 @@ static int BFCreate_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     return REDISMODULE_OK;
 }
 
+/**
+ * Check for the existence of an item
+ * BF.TEST <KEY>
+ * Returns true or false
+ */
 static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
@@ -198,6 +202,12 @@ static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     return REDISMODULE_OK;
 }
 
+/**
+ * Adds items to an existing filter. Creates a new one on demand if it doesn't exist.
+ * BF.SET <KEY> ITEMS...
+ * Returns an array of integers. The nth element is either 1 or 0 depending on whether it was newly
+ * added, or had previously existed, respectively.
+ */
 static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
@@ -209,16 +219,9 @@ static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
     SBChain *sb;
     int status = bfGetChain(key, &sb);
-    if (status == SB_OK) {
-        size_t namelen;
-        const char *cmdname = RedisModule_StringPtrLen(argv[0], &namelen);
-        static const char setnxcmd[] = "BF.SETNX";
-        if (namelen == sizeof(setnxcmd) - 1 && !strncasecmp(cmdname, "BF.SETNX", namelen)) {
-            return RedisModule_ReplyWithError(ctx, "ERR filter already exists");
-        }
-    } else if (status == SB_EMPTY) {
+    if (status == SB_EMPTY) {
         sb = bfCreateChain(key, BFDefaultErrorRate, BFDefaultInitCapacity);
-    } else {
+    } else if (status != SB_OK) {
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
 
@@ -233,6 +236,10 @@ static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     return REDISMODULE_OK;
 }
 
+/**
+ * BF.DEBUG KEY
+ * returns some information about the bloom filter.
+ */
 static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
@@ -404,7 +411,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         }
     }
 
-    if (RedisModule_CreateCommand(ctx, "BF.RESERVE", BFCreate_RedisCommand, "write", 1, 1, 1) !=
+    if (RedisModule_CreateCommand(ctx, "BF.RESERVE", BFReserve_RedisCommand, "write", 1, 1, 1) !=
         REDISMODULE_OK)
         return REDISMODULE_ERR;
     if (RedisModule_CreateCommand(ctx, "BF.SET", BFAdd_RedisCommand, "write", 1, 1, 1) !=
