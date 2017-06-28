@@ -9,10 +9,10 @@ perf: test-perf
 CPPFLAGS:=$(CPPFLAGS) -I$(ROOT)/src
 CFLAGS:=$(CFLAGS)
 
-test-basic: test-basic.o $(DEPS) $(MODULE_OBJ)
+test-basic: test-basic.o $(DEPS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-test-perf: test-perf.o $(DEPS) $(MODULE_OBJ)
+test-perf: test-perf.o $(DEPS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 clean:

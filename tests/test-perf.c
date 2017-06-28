@@ -1,5 +1,5 @@
 #include "redismodule.h"
-#include <rebloom.h>
+#include "sb.h"
 #include <stdio.h>
 
 #define NUM_ITERATIONS 50000000

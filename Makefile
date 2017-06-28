@@ -27,7 +27,7 @@ CPPFLAGS += -I$(ROOT) -I$(ROOT)/contrib
 MODULE_OBJ = $(ROOT)/src/rebloom.o
 MODULE_SO = $(ROOT)/rebloom.so
 
-DEPS = $(ROOT)/contrib/MurmurHash2.o
+DEPS = $(ROOT)/contrib/MurmurHash2.o $(ROOT)/src/sb.o
 
 export
 

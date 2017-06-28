@@ -1,6 +1,6 @@
 #include "redismodule.h"
+#include "sb.h"
 #include "test.h"
-#include <rebloom.h>
 #include <stdio.h>
 #include <string.h>
 
