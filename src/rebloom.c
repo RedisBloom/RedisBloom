@@ -213,6 +213,8 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 /// Datatype Functions                                                       ///
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+#define BF_ENCODING_VERSION 0
+
 static void BFRdbSave(RedisModuleIO *io, void *obj) {
     // Save the setting!
     SBChain *sb = obj;
@@ -237,7 +239,7 @@ static void BFRdbSave(RedisModuleIO *io, void *obj) {
 }
 
 static void *BFRdbLoad(RedisModuleIO *io, int encver) {
-    if (encver != 0) {
+    if (encver != BF_ENCODING_VERSION) {
         return NULL;
     }
 
@@ -370,6 +372,6 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
                                                .aof_rewrite = BFAofRewrite,
                                                .free = BFFree,
                                                .mem_usage = BFMemUsage};
-    BFType = RedisModule_CreateDataType(ctx, "MBbloom--", 0, &typeprocs);
+    BFType = RedisModule_CreateDataType(ctx, "MBbloom--", BF_ENCODING_VERSION, &typeprocs);
     return BFType == NULL ? REDISMODULE_ERR : REDISMODULE_OK;
 }
