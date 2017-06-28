@@ -20,7 +20,7 @@ endif
 
 ROOT=$(shell pwd)
 # Flags for preprocessor
-SHOBJ_LDFLAGS += -lm -lc
+LDFLAGS = -lm -lc
 
 CPPFLAGS += -I$(ROOT) -I$(ROOT)/contrib
 
@@ -34,7 +34,7 @@ export
 all: $(MODULE_SO)
 
 $(MODULE_SO): $(MODULE_OBJ) $(DEPS)
-	$(LD) $^ -o $@ $(SHOBJ_LDFLAGS)
+	$(LD) $^ -o $@ $(SHOBJ_LDFLAGS) $(LDFLAGS)
 
 
 test:
