@@ -2,6 +2,7 @@ all: test test-perf
 
 test: test-basic
 	./test-basic
+	python pytests.py
 
 perf: test-perf
 	time ./test-perf
