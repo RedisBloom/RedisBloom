@@ -22,7 +22,7 @@ ROOT=$(shell pwd)
 # Flags for preprocessor
 SHOBJ_LDFLAGS += -lm -lc
 
-CPPFLAGS+ = -I$(ROOT) -I$(ROOT)/contrib
+CPPFLAGS += -I$(ROOT) -I$(ROOT)/contrib
 
 MODULE_OBJ = $(ROOT)/src/rebloom.o
 MODULE_SO = $(ROOT)/rebloom.so
