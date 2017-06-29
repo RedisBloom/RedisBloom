@@ -6,3 +6,4 @@
 *.pyc
 tests/test-basic
 tests/test-perf
+site/
