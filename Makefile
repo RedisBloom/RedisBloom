@@ -43,6 +43,12 @@ test:
 perf:
 	$(MAKE) -C tests perf
 
+
+package: $(MODULE_SO)
+	mkdir -p $(ROOT)/build
+	module_packer -vvv -o "$(ROOT)/build/rebloom.{os}-{architecture}.latest.zip" "$(MODULE_SO)"
+
 clean:
 	$(RM) $(MODULE_OBJ) $(MODULE_SO) $(DEPS)
+	$(RM) -rf build
 	$(MAKE) -C tests clean

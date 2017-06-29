@@ -318,6 +318,16 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         return REDISMODULE_ERR;
     }
 
+    if (argc == 1) {
+        RedisModule_Log(ctx, "notice", "Found empty string. Assuming ramp-packer validation");
+        // Hack for ramp-packer which gives us an empty string.
+        size_t tmp;
+        RedisModule_StringPtrLen(argv[0], &tmp);
+        if (tmp == 0) {
+            argc = 0;
+        }
+    }
+
     if (argc % 2) {
         BAIL("Invalid number of arguments passed");
     }
