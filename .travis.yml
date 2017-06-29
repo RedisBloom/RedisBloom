@@ -14,7 +14,7 @@ script:
     - make
     - make test
     - cd tests && python pytests.py
-
+    - cd .. && make package
 deploy:
     provider: s3
     access_key_id: $AWS_ACCESS_KEY
