@@ -14,3 +14,15 @@ script:
     - make
     - make test
     - cd tests && python pytests.py
+
+deploy:
+    provider: s3
+    access_key_id: $AWS_ACCESS_KEY
+    secret_access_key: $AWS_SECRET
+    skip_cleanup: true
+    acl: public_read
+    bucket: redismodules
+    upload-dir: rebloom
+    on:
+        branch: master
+    local_dir: $TRAVIS_BUILD_DIR/build
