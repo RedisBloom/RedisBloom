@@ -1,0 +1,13 @@
+site_name: ReBloom Documentation
+repo_url: https://github.com/RedisLabsModules/rebloom
+theme: merlot
+
+markdown_extensions:
+  - codehilite
+  - toc(permalink=true)
+ 
+  feature:
+    tabs: true
+pages:
+    - 'ReBloom': 'index.md'
+    - 'Commands': 'Commands.md'       
