@@ -4,20 +4,6 @@ from redis import ResponseError
 
 
 class RebloomTestCase(ModuleTestCase('../rebloom.so')):
-    def setUp(self):
-        super(RebloomTestCase, self).setUp()
-        self.server = self.redis()
-        self.server.start()
-        self.client = self.server.client()
-
-    def tearDown(self):
-        self.server.stop()
-        self.server = None
-        super(RebloomTestCase, self).tearDown()
-
-    def cmd(self, *args, **kw):
-        return self.client.execute_command(*args, **kw)
-
     def test_custom_filter(self):
         # Can we create a client?
         c = self.client
