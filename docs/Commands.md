@@ -59,7 +59,7 @@ Adds an item to the Bloom Filter, creating the filter if it does not yet exist.
 
 ### Complexity
 
-O(log (size/capacity)).
+O(log N).
 
 ### Returns
 
@@ -87,7 +87,7 @@ multiple values.
 
 ### Complexity
 
-O(log (size/capacity)).
+O(log N).
 
 ### Returns
 
@@ -114,7 +114,7 @@ Check if an item may exists, or certainly does not exist in the Bloom Filter.
 
 ### Complexity
 
-O(log (size/capacity)).
+O(log N).
 
 ### Returns
 
@@ -140,7 +140,7 @@ Check if one or more items exist, or certainly do not exist in the filter
 
 ### Complexity
 
-O(log (size/capacity)).
+O(log N).
 
 ### Returns
 
