@@ -8,4 +8,5 @@ markdown_extensions:
  
 pages:
     - 'ReBloom': 'index.md'
+    - 'Quick Start': 'Quick_Start.md'
     - 'Commands': 'Commands.md'       
