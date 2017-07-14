@@ -10,6 +10,28 @@ In order to use this module, build it using `make` and load it into Redis.
 
 ### Using
 
+**Invoking redis with the module loaded**
+
+```
+$ redis-server --loadmodule /path/to/rebloom.so
+```
+
+**Adding items to filter**
+```
+127.0.0.1:6379> BF.MADD bf foo bar baz
+1) (integer) 1
+2) (integer) 1
+3) (integer) 1
+```
+
+**Checking if items exist**
+```
+127.0.0.1:6379> BF.MEXISTS bf foo nonexist 3
+1) (integer) 1
+2) (integer) 0
+3) (integer) 0
+```
+
 You can find a command reference in [docs/Commands.md](docs/Commands.md)
 
 
