@@ -10,7 +10,7 @@ In order to use this module, build it using `make` and load it into Redis.
 
 ### Using
 
-You can find a command reference in [](docs/Commands.md)
+You can find a command reference in [docs/Commands.md](docs/Commands.md)
 
 
 ### Module Options
