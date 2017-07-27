@@ -12,11 +12,11 @@ BF.RESERVE {key} {error_rate} {size}
 
 Creates an empty Bloom Filter with a given error ratio and initial capacity.
 This command is useful if you intend to add many items to a Bloom Filter, 
-otherwise you can just use `BF.ADD` to add items. It will also create one for
-you.
+otherwise you can just use `BF.ADD` to add items. It will also create a Bloom Filter for
+you if one doesn't already exist.
 
 The initial size and error rate will dictate the performance and memory usage
-of the filter. In general, the higher the lower the error ratio (i.e. the lower
+of the filter. In general, the higher the error rate (i.e. the lower
 the tolerance for false positives) the greater the space consumption per
 filter entry.
 
@@ -26,7 +26,7 @@ filter entry.
 * **error_rate**: The percentage of expected false positives to be tolerated.
     The greater this number, the greater the memory consumption per item
     and the more CPU usage per operation.
-* **size**: The number of entries you intend to to add to the filter.
+* **size**: The number of entries you intend to add to the filter.
     Performance will begin to degrade after adding more items than this
     number. The actual degradation will depend on how far the limit has
     been exceeded. Performance will degrade linearly as the number of entries
@@ -63,7 +63,7 @@ O(log N).
 
 ### Returns
 
-1 if the item was newly inserted, or 0 if it may have existed previously.
+"1" if the item was newly inserted, or "0" if it may have existed previously.
 
 
 ## BF.MADD
@@ -77,7 +77,7 @@ O(log N).
 ### Description
 
 Adds one or more items to the Bloom Filter, creating the filter if it does not yet exist.
-This command operates identally to `BF.ADD` except it allows multiple inputs and returns
+This command operates identically to `BF.ADD` except it allows multiple inputs and returns
 multiple values.
 
 ### Parameters
@@ -105,7 +105,7 @@ BF.EXISTS {key} {item}
 
 ### Description
 
-Check if an item may exists, or certainly does not exist in the Bloom Filter.
+Determines whether an item may exist in the Bloom Filter or not.
 
 ### Parameters
 
@@ -118,7 +118,7 @@ O(log N).
 
 ### Returns
 
-0 If the item certainly does not exist, 1 if the item may exist.
+"0" if the item certainly does not exist, "1" if the item may exist.
 
 
 ## BF.MEXISTS
@@ -131,7 +131,7 @@ BF.MEXISTS {key} {item} [item...]
 
 ### Description
 
-Check if one or more items exist, or certainly do not exist in the filter
+Determines if one or more items may exist in the filter or not.
 
 ### Parameters
 
