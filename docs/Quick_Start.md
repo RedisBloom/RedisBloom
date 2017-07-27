@@ -1,7 +1,7 @@
 
-# Quick Start Guide for ReBloom:
+# Quick Start Guide for ReBloom
 
-## Building and running:
+## Building and running
 
 ```sh
 git clone https://github.com/RedisLabsModules/rebloom.git
