@@ -40,19 +40,27 @@ TEST_F(basic, sbBasic) {
 }
 
 TEST_F(basic, sbExpansion) {
-    SBChain *chain = SB_NewChain(5, 0.01);
+    // Note that the chain auto-expands to 6 items by default with the given
+    // error ratio. If you modify the error ratio, the expansion may change.
+    SBChain *chain = SB_NewChain(6, 0.01);
     ASSERT_NE(NULL, chain);
 
     // Add the first item
     ASSERT_NE(0, SBChain_Add(chain, "abc", 3));
     ASSERT_EQ(1, chain->nfilters);
 
-    // Insert 5 items
-    for (size_t ii = 0; ii < 5; ++ii) {
+    // Insert 6 items
+    for (size_t ii = 0; ii < 6; ++ii) {
         ASSERT_EQ(0, SBChain_Check(chain, &ii, sizeof ii));
         ASSERT_NE(0, SBChain_Add(chain, &ii, sizeof ii));
     }
     ASSERT_GT(chain->nfilters, 1);
+    SBChain_Free(chain);
+}
+
+TEST_F(basic, testIssue6_Overflow) {
+    SBChain *chain = SB_NewChain(1000000000000, 0.00001);
+    // That's it!
     SBChain_Free(chain);
 }
 

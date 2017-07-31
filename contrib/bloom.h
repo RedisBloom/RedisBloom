@@ -20,20 +20,16 @@ extern "C" {
  *
  */
 struct bloom {
-    // These fields are part of the public interface of this structure.
-    // Client code may read these values if desired. Client code MUST NOT
-    // modify any of these.
-    int entries;
-    double error;
-    int bits;
-    int bytes;
-    int hashes;
+    uint32_t hashes;
+    uint8_t n2;
+    uint32_t entries;
 
-    // Fields below are private to the implementation. These may go away or
-    // change incompatibly at any moment. Client code MUST NOT access or rely
-    // on these.
+    double error;
     double bpe;
+
     unsigned char *bf;
+    uint32_t bytes;
+    uint32_t bits;
 };
 
 /** ***************************************************************************
@@ -63,7 +59,7 @@ struct bloom {
  *     1 - on failure
  *
  */
-int bloom_init(struct bloom *bloom, int entries, double error);
+int bloom_init(struct bloom *bloom, unsigned entries, double error);
 
 /** ***************************************************************************
  * Deprecated, use bloom_init()
