@@ -102,19 +102,13 @@ int bloom_init(struct bloom *bloom, unsigned entries, double error) {
 
     double dentries = (double)entries;
 
-    uint64_t bits = dentries * bloom->bpe;
-    // printf("Will use %llu bits\n", bits);
-
-    // Figure out what the next multiple of bits should be
-    size_t ii = 0;
-    for (ii = 0; ii < 63; ++ii) {
-        if ((1 << ii) > bits) {
-            break;
-        }
+    double bn2 = logb(dentries * bloom->bpe);
+    if (bn2 > 63 || bn2 == INFINITY) {
+        return 1;
     }
 
-    bloom->n2 = ii;
-    bits = 1 << ii;
+    bloom->n2 = bn2 + 1;
+    uint64_t bits = 1 << bloom->n2;
 
     if (bits % 8) {
         bloom->bytes = (bits / 8) + 1;
