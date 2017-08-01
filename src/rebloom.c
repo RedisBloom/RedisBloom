@@ -238,9 +238,9 @@ static void BFRdbSave(RedisModuleIO *io, void *obj) {
 
         RedisModule_SaveUnsigned(io, bm->entries);
         RedisModule_SaveDouble(io, bm->error);
-        // - SKIP: bits is (double)entries * bpe
         RedisModule_SaveUnsigned(io, bm->hashes);
         RedisModule_SaveDouble(io, bm->bpe);
+        RedisModule_SaveUnsigned(io, bm->bits);
         RedisModule_SaveUnsigned(io, bm->n2);
         RedisModule_SaveStringBuffer(io, (const char *)bm->bf, bm->bytes);
 
@@ -274,6 +274,7 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
         if (encver == 0) {
             bm->bits = (double)bm->entries * bm->bpe;
         } else {
+            bm->bits = RedisModule_LoadUnsigned(io);
             bm->n2 = RedisModule_LoadUnsigned(io);
         }
         size_t sztmp;
