@@ -328,8 +328,10 @@ static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2) {
         return REDISMODULE_ERR;                                                                    \
     } while (0);
 
+#define REBLOOM_VERSION 2
+
 int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    if (RedisModule_Init(ctx, "bf", 1, REDISMODULE_APIVER_1) != REDISMODULE_OK) {
+    if (RedisModule_Init(ctx, "bf", REBLOOM_VERSION, REDISMODULE_APIVER_1) != REDISMODULE_OK) {
         return REDISMODULE_ERR;
     }
 
