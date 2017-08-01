@@ -60,8 +60,11 @@ TEST_F(basic, sbExpansion) {
 
 TEST_F(basic, testIssue6_Overflow) {
     SBChain *chain = SB_NewChain(1000000000000, 0.00001);
-    // That's it!
+    ASSERT_NE(NULL, chain);
     SBChain_Free(chain);
+
+    chain = SB_NewChain(4294967296, 0.00001);
+    ASSERT_EQ(NULL, chain);
 }
 
 int main(int argc, char **argv) {

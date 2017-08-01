@@ -49,7 +49,9 @@ static const char *statusStrerror(int status) {
  */
 static SBChain *bfCreateChain(RedisModuleKey *key, double error_rate, size_t capacity) {
     SBChain *sb = SB_NewChain(capacity, error_rate);
-    RedisModule_ModuleTypeSetValue(key, BFType, sb);
+    if (sb != NULL) {
+        RedisModule_ModuleTypeSetValue(key, BFType, sb);
+    }
     return sb;
 }
 
@@ -71,7 +73,8 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     }
 
     long long capacity;
-    if (RedisModule_StringToLongLong(argv[3], &capacity) != REDISMODULE_OK) {
+    if (RedisModule_StringToLongLong(argv[3], &capacity) != REDISMODULE_OK ||
+        capacity >= UINT32_MAX) {
         return RedisModule_ReplyWithError(ctx, "ERR bad capacity");
     }
 
@@ -86,8 +89,11 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
 
-    bfCreateChain(key, error_rate, capacity);
-    RedisModule_ReplyWithSimpleString(ctx, "OK");
+    if (bfCreateChain(key, error_rate, capacity) == NULL) {
+        RedisModule_ReplyWithSimpleString(ctx, "ERR could not create filter");
+    } else {
+        RedisModule_ReplyWithSimpleString(ctx, "OK");
+    }
     return REDISMODULE_OK;
 }
 
@@ -153,6 +159,9 @@ static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     int status = bfGetChain(key, &sb);
     if (status == SB_EMPTY) {
         sb = bfCreateChain(key, BFDefaultErrorRate, BFDefaultInitCapacity);
+        if (sb == NULL) {
+            return RedisModule_ReplyWithError(ctx, "ERR could not create filter");
+        }
     } else if (status != SB_OK) {
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
