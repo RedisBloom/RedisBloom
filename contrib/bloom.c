@@ -126,7 +126,12 @@ int bloom_init(struct bloom *bloom, unsigned entries, double error) {
         bloom->bytes = bits / 8;
     }
 
+    // Determine the number of extra bits available for more items. We rounded
+    // up the number of bits to the next-highest power of two. This means we
+    // might have up to 2x the bits available to us.
     size_t bitDiff = bits - (dentries * bloom->bpe);
+    // The number of additional items we can store is the extra number of bits
+    // divided by bits-per-element
     size_t itemDiff = bitDiff / bloom->bpe;
     bloom->entries += itemDiff;
 
