@@ -8,6 +8,7 @@
 #ifndef _BLOOM_H
 #define _BLOOM_H
 #include <stdint.h>
+#include <stdlib.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,7 +29,7 @@ struct bloom {
     double bpe;
 
     unsigned char *bf;
-    uint32_t bytes;
+    size_t bytes;
     uint32_t bits;
 };
 

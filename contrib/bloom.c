@@ -118,7 +118,7 @@ int bloom_init(struct bloom *bloom, unsigned entries, double error) {
     }
 
     bloom->n2 = bn2 + 1;
-    uint64_t bits = 1 << bloom->n2;
+    uint64_t bits = 1LLU << bloom->n2;
 
     if (bits % 8) {
         bloom->bytes = (bits / 8) + 1;
