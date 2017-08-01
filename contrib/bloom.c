@@ -152,16 +152,6 @@ int bloom_add(struct bloom *bloom, const void *buffer, int len) {
     return bloom_add_h(bloom, bloom_calc_hash(buffer, len));
 }
 
-void bloom_print(struct bloom *bloom) {
-    printf("bloom at %p\n", (void *)bloom);
-    printf(" ->entries = %d\n", bloom->entries);
-    printf(" ->error = %f\n", bloom->error);
-    printf(" ->bits = %d\n", bloom->bits);
-    printf(" ->bits per elem = %f\n", bloom->bpe);
-    printf(" ->bytes = %d\n", bloom->bytes);
-    printf(" ->hash functions = %d\n", bloom->hashes);
-}
-
 void bloom_free(struct bloom *bloom) { BLOOM_FREE(bloom->bf); }
 
 const char *bloom_version() { return MAKESTRING(BLOOM_VERSION); }
