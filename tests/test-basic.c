@@ -3,6 +3,7 @@
 #include "test.h"
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 TEST_DEFINE_GLOBALS();
 
@@ -60,8 +61,11 @@ TEST_F(basic, sbExpansion) {
 
 TEST_F(basic, testIssue6_Overflow) {
     SBChain *chain = SB_NewChain(1000000000000, 0.00001);
-    ASSERT_NE(NULL, chain);
-    SBChain_Free(chain);
+    if (chain != NULL) {
+        SBChain_Free(chain);
+    } else {
+        ASSERT_EQ(ENOMEM, errno);
+    }
 
     chain = SB_NewChain(4294967296, 0.00001);
     ASSERT_EQ(NULL, chain);
