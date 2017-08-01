@@ -49,13 +49,7 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
     // Does it already exist?
     bloom_hashval h = bloom_calc_hash(data, len);
     for (int ii = sb->nfilters - 1; ii >= 0; --ii) {
-        int rv;
-        if (sb->filters[ii].inner.n2) {
-            rv = bloom_check_h(&sb->filters[ii].inner, h);
-        } else {
-            rv = bloom_check_add_compat(&sb->filters[ii].inner, h, MODE_WRITE);
-        }
-        if (rv) {
+        if (bloom_check_h(&sb->filters[ii].inner, h)) {
             return 0;
         }
     }

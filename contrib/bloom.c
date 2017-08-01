@@ -145,7 +145,11 @@ int bloom_init(struct bloom *bloom, unsigned entries, double error) {
 }
 
 int bloom_check_h(const struct bloom *bloom, bloom_hashval hash) {
-    return bloom_check_add((void *)bloom, hash, MODE_READ);
+    if (bloom->n2) {
+        return bloom_check_add((void *)bloom, hash, MODE_READ);
+    } else {
+        return bloom_check_add_compat((void *)bloom, hash, MODE_READ);
+    }
 }
 
 int bloom_check(const struct bloom *bloom, const void *buffer, int len) {
@@ -153,7 +157,11 @@ int bloom_check(const struct bloom *bloom, const void *buffer, int len) {
 }
 
 int bloom_add_h(struct bloom *bloom, bloom_hashval hash) {
-    return !bloom_check_add(bloom, hash, MODE_WRITE);
+    if (bloom->n2) {
+        return !bloom_check_add(bloom, hash, MODE_WRITE);
+    } else {
+        return !bloom_check_add_compat(bloom, hash, MODE_WRITE);
+    }
 }
 
 int bloom_add(struct bloom *bloom, const void *buffer, int len) {
