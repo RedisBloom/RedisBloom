@@ -13,7 +13,7 @@
 #define ERROR_TIGHTENING_RATIO 0.5
 #define CUR_FILTER(sb) ((sb)->filters + ((sb)->nfilters - 1))
 
-static void SBChain_AddLink(SBChain *chain, size_t size, double error_rate) {
+static int SBChain_AddLink(SBChain *chain, size_t size, double error_rate) {
     if (!chain->filters) {
         chain->filters = RedisModule_Calloc(1, sizeof(*chain->filters));
     } else {
@@ -24,7 +24,7 @@ static void SBChain_AddLink(SBChain *chain, size_t size, double error_rate) {
     SBLink *newlink = chain->filters + chain->nfilters;
     newlink->size = 0;
     chain->nfilters++;
-    bloom_init(&newlink->inner, size, error_rate);
+    return bloom_init(&newlink->inner, size, error_rate);
 }
 
 void SBChain_Free(SBChain *sb) {
@@ -47,10 +47,15 @@ static int SBChain_AddToLink(SBLink *lb, bloom_hashval hash) {
 
 int SBChain_Add(SBChain *sb, const void *data, size_t len) {
     // Does it already exist?
-
     bloom_hashval h = bloom_calc_hash(data, len);
     for (int ii = sb->nfilters - 1; ii >= 0; --ii) {
-        if (bloom_check_h(&sb->filters[ii].inner, h)) {
+        int rv;
+        if (sb->filters[ii].inner.n2) {
+            rv = bloom_check_h(&sb->filters[ii].inner, h);
+        } else {
+            rv = bloom_check_add_compat(&sb->filters[ii].inner, h, MODE_WRITE);
+        }
+        if (rv) {
             return 0;
         }
     }
@@ -59,7 +64,9 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
     SBLink *cur = CUR_FILTER(sb);
     if (cur->size >= cur->inner.entries) {
         double error = cur->inner.error * pow(ERROR_TIGHTENING_RATIO, sb->nfilters + 1);
-        SBChain_AddLink(sb, cur->inner.entries * 2, error);
+        if (SBChain_AddLink(sb, cur->inner.entries * 2, error) != 0) {
+            return -1;
+        }
         cur = CUR_FILTER(sb);
     }
 
@@ -85,6 +92,9 @@ SBChain *SB_NewChain(size_t initsize, double error_rate) {
         return NULL;
     }
     SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
-    SBChain_AddLink(sb, initsize, error_rate);
+    if (SBChain_AddLink(sb, initsize, error_rate) != 0) {
+        SBChain_Free(sb);
+        sb = NULL;
+    }
     return sb;
 }

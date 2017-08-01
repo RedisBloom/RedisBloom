@@ -70,6 +70,9 @@ class RebloomTestCase(ModuleTestCase('../rebloom.so')):
         for cmd in ('bf.exists', 'bf.add'):
             self.assertRaises(ResponseError, self.cmd, cmd, 'test', 1, 2)
 
+    def test_oom(self):
+        self.assertRaises(ResponseError, self.cmd, 'bf.reserve', 'test', 0.01, 4294967296)
+
 
 if __name__ == "__main__":
     import unittest

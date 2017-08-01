@@ -56,32 +56,48 @@ bloom_hashval bloom_calc_hash(const void *buffer, int len) {
     return rv;
 }
 
-static int bloom_check_add(struct bloom *bloom, bloom_hashval hashval, int mode) {
-    register unsigned int x;
-    register unsigned int i;
-    int found_unset = 0;
-
-    for (i = 0; i < bloom->hashes; i++) {
-        x = (hashval.a + i * hashval.b) % bloom->bits;
-        if (!test_bit_set_bit(bloom->bf, x, mode)) {
-            // Was not set
-            if (mode == MODE_READ) {
-                return 0;
-            }
-            found_unset = 1;
-        }
-    }
-    if (mode == MODE_READ) {
-        return 1;
-    }
+// This function is defined as a macro because newer filters use a power of two
+// for bit count, which is must faster to calculate. Older bloom filters don't
+// use powers of two, so they are slower. Rather than calculating this inside
+// the function itself, we provide two variants for this. The calling layer
+// already knows which variant to call.
+//
+// modExp is the expression which will evaluate to the number of bits in the
+// filter.
+#define CHECK_ADD_FUNC(modExp)                                                                     \
+    register unsigned int i;                                                                       \
+    int found_unset = 0;                                                                           \
+    const register uint32_t mod = modExp;                                                          \
+    for (i = 0; i < bloom->hashes; i++) {                                                          \
+        uint32_t x = (hashval.a + i * hashval.b) % mod;                                            \
+        if (!test_bit_set_bit(bloom->bf, x, mode)) {                                               \
+            if (mode == MODE_READ) {                                                               \
+                return 0;                                                                          \
+            }                                                                                      \
+            found_unset = 1;                                                                       \
+        }                                                                                          \
+    }                                                                                              \
+    if (mode == MODE_READ) {                                                                       \
+        return 1;                                                                                  \
+    }                                                                                              \
     return found_unset;
+
+static int bloom_check_add(struct bloom *bloom, bloom_hashval hashval, int mode) {
+    CHECK_ADD_FUNC((1 << bloom->n2))
+}
+
+// This function is used for older bloom filters whose bit count was not
+// 1 << X. This function is a bit slower, and isn't exposed in the API
+// directly because it's deprecated
+static int bloom_check_add_compat(struct bloom *bloom, bloom_hashval hashval, int mode) {
+    CHECK_ADD_FUNC(bloom->bits)
 }
 
 int bloom_init_size(struct bloom *bloom, int entries, double error, unsigned int cache_size) {
     return bloom_init(bloom, entries, error);
 }
 
-int bloom_init(struct bloom *bloom, int entries, double error) {
+int bloom_init(struct bloom *bloom, unsigned entries, double error) {
     if (entries < 1 || error == 0) {
         return 1;
     }
@@ -92,18 +108,34 @@ int bloom_init(struct bloom *bloom, int entries, double error) {
     double num = log(bloom->error);
     double denom = 0.480453013918201; // ln(2)^2
     bloom->bpe = -(num / denom);
+    bloom->bits = 0;
 
     double dentries = (double)entries;
-    bloom->bits = (int)(dentries * bloom->bpe);
 
-    if (bloom->bits % 8) {
-        bloom->bytes = (bloom->bits / 8) + 1;
-    } else {
-        bloom->bytes = bloom->bits / 8;
+    double bn2 = logb(dentries * bloom->bpe);
+    if (bn2 > 63 || bn2 == INFINITY) {
+        return 1;
     }
 
-    bloom->hashes = (int)ceil(0.693147180559945 * bloom->bpe); // ln(2)
+    bloom->n2 = bn2 + 1;
+    uint64_t bits = 1LLU << bloom->n2;
 
+    if (bits % 8) {
+        bloom->bytes = (bits / 8) + 1;
+    } else {
+        bloom->bytes = bits / 8;
+    }
+
+    // Determine the number of extra bits available for more items. We rounded
+    // up the number of bits to the next-highest power of two. This means we
+    // might have up to 2x the bits available to us.
+    size_t bitDiff = bits - (dentries * bloom->bpe);
+    // The number of additional items we can store is the extra number of bits
+    // divided by bits-per-element
+    size_t itemDiff = bitDiff / bloom->bpe;
+    bloom->entries += itemDiff;
+
+    bloom->hashes = (int)ceil(0.693147180559945 * bloom->bpe); // ln(2)
     bloom->bf = (unsigned char *)BLOOM_CALLOC(bloom->bytes, sizeof(unsigned char));
     if (bloom->bf == NULL) {
         return 1;
@@ -126,16 +158,6 @@ int bloom_add_h(struct bloom *bloom, bloom_hashval hash) {
 
 int bloom_add(struct bloom *bloom, const void *buffer, int len) {
     return bloom_add_h(bloom, bloom_calc_hash(buffer, len));
-}
-
-void bloom_print(struct bloom *bloom) {
-    printf("bloom at %p\n", (void *)bloom);
-    printf(" ->entries = %d\n", bloom->entries);
-    printf(" ->error = %f\n", bloom->error);
-    printf(" ->bits = %d\n", bloom->bits);
-    printf(" ->bits per elem = %f\n", bloom->bpe);
-    printf(" ->bytes = %d\n", bloom->bytes);
-    printf(" ->hash functions = %d\n", bloom->hashes);
 }
 
 void bloom_free(struct bloom *bloom) { BLOOM_FREE(bloom->bf); }

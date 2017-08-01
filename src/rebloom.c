@@ -32,14 +32,14 @@ static int bfGetChain(RedisModuleKey *key, SBChain **sbout) {
 
 static const char *statusStrerror(int status) {
     switch (status) {
-    case SB_MISSING:
-        return "ERR not found";
-    case SB_MISMATCH:
-        return REDISMODULE_ERRORMSG_WRONGTYPE;
-    case SB_OK:
-        return "ERR item exists";
-    default:
-        return "Unknown error";
+        case SB_MISSING:
+            return "ERR not found";
+        case SB_MISMATCH:
+            return REDISMODULE_ERRORMSG_WRONGTYPE;
+        case SB_OK:
+            return "ERR item exists";
+        default:
+            return "Unknown error";
     }
 }
 
@@ -49,7 +49,9 @@ static const char *statusStrerror(int status) {
  */
 static SBChain *bfCreateChain(RedisModuleKey *key, double error_rate, size_t capacity) {
     SBChain *sb = SB_NewChain(capacity, error_rate);
-    RedisModule_ModuleTypeSetValue(key, BFType, sb);
+    if (sb != NULL) {
+        RedisModule_ModuleTypeSetValue(key, BFType, sb);
+    }
     return sb;
 }
 
@@ -71,7 +73,8 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     }
 
     long long capacity;
-    if (RedisModule_StringToLongLong(argv[3], &capacity) != REDISMODULE_OK) {
+    if (RedisModule_StringToLongLong(argv[3], &capacity) != REDISMODULE_OK ||
+        capacity >= UINT32_MAX) {
         return RedisModule_ReplyWithError(ctx, "ERR bad capacity");
     }
 
@@ -86,8 +89,11 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
 
-    bfCreateChain(key, error_rate, capacity);
-    RedisModule_ReplyWithSimpleString(ctx, "OK");
+    if (bfCreateChain(key, error_rate, capacity) == NULL) {
+        RedisModule_ReplyWithSimpleString(ctx, "ERR could not create filter");
+    } else {
+        RedisModule_ReplyWithSimpleString(ctx, "OK");
+    }
     return REDISMODULE_OK;
 }
 
@@ -153,6 +159,9 @@ static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     int status = bfGetChain(key, &sb);
     if (status == SB_EMPTY) {
         sb = bfCreateChain(key, BFDefaultErrorRate, BFDefaultInitCapacity);
+        if (sb == NULL) {
+            return RedisModule_ReplyWithError(ctx, "ERR could not create filter");
+        }
     } else if (status != SB_OK) {
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
@@ -199,8 +208,9 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         const SBLink *lb = sb->filters + ii;
         info_s = RedisModule_CreateStringPrintf(
-            ctx, "bytes:%d bits:%d hashes:%d capacity:%d size:%lu ratio:%g", lb->inner.bytes,
-            lb->inner.bits, lb->inner.hashes, lb->inner.entries, lb->size, lb->inner.error);
+            ctx, "bytes:%llu bits:%llu hashes:%u capacity:%u size:%lu ratio:%g", lb->inner.bytes,
+            lb->inner.bits ? lb->inner.bits : 1LLU << lb->inner.n2, lb->inner.hashes,
+            lb->inner.entries, lb->size, lb->inner.error);
         RedisModule_ReplyWithString(ctx, info_s);
         RedisModule_FreeString(ctx, info_s);
     }
@@ -213,7 +223,7 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 /// Datatype Functions                                                       ///
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-#define BF_ENCODING_VERSION 0
+#define BF_ENCODING_VERSION 1
 
 static void BFRdbSave(RedisModuleIO *io, void *obj) {
     // Save the setting!
@@ -231,6 +241,7 @@ static void BFRdbSave(RedisModuleIO *io, void *obj) {
         // - SKIP: bits is (double)entries * bpe
         RedisModule_SaveUnsigned(io, bm->hashes);
         RedisModule_SaveDouble(io, bm->bpe);
+        RedisModule_SaveUnsigned(io, bm->n2);
         RedisModule_SaveStringBuffer(io, (const char *)bm->bf, bm->bytes);
 
         // Save the number of actual entries stored thus far.
@@ -239,7 +250,7 @@ static void BFRdbSave(RedisModuleIO *io, void *obj) {
 }
 
 static void *BFRdbLoad(RedisModuleIO *io, int encver) {
-    if (encver != BF_ENCODING_VERSION) {
+    if (encver > BF_ENCODING_VERSION) {
         return NULL;
     }
 
@@ -260,7 +271,11 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
         bm->error = RedisModule_LoadDouble(io);
         bm->hashes = RedisModule_LoadUnsigned(io);
         bm->bpe = RedisModule_LoadDouble(io);
-        bm->bits = (double)bm->entries * bm->bpe;
+        if (encver == 0) {
+            bm->bits = (double)bm->entries * bm->bpe;
+        } else {
+            bm->n2 = RedisModule_LoadUnsigned(io);
+        }
         size_t sztmp;
         bm->bf = (unsigned char *)RedisModule_LoadStringBuffer(io, &sztmp);
         bm->bytes = sztmp;
