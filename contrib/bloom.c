@@ -56,6 +56,14 @@ bloom_hashval bloom_calc_hash(const void *buffer, int len) {
     return rv;
 }
 
+// This function is defined as a macro because newer filters use a power of two
+// for bit count, which is must faster to calculate. Older bloom filters don't
+// use powers of two, so they are slower. Rather than calculating this inside
+// the function itself, we provide two variants for this. The calling layer
+// already knows which variant to call.
+//
+// modExp is the expression which will evaluate to the number of bits in the
+// filter.
 #define CHECK_ADD_FUNC(modExp)                                                                     \
     register unsigned int i;                                                                       \
     int found_unset = 0;                                                                           \
@@ -78,7 +86,9 @@ static int bloom_check_add(struct bloom *bloom, bloom_hashval hashval, int mode)
     CHECK_ADD_FUNC((1 << bloom->n2))
 }
 
-// Used for older bloom filters
+// This function is used for older bloom filters whose bit count was not
+// 1 << X. This function is a bit slower, and isn't exposed in the API
+// directly because it's deprecated
 static int bloom_check_add_compat(struct bloom *bloom, bloom_hashval hashval, int mode) {
     CHECK_ADD_FUNC(bloom->bits)
 }
