@@ -64,12 +64,12 @@ bloom_hashval bloom_calc_hash(const void *buffer, int len) {
 //
 // modExp is the expression which will evaluate to the number of bits in the
 // filter.
-#define CHECK_ADD_FUNC(modExp)                                                                     \
+#define CHECK_ADD_FUNC(T, modExp)                                                                  \
     register unsigned int i;                                                                       \
     int found_unset = 0;                                                                           \
-    const register uint32_t mod = modExp;                                                          \
+    const register T mod = modExp;                                                                 \
     for (i = 0; i < bloom->hashes; i++) {                                                          \
-        uint64_t x = ((hashval.a + i * hashval.b)) % mod;                                          \
+        T x = ((hashval.a + i * hashval.b)) % mod;                                                 \
         if (!test_bit_set_bit(bloom->bf, x, mode)) {                                               \
             if (mode == MODE_READ) {                                                               \
                 return 0;                                                                          \
@@ -82,16 +82,19 @@ bloom_hashval bloom_calc_hash(const void *buffer, int len) {
     }                                                                                              \
     return found_unset;
 
-static int bloom_check_add(struct bloom *bloom, bloom_hashval hashval, int mode) {
-    CHECK_ADD_FUNC((1 << bloom->n2))
+static int bloom_check_add32(struct bloom *bloom, bloom_hashval hashval, int mode) {
+    CHECK_ADD_FUNC(uint32_t, (1 << bloom->n2));
+}
+
+static int bloom_check_add64(struct bloom *bloom, bloom_hashval hashval, int mode) {
+    CHECK_ADD_FUNC(uint64_t, (1LLU << bloom->n2));
 }
 
 // This function is used for older bloom filters whose bit count was not
 // 1 << X. This function is a bit slower, and isn't exposed in the API
 // directly because it's deprecated
 static int bloom_check_add_compat(struct bloom *bloom, bloom_hashval hashval, int mode) {
-    CHECK_ADD_FUNC(bloom->bits)
-}
+    CHECK_ADD_FUNC(uint64_t, bloom->bits)
 
 int bloom_init_size(struct bloom *bloom, int entries, double error, unsigned int cache_size) {
     return bloom_init(bloom, entries, error);
@@ -145,8 +148,10 @@ int bloom_init(struct bloom *bloom, unsigned entries, double error) {
 }
 
 int bloom_check_h(const struct bloom *bloom, bloom_hashval hash) {
-    if (bloom->n2) {
-        return bloom_check_add((void *)bloom, hash, MODE_READ);
+    if (bloom->n2 > 32) {
+        return bloom_check_add64((void *)bloom, hash, MODE_READ);
+    } else if (bloom->n2 > 0) {
+        return bloom_check_add32((void *)bloom, hash, MODE_READ);
     } else {
         return bloom_check_add_compat((void *)bloom, hash, MODE_READ);
     }
@@ -157,8 +162,10 @@ int bloom_check(const struct bloom *bloom, const void *buffer, int len) {
 }
 
 int bloom_add_h(struct bloom *bloom, bloom_hashval hash) {
-    if (bloom->n2) {
-        return !bloom_check_add(bloom, hash, MODE_WRITE);
+    if (bloom->n2 > 32) {
+        return !bloom_check_add64(bloom, hash, MODE_WRITE);
+    } else if (bloom->n2) {
+        return !bloom_check_add32(bloom, hash, MODE_WRITE);
     } else {
         return !bloom_check_add_compat(bloom, hash, MODE_WRITE);
     }
