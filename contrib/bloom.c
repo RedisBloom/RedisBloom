@@ -69,7 +69,7 @@ bloom_hashval bloom_calc_hash(const void *buffer, int len) {
     int found_unset = 0;                                                                           \
     const register uint32_t mod = modExp;                                                          \
     for (i = 0; i < bloom->hashes; i++) {                                                          \
-        uint32_t x = (hashval.a + i * hashval.b) % mod;                                            \
+        uint64_t x = ((hashval.a + i * hashval.b)) % mod;                                          \
         if (!test_bit_set_bit(bloom->bf, x, mode)) {                                               \
             if (mode == MODE_READ) {                                                               \
                 return 0;                                                                          \
