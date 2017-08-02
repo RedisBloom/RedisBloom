@@ -95,6 +95,7 @@ static int bloom_check_add64(struct bloom *bloom, bloom_hashval hashval, int mod
 // directly because it's deprecated
 static int bloom_check_add_compat(struct bloom *bloom, bloom_hashval hashval, int mode) {
     CHECK_ADD_FUNC(uint64_t, bloom->bits)
+}
 
 int bloom_init_size(struct bloom *bloom, int entries, double error, unsigned int cache_size) {
     return bloom_init(bloom, entries, error);
