@@ -16,19 +16,21 @@ typedef struct SBLink {
 
 /** A chain of one or more bloom filters */
 typedef struct SBChain {
-    SBLink *filters; //< Current filter
-    size_t size;     //< Total number of items in all filters
-    size_t nfilters; //< Number of links in chain
+    SBLink *filters;  //< Current filter
+    size_t size;      //< Total number of items in all filters
+    size_t nfilters;  //< Number of links in chain
+    unsigned options; //< Options passed directly to bloom_init
 } SBChain;
 
 /**
  * Create a new chain
  * initsize: The initial desired capacity of the chain
  * error_rate: desired maximum error probability.
+ * options: Options passed to bloom_init.
  *
  * Free with SBChain_Free when done.
  */
-SBChain *SB_NewChain(size_t initsize, double error_rate);
+SBChain *SB_NewChain(size_t initsize, double error_rate, unsigned options);
 
 /** Free a created chain */
 void SBChain_Free(SBChain *sb);

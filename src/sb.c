@@ -24,7 +24,8 @@ static int SBChain_AddLink(SBChain *chain, size_t size, double error_rate) {
     SBLink *newlink = chain->filters + chain->nfilters;
     newlink->size = 0;
     chain->nfilters++;
-    return bloom_init(&newlink->inner, size, error_rate, 0);
+    unsigned options = chain->options;
+    return bloom_init(&newlink->inner, size, error_rate, options);
 }
 
 void SBChain_Free(SBChain *sb) {
@@ -81,11 +82,12 @@ int SBChain_Check(const SBChain *sb, const void *data, size_t len) {
     return 0;
 }
 
-SBChain *SB_NewChain(size_t initsize, double error_rate) {
+SBChain *SB_NewChain(size_t initsize, double error_rate, unsigned options) {
     if (initsize == 0 || error_rate == 0) {
         return NULL;
     }
     SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
+    sb->options = options;
     if (SBChain_AddLink(sb, initsize, error_rate) != 0) {
         SBChain_Free(sb);
         sb = NULL;
