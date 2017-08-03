@@ -24,7 +24,7 @@ static int SBChain_AddLink(SBChain *chain, size_t size, double error_rate) {
     SBLink *newlink = chain->filters + chain->nfilters;
     newlink->size = 0;
     chain->nfilters++;
-    return bloom_init(&newlink->inner, size, error_rate);
+    return bloom_init(&newlink->inner, size, error_rate, 0);
 }
 
 void SBChain_Free(SBChain *sb) {

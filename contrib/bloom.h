@@ -60,7 +60,15 @@ struct bloom {
  *     1 - on failure
  *
  */
-int bloom_init(struct bloom *bloom, unsigned entries, double error);
+
+// Do not round bit size to nearest power of 2. Instead, estimate bits
+// accurately.
+#define BLOOM_OPT_NOROUND 1
+
+// Entries is actually the number of bits, not the number of entries to reserve
+#define BLOOM_OPT_ENTS_IS_BITS 2
+
+int bloom_init(struct bloom *bloom, unsigned entries, double error, unsigned options);
 
 /** ***************************************************************************
  * Deprecated, use bloom_init()

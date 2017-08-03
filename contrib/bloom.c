@@ -97,47 +97,61 @@ static int bloom_check_add_compat(struct bloom *bloom, bloom_hashval hashval, in
     CHECK_ADD_FUNC(uint64_t, bloom->bits)
 }
 
-int bloom_init_size(struct bloom *bloom, int entries, double error, unsigned int cache_size) {
-    return bloom_init(bloom, entries, error);
-}
-
-int bloom_init(struct bloom *bloom, unsigned entries, double error) {
+int bloom_init(struct bloom *bloom, unsigned entries, double error, unsigned options) {
     if (entries < 1 || error == 0) {
         return 1;
     }
 
-    bloom->entries = entries;
     bloom->error = error;
 
     double num = log(bloom->error);
     double denom = 0.480453013918201; // ln(2)^2
+
     bloom->bpe = -(num / denom);
     bloom->bits = 0;
+    bloom->entries = entries;
 
     double dentries = (double)entries;
+    uint64_t bits;
 
-    double bn2 = logb(dentries * bloom->bpe);
-    if (bn2 > 63 || bn2 == INFINITY) {
-        return 1;
+    if (options & BLOOM_OPT_ENTS_IS_BITS) {
+        // Size is determined by the number of bits
+        if (entries == 0 || entries > 64) {
+            return 1;
+        }
+
+        bloom->n2 = entries;
+        bits = 1LLU << bloom->n2;
+        dentries = entries = bloom->entries = bits / bloom->bpe;
+
+    } else if (options & BLOOM_OPT_NOROUND) {
+        // Don't perform any rounding. Conserve memory instead
+        bits = bloom->bits = (uint64_t)(dentries * bloom->bpe);
+        bloom->n2 = 0;
+
+    } else {
+        double bn2 = logb(dentries * bloom->bpe);
+        if (bn2 > 63 || bn2 == INFINITY) {
+            return 1;
+        }
+        bloom->n2 = bn2 + 1;
+        bits = 1LLU << bloom->n2;
+
+        // Determine the number of extra bits available for more items. We rounded
+        // up the number of bits to the next-highest power of two. This means we
+        // might have up to 2x the bits available to us.
+        size_t bitDiff = bits - (dentries * bloom->bpe);
+        // The number of additional items we can store is the extra number of bits
+        // divided by bits-per-element
+        size_t itemDiff = bitDiff / bloom->bpe;
+        bloom->entries += itemDiff;
     }
-
-    bloom->n2 = bn2 + 1;
-    uint64_t bits = 1LLU << bloom->n2;
 
     if (bits % 8) {
         bloom->bytes = (bits / 8) + 1;
     } else {
         bloom->bytes = bits / 8;
     }
-
-    // Determine the number of extra bits available for more items. We rounded
-    // up the number of bits to the next-highest power of two. This means we
-    // might have up to 2x the bits available to us.
-    size_t bitDiff = bits - (dentries * bloom->bpe);
-    // The number of additional items we can store is the extra number of bits
-    // divided by bits-per-element
-    size_t itemDiff = bitDiff / bloom->bpe;
-    bloom->entries += itemDiff;
 
     bloom->hashes = (int)ceil(0.693147180559945 * bloom->bpe); // ln(2)
     bloom->bf = (unsigned char *)BLOOM_CALLOC(bloom->bytes, sizeof(unsigned char));
