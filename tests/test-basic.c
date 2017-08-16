@@ -94,6 +94,22 @@ TEST_F(basic, testIssue7_Overflow) {
     SBChain_Free(chain);
 }
 
+TEST_F(basic, testIssue9) {
+    SBChain *chain = SB_NewChain(350000000, 0.01, 0);
+    if (chain == NULL) {
+        ASSERT_EQ(ENOMEM, errno);
+        return;
+    }
+
+    ASSERT_NE(0, SBChain_Add(chain, "asdf", 4));
+    ASSERT_NE(0, SBChain_Add(chain, "a", 1));
+    ASSERT_NE(0, SBChain_Add(chain, "s", 1));
+    ASSERT_NE(0, SBChain_Add(chain, "d", 1));
+    ASSERT_NE(0, SBChain_Add(chain, "f", 1));
+
+    SBChain_Free(chain);
+}
+
 int main(int argc, char **argv) {
     RedisModule_Calloc = calloc_wrap;
     RedisModule_Free = free_wrap;

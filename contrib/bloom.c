@@ -163,7 +163,7 @@ int bloom_init(struct bloom *bloom, unsigned entries, double error, unsigned opt
 }
 
 int bloom_check_h(const struct bloom *bloom, bloom_hashval hash) {
-    if (bloom->n2 > 32) {
+    if (bloom->n2 > 31) {
         return bloom_check_add64((void *)bloom, hash, MODE_READ);
     } else if (bloom->n2 > 0) {
         return bloom_check_add32((void *)bloom, hash, MODE_READ);
@@ -177,7 +177,7 @@ int bloom_check(const struct bloom *bloom, const void *buffer, int len) {
 }
 
 int bloom_add_h(struct bloom *bloom, bloom_hashval hash) {
-    if (bloom->n2 > 32) {
+    if (bloom->n2 > 31) {
         return !bloom_check_add64(bloom, hash, MODE_WRITE);
     } else if (bloom->n2) {
         return !bloom_check_add32(bloom, hash, MODE_WRITE);
