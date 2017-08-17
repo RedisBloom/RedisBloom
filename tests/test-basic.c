@@ -21,6 +21,8 @@ TEST_F(basic, sbValidation) {
 
     ASSERT_EQ(NULL, SB_NewChain(0, 0.01, 0));
     ASSERT_EQ(NULL, SB_NewChain(1, 0, 0));
+    ASSERT_EQ(NULL, SB_NewChain(100, 1.1, 0));
+    ASSERT_EQ(NULL, SB_NewChain(100, -4.4, 0));
 }
 
 TEST_F(basic, sbBasic) {

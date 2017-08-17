@@ -97,19 +97,26 @@ static int bloom_check_add_compat(struct bloom *bloom, bloom_hashval hashval, in
     CHECK_ADD_FUNC(uint64_t, bloom->bits)
 }
 
+static double calc_bpe(double error) {
+    static const double denom = 0.480453013918201; // ln(2)^2
+    double num = log(error);
+
+    double bpe = -(num / denom);
+    if (bpe < 0) {
+        bpe = -bpe;
+    }
+    return bpe;
+}
+
 int bloom_init(struct bloom *bloom, unsigned entries, double error, unsigned options) {
-    if (entries < 1 || error == 0) {
+    if (entries < 1 || error == 0 || error > 1.0 || error < 0) {
         return 1;
     }
 
     bloom->error = error;
-
-    double num = log(bloom->error);
-    double denom = 0.480453013918201; // ln(2)^2
-
-    bloom->bpe = -(num / denom);
     bloom->bits = 0;
     bloom->entries = entries;
+    bloom->bpe = calc_bpe(error);
 
     double dentries = (double)entries;
     uint64_t bits;
