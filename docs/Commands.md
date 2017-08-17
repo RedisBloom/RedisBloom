@@ -10,22 +10,24 @@ BF.RESERVE {key} {error_rate} {size}
 
 ### Description:
 
-Creates an empty Bloom Filter with a given error ratio and initial capacity.
+Creates an empty Bloom Filter with a given desired error ratio and initial capacity.
 This command is useful if you intend to add many items to a Bloom Filter, 
 otherwise you can just use `BF.ADD` to add items. It will also create a Bloom Filter for
 you if one doesn't already exist.
 
 The initial size and error rate will dictate the performance and memory usage
-of the filter. In general, the higher the error rate (i.e. the lower
+of the filter. In general, the smaller the error rate (i.e. the lower
 the tolerance for false positives) the greater the space consumption per
 filter entry.
 
 ### Parameters:
 
 * **key**: The key under which the filter is to be found
-* **error_rate**: The percentage of expected false positives to be tolerated.
-    The greater this number, the greater the memory consumption per item
-    and the more CPU usage per operation.
+* **error_rate**: The desired probability for false positives. This should
+    be a decimal value between 0 and 1. For example, for a desired false
+    positive rate of 0.1% (1 in 1000), error_rate should be set to 0.001.
+    The closer this number is to zero, the greater the memory consumption per
+    item and the more CPU usage per operation.
 * **size**: The number of entries you intend to add to the filter.
     Performance will begin to degrade after adding more items than this
     number. The actual degradation will depend on how far the limit has
