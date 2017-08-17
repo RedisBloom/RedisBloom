@@ -109,7 +109,7 @@ static double calc_bpe(double error) {
 }
 
 int bloom_init(struct bloom *bloom, unsigned entries, double error, unsigned options) {
-    if (entries < 1 || error == 0 || error > 1.0 || error < 0) {
+    if (entries < 1 || error <= 0 || error > 1.0) {
         return 1;
     }
 
