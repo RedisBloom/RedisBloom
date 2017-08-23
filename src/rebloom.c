@@ -224,7 +224,7 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 #define MAX_SCANDUMP_SIZE 10485760 // 10MB
 
 /**
- * BF.SCANDUMP <ITER>
+ * BF.SCANDUMP <KEY> <ITER>
  * Returns an (iterator,data) pair which can be used for LOADCHUNK later on
  */
 static int BFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
@@ -261,6 +261,10 @@ static int BFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
     return REDISMODULE_OK;
 }
 
+/**
+ * BF.LOADCHUNK <KEY> <ITER> <DATA>
+ * Incrementally loads a bloom filter.
+ */
 static int BFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     if (argc != 4) {
