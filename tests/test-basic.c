@@ -112,10 +112,90 @@ TEST_F(basic, testIssue9) {
     SBChain_Free(chain);
 }
 
+typedef struct {
+    const char *buf;
+    size_t nbuf;
+    long long iter;
+} encodedInfo;
+
+TEST_CLASS(encoding)
+
+TEST_F(encoding, testEncodingSimple) {
+    SBChain *chain = SB_NewChain(1000, 0.00001, 0);
+    ASSERT_NE(NULL, chain);
+
+    size_t nColls = 0;
+    for (size_t ii = 1; ii < 100000; ++ii) {
+        SBChain_Add(chain, &ii, sizeof ii);
+
+        size_t iiFlipped = ii << 31;
+        if (SBChain_Check(chain, &iiFlipped, sizeof iiFlipped) != 0) {
+            nColls++;
+        }
+    }
+
+    ASSERT_EQ(6, nColls);
+
+    // Dump the header
+    size_t len = 0;
+    char *hdr = SBChain_GetEncodedHeader(chain, &len);
+    ASSERT_NE(NULL, hdr);
+    ASSERT_NE(0, len);
+
+    encodedInfo *encs = malloc(sizeof(*encs));
+    size_t numEncs = 0;
+    long long iter = SB_CHUNKITER_INIT;
+
+    while (iter != SB_CHUNKITER_DONE) {
+        encs = realloc(encs, sizeof(*encs) * (numEncs + 1));
+        encodedInfo *curEnc = encs + numEncs;
+        curEnc->buf = SBChain_GetEncodedChunk(chain, &iter, &curEnc->nbuf, 128);
+        curEnc->iter = iter;
+
+        if (curEnc->buf) {
+            numEncs++;
+        } else {
+            break;
+        }
+    }
+
+    const char *errmsg;
+    SBChain *chain2 = SB_NewChainFromHeader(hdr, len, &errmsg);
+    ASSERT_NE(NULL, chain2);
+
+    for (size_t ii = 0; ii < numEncs; ++ii) {
+        ASSERT_EQ(0, SBChain_LoadEncodedChunk(chain2, encs[ii].iter, encs[ii].buf, encs[ii].nbuf,
+                                              &errmsg));
+    }
+
+    ASSERT_EQ(chain->nfilters, chain2->nfilters);
+    for (size_t ii = 0; ii < chain->nfilters; ++ii) {
+        const SBLink *link1 = chain->filters + ii;
+        const SBLink *link2 = chain2->filters + ii;
+        ASSERT_EQ(link1->inner.bytes, link2->inner.bytes);
+        ASSERT_EQ(0, memcmp(link1->inner.bf, link2->inner.bf, link2->inner.bytes));
+    }
+
+    size_t nColls_2 = 0;
+    for (size_t ii = 1; ii < 100000; ++ii) {
+        ASSERT_EQ(1, SBChain_Check(chain2, &ii, sizeof ii));
+        size_t iiFlipped = ii << 31;
+        if (SBChain_Check(chain2, &iiFlipped, sizeof iiFlipped) != 0) {
+            nColls_2++;
+        }
+    }
+
+    ASSERT_EQ(nColls, nColls_2);
+
+    SBChain_Free(chain);
+    SBChain_Free(chain2);
+}
+
 int main(int argc, char **argv) {
     RedisModule_Calloc = calloc_wrap;
     RedisModule_Free = free_wrap;
     RedisModule_Realloc = realloc;
+    RedisModule_Alloc = malloc;
     TEST_RUN_ALL_TESTS();
     return 0;
 }

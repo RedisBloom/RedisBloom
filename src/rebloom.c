@@ -35,6 +35,7 @@ static int bfGetChain(RedisModuleKey *key, SBChain **sbout) {
 static const char *statusStrerror(int status) {
     switch (status) {
         case SB_MISSING:
+        case SB_EMPTY:
             return "ERR not found";
         case SB_MISMATCH:
             return REDISMODULE_ERRORMSG_WRONGTYPE;
@@ -220,6 +221,86 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     return REDISMODULE_OK;
 }
 
+#define MAX_SCANDUMP_SIZE 10485760 // 10MB
+
+/**
+ * BF.SCANDUMP <ITER>
+ * Returns an (iterator,data) pair which can be used for LOADCHUNK later on
+ */
+static int BFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+    if (argc != 3) {
+        return RedisModule_WrongArity(ctx);
+    }
+    const SBChain *sb = NULL;
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
+    int status = bfGetChain(key, (SBChain **)&sb);
+    if (status != SB_OK) {
+        return RedisModule_ReplyWithError(ctx, statusStrerror(status));
+    }
+
+    long long iter;
+    if (RedisModule_StringToLongLong(argv[2], &iter) != REDISMODULE_OK) {
+        return RedisModule_ReplyWithError(ctx, "Second argument must be numeric");
+    }
+
+    RedisModule_ReplyWithArray(ctx, 2);
+
+    if (iter == 0) {
+        size_t hdrlen;
+        char *hdr = SBChain_GetEncodedHeader(sb, &hdrlen);
+        RedisModule_ReplyWithLongLong(ctx, SB_CHUNKITER_INIT);
+        RedisModule_ReplyWithStringBuffer(ctx, (const char *)hdr, hdrlen);
+        SB_FreeEncodedHeader(hdr);
+    } else {
+        size_t bufLen = 0;
+        const char *buf = SBChain_GetEncodedChunk(sb, &iter, &bufLen, MAX_SCANDUMP_SIZE);
+        RedisModule_ReplyWithLongLong(ctx, iter);
+        RedisModule_ReplyWithStringBuffer(ctx, buf, bufLen);
+    }
+    return REDISMODULE_OK;
+}
+
+static int BFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+    if (argc != 4) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    long long iter;
+    if (RedisModule_StringToLongLong(argv[2], &iter) != REDISMODULE_OK) {
+        return RedisModule_ReplyWithError(ctx, "ERR Second argument must be numeric");
+    }
+
+    size_t bufLen;
+    const char *buf = RedisModule_StringPtrLen(argv[3], &bufLen);
+
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
+    SBChain *sb;
+    int status = bfGetChain(key, &sb);
+    if (status == SB_EMPTY && iter == 1) {
+        const char *errmsg;
+        SBChain *sb = SB_NewChainFromHeader(buf, bufLen, &errmsg);
+        if (!sb) {
+            return RedisModule_ReplyWithError(ctx, errmsg);
+        } else {
+            RedisModule_ModuleTypeSetValue(key, BFType, sb);
+            return RedisModule_ReplyWithSimpleString(ctx, "OK");
+        }
+    } else if (status != SB_OK) {
+        return RedisModule_ReplyWithError(ctx, statusStrerror(status));
+    }
+
+    assert(sb);
+
+    const char *errMsg;
+    if (SBChain_LoadEncodedChunk(sb, iter, buf, bufLen, &errMsg) != 0) {
+        return RedisModule_ReplyWithError(ctx, errMsg);
+    } else {
+        return RedisModule_ReplyWithSimpleString(ctx, "OK");
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 /// Datatype Functions                                                       ///
@@ -289,17 +370,16 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
 }
 
 static void BFAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
-    RedisModuleCallReply *rep =
-        RedisModule_Call(RedisModule_GetContextFromIO(aof), "DUMP", "%s", key);
-    if (rep != NULL && RedisModule_CallReplyType(rep) == REDISMODULE_REPLY_STRING) {
-        size_t n;
-        const char *s = RedisModule_CallReplyStringPtr(rep, &n);
-        RedisModule_EmitAOF(aof, "RESTORE", "%sb", key, s, n);
-    } else {
-        RedisModule_Log(RedisModule_GetContextFromIO(aof), "warning", "Failed to emit AOF");
-    }
-    if (rep != NULL) {
-        RedisModule_FreeCallReply(rep);
+    SBChain *sb = value;
+    size_t len;
+    char *hdr = SBChain_GetEncodedHeader(sb, &len);
+    RedisModule_EmitAOF(aof, "BF.LOADCHUNK", "slb", key, 0, hdr, len);
+    SB_FreeEncodedHeader(hdr);
+
+    long long iter = SB_CHUNKITER_INIT;
+    const char *chunk;
+    while ((chunk = SBChain_GetEncodedChunk(sb, &iter, &len, MAX_SCANDUMP_SIZE)) != NULL) {
+        RedisModule_EmitAOF(aof, "BF.LOADCHUNK", "slb", key, iter, chunk, len);
     }
 }
 
@@ -394,6 +474,14 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         return REDISMODULE_ERR;
     if (RedisModule_CreateCommand(ctx, "BF.DEBUG", BFInfo_RedisCommand, "readonly fast", 1, 1, 1) !=
         REDISMODULE_OK)
+        return REDISMODULE_ERR;
+
+    if (RedisModule_CreateCommand(ctx, "BF.SCANDUMP", BFScanDump_RedisCommand, "readonly fast", 1,
+                                  1, 1) != REDISMODULE_OK)
+        return REDISMODULE_ERR;
+
+    if (RedisModule_CreateCommand(ctx, "BF.LOADCHUNK", BFLoadChunk_RedisCommand, "write deny-oom",
+                                  1, 1, 1) != REDISMODULE_OK)
         return REDISMODULE_ERR;
 
     static RedisModuleTypeMethods typeprocs = {.version = REDISMODULE_TYPE_METHOD_VERSION,
