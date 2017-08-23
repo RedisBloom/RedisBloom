@@ -37,8 +37,11 @@ $(MODULE_SO): $(MODULE_OBJ) $(DEPS)
 	$(LD) $^ -o $@ $(SHOBJ_LDFLAGS) $(LDFLAGS)
 
 
-test: rebloom.so
+test: $(MODULE_SO)
 	$(MAKE) -C tests test
+
+build-test: $(MODULE_SO)
+	$(MAKE) -C tests build-test
 
 perf:
 	$(MAKE) -C tests perf
