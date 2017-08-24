@@ -148,3 +148,88 @@ O(log N).
 
 An array of boolean values (actually integers). A true value means the
 corresponding item may exist in the filter, while a false value means it does not.
+
+
+## BF.SCANDUMP
+
+### Format
+
+```
+BF.SCANDUMP {key} {iter}
+```
+
+### Description
+
+Begins an incremental save of the bloom filter. This is useful for large bloom
+filters which cannot fit into the normal `SAVE` and `RESTORE` model.
+
+The first time this command is called, the value of `iter` should be 0. This
+command will return successive `(iter, data)` pairs until `(0, NULL)` to
+indicate completion.
+
+A demonstration in python-flavored pseudocode:
+
+```
+chunks = []
+iter = 0
+while True:
+    iter, data = BF.SCANDUMP(key, iter)
+    if iter == 0:
+        break
+    else:
+        chunks.append([iter, data])
+
+# Load it back
+for chunk in chunks:
+    iter, data = chunk
+    BF.LOADCHUNK(key, iter, data)
+```
+
+### Parameters
+
+* **key** Name of the filter
+* **iter** Iterator value. This is either 0, or the iterator from a previous
+    invocation of this command
+
+### Complexity
+
+O(log N)
+
+### Returns
+
+An array of _Iterator_ and _Data_. The Iterator is passed as input to the next
+invocation of `SCANDUMP`. If _Iterator_ is 0, then it means iteration has
+completed.
+
+The iterator-data pair should also be passed to `LOADCHUNK` when restoring
+the filter.
+
+## BF.LOADCHUNK
+
+### Format
+
+```
+BF.LOADCHUNK {key} {iter} {data}
+```
+
+### Description
+
+Restores a filter previously saved using `SCANDUMP`. See the `SCANDUMP` command
+for example usage.
+
+This command will overwrite any bloom filter stored under `key`. Ensure that
+the bloom filter will not be modified between invocations.
+
+### Parameters
+
+* **key** Name of the key to restore
+* **iter** Iterator value associated with `data` (returned by `SCANDUMP`)
+* **data** Current data chunk (returned by `SCANDUMP`)
+
+### Complexity O
+
+O(log N)
+
+### Returns
+
+`OK` on success, or an error on failure.

@@ -16,6 +16,8 @@ test-basic: test-basic.o $(DEPS)
 test-perf: test-perf.o $(DEPS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
+build-test: test-basic test-perf
+
 clean:
 	$(RM) test-basic *.o *.rdb *.pyc
 	$(RM) -fr *.dSYM

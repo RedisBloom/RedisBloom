@@ -73,6 +73,48 @@ class RebloomTestCase(ModuleTestCase('../rebloom.so')):
     def test_oom(self):
         self.assertRaises(ResponseError, self.cmd, 'bf.reserve', 'test', 0.01, 4294967296)
 
+    def test_dump_and_load(self):
+        # Store a filter
+        self.cmd('bf.reserve', 'myBloom', '0.0001', '100')
+
+        def do_verify():
+            for x in xrange(1000):
+                self.cmd('bf.add', 'myBloom', x)
+                rv = self.cmd('bf.exists', 'myBloom', x)
+                self.assertTrue(rv)
+                rv = self.cmd('bf.exists', 'myBloom', 'nonexist_{}'.format(x))
+                self.assertFalse(rv, x)
+
+        do_verify()
+        cmds = []
+        cur = self.cmd('bf.scandump', 'myBloom', 0)
+        first = cur[0]
+        cmds.append(cur)
+
+        while True:
+            cur = self.cmd('bf.scandump', 'myBloom', first)
+            first = cur[0]
+            if first == 0:
+                break
+            else:
+                cmds.append(cur)
+
+        prev_info = self.cmd('bf.debug', 'myBloom')
+        # Remove the filter
+        self.cmd('del', 'myBloom')
+
+        # Now, load all the commands:
+        for cmd in cmds:
+            self.cmd('bf.loadchunk', 'myBloom', *cmd)
+
+        cur_info = self.cmd('bf.debug', 'myBloom')
+        self.assertEqual(prev_info, cur_info)
+        do_verify()
+
+        # Try a bigger one
+        self.cmd('del', 'myBloom')
+        self.cmd('bf.reserve', 'myBloom', '0.0001', '10000000')
+
 
 if __name__ == "__main__":
     import unittest
