@@ -1,4 +1,4 @@
-# JRediSearch
+# JReBloom
 
 A Java Client Library for [ReBloom](https://rebloom.io)
 
