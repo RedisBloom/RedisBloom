@@ -7,8 +7,7 @@ before_script:
     - git clone --depth 1 https://github.com/antirez/redis.git
     - sudo make -C redis install
     - sudo apt-get -qq update
-    - sudo pip install redis ramp-packer
-    - sudo pip install git+https://github.com/mnunberg/rmtest
+    - sudo pip install redis ramp-packer rmtest
 
 script:
     - make
