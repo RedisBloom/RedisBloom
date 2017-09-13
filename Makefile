@@ -51,7 +51,16 @@ package: $(MODULE_SO)
 	mkdir -p $(ROOT)/build
 	module_packer -vvv -o "$(ROOT)/build/rebloom.{os}-{architecture}.latest.zip" "$(MODULE_SO)"
 
+
 clean:
 	$(RM) $(MODULE_OBJ) $(MODULE_SO) $(DEPS)
 	$(RM) -rf build
 	$(MAKE) -C tests clean
+
+distclean: clean
+
+docker: distclean
+	docker build --rm . -t redislabs/rebloom
+
+docker_push: docker
+	docker push redislabs/rebloom:latest
