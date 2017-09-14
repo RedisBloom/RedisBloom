@@ -4,6 +4,8 @@
 #include <strings.h> // strncasecmp
 #include <string.h>
 
+#define REBLOOM_VERSION 10000
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 /// Redis Commands                                                           ///
@@ -414,8 +416,6 @@ static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2) {
         RedisModule_Log(ctx, "warning", s, ##__VA_ARGS__);                                         \
         return REDISMODULE_ERR;                                                                    \
     } while (0);
-
-#define REBLOOM_VERSION 3
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (RedisModule_Init(ctx, "bf", REBLOOM_VERSION, REDISMODULE_APIVER_1) != REDISMODULE_OK) {
