@@ -66,6 +66,7 @@ static SBChain *bfCreateChain(RedisModuleKey *key, double error_rate, size_t cap
  */
 static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
+    RedisModule_ReplicateVerbatim(ctx);
 
     if (argc != 4) {
         RedisModule_WrongArity(ctx);
@@ -152,6 +153,8 @@ static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
  */
 static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
+    RedisModule_ReplicateVerbatim(ctx);
+
     int is_multi = isMulti(argv[0]);
 
     if ((is_multi && argc < 3) || (is_multi == 0 && argc != 3)) {
@@ -269,6 +272,8 @@ static int BFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
  */
 static int BFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
+    RedisModule_ReplicateVerbatim(ctx);
+
     if (argc != 4) {
         return RedisModule_WrongArity(ctx);
     }
