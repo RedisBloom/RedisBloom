@@ -23,11 +23,11 @@ ROOT=$(shell pwd)
 LDFLAGS = -lm -lc
 
 CPPFLAGS += -I$(ROOT) -I$(ROOT)/contrib
-
-MODULE_OBJ = $(ROOT)/src/rebloom.o
+SRCDIR := $(ROOT)/src
+MODULE_OBJ = $(SRCDIR)/rebloom.o
 MODULE_SO = $(ROOT)/rebloom.so
 
-DEPS = $(ROOT)/contrib/MurmurHash2.o $(ROOT)/src/sb.o
+DEPS = $(ROOT)/contrib/MurmurHash2.o $(SRCDIR)/sb.o
 
 export
 
@@ -49,11 +49,12 @@ perf:
 
 package: $(MODULE_SO)
 	mkdir -p $(ROOT)/build
-	module_packer -vvv -o "$(ROOT)/build/rebloom.{os}-{architecture}.latest.zip" "$(MODULE_SO)"
+	ramp-packer -vvv -m ramp.yml -o "$(ROOT)/build/rebloom.{os}-{architecture}.latest.zip" "$(MODULE_SO)"
 
 
 clean:
 	$(RM) $(MODULE_OBJ) $(MODULE_SO) $(DEPS)
+	$(RM) -f print_version
 	$(RM) -rf build
 	$(MAKE) -C tests clean
 
@@ -64,3 +65,7 @@ docker: distclean
 
 docker_push: docker
 	docker push redislabs/rebloom:latest
+
+# Compile an executable that prints the current version
+print_version:  $(SRCDIR)/version.h $(SRCDIR)/print_version.c
+	@$(CC) -o $@ -DPRINT_VERSION_TARGET $(SRCDIR)/$@.c
