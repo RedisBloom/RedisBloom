@@ -4,7 +4,8 @@ This module provides a scalable bloom filter as a Redis data type. Bloom filters
 are probabilistic data structures that do a very good job of quickly
 determining if something is contained within a set.
 
-[![Build Status](https://travis-ci.org/RedisLabsModules/rebloom.svg?branch=master)](https://travis-ci.org/RedisLabsModules/rebloom)
+[![CircleCI](https://circleci.com/gh/RedisLabsModules/rebloom.svg?style=svg)](https://circleci.com/gh/RedisLabsModules/rebloom)
+
 
 ## Building
 
