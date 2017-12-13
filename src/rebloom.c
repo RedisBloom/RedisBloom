@@ -127,8 +127,10 @@ static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
     SBChain *sb;
     int status = bfGetChain(key, &sb);
+
+    int is_empty = 0;
     if (status != SB_OK) {
-        return RedisModule_ReplyWithError(ctx, statusStrerror(status));
+        is_empty = 1;
     }
 
     // Check if it exists?
@@ -137,10 +139,14 @@ static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     }
 
     for (size_t ii = 2; ii < argc; ++ii) {
-        size_t n;
-        const char *s = RedisModule_StringPtrLen(argv[ii], &n);
-        int exists = SBChain_Check(sb, s, n);
-        RedisModule_ReplyWithLongLong(ctx, exists);
+        if (is_empty == 1) {
+            RedisModule_ReplyWithLongLong(ctx, 0);
+        } else {
+            size_t n;
+            const char *s = RedisModule_StringPtrLen(argv[ii], &n);
+            int exists = SBChain_Check(sb, s, n);
+            RedisModule_ReplyWithLongLong(ctx, exists);
+        }
     }
 
     return REDISMODULE_OK;
