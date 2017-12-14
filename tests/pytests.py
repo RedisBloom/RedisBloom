@@ -115,6 +115,12 @@ class RebloomTestCase(ModuleTestCase('../rebloom.so')):
         self.cmd('del', 'myBloom')
         self.cmd('bf.reserve', 'myBloom', '0.0001', '10000000')
 
+    def test_missing(self):
+        res = self.cmd('bf.exists', 'myBloom', 'foo')
+        self.assertEqual(0, res)
+        res = self.cmd('bf.mexists', 'myBloom', 'foo', 'bar', 'baz')
+        self.assertEqual([0, 0, 0], res)
+
 
 if __name__ == "__main__":
     import unittest
