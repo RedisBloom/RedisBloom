@@ -63,7 +63,7 @@ static SBChain *bfCreateChain(RedisModuleKey *key, double error_rate, size_t cap
 
 /**
  * Reserves a new empty filter with custom parameters:
- * BF.CREATE <KEY> <ERROR_RATE (double)> <INITIAL_CAPACITY (int)>
+ * BF.RESERVE <KEY> <ERROR_RATE (double)> <INITIAL_CAPACITY (int)>
  */
 static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
@@ -112,7 +112,7 @@ static int isMulti(const RedisModuleString *rs) {
 
 /**
  * Check for the existence of an item
- * BF.TEST <KEY>
+ * BF.CHECK <KEY>
  * Returns true or false
  */
 static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
@@ -154,7 +154,7 @@ static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
 
 /**
  * Adds items to an existing filter. Creates a new one on demand if it doesn't exist.
- * BF.SET <KEY> ITEMS...
+ * BF.ADD <KEY> ITEMS...
  * Returns an array of integers. The nth element is either 1 or 0 depending on whether it was newly
  * added, or had previously existed, respectively.
  */
