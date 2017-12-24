@@ -1,11 +1,11 @@
 #include "redismodule.h"
 #include "sb.h"
+#include "cuckoo.h"
 #include "version.h"
 
 #include <assert.h>
 #include <strings.h> // strncasecmp
 #include <string.h>
-
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -37,15 +37,15 @@ static int bfGetChain(RedisModuleKey *key, SBChain **sbout) {
 
 static const char *statusStrerror(int status) {
     switch (status) {
-        case SB_MISSING:
-        case SB_EMPTY:
-            return "ERR not found";
-        case SB_MISMATCH:
-            return REDISMODULE_ERRORMSG_WRONGTYPE;
-        case SB_OK:
-            return "ERR item exists";
-        default:
-            return "Unknown error";
+    case SB_MISSING:
+    case SB_EMPTY:
+        return "ERR not found";
+    case SB_MISMATCH:
+        return REDISMODULE_ERRORMSG_WRONGTYPE;
+    case SB_OK:
+        return "ERR item exists";
+    default:
+        return "Unknown error";
     }
 }
 
@@ -430,7 +430,8 @@ static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2) {
     } while (0);
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    if (RedisModule_Init(ctx, "bf", REBLOOM_MODULE_VERSION, REDISMODULE_APIVER_1) != REDISMODULE_OK) {
+    if (RedisModule_Init(ctx, "bf", REBLOOM_MODULE_VERSION, REDISMODULE_APIVER_1) !=
+        REDISMODULE_OK) {
         return REDISMODULE_ERR;
     }
 
