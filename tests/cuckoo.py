@@ -30,8 +30,6 @@ class CuckooTestCase(ModuleTestCase('../rebloom.so')):
             self.assertEqual(1, self.cmd('cf.exists', 'nums', str(x)))
 
         for _ in c.retry_with_rdb_reload():
-            print self.cmd('cf.debug', 'nums')
-            print self.cmd('cf.debug', 'cf')
             for x in xrange(100):
                 self.assertEqual(1, self.cmd('cf.exists', 'nums', str(x)))
 
@@ -55,3 +53,8 @@ class CuckooTestCase(ModuleTestCase('../rebloom.so')):
         self.assertEqual(1, self.cmd('cf.count', 'cf', 'k1'))
         self.assertEqual(1, self.cmd('cf.add', 'cf', 'k1'))
         self.assertEqual(2, self.cmd('cf.count', 'cf', 'k1'))
+
+
+if __name__ == "__main__":
+    import unittest
+    unittest.main()
