@@ -123,6 +123,24 @@ int CuckooFilter_Check(const CuckooFilter *filter, CuckooHash hash) {
     return CuckooFilter_CheckFP(filter, &params);
 }
 
+size_t CuckooFilter_Count(const CuckooFilter *filter, CuckooHash hash) {
+    LookupParams params;
+    getLookupParams(hash, filter->numBuckets, &params);
+    size_t ret = 0;
+    size_t ixs[2] = {params.i1, params.i2};
+    for (size_t ii = 0; ii < filter->numFilters; ++ii) {
+        for (size_t jj = 0; jj < 2; ++jj) {
+            const CuckooBucket *bkt = &filter->filters[ii][ixs[jj]];
+            for (size_t kk = 0; kk < CUCKOO_BKTSIZE; ++kk) {
+                if ((*bkt)[kk] == params.fp) {
+                    ret++;
+                }
+            }
+        }
+    }
+    return ret;
+}
+
 int CuckooFilter_Delete(CuckooFilter *filter, CuckooHash hash) {
     LookupParams params;
     getLookupParams(hash, filter->numBuckets, &params);

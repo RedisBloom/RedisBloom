@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-
+#include "murmurhash2.h"
 typedef uint8_t CuckooFingerprint;
 typedef uint32_t CuckooHash;
 typedef uint8_t CuckooBucket[4];
@@ -39,5 +39,6 @@ CuckooInsertStatus CuckooFilter_InsertUnique(CuckooFilter *filter, CuckooHash ha
 CuckooInsertStatus CuckooFilter_Insert(CuckooFilter *filter, CuckooHash hash);
 int CuckooFilter_Delete(CuckooFilter *filter, CuckooHash hash);
 int CuckooFilter_Check(const CuckooFilter *filter, CuckooHash hash);
+size_t CuckooFilter_Count(const CuckooFilter *filter, CuckooHash);
 
 #endif
