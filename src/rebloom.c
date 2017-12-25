@@ -421,6 +421,9 @@ static int CFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
         return RedisModule_ReplyWithLongLong(ctx, 0);
     case CuckooInsert_NoSpace:
         return RedisModule_ReplyWithError(ctx, "Filter is full");
+    default:
+        // Should never happen
+        return REDISMODULE_ERR;
     }
 }
 
