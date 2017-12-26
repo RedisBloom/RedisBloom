@@ -542,6 +542,8 @@ static int CFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
 }
 
 static int CFLoadHeader_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+
     if (argc != 3) {
         return RedisModule_WrongArity(ctx);
     }
