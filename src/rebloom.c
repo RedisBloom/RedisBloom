@@ -757,13 +757,13 @@ static void CFAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *obj) 
     CuckooFilter *cf = obj;
     const char *chunk;
     size_t nchunk;
-    long long pos = 0;
     CFHeader header;
     fillCFHeader(&header, cf);
-    RedisModule_EmitAOF(aof, "CF.LOADCHUNK", "slb", key, 0, (const char *)&header, sizeof header);
 
+    long long pos = 1;
+    RedisModule_EmitAOF(aof, "CF.LOADCHUNK", "slb", key, pos, (const char *)&header, sizeof header);
     while ((chunk = CF_GetEncodedChunk(cf, &pos, &nchunk, MAX_SCANDUMP_SIZE))) {
-        RedisModule_EmitAOF(aof, "CF.LOADCHUNK", "slb", key, pos + 1, chunk, nchunk);
+        RedisModule_EmitAOF(aof, "CF.LOADCHUNK", "slb", key, pos, chunk, nchunk);
     }
 }
 
