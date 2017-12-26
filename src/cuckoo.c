@@ -73,7 +73,7 @@ static size_t getAltIndex(CuckooFingerprint fp, size_t index, size_t numBuckets)
 
 static void getLookupParams(CuckooHash hash, size_t numBuckets, LookupParams *params) {
     // Truncate the hash to uint8
-    if ((params->fp = hash) == CUCKOO_NULLFP) {
+    if ((params->fp = (hash >> 24)) == CUCKOO_NULLFP) {
         params->fp = 7;
     }
 
@@ -126,20 +126,35 @@ int CuckooFilter_Check(const CuckooFilter *filter, CuckooHash hash) {
     return CuckooFilter_CheckFP(filter, &params);
 }
 
+static size_t bucketCount(const CuckooBucket bucket, size_t len, CuckooFingerprint fp) {
+    size_t ret = 0;
+    for (size_t ii = 0; ii < len; ++ii) {
+        if (bucket[ii] == fp) {
+            ret++;
+        }
+    }
+    return ret;
+}
+
+static size_t filterCount(const CuckooBucket *filter, const LookupParams *params) {
+    const size_t ixs[2] = {params->i1, params->i2};
+    if (params->i1 == params->i2) {
+        return bucketCount(filter[params->i1], CUCKOO_BKTSIZE, params->fp);
+    }
+
+    size_t ret = 0;
+    for (size_t ii = 0; ii < 2; ++ii) {
+        ret += bucketCount(filter[ixs[ii]], CUCKOO_BKTSIZE, params->fp);
+    }
+    return ret;
+}
+
 size_t CuckooFilter_Count(const CuckooFilter *filter, CuckooHash hash) {
     LookupParams params;
     getLookupParams(hash, filter->numBuckets, &params);
     size_t ret = 0;
-    size_t ixs[2] = {params.i1, params.i2};
     for (size_t ii = 0; ii < filter->numFilters; ++ii) {
-        for (size_t jj = 0; jj < 2; ++jj) {
-            const CuckooBucket *bkt = &filter->filters[ii][ixs[jj]];
-            for (size_t kk = 0; kk < CUCKOO_BKTSIZE; ++kk) {
-                if ((*bkt)[kk] == params.fp) {
-                    ret++;
-                }
-            }
-        }
+        ret += filterCount(filter->filters[ii], &params);
     }
     return ret;
 }

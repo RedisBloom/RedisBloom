@@ -18,7 +18,7 @@ TEST_F(cuckoo, testBasicOps) {
     CuckooFilter_Init(&ck, 50);
     ASSERT_EQ(0, ck.numItems);
     ASSERT_EQ(1, ck.numFilters);
-    ASSERT_EQ(16, ck.numBuckets);
+    // ASSERT_EQ(16, ck.numBuckets);
 
     CuckooHash kfoo = CUCKOO_GEN_HASH("foo", 3);
     CuckooHash kbar = CUCKOO_GEN_HASH("bar", 3);
@@ -53,8 +53,13 @@ TEST_F(cuckoo, testCount) {
     CuckooHash kfoo = CUCKOO_GEN_HASH("foo", 3);
 
     ASSERT_EQ(0, CuckooFilter_Count(&ck, kfoo));
+
+    ASSERT_EQ(0, ck.numItems);
     ASSERT_EQ(CuckooInsert_Inserted, CuckooFilter_Insert(&ck, kfoo));
+
+    ASSERT_EQ(1, ck.numItems);
     ASSERT_EQ(1, CuckooFilter_Count(&ck, kfoo));
+
     ASSERT_EQ(CuckooInsert_Inserted, CuckooFilter_Insert(&ck, kfoo));
     ASSERT_EQ(2, CuckooFilter_Count(&ck, kfoo));
 
@@ -69,12 +74,10 @@ TEST_F(cuckoo, testCount) {
 #define NUM_BULK 10000
 
 TEST_F(cuckoo, testRelocations) {
-    test__abort_on_fail = 1;
     CuckooFilter ck;
-    CuckooFilter_Init(&ck, 50);
+    CuckooFilter_Init(&ck, NUM_BULK / 8);
     ASSERT_EQ(0, ck.numItems);
     ASSERT_EQ(1, ck.numFilters);
-    ASSERT_EQ(16, ck.numBuckets);
 
     for (size_t ii = 0; ii < NUM_BULK; ++ii) {
         CuckooHash hash = CUCKOO_GEN_HASH(&ii, sizeof ii);
@@ -93,6 +96,65 @@ TEST_F(cuckoo, testRelocations) {
         ASSERT_EQ(CuckooInsert_Inserted, CuckooFilter_Insert(&ck, hash));
     }
 
+    CuckooFilter_Free(&ck);
+}
+
+static void doFill(CuckooFilter *ck) {
+    for (size_t ii = 0; ii < NUM_BULK; ++ii) {
+        CuckooHash hash = CUCKOO_GEN_HASH(&ii, sizeof ii);
+        CuckooFilter_Insert(ck, hash);
+    }
+}
+
+static size_t countColls(CuckooFilter *ck) {
+    size_t ret = 0;
+    for (size_t ii = 0; ii < NUM_BULK; ++ii) {
+        CuckooHash hash = CUCKOO_GEN_HASH(&ii, sizeof ii);
+        size_t count = CuckooFilter_Count(ck, hash);
+        ASSERT_NE(count, 0);
+        if (count > 1) {
+            ret++;
+        }
+    }
+    return ret;
+}
+
+TEST_F(cuckoo, testFPR) {
+    // We should never expect > 3% FPR (False positive rate) on a single filter.
+    // The basic idea is that the false positive rate doubles with each
+    CuckooFilter ck;
+    CuckooFilter_Init(&ck, NUM_BULK);
+    ASSERT_EQ(0, ck.numItems);
+    ASSERT_EQ(1, ck.numFilters);
+
+    doFill(&ck);
+    ASSERT_EQ(NUM_BULK, ck.numItems);
+    ASSERT_LE((double)countColls(&ck), (double)NUM_BULK * 0.03);
+    CuckooFilter_Free(&ck);
+
+    // Try again
+    CuckooFilter_Init(&ck, NUM_BULK / 2);
+    doFill(&ck);
+    ASSERT_EQ(NUM_BULK, ck.numItems);
+    ASSERT_LE((double)countColls(&ck), (double)NUM_BULK * 0.06);
+    CuckooFilter_Free(&ck);
+
+    CuckooFilter_Init(&ck, NUM_BULK / 4);
+    doFill(&ck);
+    ASSERT_EQ(NUM_BULK, ck.numItems);
+    ASSERT_LE((double)countColls(&ck), (double)NUM_BULK * 0.6);
+    // printf("Have %lu filters\n", ck.numFilters);
+    CuckooFilter_Free(&ck);
+}
+
+TEST_F(cuckoo, testBulkDel) {
+    CuckooFilter ck;
+    CuckooFilter_Init(&ck, NUM_BULK / 8);
+    doFill(&ck);
+    for (size_t ii = 0; ii < NUM_BULK; ++ii) {
+        ASSERT_EQ(1, CuckooFilter_Delete(&ck, CUCKOO_GEN_HASH(&ii, sizeof ii)));
+    }
+    ASSERT_EQ(0, ck.numItems);
     CuckooFilter_Free(&ck);
 }
 

@@ -4,12 +4,13 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "murmurhash2.h"
+
+#define CUCKOO_BKTSIZE 2
+#define CUCKOO_NULLFP 0
+
 typedef uint8_t CuckooFingerprint;
 typedef uint32_t CuckooHash;
-typedef uint8_t CuckooBucket[4];
-
-#define CUCKOO_BKTSIZE 4
-#define CUCKOO_NULLFP 0
+typedef uint8_t CuckooBucket[CUCKOO_BKTSIZE];
 
 typedef struct {
     size_t numBuckets;
