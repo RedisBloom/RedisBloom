@@ -503,6 +503,13 @@ static int CFDel_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     return RedisModule_ReplyWithLongLong(ctx, CuckooFilter_Delete(cf, hash));
 }
 
+static void fillCFHeader(CFHeader *header, const CuckooFilter *cf) {
+    *header = (CFHeader){.numItems = cf->numItems,
+                         .numBuckets = cf->numBuckets,
+                         .numDeletes = cf->numDeletes,
+                         .numFilters = cf->numFilters};
+}
+
 static int CFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
@@ -524,8 +531,17 @@ static int CFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
 
     RedisModule_ReplyWithArray(ctx, 2);
     if (!cf->numItems) {
-        RedisModule_ReplyWithLongLong(ctx, -1);
+        RedisModule_ReplyWithLongLong(ctx, 0);
         RedisModule_ReplyWithNull(ctx);
+        return REDISMODULE_OK;
+    }
+
+    // Start
+    if (pos == 0) {
+        CFHeader header;
+        fillCFHeader(&header, cf);
+        RedisModule_ReplyWithLongLong(ctx, 1);
+        RedisModule_ReplyWithStringBuffer(ctx, (const char *)&header, sizeof header);
         return REDISMODULE_OK;
     }
 
@@ -541,31 +557,6 @@ static int CFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
     return REDISMODULE_OK;
 }
 
-static int CFLoadHeader_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-
-    if (argc != 3) {
-        return RedisModule_WrongArity(ctx);
-    }
-    CuckooFilter *cf;
-    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
-    int status = cfGetFilter(key, &cf);
-    if (status != SB_EMPTY) {
-        return RedisModule_ReplyWithError(ctx, statusStrerror(status));
-    }
-    size_t n;
-    const char *s = RedisModule_StringPtrLen(argv[2], &n);
-    if (n != sizeof(CFHeader)) {
-        return RedisModule_ReplyWithError(ctx, "Invalid header");
-    }
-    cf = CFHeader_Load((CFHeader *)s);
-    if (cf == NULL) {
-        return RedisModule_ReplyWithError(ctx, "Couldn't create filter!");
-    }
-    RedisModule_ModuleTypeSetValue(key, CFType, cf);
-    return REDISMODULE_OK;
-}
-
 static int CFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
@@ -573,20 +564,36 @@ static int CFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **arg
         return RedisModule_WrongArity(ctx);
     }
 
-    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
     CuckooFilter *cf;
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
     int status = cfGetFilter(key, &cf);
-    if (status != SB_OK) {
-        return RedisModule_ReplyWithError(ctx, statusStrerror(status));
-    }
 
     // Pos, blob
     long long pos;
-    if (RedisModule_StringToLongLong(argv[2], &pos) != REDISMODULE_OK) {
+    if (RedisModule_StringToLongLong(argv[2], &pos) != REDISMODULE_OK || pos == 0) {
         return RedisModule_ReplyWithError(ctx, "Invalid position");
     }
     size_t bloblen;
     const char *blob = RedisModule_StringPtrLen(argv[3], &bloblen);
+
+    if (pos == 1) {
+        if (status != SB_EMPTY) {
+            return RedisModule_ReplyWithError(ctx, statusStrerror(status));
+        } else if (bloblen != sizeof(CFHeader)) {
+            return RedisModule_ReplyWithError(ctx, "Invalid header");
+        }
+
+        cf = CFHeader_Load((CFHeader *)blob);
+        if (cf == NULL) {
+            return RedisModule_ReplyWithError(ctx, "Couldn't create filter!");
+        }
+        RedisModule_ModuleTypeSetValue(key, CFType, cf);
+        return RedisModule_ReplyWithSimpleString(ctx, "OK");
+    }
+
+    if (status != SB_OK) {
+        return RedisModule_ReplyWithError(ctx, statusStrerror(status));
+    }
 
     if (CF_LoadEncodedChunk(cf, pos, blob, bloblen) != REDISMODULE_OK) {
         return RedisModule_ReplyWithError(ctx, "Couldn't load chunk!");
@@ -748,17 +755,15 @@ static size_t CFMemUsage(const void *value) {
 
 static void CFAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *obj) {
     CuckooFilter *cf = obj;
-    // First get the header
-    CFHeader header = {.numItems = cf->numItems,
-                       .numBuckets = cf->numBuckets,
-                       .numDeletes = cf->numDeletes,
-                       .numFilters = cf->numFilters};
-    RedisModule_EmitAOF(aof, "CF.LOADHDR", "sb", key, (const char *)&header, sizeof(header));
     const char *chunk;
     size_t nchunk;
     long long pos = 0;
+    CFHeader header;
+    fillCFHeader(&header, cf);
+    RedisModule_EmitAOF(aof, "CF.LOADCHUNK", "slb", key, 0, (const char *)&header, sizeof header);
+
     while ((chunk = CF_GetEncodedChunk(cf, &pos, &nchunk, MAX_SCANDUMP_SIZE))) {
-        RedisModule_EmitAOF(aof, "CF.LOADCHUNK", "slb", key, pos, chunk, nchunk);
+        RedisModule_EmitAOF(aof, "CF.LOADCHUNK", "slb", key, pos + 1, chunk, nchunk);
     }
 }
 
@@ -858,7 +863,6 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     // AOF:
     CREATE_ROCMD("CF.SCANDUMP", CFScanDump_RedisCommand);
     CREATE_WRCMD("CF.LOADCHUNK", CFLoadChunk_RedisCommand);
-    CREATE_WRCMD("CF.LOADHDR", CFLoadHeader_RedisCommand);
 
     CREATE_ROCMD("CF.DEBUG", CFInfo_RedisCommand);
 

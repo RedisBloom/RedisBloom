@@ -12,10 +12,10 @@
 // via `offset`
 static uint8_t *getBucketPos(const CuckooFilter *cf, long long pos, size_t *offset) {
     // Normalize the pos pointer to the beginning of the filter
+    pos--;
     *offset = pos % cf->numBuckets;
-
-    // Get the actual filter index
-    size_t filterIx = (pos - *offset) / cf->numFilters;
+    // Get the actual filter index.
+    size_t filterIx = (pos - (pos % cf->numBuckets)) / cf->numBuckets;
 
     if (filterIx >= cf->numFilters) {
         // Last position
@@ -50,22 +50,33 @@ const char *CF_GetEncodedChunk(const CuckooFilter *cf, long long *pos, size_t *b
 
 int CF_LoadEncodedChunk(const CuckooFilter *cf, long long pos, const char *data, size_t datalen) {
     if (datalen == 0 || datalen % CUCKOO_BKTSIZE != 0) {
+        // printf("problem with datalen!\n");
         return REDISMODULE_ERR;
     }
+
     size_t nbuckets = datalen / CUCKOO_BKTSIZE;
     if (nbuckets > pos) {
+        // printf("nbuckets>pos. pos=%lu. nbuckets=%lu\n", nbuckets, pos);
         return REDISMODULE_ERR;
     }
+
     pos -= nbuckets;
 
     size_t offset;
     uint8_t *bucketpos = getBucketPos(cf, pos, &offset);
     if (bucketpos == NULL) {
+        // printf("bucketpos=NULL\n");
         return REDISMODULE_ERR;
     }
+
+    // printf("OFFSET: %lu\n", offset);
+
     if (offset + nbuckets > cf->numBuckets) {
+        // printf("offset+nbuckets > cf->numBuckets. offset=%lu, nbuckets=%lu, numBuckets=%lu\n",
+        //        offset, nbuckets, cf->numBuckets);
         return REDISMODULE_ERR;
     }
+
     memcpy(bucketpos, data, datalen);
     return REDISMODULE_OK;
 }

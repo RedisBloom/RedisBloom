@@ -54,6 +54,31 @@ class CuckooTestCase(ModuleTestCase('../rebloom.so')):
         self.assertEqual(1, self.cmd('cf.add', 'cf', 'k1'))
         self.assertEqual(2, self.cmd('cf.count', 'cf', 'k1'))
 
+    def test_scandump(self):
+        maxrange = 500
+        self.cmd('cf.reserve', 'cf', maxrange / 4)
+        for x in xrange(maxrange):
+            self.cmd('cf.add', 'cf', str(x))
+        for x in xrange(maxrange):
+            self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
+
+        # Start with scandump
+        chunks = []
+        while True:
+            last_pos = chunks[-1][0] if chunks else 0
+            chunk = self.cmd('cf.scandump', 'cf', last_pos)
+            if not chunk[0]:
+                break
+            chunks.append(chunk)
+
+        self.cmd('del', 'cf')
+        for chunk in chunks:
+            print "Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1]))
+            self.cmd('cf.loadchunk', 'cf', *chunk)
+
+        for x in xrange(maxrange):
+            self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
+
 
 if __name__ == "__main__":
     import unittest
