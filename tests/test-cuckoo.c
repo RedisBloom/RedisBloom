@@ -15,7 +15,7 @@ TEST_DEFINE_GLOBALS();
 TEST_F(cuckoo, testBasicOps) {
 
     CuckooFilter ck;
-    CuckooFilter_Init(&ck, 10);
+    CuckooFilter_Init(&ck, 50);
     ASSERT_EQ(0, ck.numItems);
     ASSERT_EQ(1, ck.numFilters);
     ASSERT_EQ(16, ck.numBuckets);
@@ -71,7 +71,7 @@ TEST_F(cuckoo, testCount) {
 TEST_F(cuckoo, testRelocations) {
     test__abort_on_fail = 1;
     CuckooFilter ck;
-    CuckooFilter_Init(&ck, 10);
+    CuckooFilter_Init(&ck, 50);
     ASSERT_EQ(0, ck.numItems);
     ASSERT_EQ(1, ck.numFilters);
     ASSERT_EQ(16, ck.numBuckets);

@@ -24,9 +24,12 @@ static size_t getNextN2(size_t n) {
     return n;
 }
 
-int CuckooFilter_Init(CuckooFilter *filter, size_t n2) {
+int CuckooFilter_Init(CuckooFilter *filter, size_t capacity) {
     memset(filter, 0, sizeof(*filter));
-    filter->numBuckets = getNextN2(n2);
+    filter->numBuckets = getNextN2(capacity / CUCKOO_BKTSIZE);
+    if (filter->numBuckets == 0) {
+        filter->numBuckets = 1;
+    }
     if (CuckooFilter_Grow(filter) != 0) {
         return -1;
     }

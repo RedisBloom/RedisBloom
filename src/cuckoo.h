@@ -33,7 +33,7 @@ typedef enum {
     CuckooInsert_NoSpace = -1
 } CuckooInsertStatus;
 
-int CuckooFilter_Init(CuckooFilter *filter, size_t n2);
+int CuckooFilter_Init(CuckooFilter *filter, size_t capacity);
 void CuckooFilter_Free(CuckooFilter *filter);
 CuckooInsertStatus CuckooFilter_InsertUnique(CuckooFilter *filter, CuckooHash hash);
 CuckooInsertStatus CuckooFilter_Insert(CuckooFilter *filter, CuckooHash hash);
