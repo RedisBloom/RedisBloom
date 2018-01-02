@@ -9,5 +9,6 @@ markdown_extensions:
 pages:
     - 'ReBloom': 'index.md'
     - 'Quick Start': 'Quick_Start.md'
-    - 'Commands': 'Commands.md'
+    - 'Bloom Commands': 'Bloom_Commands.md'
+    - 'Cuckoo Filter Commands': 'Cuckoo_Commands.md'
     - 'Java API': 'Java_Client.md' 

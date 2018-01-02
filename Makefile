@@ -27,7 +27,9 @@ SRCDIR := $(ROOT)/src
 MODULE_OBJ = $(SRCDIR)/rebloom.o
 MODULE_SO = $(ROOT)/rebloom.so
 
-DEPS = $(ROOT)/contrib/MurmurHash2.o $(SRCDIR)/sb.o
+DEPS = $(ROOT)/contrib/MurmurHash2.o \
+	   $(SRCDIR)/sb.o \
+	   $(SRCDIR)/cf.o
 
 export
 
@@ -36,6 +38,8 @@ all: $(MODULE_SO)
 $(MODULE_SO): $(MODULE_OBJ) $(DEPS)
 	$(LD) $^ -o $@ $(SHOBJ_LDFLAGS) $(LDFLAGS)
 
+build: all
+	$(MAKE) -C tests build-test
 
 test: $(MODULE_SO)
 	$(MAKE) -C tests test

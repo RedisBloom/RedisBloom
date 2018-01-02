@@ -1,4 +1,4 @@
-# ReBloom Full Command Documentation
+# ReBloom Bloom Filter Command Documentation
 
 ## BF.RESERVE
 

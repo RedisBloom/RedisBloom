@@ -1,6 +1,10 @@
 
 # Quick Start Guide for ReBloom
 
+Bloom filters and cuckoo filters work fairly similarly at the API level; they
+both allow you to add items to a set (in effect making sure the item has been
+'seen' by the set).
+
 ## Building and running
 
 ```sh
@@ -12,7 +16,9 @@ make
 /path/to/redis-server --loadmodule ./rebloom.so
 ```
 
-## Adding new items to the filter
+# Bloom Filters
+
+## Bloom: Adding new items to the filter
 
 > A new filter is created for you if it does not yet exist
 
@@ -21,7 +27,7 @@ make
 (integer) 1
 ```
 
-## Checking if an item exists in the filter
+## Bloom: Checking if an item exists in the filter
 
 ```
 127.0.0.1:6379> BF.EXISTS newFilter foo
@@ -33,7 +39,7 @@ make
 (integer) 0
 ```
 
-## Adding and checking multiple items
+## Bloom: Adding and checking multiple items
 
 ```
 127.0.0.1:6379> BF.MADD myFilter foo bar baz
@@ -49,7 +55,7 @@ make
 3) (integer) 1
 ```
 
-## Creating a new filter with custom properties
+## Bloom: Creating a new filter with custom properties
 
 ```
 127.0.0.1:6379> BF.RESERVE customFilter 0.0001 600000
@@ -58,4 +64,36 @@ OK
 
 ```
 127.0.0.1:6379> BF.MADD customFilter foo bar baz
+```
+
+# Cuckoo Filters
+
+## Cuckoo: Adding new items to a filter
+
+> A new filter is created for you if it does not yet exist
+
+```
+127.0.0.1:6379> CF.ADD newFilter foo
+(integer) 1
+```
+
+You can add the item multiple times. The filter will attempt to count it.
+
+## Cuckoo: Checking whether item exists
+
+```
+127.0.0.1:6379> CF.EXISTS newFilter foo
+(integer) 1
+```
+
+```
+127.0.0.1:6379> CF.EXISTS newFilter notpresent
+(integer) 0
+```
+
+## Cuckoo: Deleting item from filter
+
+```
+127.0.0.1:6379> CF.DEL newFilter foo
+(integer) 1
 ```

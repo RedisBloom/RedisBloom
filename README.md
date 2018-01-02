@@ -1,8 +1,8 @@
 # ReBloom - Bloom Filter Module for Redis
 
-This module provides a scalable bloom filter as a Redis data type. Bloom filters
-are probabilistic data structures that do a very good job of quickly
-determining if something is contained within a set.
+This module provides two probabalistic data structures as Redis data types:
+**Bloom Filters** and **Cuckoo Filters**. These two structures are similar in
+their purpose but have different performance and functionality characteristics
 
 [![CircleCI](https://circleci.com/gh/RedisLabsModules/rebloom.svg?style=svg)](https://circleci.com/gh/RedisLabsModules/rebloom)
 

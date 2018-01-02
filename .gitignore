@@ -6,4 +6,5 @@
 *.pyc
 tests/test-basic
 tests/test-perf
+tests/test-cuckoo
 site/

@@ -1,0 +1,5 @@
+IndentWidth: 4
+ColumnLimit: 100
+SortIncludes: false
+AlignEscapedNewlinesLeft: false
+SpacesBeforeTrailingComments: 1
