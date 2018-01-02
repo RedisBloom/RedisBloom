@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <assert.h>
 
 static void *calloc_wrap(size_t a, size_t b) { return calloc(a, b); }
 static void free_wrap(void *p) { free(p); }
@@ -129,21 +130,26 @@ TEST_F(cuckoo, testFPR) {
 
     doFill(&ck);
     ASSERT_EQ(NUM_BULK, ck.numItems);
-    ASSERT_LE((double)countColls(&ck), (double)NUM_BULK * 0.03);
+    ASSERT_LE((double)countColls(&ck), (double)NUM_BULK * 0.015);
     CuckooFilter_Free(&ck);
 
     // Try again
     CuckooFilter_Init(&ck, NUM_BULK / 2);
     doFill(&ck);
     ASSERT_EQ(NUM_BULK, ck.numItems);
-    ASSERT_LE((double)countColls(&ck), (double)NUM_BULK * 0.06);
+    ASSERT_LE((double)countColls(&ck), (double)NUM_BULK * 0.03);
     CuckooFilter_Free(&ck);
 
     CuckooFilter_Init(&ck, NUM_BULK / 4);
     doFill(&ck);
     ASSERT_EQ(NUM_BULK, ck.numItems);
-    ASSERT_LE((double)countColls(&ck), (double)NUM_BULK * 0.6);
-    // printf("Have %lu filters\n", ck.numFilters);
+    ASSERT_LE((double)countColls(&ck), (double)NUM_BULK * 0.06);
+    CuckooFilter_Free(&ck);
+
+    CuckooFilter_Init(&ck, NUM_BULK / 8);
+    doFill(&ck);
+    ASSERT_EQ(NUM_BULK, ck.numItems);
+    ASSERT_LE((double)countColls(&ck), (double)NUM_BULK * 0.08);
     CuckooFilter_Free(&ck);
 }
 
