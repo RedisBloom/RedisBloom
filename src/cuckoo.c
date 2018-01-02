@@ -165,6 +165,10 @@ int CuckooFilter_Delete(CuckooFilter *filter, CuckooHash hash) {
     for (size_t ii = 0; ii < filter->numFilters; ++ii) {
         if (Filter_Delete(filter->filters[ii], CUCKOO_BKTSIZE, &params)) {
             filter->numItems--;
+            filter->numDeletes++;
+            if (filter->numFilters > 1 && filter->numDeletes > (double)filter->numItems * 0.10) {
+                CuckooFilter_Compact(filter);
+            }
             return 1;
         }
     }
@@ -188,6 +192,19 @@ static uint8_t *Filter_FindAvailable(CuckooBucket *filter, size_t bucketSize,
         return slot;
     }
     return NULL;
+}
+
+static uint8_t *Filter_FindAvailableDbg(CuckooBucket *filter, size_t bucketSize,
+                                        const LookupParams *params, size_t *newIx) {
+    uint8_t *slot;
+    if ((slot = Bucket_FindAvailable(filter[params->i1], CUCKOO_BKTSIZE))) {
+        *newIx = params->i1;
+    } else if ((slot = Bucket_FindAvailable(filter[params->i2], CUCKOO_BKTSIZE))) {
+        *newIx = params->i2;
+    } else {
+        *newIx = -1;
+    }
+    return slot;
 }
 
 static uint8_t *Filter_FindUnique(CuckooBucket bucket, size_t index, size_t bucketSize,
@@ -290,4 +307,79 @@ static CuckooInsertStatus Filter_KOInsert(CuckooBucket *curFilter, size_t numBuc
     victim->i1 = ii;
     victim->i2 = getAltIndex(victim->fp, victim->i1, numBuckets);
     return CuckooInsert_NoSpace;
+}
+
+#define RELOC_EMPTY 0
+#define RELOC_OK 1
+#define RELOC_FAIL -1
+
+/**
+ * Attempt to move a slot from one bucket to another filter
+ */
+static int relocateSlot(CuckooFilter *cf, CuckooBucket bucket, size_t filterIx, size_t bucketIx,
+                        size_t slotIx) {
+    LookupParams params = {};
+    if ((params.fp = bucket[slotIx]) == CUCKOO_NULLFP) {
+        // Nothing in this slot.
+        return RELOC_EMPTY;
+    }
+
+    params.i1 = bucketIx;
+    params.i2 = getAltIndex(params.fp, bucketIx, cf->numBuckets);
+
+    // Look at all the prior filters and attempt to find a home
+    for (size_t ii = 0; ii < filterIx; ++ii) {
+        size_t foundIx;
+        uint8_t *slot = Filter_FindAvailableDbg(cf->filters[ii], CUCKOO_BKTSIZE, &params, &foundIx);
+        if (slot) {
+            *slot = params.fp;
+            bucket[slotIx] = CUCKOO_NULLFP;
+            return RELOC_OK;
+        }
+    }
+    return RELOC_FAIL;
+}
+
+/**
+ * Attempt to strip a single filter moving it down a slot
+ */
+static size_t CuckooFilter_CompactSingle(CuckooFilter *cf, size_t filterIx) {
+    CuckooBucket *filter = cf->filters[filterIx];
+    int dirty = 0;
+    size_t numRelocs = 0;
+
+    for (size_t bucketIx = 0; bucketIx < cf->numBuckets; ++bucketIx) {
+        for (size_t slotIx = 0; slotIx < CUCKOO_BKTSIZE; ++slotIx) {
+            int status = relocateSlot(cf, filter[bucketIx], filterIx, bucketIx, slotIx);
+            if (status == RELOC_FAIL) {
+                dirty = 1;
+            } else if (status == RELOC_OK) {
+                numRelocs++;
+            }
+        }
+    }
+    if (!dirty) {
+        CUCKOO_FREE(filter);
+        cf->numFilters--;
+    }
+    return numRelocs;
+}
+
+size_t CuckooFilter_Compact(CuckooFilter *cf) {
+    size_t ret = 0;
+    for (size_t ii = cf->numFilters; ii > 1; --ii) {
+        ret += CuckooFilter_CompactSingle(cf, ii - 1);
+    }
+    cf->numDeletes = 0;
+    return ret;
+}
+
+void CuckooFilter_GetInfo(const CuckooFilter *cf, CuckooHash hash, CuckooKey *out) {
+    LookupParams params;
+    getLookupParams(hash, cf->numBuckets, &params);
+    out->fp = params.fp;
+    out->i1 = params.i1;
+    out->i2 = params.i2;
+    assert(getAltIndex(params.fp, out->i1, cf->numBuckets) == out->i2);
+    assert(getAltIndex(params.fp, out->i2, cf->numBuckets) == out->i1);
 }
