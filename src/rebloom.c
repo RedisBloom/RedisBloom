@@ -18,6 +18,7 @@ static RedisModuleType *CFType;
 static double BFDefaultErrorRate = 0.01;
 static size_t BFDefaultInitCapacity = 100;
 static size_t CFDefaultInitCapacity = 1000;
+static size_t CFMaxExpansions = 1024;
 static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2);
 
 typedef enum { SB_OK = 0, SB_MISSING, SB_EMPTY, SB_MISMATCH } lookupStatus;
@@ -401,6 +402,13 @@ static int CFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
         }
     } else if (status != SB_OK) {
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
+    }
+
+    if (cf->numFilters >= CFMaxExpansions) {
+        // Ensure that adding new elements does not cause heavy expansion.
+        // We might want to find a way to better distinguish legitimate from malicious
+        // additions.
+        return RedisModule_ReplyWithError(ctx, "Maximum expansions reached");
     }
 
     // See if we can add the element
@@ -823,6 +831,12 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
             } else {
                 BFDefaultErrorRate = d;
             }
+        } else if (!rsStrcasecmp(argv[ii], "cf_max_expansions")) {
+            long long l;
+            if (RedisModule_StringToLongLong(argv[ii + 1], &l) == REDISMODULE_ERR || l == 0) {
+                BAIL("Invalid argument for 'CF_MAX_EXPANSIONS'");
+            }
+            CFMaxExpansions = l;
         } else {
             BAIL("Unrecognized option");
         }
