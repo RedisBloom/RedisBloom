@@ -186,17 +186,31 @@ static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     RedisModule_ReplicateVerbatim(ctx);
 
     int is_multi = isMulti(argv[0]);
-
-    if ((is_multi && argc < 3) || (is_multi == 0 && argc != 3)) {
-        RedisModule_WrongArity(ctx);
-        return REDISMODULE_ERR;
+    long long capacity = BFDefaultInitCapacity;
+    double error_rate = BFDefaultErrorRate;
+    size_t item_idx_max = argc;
+    if (!is_multi) {
+        item_idx_max = 3;
+        if (argc == 6) {
+            if (rsStrcasecmp(argv[3], "RESERVE")) {
+                return RedisModule_WrongArity(ctx);
+            }
+            if (RedisModule_StringToDouble(argv[4], &error_rate) != REDISMODULE_OK ||
+                RedisModule_StringToLongLong(argv[5], &capacity) != REDISMODULE_OK) {
+                return RedisModule_ReplyWithError(ctx, "Bad error rate or capacity");
+            }
+        } else if (argc != 3) {
+            return RedisModule_WrongArity(ctx);
+        }
+    } else if (argc < 3) {
+        return RedisModule_WrongArity(ctx);
     }
 
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
     SBChain *sb;
     int status = bfGetChain(key, &sb);
     if (status == SB_EMPTY) {
-        sb = bfCreateChain(key, BFDefaultErrorRate, BFDefaultInitCapacity);
+        sb = bfCreateChain(key, error_rate, capacity);
         if (sb == NULL) {
             return RedisModule_ReplyWithError(ctx, "ERR could not create filter");
         }
@@ -208,7 +222,7 @@ static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
         RedisModule_ReplyWithArray(ctx, argc - 2);
     }
 
-    for (size_t ii = 2; ii < argc; ++ii) {
+    for (size_t ii = 2; ii < item_idx_max; ++ii) {
         size_t n;
         const char *s = RedisModule_StringPtrLen(argv[ii], &n);
         int rv = SBChain_Add(sb, s, n);

@@ -47,12 +47,16 @@ OK on success, error otherwise.
 ### Format
 
 ```
-BF.ADD {key} {item}
+BF.ADD {key} {item} [RESERVE {error_rate} {size}]
 ```
 
 ### Description
 
 Adds an item to the Bloom Filter, creating the filter if it does not yet exist.
+
+If the `RESERVE` keyword is used, and the filter does not yet exist, it is as if
+`BF.RESERVE` was invoked with the passed parameters. This allows the in-place
+creation of filters to use custom size/error requirements and override the defaults.
 
 ### Parameters
 

@@ -121,6 +121,11 @@ class RebloomTestCase(ModuleTestCase('../rebloom.so')):
         res = self.cmd('bf.mexists', 'myBloom', 'foo', 'bar', 'baz')
         self.assertEqual([0, 0, 0], res)
 
+    def test_set_reserve(self):
+        self.cmd('bf.add', 'missingFilter', 'foo', 'reserve', '0.001', '50000')
+        self.assertEqual(['size:1', 'bytes:131072 bits:1048576 hashes:10 capacity:72931 size:1 ratio:0.001'],
+                         self.cmd('bf.debug', 'missingFilter'))
+
 
 if __name__ == "__main__":
     import unittest
