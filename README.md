@@ -13,7 +13,7 @@ their purpose but have different performance and functionality characteristics
 
 Note: You can also [build and load the module](#building-and-loading-rebloom) yourself.
 
-You can find a command reference in [Commands.md](docs/Commands.md)
+You can find a command reference in [Bloom_Commands.md](docs/Bloom_Commands.md)
 
 
 ### 1. Launch ReBloom with Docker
@@ -54,5 +54,5 @@ In order to use this module, build it using `make` and load it into Redis.
 $ redis-server --loadmodule /path/to/rebloom.so
 ```
 
-You can find a command reference in [docs/Commands.md](docs/Commands.md)
+You can find a command reference in [docs/Bloom_Commands.md](docs/Bloom_Commands.md)
 
