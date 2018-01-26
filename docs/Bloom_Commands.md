@@ -47,16 +47,12 @@ OK on success, error otherwise.
 ### Format
 
 ```
-BF.ADD {key} {item} [RESERVE {error_rate} {size}]
+BF.ADD {key} {item}
 ```
 
 ### Description
 
 Adds an item to the Bloom Filter, creating the filter if it does not yet exist.
-
-If the `RESERVE` keyword is used, and the filter does not yet exist, it is as if
-`BF.RESERVE` was invoked with the passed parameters. This allows the in-place
-creation of filters to use custom size/error requirements and override the defaults.
 
 ### Parameters
 
@@ -90,6 +86,69 @@ multiple values.
 
 * **key**: The name of the filter
 * **items**: One or more items to add
+
+### Complexity
+
+O(log N).
+
+### Returns
+
+An array of booleans (integers). Each element is either true or false depending
+on whether the corresponding input element was newly added to the filter or may
+have previously existed.
+
+## BF.INSERT
+
+```
+BF.INSERT {key} [CAPACITY {cap}] [ERROR {error}] [NOCREATE] ITEMS {item...}
+```
+
+### Description
+
+This command will add one or more items to the bloom filter, by default creating
+it if it does not yet exist. There are several arguments which may be used to
+modify this behavior.
+
+### Parameters
+
+* **key**: The name of the filter
+* **CAPACITY**: If specified, should be followed by the desired capacity for the
+    filter to be created. This parameter is ignored if the filter already exists.
+    If the filter is automatically created and this parameter is absent, then the
+    default capacity (specified at the module-level) is used. See `BF.RESERVE`
+    for more information on the impacts of this value.
+* **ERROR**: If specified, should be followed by the the error ratio of the newly
+    created filter if it does not yet exist. If the filter is automatically
+    created and `ERROR` is not specified then the default module-level error
+    rate is used. See `BF.RESERVE` for more information on the format of this
+    value.
+* **NOCREATE**: If specified, indicates that the filter should not be created if
+    it does not already exist. If the filter does not yet exist, an error is
+    returned rather than creating it automatically. This may be used where a strict
+    separation between filter creation and filter addition is desired. It is an
+    error to specify `NOCREATE` together with either `CAPACITY` or `ERROR`.
+* **ITEMS**: Indicates the beginning of the items to be added to the filter. This
+    parameter must be specified.
+
+### Examples
+
+Add three items to a filter, using default parameters if the filter does not already
+exist:
+```
+BF.INSERT filter ITEMS foo bar baz
+```
+
+Add one item to a filter, specifying a capacity of 10000 to be used if it does not
+already exist:
+```
+BF.INSERT filter CAPACITY 10000 ITEMS hello world
+```
+
+Add 2 items to a filter, returning an error if the filter does not already exist
+
+```
+BF.INSERT filter NOCREATE ITEMS foo bar
+```
 
 ### Complexity
 

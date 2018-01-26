@@ -23,6 +23,17 @@ static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2);
 
 typedef enum { SB_OK = 0, SB_MISSING, SB_EMPTY, SB_MISMATCH } lookupStatus;
 
+typedef struct {
+    long long capacity;
+    double error_rate;
+    int autocreate;
+    // int must_exist;
+    int is_multi;
+} BFInsertOptions;
+
+static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisModuleString **items,
+                          size_t nitems, const BFInsertOptions *options);
+
 static int getValue(RedisModuleKey *key, RedisModuleType *expType, void **sbout) {
     *sbout = NULL;
     if (key == NULL) {
@@ -175,6 +186,33 @@ static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     return REDISMODULE_OK;
 }
 
+static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisModuleString **items,
+                          size_t nitems, const BFInsertOptions *options) {
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, keystr, REDISMODULE_READ | REDISMODULE_WRITE);
+    SBChain *sb;
+    int status = bfGetChain(key, &sb);
+    if (status == SB_EMPTY && options->autocreate) {
+        sb = bfCreateChain(key, options->error_rate, options->capacity);
+        if (sb == NULL) {
+            return RedisModule_ReplyWithError(ctx, "ERR could not create filter");
+        }
+    } else if (status != SB_OK) {
+        return RedisModule_ReplyWithError(ctx, statusStrerror(status));
+    }
+
+    if (options->is_multi) {
+        RedisModule_ReplyWithArray(ctx, nitems);
+    }
+
+    for (size_t ii = 0; ii < nitems; ++ii) {
+        size_t n;
+        const char *s = RedisModule_StringPtrLen(items[ii], &n);
+        int rv = SBChain_Add(sb, s, n);
+        RedisModule_ReplyWithLongLong(ctx, !!rv);
+    }
+    return REDISMODULE_OK;
+}
+
 /**
  * Adds items to an existing filter. Creates a new one on demand if it doesn't exist.
  * BF.ADD <KEY> ITEMS...
@@ -184,51 +222,77 @@ static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
 static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     RedisModule_ReplicateVerbatim(ctx);
+    BFInsertOptions options = {
+        .capacity = BFDefaultInitCapacity, .error_rate = BFDefaultErrorRate, .autocreate = 1};
+    options.is_multi = isMulti(argv[0]);
 
-    int is_multi = isMulti(argv[0]);
-    long long capacity = BFDefaultInitCapacity;
-    double error_rate = BFDefaultErrorRate;
-    size_t item_idx_max = argc;
-    if (!is_multi) {
-        item_idx_max = 3;
-        if (argc == 6) {
-            if (rsStrcasecmp(argv[3], "RESERVE")) {
-                return RedisModule_WrongArity(ctx);
-            }
-            if (RedisModule_StringToDouble(argv[4], &error_rate) != REDISMODULE_OK ||
-                RedisModule_StringToLongLong(argv[5], &capacity) != REDISMODULE_OK) {
-                return RedisModule_ReplyWithError(ctx, "Bad error rate or capacity");
-            }
-        } else if (argc != 3) {
-            return RedisModule_WrongArity(ctx);
-        }
-    } else if (argc < 3) {
+    if ((options.is_multi && argc < 3) || (!options.is_multi && argc != 3)) {
+        return RedisModule_WrongArity(ctx);
+    }
+    return bfInsertCommon(ctx, argv[1], argv + 2, argc - 2, &options);
+}
+/**
+ * BF.INSERT {filter} [ERROR {rate} CAPACITY {cap}] [NOCREATE] ITEMS {item} {item}
+ * ..
+ * -> (Array) (or error )
+ */
+static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+    RedisModule_ReplicateVerbatim(ctx);
+    BFInsertOptions options = {.capacity = BFDefaultInitCapacity,
+                               .error_rate = BFDefaultErrorRate,
+                               .autocreate = 1,
+                               .is_multi = 1};
+    int items_index = -1;
+
+    // Scan the arguments
+    if (argc < 4) {
         return RedisModule_WrongArity(ctx);
     }
 
-    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
-    SBChain *sb;
-    int status = bfGetChain(key, &sb);
-    if (status == SB_EMPTY) {
-        sb = bfCreateChain(key, error_rate, capacity);
-        if (sb == NULL) {
-            return RedisModule_ReplyWithError(ctx, "ERR could not create filter");
+    size_t cur_pos = 2;
+    while (cur_pos < argc && items_index < 0) {
+        size_t arglen;
+        const char *argstr = RedisModule_StringPtrLen(argv[cur_pos], &arglen);
+
+        switch (tolower(*argstr)) {
+        case 'i':
+            items_index = ++cur_pos;
+            break;
+
+        case 'e':
+            if (++cur_pos == argc) {
+                return RedisModule_WrongArity(ctx);
+            }
+            if (RedisModule_StringToDouble(argv[cur_pos++], &options.error_rate) !=
+                REDISMODULE_OK) {
+                return RedisModule_ReplyWithError(ctx, "Bad error rate");
+            }
+            break;
+
+        case 'c':
+            if (++cur_pos == argc) {
+                return RedisModule_WrongArity(ctx);
+            }
+            if (RedisModule_StringToLongLong(argv[cur_pos++], &options.capacity) !=
+                REDISMODULE_OK) {
+                return RedisModule_ReplyWithError(ctx, "Bad capacity");
+            }
+            break;
+
+        case 'n':
+            options.autocreate = 0;
+            cur_pos++;
+            break;
+
+        default:
+            return RedisModule_ReplyWithError(ctx, "Unknown argument received");
         }
-    } else if (status != SB_OK) {
-        return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
-
-    if (is_multi) {
-        RedisModule_ReplyWithArray(ctx, argc - 2);
+    if (items_index < 0 || items_index == argc) {
+        return RedisModule_WrongArity(ctx);
     }
-
-    for (size_t ii = 2; ii < item_idx_max; ++ii) {
-        size_t n;
-        const char *s = RedisModule_StringPtrLen(argv[ii], &n);
-        int rv = SBChain_Add(sb, s, n);
-        RedisModule_ReplyWithLongLong(ctx, !!rv);
-    }
-    return REDISMODULE_OK;
+    return bfInsertCommon(ctx, argv[1], argv + items_index, argc - items_index, &options);
 }
 
 /**
@@ -868,6 +932,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     CREATE_WRCMD("BF.RESERVE", BFReserve_RedisCommand);
     CREATE_WRCMD("BF.ADD", BFAdd_RedisCommand);
     CREATE_WRCMD("BF.MADD", BFAdd_RedisCommand);
+    CREATE_WRCMD("BF.INSERT", BFInsert_RedisCommand);
     CREATE_ROCMD("BF.EXISTS", BFCheck_RedisCommand);
     CREATE_ROCMD("BF.MEXISTS", BFCheck_RedisCommand);
 
