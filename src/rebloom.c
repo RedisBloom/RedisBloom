@@ -448,34 +448,22 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         return RedisModule_ReplyWithSimpleString(ctx, "OK");
     }
 }
-/**
- * CF.ADD <KEY> <ELEM> [CAPACITY]
- *
- * Adds an item to a cuckoo filter, potentially creating a new cuckoo filter
- */
-static int CFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-    RedisModule_ReplicateVerbatim(ctx);
 
-    size_t cmdlen;
-    const char *cmdstr = RedisModule_StringPtrLen(argv[0], &cmdlen);
-    int isNX = tolower(cmdstr[cmdlen - 1]) == 'x';
-    if (argc != 3 && argc != 4) {
-        return RedisModule_WrongArity(ctx);
-    }
+typedef struct {
+    int is_nx;
+    int autocreate;
+    int is_multi;
+    long long capacity;
+} CFInsertOptions;
 
-    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
+static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisModuleString **items,
+                          size_t nitems, const CFInsertOptions *options) {
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, keystr, REDISMODULE_READ | REDISMODULE_WRITE);
     CuckooFilter *cf = NULL;
     int status = cfGetFilter(key, &cf);
 
-    if (status == SB_EMPTY) {
-        long long capacity = CFDefaultInitCapacity;
-        if (argc == 4) {
-            if (RedisModule_StringToLongLong(argv[3], &capacity) != REDISMODULE_OK) {
-                return RedisModule_ReplyWithError(ctx, "CAPACITY must be a number");
-            }
-        }
-        if ((cf = cfCreate(key, capacity)) == NULL) {
+    if (status == SB_EMPTY && options->autocreate) {
+        if ((cf = cfCreate(key, options->capacity)) == NULL) {
             return RedisModule_ReplyWithError(ctx, "Could not create filter");
         }
     } else if (status != SB_OK) {
@@ -490,27 +478,101 @@ static int CFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     }
 
     // See if we can add the element
-    size_t elemlen;
-    const char *elem = RedisModule_StringPtrLen(argv[2], &elemlen);
-    CuckooHash hash = CUCKOO_GEN_HASH(elem, elemlen);
+    if (options->is_multi) {
+        RedisModule_ReplyWithArray(ctx, nitems);
+    }
 
-    CuckooInsertStatus insStatus;
-    if (isNX) {
-        insStatus = CuckooFilter_InsertUnique(cf, hash);
-    } else {
-        insStatus = CuckooFilter_Insert(cf, hash);
+    for (size_t ii = 0; ii < nitems; ++ii) {
+        size_t elemlen;
+        const char *elem = RedisModule_StringPtrLen(items[ii], &elemlen);
+        CuckooHash hash = CUCKOO_GEN_HASH(elem, elemlen);
+        CuckooInsertStatus insStatus;
+        if (options->is_nx) {
+            insStatus = CuckooFilter_InsertUnique(cf, hash);
+        } else {
+            insStatus = CuckooFilter_Insert(cf, hash);
+        }
+        if (insStatus == CuckooInsert_Inserted) {
+            RedisModule_ReplyWithLongLong(ctx, 1);
+        } else if (insStatus == CuckooInsert_Exists) {
+            RedisModule_ReplyWithLongLong(ctx, 0);
+        } else if (insStatus == CuckooInsert_NoSpace) {
+            if (!options->is_multi) {
+                return RedisModule_ReplyWithError(ctx, "Filter is full");
+            } else {
+                RedisModule_ReplyWithLongLong(ctx, -1);
+            }
+        } else {
+            // Should never happen
+            RedisModule_ReplyWithLongLong(ctx, -2);
+        }
     }
-    switch (insStatus) {
-    case CuckooInsert_Inserted:
-        return RedisModule_ReplyWithLongLong(ctx, 1);
-    case CuckooInsert_Exists:
-        return RedisModule_ReplyWithLongLong(ctx, 0);
-    case CuckooInsert_NoSpace:
-        return RedisModule_ReplyWithError(ctx, "Filter is full");
-    default:
-        // Should never happen
-        return REDISMODULE_ERR;
+
+    return REDISMODULE_OK;
+}
+
+/**
+ * CF.ADD <KEY> <ELEM>
+ *
+ * Adds an item to a cuckoo filter, potentially creating a new cuckoo filter
+ */
+static int CFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+    RedisModule_ReplicateVerbatim(ctx);
+    CFInsertOptions options = {.autocreate = 1, .capacity = CFDefaultInitCapacity, .is_multi = 0};
+    size_t cmdlen;
+    const char *cmdstr = RedisModule_StringPtrLen(argv[0], &cmdlen);
+    options.is_nx = tolower(cmdstr[cmdlen - 1]) == 'x';
+    if (argc != 3) {
+        return RedisModule_WrongArity(ctx);
     }
+    return cfInsertCommon(ctx, argv[1], argv + 2, 1, &options);
+}
+
+static int CFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+    RedisModule_ReplicateVerbatim(ctx);
+    CFInsertOptions options = {.autocreate = 1, .capacity = CFDefaultInitCapacity, .is_multi = 1};
+    size_t cmdlen;
+    const char *cmdstr = RedisModule_StringPtrLen(argv[0], &cmdlen);
+    options.is_nx = tolower(cmdstr[cmdlen - 1]) == 'x';
+    // Need <cmd> <key> <ITEMS> <n..> -- at least 4 arguments
+    if (argc < 4) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    size_t cur_pos = 2;
+    int items_pos = -1;
+    while (cur_pos < argc && items_pos < 0) {
+        size_t n;
+        const char *argstr = RedisModule_StringPtrLen(argv[cur_pos], &n);
+        switch (tolower(*argstr)) {
+        case 'c':
+            if (++cur_pos == argc) {
+                return RedisModule_WrongArity(ctx);
+            }
+            if (RedisModule_StringToLongLong(argv[cur_pos++], &options.capacity) !=
+                REDISMODULE_OK) {
+                return RedisModule_ReplyWithError(ctx, "Bad capacity");
+            }
+            break;
+        case 'i':
+            // Begin item list
+            items_pos = ++cur_pos;
+            break;
+        case 'n':
+            options.autocreate = 0;
+            cur_pos++;
+            break;
+        default:
+            return RedisModule_ReplyWithError(ctx, "Unknown argument received");
+        }
+    }
+
+    if (items_pos < 0 || items_pos == argc) {
+        return RedisModule_WrongArity(ctx);
+    }
+    return cfInsertCommon(ctx, argv[1], argv + items_pos, argc - items_pos, &options);
 }
 
 static int isCount(RedisModuleString *s) {
@@ -946,6 +1008,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     CREATE_WRCMD("CF.RESERVE", CFReserve_RedisCommand);
     CREATE_WRCMD("CF.ADD", CFAdd_RedisCommand);
     CREATE_WRCMD("CF.ADDNX", CFAdd_RedisCommand);
+    CREATE_WRCMD("CF.INSERT", CFInsert_RedisCommand);
+    CREATE_WRCMD("CF.INSERTNX", CFInsert_RedisCommand);
     CREATE_ROCMD("CF.EXISTS", CFCheck_RedisCommand);
     CREATE_ROCMD("CF.MEXISTS", CFCheck_RedisCommand);
     CREATE_ROCMD("CF.COUNT", CFCheck_RedisCommand);

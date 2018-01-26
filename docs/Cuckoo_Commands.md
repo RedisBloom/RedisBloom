@@ -33,14 +33,12 @@ OK on success, error otherwise
 ## CF.ADD
 
 ```
-CF.ADD {key} {item} [capacity]
+CF.ADD {key} {item}
 ```
 
 ### Description
 
-Adds an item to the cuckoo filter, creating the filter if it does not exist. If
-`capacity` is also supplied, then the new filter (if it does not yet exist)
-is created with the given capacity.
+Adds an item to the cuckoo filter, creating the filter if it does not exist.
 
 Cuckoo filters can contain the same item multiple times, and consider each insert
 to be separate. You can use `CF.ADDNX` to only add the item if it does not yet
@@ -50,8 +48,6 @@ exist.
 
 * **key**: The name of the filter
 * **item**: The item to add
-* **capacity**: Optional capacity argument to be used if the filter does not yet
-    exist
 
 ### Complexity
 
@@ -65,7 +61,7 @@ O(log N)
 ## CF.ADDNX
 
 ```
-CF.ADDNX {key} {item} [capacity]
+CF.ADDNX {key} {item}
 ```
 
 ### Description
@@ -80,7 +76,6 @@ first check to see if the item exists.
 
 * **key**: The name of the filter
 * **item**: The item to add
-* **capacity**: Optional capacity to be used if the filter does not yet exist
 
 ### Complexity
 
@@ -89,6 +84,54 @@ O(log N)
 ### Returns
 
 "1" if the item was added to the filter, "0" if the item already exists.
+
+
+## CF.INSERT
+
+## CF.INSERTNX
+
+```
+CF.INSERT {key} [CAPACITY {cap}] ITEMS {item ...}
+CF.INSERTNX {key} [CAPACITY {cap}] ITEMS {item ...}
+```
+
+### Description
+
+Adds one or more items to a cuckoo filter, allowing the filter to be created
+with a custom capacity if it does not yet exist.
+
+These commands offers more flexibility over the `ADD` and `ADDNX` commands, at
+the cost of more verbosity.
+
+### Parameters
+
+* **key**: The name of the filter
+* **CAPACITY**: If specified, should be followed by the desired capacity of the
+    new filter, if this filter does not yet exist. If the filter already
+    exists, then this parameter is ignored. If the filter does not yet exist
+    and this parameter is *not* specified, then the filter is created with the
+    module-level default capacity. See `CF.RESERVE` for more information on
+    cuckoo filter capacities.
+* **NOCREATE**: If specified, prevent automatic filter creation if the filter
+    does not exist. Instead, an error will be returned if the filter does not
+    already exist. This option is mutually exclusive with `CAPACITY`.
+* **ITEMS**: Begin the list of items to add.
+
+### Complexity
+
+O(log N)
+
+### Returns
+
+An array of booleans (as integers) corresponding to the items specified. Possible
+values for each element are:
+
+* `> 0` if the item was successfully inserted
+* `0` if the item already existed *and* `INSERTNX` is used.
+* `<0` if an error ocurred
+
+Note that for `CF.INSERT`, unless an error occurred, the return value will always
+be an array of `>0` values.
 
 ## CF.EXISTS
 

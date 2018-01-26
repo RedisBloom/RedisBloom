@@ -79,6 +79,35 @@ class CuckooTestCase(ModuleTestCase('../rebloom.so')):
         for x in xrange(maxrange):
             self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
 
+    def test_insert(self):
+        # Ensure insert with default capacity works
+        self.assertEqual(1, self.cmd('cf.add', 'f1', 'foo'))
+        self.assertEqual([1], self.cmd('cf.insert', 'f2', 'ITEMS', 'foo'))
+        d1 = self.cmd('cf.debug', 'f1')
+        d2 = self.cmd('cf.debug', 'f2')
+        self.assertTrue(d1)
+        self.assertEqual(d1, d2)
+
+        # Test NX
+        self.assertEqual([0], self.cmd('cf.insertnx', 'f1', 'items', 'foo'))
+
+        # Create a new filter with non-default capacity
+        self.assertEqual([1], self.cmd('cf.insert', 'f3', 'CAPACITY', '10000', 'ITEMS', 'foo'))
+        d3 = self.cmd('cf.debug', 'f3')
+        self.assertEqual('bktsize:2 buckets:8192 items:1 deletes:0 filters:1', d3)
+        self.assertNotEqual(d1, d3)
+
+        # Test multi
+        self.assertEqual([0, 1, 1], self.cmd('cf.insertnx', 'f3', 'ITEMS', 'foo', 'bar', 'baz'))
+
+        # Test no auto creation
+        with self.assertResponseError():
+            self.cmd('cf.insert', 'f4', 'nocreate', 'items', 'foo')
+        # Create it
+        self.cmd('cf.insert', 'f4', 'items', 'foo')
+        # Insert again to ensure our prior error was because of NOCREATE
+        self.cmd('cf.insert', 'f4', 'nocreate', 'items', 'foo')
+
 
 if __name__ == "__main__":
     import unittest
