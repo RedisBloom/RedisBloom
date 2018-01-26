@@ -529,6 +529,9 @@ static int CFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     return cfInsertCommon(ctx, argv[1], argv + 2, 1, &options);
 }
 
+/**
+ * CF.INSERT <KEY> [NOCREATE] [CAPACITY <cap>] ITEMS <item...>
+ */
 static int CFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     RedisModule_ReplicateVerbatim(ctx);
