@@ -11,7 +11,8 @@ an item is present (or absent) from a collection.
 
 Note: You can also [build and load the module](#building-and-loading-rebloom) yourself.
 
-You can find a command reference in [Commands.md](Commands.md)
+You can find a command reference in [Bloom Commands.md](Bloom_Commands.md) and
+[Cuckoo Commands](Cuckoo_Commands.md)
 
 
 ### Launch ReBloom with Docker
@@ -52,7 +53,8 @@ In order to use this module, build it using `make` and load it into Redis.
 $ redis-server --loadmodule /path/to/rebloom.so
 ```
 
-You can find a command reference in [docs/Commands.md](docs/Commands.md)
+You can find a command reference in [Bloom\_Commands.md](Bloom_Commands.md)
+and [Cuckoo\_Commands.md](Cuckoo_Commands.md)
 
 
 ## Building
