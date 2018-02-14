@@ -112,6 +112,32 @@ TEST_F(basic, testIssue9) {
     SBChain_Free(chain);
 }
 
+/**
+ *      self.cmd('bf.reserve', 'myBloom', '0.0001', '100')
+        def do_verify():
+            for x in xrange(1000):
+                self.cmd('bf.add', 'myBloom', x)
+                rv = self.cmd('bf.exists', 'myBloom', x)
+                self.assertTrue(rv)
+                rv = self.cmd('bf.exists', 'myBloom', 'nonexist_{}'.format(x))
+                self.assertFalse(rv, x)
+
+ */
+TEST_F(basic, test64BitHash) {
+    SBChain *chain = SB_NewChain(100, 0.0001, BLOOM_OPT_FORCE64);
+    for (size_t ii = 0; ii < 1000; ++ii) {
+        printf("ii=%lu\n", ii);
+        size_t val_exist = ii;
+        size_t val_nonexist = ~ii;
+        // Add the item
+        int rc = SBChain_Add(chain, &val_exist, sizeof val_exist);
+        ASSERT_NE(0, rc);
+        ASSERT_NE(0, SBChain_Check(chain, &val_exist, sizeof val_exist));
+        ASSERT_EQ(0, SBChain_Check(chain, &val_nonexist, sizeof val_nonexist));
+    }
+    SBChain_Free(chain);
+}
+
 typedef struct {
     const char *buf;
     size_t nbuf;
