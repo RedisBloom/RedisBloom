@@ -34,10 +34,10 @@
 #define MODE_READ 0
 #define MODE_WRITE 1
 
-inline static int test_bit_set_bit(unsigned char *buf, unsigned int x, int mode) {
-    unsigned int byte = x >> 3;
-    unsigned char c = buf[byte]; // expensive memory access
-    unsigned int mask = 1 << (x % 8);
+inline static int test_bit_set_bit(unsigned char *buf, uint64_t x, int mode) {
+    uint64_t byte = x >> 3;
+    uint8_t mask = 1 << (x % 8);
+    uint8_t c = buf[byte]; // expensive memory access
 
     if (c & mask) {
         return 1;
@@ -56,6 +56,13 @@ bloom_hashval bloom_calc_hash(const void *buffer, int len) {
     return rv;
 }
 
+bloom_hashval bloom_calc_hash64(const void *buffer, int len) {
+    bloom_hashval rv;
+    rv.a = MurmurHash64A(buffer, len, 0);
+    rv.b = MurmurHash64A(buffer, len, rv.a);
+    return rv;
+}
+
 // This function is defined as a macro because newer filters use a power of two
 // for bit count, which is must faster to calculate. Older bloom filters don't
 // use powers of two, so they are slower. Rather than calculating this inside
@@ -65,7 +72,7 @@ bloom_hashval bloom_calc_hash(const void *buffer, int len) {
 // modExp is the expression which will evaluate to the number of bits in the
 // filter.
 #define CHECK_ADD_FUNC(T, modExp)                                                                  \
-    register unsigned int i;                                                                       \
+    T i;                                                                                           \
     int found_unset = 0;                                                                           \
     const register T mod = modExp;                                                                 \
     for (i = 0; i < bloom->hashes; i++) {                                                          \
@@ -159,7 +166,9 @@ int bloom_init(struct bloom *bloom, unsigned entries, double error, unsigned opt
     } else {
         bloom->bytes = bits / 8;
     }
-
+    if (options & BLOOM_OPT_FORCE64) {
+        bloom->force64 = 1;
+    }
     bloom->hashes = (int)ceil(0.693147180559945 * bloom->bpe); // ln(2)
     bloom->bf = (unsigned char *)BLOOM_CALLOC(bloom->bytes, sizeof(unsigned char));
     if (bloom->bf == NULL) {
@@ -170,7 +179,7 @@ int bloom_init(struct bloom *bloom, unsigned entries, double error, unsigned opt
 }
 
 int bloom_check_h(const struct bloom *bloom, bloom_hashval hash) {
-    if (bloom->n2 > 31) {
+    if (bloom->force64 || bloom->n2 > 31) {
         return bloom_check_add64((void *)bloom, hash, MODE_READ);
     } else if (bloom->n2 > 0) {
         return bloom_check_add32((void *)bloom, hash, MODE_READ);
@@ -184,7 +193,7 @@ int bloom_check(const struct bloom *bloom, const void *buffer, int len) {
 }
 
 int bloom_add_h(struct bloom *bloom, bloom_hashval hash) {
-    if (bloom->n2 > 31) {
+    if (bloom->force64 || bloom->n2 > 31) {
         return !bloom_check_add64(bloom, hash, MODE_WRITE);
     } else if (bloom->n2) {
         return !bloom_check_add32(bloom, hash, MODE_WRITE);

@@ -22,6 +22,7 @@ extern "C" {
  */
 struct bloom {
     uint32_t hashes;
+    uint8_t force64;
     uint8_t n2;
     uint32_t entries;
 
@@ -68,6 +69,9 @@ struct bloom {
 // Entries is actually the number of bits, not the number of entries to reserve
 #define BLOOM_OPT_ENTS_IS_BITS 2
 
+// Always force 64 bit hashing, even if too small
+#define BLOOM_OPT_FORCE64 4
+
 int bloom_init(struct bloom *bloom, unsigned entries, double error, unsigned options);
 
 /** ***************************************************************************
@@ -77,8 +81,8 @@ int bloom_init(struct bloom *bloom, unsigned entries, double error, unsigned opt
 int bloom_init_size(struct bloom *bloom, int entries, double error, unsigned int cache_size);
 
 typedef struct {
-    unsigned int a;
-    unsigned int b;
+    uint64_t a;
+    uint64_t b;
 } bloom_hashval;
 
 bloom_hashval bloom_calc_hash(const void *buffer, int len);

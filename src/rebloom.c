@@ -78,7 +78,7 @@ static const char *statusStrerror(int status) {
  * capacity and error rate must not be 0.
  */
 static SBChain *bfCreateChain(RedisModuleKey *key, double error_rate, size_t capacity) {
-    SBChain *sb = SB_NewChain(capacity, error_rate, 0);
+    SBChain *sb = SB_NewChain(capacity, error_rate, BLOOM_OPT_FORCE64);
     if (sb != NULL) {
         RedisModule_ModuleTypeSetValue(key, BFType, sb);
     }
@@ -776,7 +776,8 @@ static int CFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 /// Datatype Functions                                                       ///
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-#define BF_ENCODING_VERSION 1
+#define BF_ENCODING_VERSION 2
+#define BF_MIN_OPTIONS_ENC 2
 
 static void BFRdbSave(RedisModuleIO *io, void *obj) {
     // Save the setting!
@@ -784,6 +785,7 @@ static void BFRdbSave(RedisModuleIO *io, void *obj) {
 
     RedisModule_SaveUnsigned(io, sb->size);
     RedisModule_SaveUnsigned(io, sb->nfilters);
+    RedisModule_SaveUnsigned(io, sb->options);
 
     for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         const SBLink *lb = sb->filters + ii;
@@ -811,6 +813,9 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
     SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
     sb->size = RedisModule_LoadUnsigned(io);
     sb->nfilters = RedisModule_LoadUnsigned(io);
+    if (encver >= BF_MIN_OPTIONS_ENC) {
+        sb->options = RedisModule_LoadUnsigned(io);
+    }
 
     // Sanity:
     assert(sb->nfilters < 1000);
@@ -829,6 +834,9 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
         } else {
             bm->bits = RedisModule_LoadUnsigned(io);
             bm->n2 = RedisModule_LoadUnsigned(io);
+        }
+        if (sb->options & BLOOM_OPT_FORCE64) {
+            bm->force64 = 1;
         }
         size_t sztmp;
         bm->bf = (unsigned char *)RedisModule_LoadStringBuffer(io, &sztmp);
