@@ -126,7 +126,6 @@ TEST_F(basic, testIssue9) {
 TEST_F(basic, test64BitHash) {
     SBChain *chain = SB_NewChain(100, 0.0001, BLOOM_OPT_FORCE64);
     for (size_t ii = 0; ii < 1000; ++ii) {
-        printf("ii=%lu\n", ii);
         size_t val_exist = ii;
         size_t val_nonexist = ~ii;
         // Add the item
