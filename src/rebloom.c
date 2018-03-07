@@ -839,14 +839,18 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
     return sb;
 }
 
-static void BFAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
+static void BF
+Rewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
     SBChain *sb = value;
     size_t len;
+    
+    long long iter = SB_CHUNKITER_INIT;
+    
     char *hdr = SBChain_GetEncodedHeader(sb, &len);
-    RedisModule_EmitAOF(aof, "BF.LOADCHUNK", "slb", key, 0, hdr, len);
+    RedisModule_EmitAOF(aof, "BF.LOADCHUNK", "slb", key, iter , hdr, len);
     SB_FreeEncodedHeader(hdr);
 
-    long long iter = SB_CHUNKITER_INIT;
+   
     const char *chunk;
     while ((chunk = SBChain_GetEncodedChunk(sb, &iter, &len, MAX_SCANDUMP_SIZE)) != NULL) {
         RedisModule_EmitAOF(aof, "BF.LOADCHUNK", "slb", key, iter, chunk, len);
