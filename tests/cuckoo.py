@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 from rmtest import ModuleTestCase
 from redis import ResponseError
+import sys
+
+if sys.version >= '3':
+    xrange = range
 
 
 class CuckooTestCase(ModuleTestCase('../rebloom.so')):
@@ -56,7 +60,7 @@ class CuckooTestCase(ModuleTestCase('../rebloom.so')):
 
     def test_scandump(self):
         maxrange = 500
-        self.cmd('cf.reserve', 'cf', maxrange / 4)
+        self.cmd('cf.reserve', 'cf', int(maxrange / 4))
         for x in xrange(maxrange):
             self.cmd('cf.add', 'cf', str(x))
         for x in xrange(maxrange):
@@ -73,7 +77,7 @@ class CuckooTestCase(ModuleTestCase('../rebloom.so')):
 
         self.cmd('del', 'cf')
         for chunk in chunks:
-            print "Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1]))
+            print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
             self.cmd('cf.loadchunk', 'cf', *chunk)
 
         for x in xrange(maxrange):
@@ -94,7 +98,7 @@ class CuckooTestCase(ModuleTestCase('../rebloom.so')):
         # Create a new filter with non-default capacity
         self.assertEqual([1], self.cmd('cf.insert', 'f3', 'CAPACITY', '10000', 'ITEMS', 'foo'))
         d3 = self.cmd('cf.debug', 'f3')
-        self.assertEqual('bktsize:2 buckets:8192 items:1 deletes:0 filters:1', d3)
+        self.assertEqual('bktsize:2 buckets:8192 items:1 deletes:0 filters:1', d3.decode())
         self.assertNotEqual(d1, d3)
 
         # Test multi

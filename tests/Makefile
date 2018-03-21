@@ -1,10 +1,12 @@
 all: test test-cuckoo test-perf
 
+PYTHON:=python
+
 test: test-basic test-cuckoo
 	./test-basic
 	./test-cuckoo
-	python pytests.py
-	python cuckoo.py
+	$(PYTHON) pytests.py
+	$(PYTHON) cuckoo.py
 
 perf: test-perf
 	time ./test-perf

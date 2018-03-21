@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 from rmtest import ModuleTestCase
 from redis import ResponseError
+import sys
+
+if sys.version >= '3':
+    xrange = range
 
 
 class RebloomTestCase(ModuleTestCase('../rebloom.so')):
@@ -133,12 +137,12 @@ class RebloomTestCase(ModuleTestCase('../rebloom.so')):
                        '0.001', 'CAPACITY', '50000', 'ITEMS', 'foo')
         self.assertEqual([1], rep)
         self.assertEqual(['size:1', 'bytes:131072 bits:1048576 hashes:10 capacity:72931 size:1 ratio:0.001'],
-                         self.cmd('bf.debug', 'missingFilter'))
+                         [x.decode() for x in self.cmd('bf.debug', 'missingFilter')])
 
         rep = self.cmd('BF.INSERT', 'missingFilter', 'ERROR', '0.1', 'ITEMS', 'foo', 'bar', 'baz')
         self.assertEqual([0, 1, 1], rep)
         self.assertEqual(['size:3', 'bytes:131072 bits:1048576 hashes:10 capacity:72931 size:3 ratio:0.001'],
-                         self.cmd('bf.debug', 'missingFilter'))
+                         [x.decode() for x in self.cmd('bf.debug', 'missingFilter')])
 
 
 if __name__ == "__main__":
