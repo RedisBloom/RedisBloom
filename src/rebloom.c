@@ -324,9 +324,10 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         const SBLink *lb = sb->filters + ii;
         info_s = RedisModule_CreateStringPrintf(
-            ctx, "bytes:%llu bits:%llu hashes:%u capacity:%u size:%lu ratio:%g", lb->inner.bytes,
-            lb->inner.bits ? lb->inner.bits : 1LLU << lb->inner.n2, lb->inner.hashes,
-            lb->inner.entries, lb->size, lb->inner.error);
+            ctx, "bytes:%llu bits:%llu hashes:%u hashwidth:%u capacity:%u size:%lu ratio:%g",
+            lb->inner.bytes, lb->inner.bits ? lb->inner.bits : 1LLU << lb->inner.n2,
+            lb->inner.hashes, sb->options & BLOOM_OPT_FORCE64 ? 64 : 32, lb->inner.entries,
+            lb->size, lb->inner.error);
         RedisModule_ReplyWithString(ctx, info_s);
         RedisModule_FreeString(ctx, info_s);
     }
