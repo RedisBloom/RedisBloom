@@ -166,9 +166,8 @@ int bloom_init(struct bloom *bloom, unsigned entries, double error, unsigned opt
     } else {
         bloom->bytes = bits / 8;
     }
-    if (options & BLOOM_OPT_FORCE64) {
-        bloom->force64 = 1;
-    }
+
+    bloom->force64 = (options & BLOOM_OPT_FORCE64);
     bloom->hashes = (int)ceil(0.693147180559945 * bloom->bpe); // ln(2)
     bloom->bf = (unsigned char *)BLOOM_CALLOC(bloom->bytes, sizeof(unsigned char));
     if (bloom->bf == NULL) {
