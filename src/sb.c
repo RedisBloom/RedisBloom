@@ -24,8 +24,7 @@ static int SBChain_AddLink(SBChain *chain, size_t size, double error_rate) {
     SBLink *newlink = chain->filters + chain->nfilters;
     newlink->size = 0;
     chain->nfilters++;
-    unsigned options = chain->options;
-    return bloom_init(&newlink->inner, size, error_rate, options);
+    return bloom_init(&newlink->inner, size, error_rate, chain->options);
 }
 
 void SBChain_Free(SBChain *sb) {
@@ -46,9 +45,17 @@ static int SBChain_AddToLink(SBLink *lb, bloom_hashval hash) {
     }
 }
 
+static bloom_hashval SBChain_GetHash(const SBChain *chain, const void *buf, size_t len) {
+    if (chain->options & BLOOM_OPT_FORCE64) {
+        return bloom_calc_hash64(buf, len);
+    } else {
+        return bloom_calc_hash(buf, len);
+    }
+}
+
 int SBChain_Add(SBChain *sb, const void *data, size_t len) {
     // Does it already exist?
-    bloom_hashval h = bloom_calc_hash(data, len);
+    bloom_hashval h = SBChain_GetHash(sb, data, len);
     for (int ii = sb->nfilters - 1; ii >= 0; --ii) {
         if (bloom_check_h(&sb->filters[ii].inner, h)) {
             return 0;
@@ -73,7 +80,7 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
 }
 
 int SBChain_Check(const SBChain *sb, const void *data, size_t len) {
-    bloom_hashval hv = bloom_calc_hash(data, len);
+    bloom_hashval hv = SBChain_GetHash(sb, data, len);
     for (int ii = sb->nfilters - 1; ii >= 0; --ii) {
         if (bloom_check_h(&sb->filters[ii].inner, hv)) {
             return 1;
@@ -217,6 +224,9 @@ SBChain *SB_NewChainFromHeader(const char *buf, size_t bufLen, const char **errm
         X_ENCODED_LINK(X, srclink, dstlink)
 #undef X
         dstlink->inner.bf = RedisModule_Alloc(dstlink->inner.bytes);
+        if (sb->options & BLOOM_OPT_FORCE64) {
+            dstlink->inner.force64 = 1;
+        }
     }
 
     return sb;
