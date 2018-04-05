@@ -214,6 +214,7 @@ TEST_F(encoding, testEncodingSimple) {
 
     SBChain_Free(chain);
     SBChain_Free(chain2);
+    free(encs);
 }
 
 int main(int argc, char **argv) {
