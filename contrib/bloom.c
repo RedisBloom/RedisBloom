@@ -58,7 +58,7 @@ bloom_hashval bloom_calc_hash(const void *buffer, int len) {
 
 bloom_hashval bloom_calc_hash64(const void *buffer, int len) {
     bloom_hashval rv;
-    rv.a = MurmurHash64A(buffer, len, 0);
+    rv.a = MurmurHash64A(buffer, len, 0xc6a4a7935bd1e995ULL);
     rv.b = MurmurHash64A(buffer, len, rv.a);
     return rv;
 }
