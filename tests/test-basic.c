@@ -217,6 +217,7 @@ TEST_F(encoding, testEncodingSimple) {
 }
 
 int main(int argc, char **argv) {
+    test__abort_on_fail = 1;
     RedisModule_Calloc = calloc_wrap;
     RedisModule_Free = free_wrap;
     RedisModule_Realloc = realloc;
