@@ -777,7 +777,7 @@ static int CFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 /// Datatype Functions                                                       ///
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-#define BF_ENCODING_VERSION 2
+#define BF_ENCODING_VERSION 3
 #define BF_MIN_OPTIONS_ENC 2
 
 static void BFRdbSave(RedisModuleIO *io, void *obj) {
