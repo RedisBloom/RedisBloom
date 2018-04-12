@@ -596,8 +596,7 @@ static int CFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     int is_count = isCount(argv[0]);
 
     if ((is_multi == 0 && argc != 3) || (is_multi && argc < 3)) {
-        RedisModule_WrongArity(ctx);
-        return REDISMODULE_ERR;
+        return RedisModule_WrongArity(ctx);
     }
 
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
@@ -629,7 +628,6 @@ static int CFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
             }
             RedisModule_ReplyWithLongLong(ctx, rv);
         }
-        return REDISMODULE_OK;
     }
     return REDISMODULE_OK;
 }

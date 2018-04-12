@@ -112,6 +112,19 @@ class CuckooTestCase(ModuleTestCase('../rebloom.so')):
         # Insert again to ensure our prior error was because of NOCREATE
         self.cmd('cf.insert', 'f4', 'nocreate', 'items', 'foo')
 
+    def test_exists(self):
+        self.assertEqual([1, 1, 1], self.cmd('CF.INSERT', 'f1', 'ITEMS', 'foo', 'bar', 'baz'))
+        self.assertEqual([1, 1, 1], self.cmd('CF.MEXISTS', 'f1', 'foo', 'bar', 'baz'))
+
+        # Test missing redis key
+        self.assertEqual(0, self.cmd('CF.EXISTS', 'nonexist-key', 'blah'))
+        self.assertEqual([0], self.cmd('CF.MEXISTS', 'nonexist-key', 'blah'))
+
+        self.assertRaises(ResponseError, self.cmd, 'CF.MEXISTS', 'key')
+        self.assertRaises(ResponseError, self.cmd, 'CF.MEXISTS')
+        self.assertRaises(ResponseError, self.cmd, 'CF.EXISTS', 'key')
+        self.assertRaises(ResponseError, self.cmd, 'CF.EXISTS')
+
 
 if __name__ == "__main__":
     import unittest
