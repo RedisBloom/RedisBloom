@@ -14,6 +14,7 @@ ADD . /
 WORKDIR /
 RUN set -ex;\
     deps="$DEPS";\
+    make clean; \
     make all -j 4; \
     make test;
 
