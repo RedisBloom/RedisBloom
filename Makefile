@@ -55,7 +55,6 @@ package: $(MODULE_SO)
 	mkdir -p $(ROOT)/build
 	ramp-packer -vvv -m ramp.yml -o "$(ROOT)/build/rebloom.{os}-{architecture}.latest.zip" "$(MODULE_SO)"
 
-
 clean:
 	$(RM) $(MODULE_OBJ) $(MODULE_SO) $(DEPS)
 	$(RM) -f print_version
@@ -64,8 +63,8 @@ clean:
 
 distclean: clean
 
-docker: distclean
-	docker build --rm . -t redislabs/rebloom
+docker:
+	docker build -t redislabs/rebloom .
 
 docker_push: docker
 	docker push redislabs/rebloom:latest
