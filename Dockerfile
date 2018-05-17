@@ -16,4 +16,4 @@ RUN set -ex;\
     mkdir -p "$LIBDIR";
 COPY --from=builder /rebloom.so "$LIBDIR"
 
-CMD ["redis-server", "--loadmodule", "/var/lib/redis/modules/rebloom.so"]
+CMD ["redis-server", "--loadmodule", "/usr/lib/redis/modulesrebloom.so"]
