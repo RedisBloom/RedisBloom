@@ -2,6 +2,9 @@ site_name: ReBloom Documentation
 repo_url: https://github.com/RedisLabsModules/rebloom
 theme: material
 
+google_analytics:
+  - 'UA-92003007-8'
+  - 'auto'
 markdown_extensions:
   - codehilite
   - toc(permalink=true)
