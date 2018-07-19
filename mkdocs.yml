@@ -1,12 +1,31 @@
 site_name: ReBloom Documentation
 repo_url: https://github.com/RedisLabsModules/rebloom
-theme: material
+repo_name: RedisLabsModules/rebloom
 
 google_analytics:
   - 'UA-92003007-8'
   - 'auto'
+  
+use_directory_urls: true
+
+theme:
+  name: 'material'
+  language: 'en'
+  logo: 'logo.png'
+  favicon: 'favicon.png'
+  palette:
+    primary: 'indigo'
+    accent: 'red'
+  font:
+    text: 'Roboto'
+    code: 'Roboto Mono'
+  feature:
+    tabs: false
+
+  
 markdown_extensions:
-  - codehilite
+  - admonition
+  - codehilite(guess_lang=false)
   - toc(permalink=true)
  
 pages:
