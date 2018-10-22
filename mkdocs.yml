@@ -3,7 +3,7 @@ repo_url: https://github.com/RedisLabsModules/rebloom
 repo_name: RedisLabsModules/rebloom
 
 google_analytics:
-  - 'UA-92003007-8'
+  - 'UA-92003007-1'
   - 'auto'
   
 use_directory_urls: true
