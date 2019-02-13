@@ -21,12 +21,13 @@ theme:
     code: 'Roboto Mono'
   feature:
     tabs: false
-
   
 markdown_extensions:
   - admonition
-  - codehilite(guess_lang=false)
-  - toc(permalink=true)
+  - codehilite:
+      guess_lang: False
+  - toc:
+      permalink: True
  
 pages:
     - 'ReBloom': 'index.md'
