@@ -1,5 +1,6 @@
 [![CircleCI](https://circleci.com/gh/RedisLabsModules/rebloom.svg?style=svg)](https://circleci.com/gh/RedisLabsModules/rebloom)
 [![GitHub issues](https://img.shields.io/github/release/RedisLabsModules/rebloom.svg)](https://github.com/RedisLabsModules/rebloom/releases/latest)
+[![DockerHub](https://dockerbuildbadges.quelltext.eu/status.svg?organization=redislabs&repository=rebloom)](https://hub.docker.com/r/redislabs/rebloom/builds/) 
 
 # ReBloom - Bloom Filter Module for Redis
 
