@@ -73,7 +73,7 @@ O(log N).
 ### Format
 
 ```
-{key} {item} [item...]
+BF.MADD {key} {item} [item...]
 ```
 
 ### Description
