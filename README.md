@@ -14,7 +14,7 @@ their purpose but have different performance and functionality characteristics
 
 Note: You can also [build and load the module](#building-and-loading-rebloom) yourself.
 
-You can find a command reference in [Bloom_Commands.md](docs/Bloom_Commands.md)
+You can find command references in [Bloom_Commands.md](docs/Bloom_Commands.md) and [Cuckoo_Commands.md](docs/Cuckoo_Commands.md)
 
 
 ### 1. Launch ReBloom with Docker
