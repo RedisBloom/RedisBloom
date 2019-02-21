@@ -1,4 +1,4 @@
-# ReBloom Cuckoo Filter Documentation
+# RedisBloom Cuckoo Filter Documentation
 
 ## CF.RESERVE
 
