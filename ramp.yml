@@ -1,8 +1,8 @@
-display_name: ReBloom
+display_name: RedisBloom
 author: Redis Labs
 email: redismodules@redislabs.com
 description: Bloom Filter Module for Redis
-homepage: http://rebloom.io
+homepage: http://redisbloom.io
 license: Redis Source Available License Agreement
 command_line_args: ""
 min_redis_version: "4.0"
