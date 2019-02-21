@@ -13,7 +13,7 @@ cd redisbloom
 make
 
 # Assuming you have a redis build from the unstable branch:
-/path/to/redis-server --loadmodule ./redisbloom.so
+/path/to/redis-server --loadmodule ./rebloom.so
 ```
 
 # Bloom Filters
