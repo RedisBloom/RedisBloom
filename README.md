@@ -57,6 +57,11 @@ $ redis-server --loadmodule /path/to/rebloom.so
 
 You can find a command reference in [docs/Bloom_Commands.md](docs/Bloom_Commands.md)
 
+## Documentation
+
+Read the docs at [redisbloom.io](http://redisbloom.io).
+
+
 ## License
 
 Redis Source Available License Agreement - see [LICENSE](LICENSE)
