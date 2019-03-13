@@ -1,6 +1,7 @@
-site_name: ReBloom Documentation
-repo_url: https://github.com/RedisLabsModules/rebloom
-repo_name: RedisLabsModules/rebloom
+site_name: RedisBloom Documentation
+site_url: http://redisbloom.io
+repo_url: https://github.com/RedisLabsModules/RedisBloom
+repo_name: RedisLabsModules/RedisBloom
 
 google_analytics:
   - 'UA-92003007-1'

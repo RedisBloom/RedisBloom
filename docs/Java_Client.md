@@ -1,13 +1,13 @@
 # JReBloom
 
-A Java Client Library for [ReBloom](https://rebloom.io)
+A Java Client Library for [RedisBloom](https://redisbloom.io)
 
 ## Overview 
 
-This project contains a Java library abstracting the API of the ReBloom Redis module, that implements a high
+This project contains a Java library abstracting the API of the RedisBloom Redis module, that implements a high
 perfomance bloom filter with an easy-to-use API
  
-See [http://rebloom.io](http://rebloom.io) for installation instructions of the module.
+See [http://redisbloom.io](http://redisbloom.io) for installation instructions of the module.
 
 ## Usage example
 
