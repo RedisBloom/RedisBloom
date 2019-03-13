@@ -1,4 +1,4 @@
-# ReBloom Bloom Filter Command Documentation
+# RedisBloom Bloom Filter Command Documentation
 
 ## BF.RESERVE
 
