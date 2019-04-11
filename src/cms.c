@@ -1,15 +1,27 @@
-#include "redismodule.h"
-#include "countminsketch.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+
+#include "xxhash.h"
+#include "cms.h"
 
 #define CMS_SIGNATURE "COUNTMINSKETCH:1.0:"
 #define CMS_SEED 0
 #define MAGIC 2147483647  // 2^31-1 according to the paper
+#define min(a, b) ((a) < (b) ? (a) : (b))
 
-
+typedef struct CMSketch {
+  long long counter;
+  int depth;
+  int width;
+  int *vector;
+  unsigned int *hashA, *hashB;
+} CMSketch;
 
 ///////////////////////// INIT /////////////////////////
 /* Creates a new sketch based with given dimensions. */
-CMSketch *NewCMSketch(RedisModuleKey *key, int width, int depth) {
+static CMSketch *NewCMSketch(RedisModuleKey *key, int width, int depth) {
     size_t slen = strlen(CMS_SIGNATURE) + sizeof(CMSketch) +
                     sizeof(int) * width * depth +     // vector
                     sizeof(unsigned int) * 2 * depth; // hashes
@@ -44,7 +56,7 @@ CMSketch *NewCMSketch(RedisModuleKey *key, int width, int depth) {
     return cms;
 }
 
-static int CMSInit_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int CMSInit_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (argc != 4) {
         return RedisModule_WrongArity(ctx);
     }
@@ -101,8 +113,7 @@ static int CMSInit_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     return REDISMODULE_OK;
 }
 
-///////////////////////// GET /////////////////////////
-// TODO: remove ctx and ReplyWithError where called
+///////////////////////// GET (static) /////////////////////////
 static CMSketch *GetCMSketch(RedisModuleCtx *ctx, RedisModuleKey *key) {
     size_t dlen;
     char *dma = RedisModule_StringDMA(key, &dlen, REDISMODULE_READ);
@@ -125,7 +136,7 @@ static CMSketch *GetCMSketch(RedisModuleCtx *ctx, RedisModuleKey *key) {
 }
 
 ///////////////////////// INCREASE /////////////////////////
-int CMSIncrBy(CMSketch *cms, RedisModuleString **argv, int argc) {
+static int CMSIncrBy(CMSketch *cms, RedisModuleString **argv, int argc) {
 
     /* Loop over the input items and update their counts. */
     for (int i = 3; i < argc; i += 2) {
@@ -142,7 +153,7 @@ int CMSIncrBy(CMSketch *cms, RedisModuleString **argv, int argc) {
     }
 }
 
-static int CMSIncrBy_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int CMSIncrBy_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if ((argc < 4) || (argc % 2 != 0)) {
         return RedisModule_WrongArity(ctx);
     }
@@ -188,7 +199,19 @@ static int CMSIncrBy_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
 }
 
 ///////////////////////// Query /////////////////////////
-// Should separete function which return int * for RedisModule_ReplyWithLongLong loop?
+
+static int CMSQuery(CMSketch *cms, RedisModuleString *str) {
+    size_t len;
+    const char *value = RedisModule_StringPtrLen(str, &len);
+    long long h = (cms->hashA[0] * XXH32(value, len, MAGIC) + cms->hashB[0]) & MAGIC;
+    int freq = cms->vector[h % cms->width];
+    for (int j = 1; j < cms->depth; ++j) {
+        h = (cms->hashA[j] * XXH32(value, len, MAGIC) + cms->hashB[j]) & MAGIC;
+        freq = min(freq, cms->vector[j * cms->width + h % cms->width]);
+    }
+    return freq;
+}
+
 int CMSQueryCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (argc < 3) {
         return RedisModule_WrongArity(ctx);
@@ -214,16 +237,18 @@ int CMSQueryCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     /* Loop over the items and estimate their counts. */
     RedisModule_ReplyWithArray(ctx, argc - 2);
     for (int i = 2; i < argc; ++i) {
-        size_t len;
+        /*size_t len;
         const char *value = RedisModule_StringPtrLen(argv[i], &len);
         long long h = (cms->hashA[0] * XXH32(value, len, MAGIC) + cms->hashB[0]) & MAGIC;
         // Shouldn't freq be long long?
         int freq = cms->vector[h % cms->width];
         for (int j = 1; j < cms->depth; ++j) {
-        h = (cms->hashA[j] * XXH32(value, len, MAGIC) + cms->hashB[j]) & MAGIC;
-        freq = min(freq, cms->vector[j * cms->width + h % cms->width]);
-        }
-        // Isn't freq[0] missing from reply?
+            h = (cms->hashA[j] * XXH32(value, len, MAGIC) + cms->hashB[j]) & MAGIC;
+            freq = min(freq, cms->vector[j * cms->width + h % cms->width]);
+        }*/
+
+        int freq = CMSQuery(cms, argv[i]);
+
         RedisModule_ReplyWithLongLong(ctx, freq);
     }
 
