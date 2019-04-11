@@ -136,8 +136,7 @@ static CMSketch *GetCMSketch(RedisModuleCtx *ctx, RedisModuleKey *key) {
 }
 
 ///////////////////////// INCREASE /////////////////////////
-static int CMSIncrBy(CMSketch *cms, RedisModuleString **argv, int argc) {
-
+static void CMSIncrBy(CMSketch *cms, RedisModuleString **argv, int argc) {
     /* Loop over the input items and update their counts. */
     for (int i = 3; i < argc; i += 2) {
         size_t len;
@@ -212,7 +211,7 @@ static int CMSQuery(CMSketch *cms, RedisModuleString *str) {
     return freq;
 }
 
-int CMSQueryCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int CMSQuery_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (argc < 3) {
         return RedisModule_WrongArity(ctx);
     }

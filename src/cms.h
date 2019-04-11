@@ -3,9 +3,9 @@
 
 #include "redismodule.h"
 
-static int CMSInit_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
-static int CMSIncrBy_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
-int CMSQueryCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
+int CMSInit_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
+int CMSIncrBy_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
+int CMSQuery_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
 
 
 #endif
