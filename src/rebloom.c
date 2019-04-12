@@ -1034,8 +1034,9 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 
     CREATE_ROCMD("CF.DEBUG", CFInfo_RedisCommand);
 
-    // Count Min Sketch commands
-    CREATE_WRCMD("CMS.RESERVE", CMSInit_RedisCommand);
+    // Count Min Sketch commcms.initbydimands
+    CREATE_WRCMD("CMS.INITBYDIM", CMSInit_RedisCommand);
+    CREATE_WRCMD("CMS.INITBYPROB", CMSInit_RedisCommand);
     CREATE_WRCMD("CMS.INCRBY", CMSIncrBy_RedisCommand);
     CREATE_ROCMD("CMS.QUERY", CMSQuery_RedisCommand);
 
