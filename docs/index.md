@@ -1,3 +1,5 @@
+<img src="icon-probabilistic.png" alt="logo" width="200"/>
+
 # RedisBloom - Probablistic Datatypes Module for Redis
 
 This module provides two datatypes, a Scalable Bloom Filter and a Cuckoo Filter.
