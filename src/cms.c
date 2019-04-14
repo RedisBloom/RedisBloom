@@ -198,7 +198,6 @@ int CMSIncrBy_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 }
 
 ///////////////////////// Query /////////////////////////
-
 static int CMSQuery(CMSketch *cms, RedisModuleString *str) {
     size_t len;
     const char *value = RedisModule_StringPtrLen(str, &len);
@@ -251,5 +250,154 @@ int CMSQuery_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
         RedisModule_ReplyWithLongLong(ctx, freq);
     }
 
+    return REDISMODULE_OK;
+}
+
+///////////////////////// Query /////////////////////////
+void CMSMerge(CMSketch *destsketch, 
+              RedisModuleString **argv,
+              long long numkeys, 
+              RedisModuleKey **keys, 
+              CMSketch **sketches, 
+              long long *weights) {
+    size_t destkey_strlen;
+    const char *destkey_str = RedisModule_StringPtrLen(argv[1], &destkey_strlen);
+    long long destweight = 0;
+    size_t num_destkey_in_keys = 0;
+
+    for (int i = 0; i < numkeys; i++) {
+        size_t key_strlen;
+        const char *key_str = RedisModule_StringPtrLen(argv[i + 3], &key_strlen);
+
+        if (!strcasecmp(destkey_str, key_str)) {
+            destweight += weights[i];
+
+            RedisModuleKey *tmp_key = keys[i];
+            keys[i] = keys[num_destkey_in_keys];
+            keys[num_destkey_in_keys] = tmp_key;
+
+            CMSketch *tmp_sketch = sketches[i];
+            sketches[i] = sketches[num_destkey_in_keys];
+            sketches[num_destkey_in_keys] = tmp_sketch;
+
+            long long tmp_weight = weights[i];
+            weights[i] = weights[num_destkey_in_keys];
+            weights[num_destkey_in_keys] = tmp_weight;
+
+            num_destkey_in_keys++;
+            }
+    }
+
+    for (int i = 0; i < destsketch->depth; i++) {
+        for (int j = 0; j < destsketch->width; j++) {
+            destsketch->vector[i * destsketch->width + j] *= destweight;
+        }
+    }
+
+    for (int i = num_destkey_in_keys; i < numkeys; i++) {
+        for (int j = 0; j < destsketch->depth; j++) {
+            for (int k = 0; k < destsketch->width; k++) {
+                destsketch->vector[j * sketches[i]->width + k] +=
+                weights[i] * sketches[i]->vector[j * sketches[i]->width + k];
+            }
+        }
+    }
+}
+
+    /* CMS.MERGE destkey numkeys key [key ...] [WEIGHTS weight [weight ...]]
+    */
+int CMSMerge_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    if (argc < 4) {
+        return RedisModule_WrongArity(ctx);
+    }
+    RedisModule_AutoMemory(ctx);
+
+    long long numkeys;
+    if ((RedisModule_StringToLongLong(argv[2], &numkeys) != REDISMODULE_OK) ||
+        (numkeys < 1)) {
+        RedisModule_ReplyWithError(ctx, "ERR invalid numkeys");
+        return REDISMODULE_ERR;
+    }
+
+    if (RedisModule_IsKeysPositionRequest(ctx)) {
+        RedisModule_KeyAtPos(ctx, 1);
+        for (int i = 0; i < numkeys; i++) {
+            RedisModule_KeyAtPos(ctx, i + 3);
+        }
+        return REDISMODULE_OK;
+    }
+
+    int use_weights;
+    if (argc == 2 * numkeys + 4) {
+        size_t strlen;
+        const char *str = RedisModule_StringPtrLen(argv[numkeys + 3], &strlen);
+        if (strcasecmp("weights", str) != 0) {
+            RedisModule_ReplyWithError(ctx, "ERR syntax error");
+            return REDISMODULE_ERR;
+        }
+        use_weights = 1;
+    } else if (argc == numkeys + 3) {
+        use_weights = 0;
+    } else {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    /* Validate that all values are sketches. */
+    RedisModuleKey **keys = RedisModule_PoolAlloc(ctx, numkeys * sizeof(RedisModuleKey *));
+    CMSketch **sketches = RedisModule_PoolAlloc(ctx, numkeys * sizeof(CMSketch *));
+    long long *weights = RedisModule_PoolAlloc(ctx, numkeys * sizeof(long long));
+
+    for (int i = 0; i < numkeys; i++) {
+        keys[i] = RedisModule_OpenKey(ctx, argv[i + 3], REDISMODULE_READ);
+
+        if (RedisModule_KeyType(keys[i]) != REDISMODULE_KEYTYPE_STRING) {
+            RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+            return REDISMODULE_ERR;
+        }
+
+        sketches[i] = GetCMSketch(ctx, keys[i]);
+        if (!sketches[i]) {
+            RedisModule_ReplyWithError(ctx, "ERR cannot open a key");
+            return REDISMODULE_ERR;
+        }
+
+        if ((sketches[0]->depth != sketches[i]->depth) ||
+            (sketches[0]->width != sketches[i]->width)) {
+            RedisModule_ReplyWithError(ctx, "ERR incompatible sketch");
+            return REDISMODULE_ERR;
+        }
+
+        if (use_weights) {
+            if (RedisModule_StringToLongLong(argv[i + numkeys + 4], &weights[i]) != REDISMODULE_OK) {
+                RedisModule_ReplyWithError(ctx, "ERR invalid weight");
+                return REDISMODULE_ERR;
+            }
+        } else {
+        weights[i] = 1;
+        }
+    }
+
+    RedisModuleKey *destkey =
+        RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
+    CMSketch *destsketch;
+
+    if (RedisModule_KeyType(destkey) == REDISMODULE_KEYTYPE_EMPTY) {
+        destsketch = NewCMSketch(destkey, sketches[0]->width, sketches[0]->depth);
+    } else if (RedisModule_KeyType(destkey) == REDISMODULE_KEYTYPE_STRING) {
+        destsketch = GetCMSketch(ctx, destkey);
+
+        if ((destsketch->depth != sketches[0]->depth) ||
+            (destsketch->width != sketches[0]->width)) {
+            RedisModule_ReplyWithError(ctx, "ERR incompatible sketch");
+            return REDISMODULE_ERR;
+        }
+    } else {
+        RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+        return REDISMODULE_ERR;
+    }
+
+    CMSMerge(destsketch, argv, numkeys, keys, sketches, weights);
+
+    RedisModule_ReplyWithSimpleString(ctx, "OK");
     return REDISMODULE_OK;
 }

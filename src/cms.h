@@ -6,6 +6,6 @@
 int CMSInit_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
 int CMSIncrBy_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
 int CMSQuery_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
-
+int CMSMerge_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
 
 #endif
