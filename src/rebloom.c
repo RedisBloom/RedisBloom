@@ -1,6 +1,7 @@
 #include "redismodule.h"
 #include "sb.h"
 #include "cf.h"
+#include "topk.h"
 #include "version.h"
 
 #include <assert.h>
@@ -1032,6 +1033,15 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     CREATE_WRCMD("CF.LOADCHUNK", CFLoadChunk_RedisCommand);
 
     CREATE_ROCMD("CF.DEBUG", CFInfo_RedisCommand);
+
+    // TopK commands
+    CREATE_ROCMD("TOPK.ADD", TopKAdd_RedisCommand);
+    CREATE_ROCMD("TOPK.PRANK", TopKPRank_RedisCommand);
+    CREATE_ROCMD("TOPK.MRANGE", TopKPRange_RedisCommand);
+    CREATE_ROCMD("TOPK.SHRINK", TopKShrink_RedisCommand);
+    CREATE_ROCMD("TOPK.DEBUG", TopKDebug_RedisCommand);
+    CREATE_ROCMD("TOPK.TEST", TopKTest_RedisCommand);
+
 
     static RedisModuleTypeMethods typeprocs = {.version = REDISMODULE_TYPE_METHOD_VERSION,
                                                .rdb_load = BFRdbLoad,
