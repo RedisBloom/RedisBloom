@@ -1040,6 +1040,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     CREATE_WRCMD("CMS.INCRBY", CMSIncrBy_RedisCommand);
     CREATE_ROCMD("CMS.QUERY", CMSQuery_RedisCommand);
     CREATE_WRCMD("CMS.MERGE", CMSMerge_RedisCommand);
+    CREATE_ROCMD("CMS.DEBUG", CMSDebug_RedisCommand);
 
     static RedisModuleTypeMethods typeprocs = {.version = REDISMODULE_TYPE_METHOD_VERSION,
                                                .rdb_load = BFRdbLoad,
