@@ -285,7 +285,7 @@ void CMSMerge(CMSketch *destsketch,
             weights[num_destkey_in_keys] = tmp_weight;
 
             num_destkey_in_keys++;
-            }
+        }
     }
 
     for (int i = 0; i < destsketch->depth; i++) {
@@ -399,5 +399,43 @@ int CMSMerge_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
     CMSMerge(destsketch, argv, numkeys, keys, sketches, weights);
 
     RedisModule_ReplyWithSimpleString(ctx, "OK");
+    return REDISMODULE_OK;
+}
+
+/* CMS.DEBUG key
+*/
+int CMSDebugCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    if (argc != 2) {
+        return RedisModule_WrongArity(ctx);
+    }
+    RedisModule_AutoMemory(ctx);
+
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
+
+    /* Verify that the key is empty or a string. */
+    if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
+        RedisModule_ReplyWithNull(ctx);
+        return REDISMODULE_OK;
+    }
+    if (RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_STRING) {
+        RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+        return REDISMODULE_ERR;
+    }
+
+    CMSketch *s = GetCMSketch(ctx, key);
+    if (!s) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModule_ReplyWithArray(ctx, 4);
+    RedisModule_ReplyWithString(
+        ctx, RMUtil_CreateFormattedString(ctx, "Count: %lld", s->counter));
+    RedisModule_ReplyWithString(
+        ctx, RMUtil_CreateFormattedString(ctx, "Width: %d", s->width));
+    RedisModule_ReplyWithString(
+        ctx, RMUtil_CreateFormattedString(ctx, "Depth: %d", s->depth));
+    RedisModule_ReplyWithString(
+        ctx, RMUtil_CreateFormattedString(ctx, "Size: %d",
+                                            RedisModule_ValueLength(key)));
     return REDISMODULE_OK;
 }
