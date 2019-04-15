@@ -31,7 +31,7 @@ markdown_extensions:
       permalink: True
  
 pages:
-    - 'ReBloom': 'index.md'
+    - 'RedisBloom': 'index.md'
     - 'Quick Start': 'Quick_Start.md'
     - 'Bloom Commands': 'Bloom_Commands.md'
     - 'Cuckoo Filter Commands': 'Cuckoo_Commands.md'
