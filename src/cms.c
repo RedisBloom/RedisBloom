@@ -102,7 +102,7 @@ int CMSInit_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
         depth = ceil(log10f(prob) / log10f(0.5));
     }
 
-    CMSketch* cms = NewCMSketch(key, width, depth); /* = NULL?, top or here */
+    CMSketch *cms = NewCMSketch(key, width, depth);
     if(NULL == cms) {
         RedisModule_ReplyWithError(ctx,
                             "ERR could not truncate key to required size");
@@ -235,16 +235,6 @@ int CMSQuery_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
     /* Loop over the items and estimate their counts. */
     RedisModule_ReplyWithArray(ctx, argc - 2);
     for (int i = 2; i < argc; ++i) {
-        /*size_t len;
-        const char *value = RedisModule_StringPtrLen(argv[i], &len);
-        long long h = (cms->hashA[0] * XXH32(value, len, MAGIC) + cms->hashB[0]) & MAGIC;
-        // Shouldn't freq be long long?
-        int freq = cms->vector[h % cms->width];
-        for (int j = 1; j < cms->depth; ++j) {
-            h = (cms->hashA[j] * XXH32(value, len, MAGIC) + cms->hashB[j]) & MAGIC;
-            freq = min(freq, cms->vector[j * cms->width + h % cms->width]);
-        }*/
-
         int freq = CMSQuery(cms, argv[i]);
 
         RedisModule_ReplyWithLongLong(ctx, freq);
