@@ -73,7 +73,7 @@ O(log N), where N is the number of stacked filters in the data structure.
 ### Format
 
 ```
-{key} {item} [item...]
+BF.MADD {key} {item} [item...]
 ```
 
 ### Description
