@@ -1037,7 +1037,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     // TopK commands
     CREATE_ROCMD("TOPK.ADD", TopKAdd_RedisCommand);
     CREATE_ROCMD("TOPK.PRANK", TopKPRank_RedisCommand);
-    CREATE_ROCMD("TOPK.MRANGE", TopKPRange_RedisCommand);
+    CREATE_ROCMD("TOPK.PRANGE", TopKPRange_RedisCommand);
     CREATE_ROCMD("TOPK.SHRINK", TopKShrink_RedisCommand);
     CREATE_ROCMD("TOPK.DEBUG", TopKDebug_RedisCommand);
     CREATE_ROCMD("TOPK.TEST", TopKTest_RedisCommand);
