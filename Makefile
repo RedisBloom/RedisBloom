@@ -28,10 +28,10 @@ MODULE_OBJ = $(SRCDIR)/rebloom.o
 MODULE_SO = $(ROOT)/rebloom.so
 
 DEPS = $(ROOT)/contrib/MurmurHash2.o \
+	   $(ROOT)/contrib/xxhash.o \
 	   $(SRCDIR)/sb.o \
 	   $(SRCDIR)/cf.o \
-	   $(SRCDIR)/cms.o \
-	   $(SRCDIR)/xxhash.o 
+	   $(SRCDIR)/cms.o 
 	   
 
 export

@@ -75,7 +75,7 @@ int CMSInit_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     long long width, depth;
     size_t cmdlen;
     const char *cmd = RedisModule_StringPtrLen(argv[0], &cmdlen);
-    if (!strcasecmp("cms.initbydim", cmd)) {
+    if (!strcasecmp("CMS.INITBYDIM", cmd)) {
         if ((RedisModule_StringToLongLong(argv[2], &width) != REDISMODULE_OK) ||
             (width < 1) || (width > UINT16_MAX)) {
         RedisModule_ReplyWithError(ctx, "ERR invalid width");
