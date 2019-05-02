@@ -93,7 +93,7 @@ int CMSketch_create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
     RedisModule_Log(ctx, "info", "created new count-min sketch");
     RedisModule_ReplyWithSimpleString(ctx, "OK");
-    RedisModule_ReplicateVerbatim(ctx); // What is this?
+    RedisModule_ReplicateVerbatim(ctx);
     return REDISMODULE_OK;
 }
 
@@ -159,7 +159,6 @@ int CMSketch_query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         RedisModule_ReplyWithLongLong(ctx, CMS_Query(cms, str));
     }
 
-    // RedisModule_CloseKey(key);  /* auto cleaning */
     return REDISMODULE_OK;
 }
 

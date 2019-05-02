@@ -40,14 +40,6 @@ void CMS_IncrBy(CMSketch *cms, const char *item, size_t value) {
 
     for(size_t i = 0; i < cms->depth; ++i) {
         size_t hash = XXH64(item, strlen(item), i);
-        // Itamar's code
-        // #define MAGIC 2147483647  // 2^31-1 according to the paper
-        /*srand(CMS_SEED);
-        for (int i = 0; i < cms->depth; ++i) {
-            cms->hashA[i] = rand() & MAGIC;
-            cms->hashB[i] = rand() & MAGIC;
-        }*/
-        // long long h = (cms->hashA[j] * XXH32(item, len, MAGIC) + cms->hashB[j]) & MAGIC;
         cms->array[(hash % cms->width) + (i * cms->width)] += value;
     }
     cms->counter += value;
