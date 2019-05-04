@@ -28,6 +28,8 @@ CMSketch *NewCMSketch(size_t width, size_t depth) {
 }
 
 void CMS_Destroy(CMSketch *cms) {
+    assert(cms);
+
     CMS_FREE(cms->array);
     cms->array = NULL;
 
@@ -61,6 +63,10 @@ size_t CMS_Query(CMSketch *cms, const char *item) {
 }
 
 void CMS_Merge(CMSketch *dest, size_t quantity, CMSketch **src, long long *weight) {
+    assert(dest);
+    assert(src);
+    assert(weight);
+
     size_t tempCount= 0;
     long128 tempTotal = 0;
     size_t width = dest->width;
@@ -83,6 +89,8 @@ void CMS_Merge(CMSketch *dest, size_t quantity, CMSketch **src, long long *weigh
 }
  
 void CMS_Print(const CMSketch *cms) {
+    assert(cms);
+
     for(int i = 0; i < cms->depth; ++i) {
         for(int j = 0; j < cms->width; ++j) {
             printf("%lu\t", cms->array[(i * cms->width) + j]);

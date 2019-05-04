@@ -34,7 +34,6 @@ DEPS = $(ROOT)/contrib/MurmurHash2.o \
 	   $(SRCDIR)/cf.o \
 	   $(SRCDIR)/rm_cms.o \
 	   $(SRCDIR)/cms.o 
-	   
 
 export
 
