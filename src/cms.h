@@ -3,8 +3,6 @@
 
 #include <stddef.h>
 
-#include "../contrib/xxhash.h"
-
 // #define REDIS_MODULE_TARGET
 
 #ifdef REDIS_MODULE_TARGET // should be in .h or .c
@@ -15,14 +13,12 @@
 #define CMS_FREE(ptr) free(ptr)
 #endif
 
-typedef __uint128_t long128;
-
 typedef struct
 {
     size_t width;
     size_t depth;
     size_t *array;    
-    long128 counter; // might be used for top k results
+    size_t counter; // might be used for top k results
 } CMSketch;
 
 CMSketch *NewCMSketch(size_t width, size_t depth);

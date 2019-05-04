@@ -21,7 +21,7 @@ static int CompareCStringToRedisString(char *str, RedisModuleString *redisStr) {
     return strncasecmp(cRedisStr, str, len) == 0;
 }
 
-static int GetCMS(RedisModuleCtx *ctx, RedisModuleString *keyName, 
+static int GetCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName, 
                     CMSketch **cms, int mode) {
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, mode);
     if(RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
@@ -32,10 +32,11 @@ static int GetCMS(RedisModuleCtx *ctx, RedisModuleString *keyName,
         return REDISMODULE_ERR;
     } 
     *cms = RedisModule_ModuleTypeGetValue(key);
+    
     return REDISMODULE_OK;
 }
 
-static int CreateCmsKey(RedisModuleCtx *ctx, RedisModuleString *keyName, 
+static int CreateCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName, 
         long long width, long long depth, CMSketch **cms, RedisModuleKey **key) {
     if(*key == NULL) {
         *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ|REDISMODULE_WRITE);
@@ -100,7 +101,7 @@ int CMSketch_create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return RedisModule_ReplyWithError(ctx,"CMS: key already exists");
     }
 
-    CreateCmsKey(ctx, keyName, width, depth, &cms, &key);
+    CreateCMSKey(ctx, keyName, width, depth, &cms, &key);
 
     RedisModule_CloseKey(key);
     RedisModule_Log(ctx, "info", "created new count-min sketch");
@@ -134,7 +135,7 @@ int CMSketch_incrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     parseIncrByArgs(ctx, argv, argc, &pairArray, pairCount);
 
     if(RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
-        CreateCmsKey(ctx, keyName, DEFAULT_WIDTH, DEFAULT_DEPTH, &cms, &key);
+        CreateCMSKey(ctx, keyName, DEFAULT_WIDTH, DEFAULT_DEPTH, &cms, &key);
     } else if(RedisModule_ModuleTypeGetType(key) != CMSketchType) {
         return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
     } else {
@@ -159,8 +160,8 @@ int CMSketch_query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     }
 
     CMSketch *cms = NULL;
-    if(GetCMS(ctx, argv[1], &cms, REDISMODULE_READ) != REDISMODULE_OK) {
-        return REDISMODULE_ERR;
+    if(GetCMSKey(ctx, argv[1], &cms, REDISMODULE_READ) != REDISMODULE_OK) {
+        return REDISMODULE_OK;
     }
 
     int itemCount = argc - 2;
@@ -177,20 +178,21 @@ int CMSketch_query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 static int parseMergeArgs(RedisModuleCtx *ctx, RedisModuleString **argv,
                             int argc, CMSketch *dest, CMSketch **cmsArray, 
                             long long *weights, long long numKeys, int pos) {
-    if(GetCMS(ctx, argv[1], &dest, REDISMODULE_READ|REDISMODULE_WRITE) != REDISMODULE_OK) {
+    if(GetCMSKey(ctx, argv[1], &dest, REDISMODULE_READ|REDISMODULE_WRITE) != REDISMODULE_OK) {
         return REDISMODULE_ERR;
     } 
 
     for(int i = 0; i < numKeys; ++i) {
         if(pos > 0) {
             if(RedisModule_StringToLongLong(argv[3 + numKeys + 1 + i], &weights[i]) !=
-                REDISMODULE_OK) {
-                return RedisModule_ReplyWithError(ctx, "CMS: invalid weight value");
+                                                REDISMODULE_OK) {
+                RedisModule_ReplyWithError(ctx, "CMS: invalid weight value");
+                return REDISMODULE_ERR;
             }
         } else {
             weights[i] = 1; 
         }
-        if(GetCMS(ctx, argv[3 + i], &cmsArray[i], REDISMODULE_READ) != REDISMODULE_OK) {
+        if(GetCMSKey(ctx, argv[3 + i], &cmsArray[i], REDISMODULE_READ) != REDISMODULE_OK) {
            return REDISMODULE_ERR;
         }
     }
@@ -216,7 +218,7 @@ int CMSketch_merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     } else {
         if((pos != 3 + numKeys) && (argc != 4 + numKeys * 2)) 
             return RedisModule_ReplyWithError(ctx, 
-                        "CMS: wrong number of keys/weights");
+                                        "CMS: wrong number of keys/weights");
     }
 
     CMSketch *dest = NULL;   
@@ -243,8 +245,8 @@ int CMSKetch_info(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (argc != 2) return RedisModule_WrongArity(ctx);
 
     CMSketch *cms = NULL;    
-    if(GetCMS(ctx, argv[1], &cms, REDISMODULE_READ) != REDISMODULE_OK) {
-        return REDISMODULE_ERR;
+    if(GetCMSKey(ctx, argv[1], &cms, REDISMODULE_READ) != REDISMODULE_OK) {
+        return REDISMODULE_OK;
     }
 
     RedisModule_ReplyWithArray(ctx, 3*2);
@@ -291,16 +293,11 @@ size_t CMSMemUsage(const void *value) {
     return sizeof(cms) + cms->width * cms->depth * sizeof(size_t);
 }
 
-void AofTemp(RedisModuleIO *aof, RedisModuleString *key, void *value) {
-
-}
-
 int CMSModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModuleTypeMethods tm = {
             .version = REDISMODULE_TYPE_METHOD_VERSION,
             .rdb_load = CMSRdbLoad,
             .rdb_save = CMSRdbSave,
-            .aof_rewrite = AofTemp, 
             .aof_rewrite = RMUtil_DefaultAofRewrite, 
             .mem_usage = CMSMemUsage,
             .free = CMSFree

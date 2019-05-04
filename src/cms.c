@@ -5,24 +5,19 @@
 #include <assert.h>         // assert
 
 #include "cms.h"
+#include "contrib/xxhash.h"
+
 
 CMSketch *NewCMSketch(size_t width, size_t depth) {
     assert(width > 0);
     assert(depth > 0);
 
-    CMSketch *cms = NULL;
-    if((cms = (CMSketch *)CMS_CALLOC(1, sizeof(CMSketch))) == NULL) {
-        return NULL;
-    }
+    CMSketch *cms = CMS_CALLOC(1, sizeof(CMSketch));
 
     cms->width = width;
     cms->depth = depth;
     cms->counter = 0;
-    cms->array = (size_t *)CMS_CALLOC(width * depth, sizeof(size_t));
-    if(cms->array == NULL) {
-        CMS_FREE(cms);
-        return NULL;
-    } 
+    cms->array = CMS_CALLOC(width * depth, sizeof(size_t));
 
     return cms; 
 }
@@ -68,7 +63,7 @@ void CMS_Merge(CMSketch *dest, size_t quantity, CMSketch **src, long long *weigh
     assert(weight);
 
     size_t tempCount= 0;
-    long128 tempTotal = 0;
+    size_t tempTotal = 0;
     size_t width = dest->width;
     size_t depth = dest->depth;
     
