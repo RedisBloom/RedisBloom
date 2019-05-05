@@ -57,10 +57,10 @@ size_t CMS_Query(CMSketch *cms, const char *item) {
     return res;
 }
 
-void CMS_Merge(CMSketch *dest, size_t quantity, CMSketch **src, long long *weight) {
+void CMS_Merge(CMSketch *dest, size_t quantity, CMSketch **src, long long *weights) {
     assert(dest);
     assert(src);
-    assert(weight);
+    assert(weights);
 
     size_t tempCount= 0;
     size_t tempTotal = 0;
@@ -71,14 +71,14 @@ void CMS_Merge(CMSketch *dest, size_t quantity, CMSketch **src, long long *weigh
         for(size_t j = 0; j < width; ++j) {            
             tempCount = 0;
             for(size_t k = 0; k < quantity; ++k) {
-                tempCount += src[k]->array[(i * width) + j] * weight[k];
+                tempCount += src[k]->array[(i * width) + j] * weights[k];
             }
             dest->array[(i * width) + j] = tempCount; 
         }
     }
 
     for(size_t i = 0; i < quantity; ++i) {
-        tempTotal += src[i]->counter * weight[i];
+        tempTotal += src[i]->counter * weights[i];
     }
     dest->counter = tempTotal;
 }

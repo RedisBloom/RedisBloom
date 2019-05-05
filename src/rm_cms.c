@@ -179,10 +179,6 @@ static int parseMergeArgs(RedisModuleCtx *ctx, RedisModuleString **argv,
                             long long *weights, long long numKeys) {
     int pos = RMUtil_ArgIndex("WEIGHTS", argv, argc);
 
-    if(RedisModule_StringToLongLong(argv[2], &numKeys) != REDISMODULE_OK) {
-        RedisModule_ReplyWithError(ctx, "CMS: invalid numkeys");
-        return REDISMODULE_ERR;
-    }
     if(pos < 0) {
         if(numKeys != argc - 3) {
             RedisModule_ReplyWithError(ctx, "CMS: wrong number of keys");
@@ -203,13 +199,12 @@ static int parseMergeArgs(RedisModuleCtx *ctx, RedisModuleString **argv,
     size_t depth = (*dest)->depth;
 
     for(int i = 0; i < numKeys; ++i) {
-        if(pos > 0) {
-            if(RedisModule_StringToLongLong(argv[3 + numKeys + 1 + i], &weights[i]) !=
+        if(pos == -1) { weights[i] = 1; }
+        else if(RedisModule_StringToLongLong(argv[3 + numKeys + 1 + i], &weights[i]) !=
                                                 REDISMODULE_OK) {
                 RedisModule_ReplyWithError(ctx, "CMS: invalid weight value");
                 return REDISMODULE_ERR;
-            }
-        } else { weights[i] = 1; }
+        }
         if(GetCMSKey(ctx, argv[3 + i], &cmsArray[i], REDISMODULE_READ) != REDISMODULE_OK) {
            return REDISMODULE_ERR;
         }
@@ -230,6 +225,10 @@ int CMSketch_merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     }   
 
     long long numKeys = 0;
+    if(RedisModule_StringToLongLong(argv[2], &numKeys) != REDISMODULE_OK) {
+        return RedisModule_ReplyWithError(ctx, "CMS: invalid numkeys");
+    }
+
     CMSketch *dest = NULL;   
     CMSketch **cmsArray = CMS_CALLOC(numKeys, sizeof(CMSketch *));
     long long *weights = CMS_CALLOC(numKeys, sizeof(long long));

@@ -68,61 +68,21 @@ class RebloomTestCase(ModuleTestCase('../rebloom.so')):
             self.assertEqual([0L], self.cmd('cms.query', 'test', 'nonexist'))
     
     def test_merge(self):
-        self.cmd('cms.initbydim', 'small_1', '100', '5')
-        self.cmd('cms.initbydim', 'small_2', '100', '5')
-        self.cmd('cms.initbydim', 'small_3', '100', '5')
+        self.cmd('cms.initbydim', 'small_1', '20', '5')
+        self.cmd('cms.initbydim', 'small_2', '20', '5')
+        self.cmd('cms.initbydim', 'small_3', '20', '5')
         self.cmd('cms.initbydim', 'large_4', '2000', '10')
         self.cmd('cms.initbydim', 'large_5', '2000', '10')
         self.cmd('cms.initbydim', 'large_6', '2000', '10')
-
         self.assertOk(self.cmd('cms.merge', 'small_3', 2, 'small_1', 'small_2'))
-        self.assertOk(self.cmd('cms.merge', 'large_6', 2, 'large_4', 'large_5'))
+        self.assertEqual(['width', 20L, 'depth', 5L, 'count', 0L], 
+                         self.cmd('cms.info', 'small_3'))
+#        self.assertOk(self.cmd('cms.merge', 'large_6', 2, 'large_4', 'large_5'))
+#        self.assertEqual(['width', 2000L, 'depth', 10L, 'count', 0L], 
+#                         self.cmd('cms.info', 'large_6'))
+                         
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'small_3', 2,
                                     'small_2', 'large_5')
-
-'''
-    def test_dump_and_load(self):
-        # Store a filter
-        self.cmd('bf.reserve', 'myBloom', '0.0001', '100')
-
-        def do_verify():
-            for x in xrange(1000):
-                self.cmd('bf.add', 'myBloom', x)
-                rv = self.cmd('bf.exists', 'myBloom', x)
-                self.assertTrue(rv)
-                rv = self.cmd('bf.exists', 'myBloom', 'nonexist_{}'.format(x))
-                self.assertFalse(rv, x)
-
-        do_verify()
-        cmds = []
-        cur = self.cmd('bf.scandump', 'myBloom', 0)
-        first = cur[0]
-        cmds.append(cur)
-
-        while True:
-            cur = self.cmd('bf.scandump', 'myBloom', first)
-            first = cur[0]
-            if first == 0:
-                break
-            else:
-                cmds.append(cur)
-
-        prev_info = self.cmd('bf.debug', 'myBloom')
-        # Remove the filter
-        self.cmd('del', 'myBloom')
-
-        # Now, load all the commands:
-        for cmd in cmds:
-            self.cmd('bf.loadchunk', 'myBloom', *cmd)
-
-        cur_info = self.cmd('bf.debug', 'myBloom')
-        self.assertEqual(prev_info, cur_info)
-        do_verify()
-
-        # Try a bigger one
-        self.cmd('del', 'myBloom')
-        self.cmd('bf.reserve', 'myBloom', '0.0001', '10000000')
-'''
 
 if __name__ == "__main__":
     import unittest
