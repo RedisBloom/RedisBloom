@@ -44,7 +44,7 @@ void CMS_IncrBy(CMSketch *cms, const char *item, size_t value) {
 
 size_t CMS_Query(CMSketch *cms, const char *item) {
     assert(cms);
-    assert(item);
+    assert(item >= 0);
 
     size_t temp = 0, res = ~0;
 
