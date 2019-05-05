@@ -1,5 +1,4 @@
 #include <stdlib.h>         // malloc
-#include <string.h>         // strlen
 #include <stdio.h>          // printf
 #include <math.h>           // q, ceil
 #include <assert.h>         // assert
@@ -31,33 +30,36 @@ void CMS_Destroy(CMSketch *cms) {
     CMS_FREE(cms);
 }
 
-void CMS_IncrBy(CMSketch *cms, const char *item, size_t value) {
+void CMS_IncrBy(CMSketch *cms, const char *item, size_t strlen, size_t value) {
     assert(cms);
     assert(item);
 
     for(size_t i = 0; i < cms->depth; ++i) {
-        size_t hash = XXH64(item, strlen(item), i);
+        size_t hash = XXH64(item, strlen, i);
         cms->array[(hash % cms->width) + (i * cms->width)] += value;
     }
     cms->counter += value;
 }
 
-size_t CMS_Query(CMSketch *cms, const char *item) {
+size_t CMS_Query(CMSketch *cms, const char *item, size_t strlen) {
     assert(cms);
     assert(item >= 0);
 
-    size_t temp = 0, res = ~0;
+    size_t temp = 0, res = -1;
 
     for(size_t i = 0; i < cms->depth; ++i) {
-        size_t hash = XXH64(item, strlen(item), i);
+        size_t hash = XXH64(item, strlen, i);
         temp = cms->array[(hash % cms->width) + (i * cms->width)];
-        if(temp < res) res = temp;
+        if(temp < res) {
+            res = temp;
+        }
     }
 
     return res;
 }
 
-void CMS_Merge(CMSketch *dest, size_t quantity, CMSketch **src, long long *weights) {
+void CMS_Merge(CMSketch *dest, size_t quantity, 
+               const CMSketch **src, const long long *weights) {
     assert(dest);
     assert(src);
     assert(weights);

@@ -2,22 +2,24 @@
 from rmtest import ModuleTestCase
 from redis import ResponseError
 import sys
+from random import randint
+import math
 
 if sys.version >= '3':
     xrange = range
 
-class RebloomTestCase(ModuleTestCase('../rebloom.so')):
+class CMSTest(ModuleTestCase('../rebloom.so')):
     def test_simple(self):
         self.assertOk(self.cmd('cms.initbydim', 'cms1', '20', '5'))
         self.assertOk(self.cmd('cms.incrby', 'cms1', 'a', '5'))
         self.assertEqual([5L], self.cmd('cms.query', 'cms1', 'a'))
-        self.assertEqual(['width', 20L, 'depth', 5L, 'count', 5L], 
+        self.assertEqual(['width', 20, 'depth', 5, 'count', 5], 
                          self.cmd('cms.info', 'cms1'))
 
         self.assertOk(self.cmd('cms.initbyprob', 'cms2', '0.1', '0.1'))
         self.assertOk(self.cmd('cms.incrby', 'cms2', 'a', '5'))
         self.assertEqual([5L], self.cmd('cms.query', 'cms2', 'a'))
-        self.assertEqual(['width', 20L, 'depth', 4L, 'count', 5L], 
+        self.assertEqual(['width', 20, 'depth', 4, 'count', 5], 
                          self.cmd('cms.info', 'cms2'))
 
     def test_validation(self):
@@ -48,7 +50,7 @@ class RebloomTestCase(ModuleTestCase('../rebloom.so')):
 
     def test_incrby_query(self):
         self.cmd('cms.incrby', 'cms', 'bar', '5', 'baz', '42')
-        self.assertEqual([0L], self.cmd('cms.query', 'cms', 'foo'))
+        self.assertEqual([0], self.cmd('cms.query', 'cms', 'foo'))
         self.assertEqual([0, 5, 42], self.cmd('cms.query',
                                     'cms', 'foo', 'bar', 'baz'))
         self.assertRaises(ResponseError, self.cmd, 'cms.incrby',
@@ -58,14 +60,14 @@ class RebloomTestCase(ModuleTestCase('../rebloom.so')):
 
         c = self.client
         self.assertOk(self.cmd('cms.incrby', 'test', 'foo', '1'))
-        self.assertEqual([1L], self.cmd('cms.query', 'test', 'foo'))
-        self.assertEqual([0L], self.cmd('cms.query', 'test', 'bar'))
+        self.assertEqual([1], self.cmd('cms.query', 'test', 'foo'))
+        self.assertEqual([0], self.cmd('cms.query', 'test', 'bar'))
 
         self.assertOk(self.cmd('cms.incrby', 'test', 'foo', '1', 'bar', '1'))
         for _ in c.retry_with_rdb_reload():
-            self.assertEqual([2L], self.cmd('cms.query', 'test', 'foo'))
-            self.assertEqual([1L], self.cmd('cms.query', 'test', 'bar'))
-            self.assertEqual([0L], self.cmd('cms.query', 'test', 'nonexist'))
+            self.assertEqual([2], self.cmd('cms.query', 'test', 'foo'))
+            self.assertEqual([1], self.cmd('cms.query', 'test', 'bar'))
+            self.assertEqual([0], self.cmd('cms.query', 'test', 'nonexist'))
     
     def test_merge(self):
         self.cmd('cms.initbydim', 'small_1', '20', '5')
@@ -74,16 +76,47 @@ class RebloomTestCase(ModuleTestCase('../rebloom.so')):
         self.cmd('cms.initbydim', 'large_4', '2000', '10')
         self.cmd('cms.initbydim', 'large_5', '2000', '10')
         self.cmd('cms.initbydim', 'large_6', '2000', '10')
+
+        # empty small batch
         self.assertOk(self.cmd('cms.merge', 'small_3', 2, 'small_1', 'small_2'))
-        self.assertEqual(['width', 20L, 'depth', 5L, 'count', 0L], 
+        self.assertEqual(['width', 20, 'depth', 5, 'count', 0], 
                          self.cmd('cms.info', 'small_3'))
-#        self.assertOk(self.cmd('cms.merge', 'large_6', 2, 'large_4', 'large_5'))
-#        self.assertEqual(['width', 2000L, 'depth', 10L, 'count', 0L], 
-#                         self.cmd('cms.info', 'large_6'))
+
+        # empty large batch
+        self.assertOk(self.cmd('cms.merge', 'large_6', 2, 'large_4', 'large_5'))
+        self.assertEqual(['width', 2000, 'depth', 10, 'count', 0], 
+                         self.cmd('cms.info', 'large_6'))
+
+        # non-empty small batch
+        self.cmd('cms.incrby', 'small_1', 'a', '21')
+        self.cmd('cms.incrby', 'small_2', 'a', '21')
+        self.assertOk(self.cmd('cms.merge', 'small_3', 2, 'small_1', 'small_2'))
+        self.assertEqual([42], self.cmd('cms.query', 'small_3', 'a'))
                          
+        # non-empty small batch
+        self.cmd('cms.incrby', 'large_4', 'a', '21')
+        self.cmd('cms.incrby', 'large_5', 'a', '21')
+        self.assertOk(self.cmd('cms.merge', 'large_6', 2, 'large_4', 'large_5'))
+        self.assertEqual([42], self.cmd('cms.query', 'large_6', 'a'))
+  
+        # mixed batch
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'small_3', 2,
                                     'small_2', 'large_5')
-
+    
+    def test_merge_extensive(self):
+        self.cmd('cms.initbydim', 'A', '2000', '20')
+        self.cmd('cms.initbydim', 'B', '2000', '20')
+        self.cmd('cms.initbydim', 'C', '2000', '20')
+        
+        itemsA = []
+        itemsB = []
+        for i in range(10000):
+            itemsA.append(randint(0, 10000))
+            self.cmd('cms.incrby', 'A', i, itemsA[i])
+            itemsB.append(randint(0, 10000))
+            self.cmd('cms.incrby', 'B', i, itemsB[i])    
+        self.assertOk(self.cmd('cms.merge', 'C', 2, 'A', 'B'))
+    
 if __name__ == "__main__":
     import unittest
     unittest.main()

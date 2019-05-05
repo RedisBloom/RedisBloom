@@ -8,18 +8,19 @@
 #include "rm_cms.h"
 #include "cms.h"
 
-#define INNER_ERROR(x)  RedisModule_ReplyWithError(ctx, "CMS: key does not exist"); \
-                        return REDISMODULE_ERR;
 #define ERROR           REDISMODULE_ERR
+#define INNER_ERROR(x)  RedisModule_ReplyWithError(ctx, "CMS: key does not exist"); \
+                        return ERROR;
 
 RedisModuleType *CMSketchType;
 
 typedef struct {
     const char *key;
+    size_t keylen;
     long long value;
 } CMSPair;
 
-static int CompareCStringToRedisString(char *str, RedisModuleString *redisStr) {
+static int cmpCStrToRedisStr(const char *str, RedisModuleString *redisStr) {
     size_t len;
     char *cRedisStr = (char *)RedisModule_StringPtrLen(redisStr, &len);
     return strncasecmp(cRedisStr, str, len) == 0;
@@ -55,7 +56,7 @@ static int CreateCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName,
 
 static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
                     long long *width, long long *depth) {
-    if(CompareCStringToRedisString("cms.initbydim", argv[0]) == 1) {
+    if(cmpCStrToRedisStr("cms.initbydim", argv[0]) == 1) {
         if((RedisModule_StringToLongLong(argv[2], width) != REDISMODULE_OK) 
                 || *width < 1) {
             INNER_ERROR("CMS: invalid width");
@@ -81,9 +82,10 @@ static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     return REDISMODULE_OK;
 }
 
-int CMSketch_create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    if(argc != 4)
+int CMSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    if(argc != 4) {
         return RedisModule_WrongArity(ctx);
+    }
 
     CMSketch *cms = NULL;
     long long width = 0, depth = 0;
@@ -101,7 +103,6 @@ int CMSketch_create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     CreateCMSKey(ctx, keyName, width, depth, &cms, &key);
 
     RedisModule_CloseKey(key);
-    RedisModule_Log(ctx, "info", "created new count-min sketch");
     RedisModule_ReplyWithSimpleString(ctx, "OK");
     RedisModule_ReplicateVerbatim(ctx);
     return REDISMODULE_OK;
@@ -110,13 +111,13 @@ int CMSketch_create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 static int parseIncrByArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
                 CMSPair **pairs, int qty) {
     for(int i = 0; i < qty; ++i) {
-        (*pairs)[i].key = RedisModule_StringPtrLen(argv[2 + i * 2], NULL);
+        (*pairs)[i].key = RedisModule_StringPtrLen(argv[2 + i * 2], &(*pairs)[i].keylen);
         RedisModule_StringToLongLong(argv[2 + i * 2 + 1], &((*pairs)[i].value));
     }
     return REDISMODULE_OK;
 }
 
-int CMSketch_incrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int CMSketch_IncrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
     if(argc < 4 || (argc % 2) == 1) {
@@ -139,7 +140,7 @@ int CMSketch_incrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     CMSPair *pairArray= CMS_CALLOC(pairCount, sizeof(CMSPair));
     parseIncrByArgs(ctx, argv, argc, &pairArray, pairCount);
     for(int i = 0; i < pairCount; ++i) {
-        CMS_IncrBy(cms, pairArray[i].key, pairArray[i].value);
+        CMS_IncrBy(cms, pairArray[i].key, pairArray[i].keylen, pairArray[i].value);
     }    
 
     CMS_FREE(pairArray);
@@ -148,7 +149,7 @@ int CMSketch_incrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     return REDISMODULE_OK;
 }
 
-int CMSketch_query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int CMSketch_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
     if(argc < 3) {
@@ -165,7 +166,7 @@ int CMSketch_query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_ReplyWithArray(ctx, itemCount);
     for(int i = 0; i < itemCount; ++i) {
         const char *str = RedisModule_StringPtrLen(argv[2 + i], &length);
-        RedisModule_ReplyWithLongLong(ctx, CMS_Query(cms, str));
+        RedisModule_ReplyWithLongLong(ctx, CMS_Query(cms, str, length));
     }
 
     return REDISMODULE_OK;
@@ -210,7 +211,7 @@ static int parseMergeArgs(RedisModuleCtx *ctx, RedisModuleString **argv,
     return REDISMODULE_OK;
 }
 
-int CMSketch_merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int CMSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
     if(argc < 4) {
@@ -232,7 +233,8 @@ int CMSketch_merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_OK;
     }
     
-    CMS_Merge(dest, numKeys, cmsArray, weights);
+    CMS_Merge(dest, numKeys, (const CMSketch **)cmsArray,
+                                (const long long *)weights);
 
     CMS_FREE(cmsArray);
     CMS_FREE(weights);
@@ -240,7 +242,7 @@ int CMSketch_merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     return REDISMODULE_OK;
 }
 
-int CMSKetch_info(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int CMSKetch_Info(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     
     if (argc != 2) return RedisModule_WrongArity(ctx);
@@ -295,6 +297,7 @@ size_t CMSMemUsage(const void *value) {
 }
 
 int CMSModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    // TODO: add option to set defaults from command line and in program
     RedisModuleTypeMethods tm = {
             .version = REDISMODULE_TYPE_METHOD_VERSION,
             .rdb_load = CMSRdbLoad,
@@ -307,12 +310,12 @@ int CMSModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     CMSketchType = RedisModule_CreateDataType(ctx, "CMSk-TYPE", CMS_ENC_VER, &tm);
     if(CMSketchType == NULL) return REDISMODULE_ERR;
 
-    RMUtil_RegisterWriteCmd(ctx, "cms.initbydim", CMSketch_create);
-    RMUtil_RegisterWriteCmd(ctx, "cms.initbyprob", CMSketch_create);
-    RMUtil_RegisterWriteCmd(ctx, "cms.incrby", CMSketch_incrBy);
-    RMUtil_RegisterReadCmd(ctx, "cms.query", CMSketch_query);
-    RMUtil_RegisterWriteCmd(ctx, "cms.merge", CMSketch_merge);
-    RMUtil_RegisterReadCmd(ctx, "cms.info", CMSKetch_info);
+    RMUtil_RegisterWriteCmd(ctx, "cms.initbydim", CMSketch_Create);
+    RMUtil_RegisterWriteCmd(ctx, "cms.initbyprob", CMSketch_Create);
+    RMUtil_RegisterWriteCmd(ctx, "cms.incrby", CMSketch_IncrBy);
+    RMUtil_RegisterReadCmd(ctx, "cms.query", CMSketch_Query);
+    RMUtil_RegisterWriteCmd(ctx, "cms.merge", CMSketch_Merge);
+    RMUtil_RegisterReadCmd(ctx, "cms.info", CMSKetch_Info);
 //    RMUtil_RegisterReadCmd(ctx, "cms.gettopk", CMSketch_getTopK);
 //    RMUtil_RegisterReadCmd(ctx, "cms.findtopk", CMSketch_findTopK);
 

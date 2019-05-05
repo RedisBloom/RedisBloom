@@ -23,9 +23,10 @@ typedef struct
 
 CMSketch *NewCMSketch(size_t width, size_t depth);
 void CMS_Destroy(CMSketch *cms);
-void CMS_IncrBy(CMSketch *cms, const char *item, size_t value);
-size_t CMS_Query(CMSketch *cms, const char *item);
-void CMS_Merge(CMSketch *dest, size_t quantity, CMSketch **src, long long *weight);
+void CMS_IncrBy(CMSketch *cms, const char *item, size_t strlen, size_t value);
+size_t CMS_Query(CMSketch *cms, const char *item, size_t strlen);
+void CMS_Merge(CMSketch *dest, size_t quantity, 
+               const CMSketch **src, const long long *weights);
 void CMS_Print(const CMSketch *cms);
 
 #endif
