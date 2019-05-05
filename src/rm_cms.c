@@ -8,6 +8,10 @@
 #include "rm_cms.h"
 #include "cms.h"
 
+#define INNER_ERROR(x)  RedisModule_ReplyWithError(ctx, "CMS: key does not exist"); \
+                        return REDISMODULE_ERR;
+#define ERROR           REDISMODULE_ERR
+
 RedisModuleType *CMSketchType;
 
 typedef struct {
@@ -25,11 +29,9 @@ static int GetCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName,
                     CMSketch **cms, int mode) {
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, mode);
     if(RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
-        RedisModule_ReplyWithError(ctx, "CMS: key does not exist");
-        return REDISMODULE_ERR;
+        INNER_ERROR("CMS: key does not exist");
     } else if(RedisModule_ModuleTypeGetType(key) != CMSketchType) {
-        RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
-        return REDISMODULE_ERR;
+        INNER_ERROR(REDISMODULE_ERRORMSG_WRONGTYPE);
     } 
     *cms = RedisModule_ModuleTypeGetValue(key);
     
@@ -42,7 +44,6 @@ static int CreateCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName,
         *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ|REDISMODULE_WRITE);
     }
 
-    RedisModule_RetainString(ctx, keyName);
     *cms = NewCMSketch(width, depth);
 
     if(RedisModule_ModuleTypeSetValue(*key, CMSketchType, *cms) == REDISMODULE_ERR) {
@@ -57,25 +58,21 @@ static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     if(CompareCStringToRedisString("cms.initbydim", argv[0]) == 1) {
         if((RedisModule_StringToLongLong(argv[2], width) != REDISMODULE_OK) 
                 || *width < 1) {
-            RedisModule_ReplyWithError(ctx, "CMS: invalid width");
-            return REDISMODULE_ERR;
+            INNER_ERROR("CMS: invalid width");
         }
         if((RedisModule_StringToLongLong(argv[3], depth) != REDISMODULE_OK)
                 || *depth < 1) {
-            RedisModule_ReplyWithError(ctx, "CMS: invalid depth");        
-            return REDISMODULE_ERR;
+            INNER_ERROR("CMS: invalid depth");        
         }
     } else {
         double err = 0, prob = 0;
         if((RedisModule_StringToDouble(argv[2], &err) != REDISMODULE_OK) ||
                                 (err <= 0 || err >= 1)) {
-            RedisModule_ReplyWithError(ctx, "CMS: invalid err value");
-            return REDISMODULE_ERR;
+            INNER_ERROR("CMS: invalid err value");
         }       
         if((RedisModule_StringToDouble(argv[3], &prob) != REDISMODULE_OK) ||
                                 (prob <= 0 || prob >= 1)) {
-            RedisModule_ReplyWithError(ctx, "CMS: invalid prob value");  
-            return REDISMODULE_ERR;
+            INNER_ERROR("CMS: invalid prob value");  
         }
         *width = ceil(2 / err);
         *depth = ceil(log10f(prob) / log10f(0.5));
@@ -94,7 +91,7 @@ int CMSketch_create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ|REDISMODULE_WRITE);
 
     if(parseCreateArgs(ctx, argv, argc, &width, &depth) != REDISMODULE_OK)
-        return REDISMODULE_ERR;
+        return REDISMODULE_OK;
 
     if(RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_EMPTY) {
         RedisModule_CloseKey(key);
@@ -181,13 +178,11 @@ static int parseMergeArgs(RedisModuleCtx *ctx, RedisModuleString **argv,
 
     if(pos < 0) {
         if(numKeys != argc - 3) {
-            RedisModule_ReplyWithError(ctx, "CMS: wrong number of keys");
-            return REDISMODULE_ERR;    
+            INNER_ERROR("CMS: wrong number of keys");
         }
     } else {
         if((pos != 3 + numKeys) && (argc != 4 + numKeys * 2)) {
-            RedisModule_ReplyWithError(ctx, "CMS: wrong number of keys/weights");
-            return REDISMODULE_ERR;
+            INNER_ERROR("CMS: wrong number of keys/weights");
         }
     }
 
@@ -202,15 +197,13 @@ static int parseMergeArgs(RedisModuleCtx *ctx, RedisModuleString **argv,
         if(pos == -1) { weights[i] = 1; }
         else if(RedisModule_StringToLongLong(argv[3 + numKeys + 1 + i], &weights[i]) !=
                                                 REDISMODULE_OK) {
-                RedisModule_ReplyWithError(ctx, "CMS: invalid weight value");
-                return REDISMODULE_ERR;
+                INNER_ERROR("CMS: invalid weight value");
         }
         if(GetCMSKey(ctx, argv[3 + i], &cmsArray[i], REDISMODULE_READ) != REDISMODULE_OK) {
-           return REDISMODULE_ERR;
+           return ERROR;
         }
         if(cmsArray[i]->width != width || cmsArray[i]->depth != depth) {
-            RedisModule_ReplyWithError(ctx, "CMS: width/depth is not equal");
-            return REDISMODULE_ERR;
+            INNER_ERROR("CMS: width/depth is not equal");
         }
     }
 
