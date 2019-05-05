@@ -1,7 +1,7 @@
 #ifndef CMS_MODULE_H
 #define CMS_MODULE_H
 
-#include <redismodule.h>
+#include "redismodule.h"
 
 #define DEFAULT_WIDTH 2000
 #define DEFAULT_DEPTH 10
