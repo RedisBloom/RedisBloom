@@ -104,9 +104,9 @@ class CMSTest(ModuleTestCase('../rebloom.so')):
                                     'small_2', 'large_5')
     
     def test_merge_extensive(self):
-        self.cmd('cms.initbydim', 'A', '2000', '20')
-        self.cmd('cms.initbydim', 'B', '2000', '20')
-        self.cmd('cms.initbydim', 'C', '2000', '20')
+        self.cmd('cms.initbydim', 'A', '2000', '10')
+        self.cmd('cms.initbydim', 'B', '2000', '10')
+        self.cmd('cms.initbydim', 'C', '2000', '10')
         
         itemsA = []
         itemsB = []
@@ -116,7 +116,14 @@ class CMSTest(ModuleTestCase('../rebloom.so')):
             itemsB.append(randint(0, 10000))
             self.cmd('cms.incrby', 'B', i, itemsB[i])    
         self.assertOk(self.cmd('cms.merge', 'C', 2, 'A', 'B'))
-    
+
+        for i in range(10000):
+            print(i, itemsA[i], self.cmd('cms.query', 'A', i), itemsB[i], self.cmd('cms.query', 'B', i), self.cmd('cms.query', 'C', i))
+#            print(itemsA[i], itemsB[i], self.cmd('cms.query', 'C', i))
+        print(self.cmd('cms.info', 'A'))
+        print(self.cmd('cms.info', 'B'))
+        print(self.cmd('cms.info', 'C'))
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
