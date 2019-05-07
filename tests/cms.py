@@ -8,6 +8,37 @@ import math
 if sys.version >= '3':
     xrange = range
 
+def TestSimple(self):
+    self.assertOk(self.cmd('cms.initbydim', 'cms1', '20', '5'))
+    self.assertOk(self.cmd('cms.incrby', 'cms1', 'a', '5'))
+    self.assertEqual([5L], self.cmd('cms.query', 'cms1', 'a'))
+#        self.assertEqual(['width', 20, 'depth', 5, 'count', 5], 
+#                         self.cmd('cms.info', 'cms1'))
+
+    self.assertOk(self.cmd('cms.initbyprob', 'cms2', '0.1', '0.1'))
+    self.assertOk(self.cmd('cms.incrby', 'cms2', 'a', '5'))
+    self.assertEqual([5L], self.cmd('cms.query', 'cms2', 'a'))
+#        self.assertEqual(['width', 20, 'depth', 4, 'count', 5], 
+#                         self.cmd('cms.info', 'cms2'))
+
+
+def TestMergeExt(self):
+    self.cmd('cms.initbydim', 'A', '2000', '10')
+    self.cmd('cms.initbydim', 'B', '2000', '10')
+    self.cmd('cms.initbydim', 'C', '2000', '10')
+    
+    itemsA = []
+    itemsB = []
+    for i in range(9000):
+        itemsA.append(randint(0, 100))
+        self.cmd('cms.incrby', 'A', i, itemsA[i])
+        itemsB.append(randint(0, 100))
+        self.cmd('cms.incrby', 'B', i, itemsB[i])    
+    self.assertOk(self.cmd('cms.merge', 'C', 2, 'A', 'B'))
+    for i in range(9000):
+        print(i, itemsA[i], self.cmd('cms.query', 'A', i), itemsB[i], self.cmd('cms.query', 'B', i), self.cmd('cms.query', 'C', i))
+#       print(itemsA[i], itemsB[i], self.cmd('cms.query', 'C', i))
+
 class CMSTest(ModuleTestCase('../rebloom.so')):
     def test_simple(self):
         self.assertOk(self.cmd('cms.initbydim', 'cms1', '20', '5'))
@@ -16,11 +47,12 @@ class CMSTest(ModuleTestCase('../rebloom.so')):
         self.assertEqual(['width', 20, 'depth', 5, 'count', 5], 
                          self.cmd('cms.info', 'cms1'))
 
-        self.assertOk(self.cmd('cms.initbyprob', 'cms2', '0.1', '0.1'))
+        self.assertOk(self.cmd('cms.initbyprob', 'cms2', '1000', '0.001', '0.001'))
         self.assertOk(self.cmd('cms.incrby', 'cms2', 'a', '5'))
         self.assertEqual([5L], self.cmd('cms.query', 'cms2', 'a'))
-        self.assertEqual(['width', 20, 'depth', 4, 'count', 5], 
+        self.assertEqual(['width', 2718, 'depth', 6, 'count', 5], 
                          self.cmd('cms.info', 'cms2'))
+
 
     def test_validation(self):
         for args in (
@@ -36,18 +68,40 @@ class CMSTest(ModuleTestCase('../rebloom.so')):
             ('foo', '100', '0'),
         ):
             self.assertRaises(ResponseError, self.cmd, 'cms.initbydim', *args)
+           
+        for args in (
+            (),
+            ('foo', ),
+            ('foo', '1000'),
+            ('foo', '0.1'),
+            ('foo', '1000', '0.1'),
+            ('foo', '0.1', 'blah'),
+            ('foo', '1000', '0.1', 'blah'),
+            ('foo', '10'),
+            ('foo', '1000', '10'),
+            ('foo', '10', 'blah'),
+            ('foo', '1000', '10', 'blah'),
+            ('foo', 'blah', '10'),
+            ('foo', '1000', 'blah', '10'),
+            ('foo', '0', '0'),
+            ('foo', '1000', '0', '0'),
+            ('foo', '0', '100'),
+            ('foo', '1000', '0', '100'),
+            ('foo', '100', '0'),
+            ('foo', '1000', '100', '0'),
+        ):         
             self.assertRaises(ResponseError, self.cmd, 'cms.initbyprob', *args)
 
         self.assertRaises(ResponseError, self.cmd, 'cms.initbydim', '0.1', '0.1')
         self.assertRaises(ResponseError, self.cmd, 'cms.initbyprob', '10', '10')
 
         self.assertOk(self.cmd('cms.initbydim', 'testDim', '100', '5'))
-        self.assertOk(self.cmd('cms.initbyprob', 'testProb', '0.1', '0.1'))
-    
+        self.assertOk(self.cmd('cms.initbyprob', 'testProb', '1000', '0.1', '0.1'))
+       
         for args in ((), ('test',)):
             for cmd in ('cms.incrby', 'cms.query', 'cms.merge', 'cms.info'):
                 self.assertRaises(ResponseError, self.cmd, cmd, *args)
-
+    
     def test_incrby_query(self):
         self.cmd('cms.incrby', 'cms', 'bar', '5', 'baz', '42')
         self.assertEqual([0], self.cmd('cms.query', 'cms', 'foo'))
@@ -111,18 +165,18 @@ class CMSTest(ModuleTestCase('../rebloom.so')):
         itemsA = []
         itemsB = []
         for i in range(10000):
-            itemsA.append(randint(0, 10000))
-            self.cmd('cms.incrby', 'A', i, itemsA[i])
-            itemsB.append(randint(0, 10000))
-            self.cmd('cms.incrby', 'B', i, itemsB[i])    
+            itemsA.append(randint(0, 100))
+            self.cmd('cms.incrby', 'A', str(i), itemsA[i])
+            itemsB.append(randint(0, 100))
+            self.cmd('cms.incrby', 'B', str(i), itemsB[i])    
         self.assertOk(self.cmd('cms.merge', 'C', 2, 'A', 'B'))
 
-        for i in range(10000):
-            print(i, itemsA[i], self.cmd('cms.query', 'A', i), itemsB[i], self.cmd('cms.query', 'B', i), self.cmd('cms.query', 'C', i))
+#        for i in range(10000):
+#            print(i, itemsA[i], self.cmd('cms.query', 'A', i), itemsB[i], self.cmd('cms.query', 'B', i), self.cmd('cms.query', 'C', i))
 #            print(itemsA[i], itemsB[i], self.cmd('cms.query', 'C', i))
-        print(self.cmd('cms.info', 'A'))
-        print(self.cmd('cms.info', 'B'))
-        print(self.cmd('cms.info', 'C'))
+#        print(self.cmd('cms.info', 'A'))
+#        print(self.cmd('cms.info', 'B'))
+#        print(self.cmd('cms.info', 'C'))
 
 if __name__ == "__main__":
     import unittest

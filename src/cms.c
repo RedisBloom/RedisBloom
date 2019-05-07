@@ -4,8 +4,7 @@
 #include <assert.h>         // assert
 
 #include "cms.h"
-#include "contrib/xxhash.h"
-
+#include "contrib/murmurhash2.h"
 
 CMSketch *NewCMSketch(size_t width, size_t depth) {
     assert(width > 0);
@@ -21,6 +20,18 @@ CMSketch *NewCMSketch(size_t width, size_t depth) {
     return cms; 
 }
 
+void CMS_DimFromProb(size_t n, double overEstProb, double errProb,
+                       size_t *width, size_t *depth) {
+    assert(overEstProb > 0 && overEstProb < 1);
+    assert(errProb > 0 && errProb < 1);
+
+    /*  With large enough n, width can be reduced and maintain low
+        over estimate probability */
+    *width = n * exp(1) / ceil(n * pow(overEstProb, 2));
+    *depth = -ceil(log(errProb));
+}
+
+
 void CMS_Destroy(CMSketch *cms) {
     assert(cms);
 
@@ -35,7 +46,7 @@ void CMS_IncrBy(CMSketch *cms, const char *item, size_t strlen, size_t value) {
     assert(item);
 
     for(size_t i = 0; i < cms->depth; ++i) {
-        size_t hash = XXH64(item, strlen, i);
+        uint32_t hash = MurmurHash2(item, strlen, i);
         cms->array[(hash % cms->width) + (i * cms->width)] += value;
     }
     cms->counter += value;
@@ -48,7 +59,7 @@ size_t CMS_Query(CMSketch *cms, const char *item, size_t strlen) {
     size_t temp = 0, res = -1;
 
     for(size_t i = 0; i < cms->depth; ++i) {
-        size_t hash = XXH64(item, strlen, i);
+        uint32_t hash = MurmurHash2(item, strlen, i);
         temp = cms->array[(hash % cms->width) + (i * cms->width)];
         if(temp < res) {
             res = temp;
@@ -64,25 +75,25 @@ void CMS_Merge(CMSketch *dest, size_t quantity,
     assert(src);
     assert(weights);
 
-    size_t tempCount= 0;
-    size_t tempTotal = 0;
+    size_t itemCount= 0;
+    size_t cmsCount = 0;
     size_t width = dest->width;
     size_t depth = dest->depth;
     
     for(size_t i = 0; i < depth; ++i) {
         for(size_t j = 0; j < width; ++j) {            
-            tempCount = 0;
+            itemCount = 0;
             for(size_t k = 0; k < quantity; ++k) {
-                tempCount += src[k]->array[(i * width) + j] * weights[k];
+                itemCount += src[k]->array[(i * width) + j] * weights[k];
             }
-            dest->array[(i * width) + j] = tempCount; 
+            dest->array[(i * width) + j] = itemCount; 
         }
     }
 
     for(size_t i = 0; i < quantity; ++i) {
-        tempTotal += src[i]->counter * weights[i];
+        cmsCount += src[i]->counter * weights[i];
     }
-    dest->counter = tempTotal;
+    dest->counter = cmsCount;
 }
  
 void CMS_Print(const CMSketch *cms) {

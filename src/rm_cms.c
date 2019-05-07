@@ -9,7 +9,7 @@
 #include "cms.h"
 
 #define ERROR           REDISMODULE_ERR
-#define INNER_ERROR(x)  RedisModule_ReplyWithError(ctx, "CMS: key does not exist"); \
+#define INNER_ERROR(x)  RedisModule_ReplyWithError(ctx, x); \
                         return ERROR;
 
 RedisModuleType *CMSketchType;
@@ -35,7 +35,6 @@ static int GetCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName,
         INNER_ERROR(REDISMODULE_ERRORMSG_WRONGTYPE);
     } 
     *cms = RedisModule_ModuleTypeGetValue(key);
-    
     return REDISMODULE_OK;
 }
 
@@ -56,7 +55,7 @@ static int CreateCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName,
 
 static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
                     long long *width, long long *depth) {
-    if(cmpCStrToRedisStr("cms.initbydim", argv[0]) == 1) {
+    if(argc == 4) {
         if((RedisModule_StringToLongLong(argv[2], width) != REDISMODULE_OK) 
                 || *width < 1) {
             INNER_ERROR("CMS: invalid width");
@@ -66,24 +65,29 @@ static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
             INNER_ERROR("CMS: invalid depth");        
         }
     } else {
-        double err = 0, prob = 0;
-        if((RedisModule_StringToDouble(argv[2], &err) != REDISMODULE_OK) ||
-                                (err <= 0 || err >= 1)) {
-            INNER_ERROR("CMS: invalid err value");
+        long long n = 0;
+        double overEst = 0, prob = 0;
+        if((RedisModule_StringToLongLong(argv[2], &n) != REDISMODULE_OK) ||
+                                (n < 1)) {
+            INNER_ERROR("CMS: invalid n value");
+        } 
+        if((RedisModule_StringToDouble(argv[3], &overEst) != REDISMODULE_OK) ||
+                                overEst <= 0 || overEst >= 1) {
+            INNER_ERROR("CMS: invalid over estimation value");
         }       
-        if((RedisModule_StringToDouble(argv[3], &prob) != REDISMODULE_OK) ||
+        if((RedisModule_StringToDouble(argv[4], &prob) != REDISMODULE_OK) ||
                                 (prob <= 0 || prob >= 1)) {
             INNER_ERROR("CMS: invalid prob value");  
         }
-        *width = ceil(2 / err);
-        *depth = ceil(log10f(prob) / log10f(0.5));
+        CMS_DimFromProb(n, overEst, prob, (size_t *)width, (size_t *)depth);
     }
     
     return REDISMODULE_OK;
 }
 
 int CMSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    if(argc != 4) {
+    if((argc == 4 && cmpCStrToRedisStr("cms.initbydim", argv[0])) == 0 &&
+       (argc == 5 && cmpCStrToRedisStr("cms.initbyprob", argv[0])) == 0) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -92,13 +96,13 @@ int CMSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModuleString *keyName = argv[1];
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ|REDISMODULE_WRITE);
 
-    if(parseCreateArgs(ctx, argv, argc, &width, &depth) != REDISMODULE_OK)
-        return REDISMODULE_OK;
-
     if(RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_EMPTY) {
         RedisModule_CloseKey(key);
         return RedisModule_ReplyWithError(ctx,"CMS: key already exists");
     }
+
+    if(parseCreateArgs(ctx, argv, argc, &width, &depth) != REDISMODULE_OK)
+        return REDISMODULE_OK;
 
     CreateCMSKey(ctx, keyName, width, depth, &cms, &key);
 
