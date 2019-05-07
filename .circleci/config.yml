@@ -14,9 +14,7 @@ jobs:
       - run:
           name: Persist Artifacts
           command: >-
-            # hard coded rebloom.so
-            mkdir -p /workspace/build && cp rebloom.so /workspace/ && cp
-            ramp.yml ./workspace
+            mkdir -p /workspace/build && cp rebloom.so /workspace/ && cp ramp.yml ./workspace
       - persist_to_workspace:
           root: /workspace
           paths:
