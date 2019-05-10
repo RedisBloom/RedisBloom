@@ -6,6 +6,8 @@
 #include "cms.h"
 #include "contrib/murmurhash2.h"
 
+#define BIT64 64
+
 CMSketch *NewCMSketch(size_t width, size_t depth) {
     assert(width > 0);
     assert(depth > 0);
@@ -106,4 +108,19 @@ void CMS_Print(const CMSketch *cms) {
         printf("\n");
     }
     printf("\tCounter is %lu\n", (size_t)cms->counter);
+}
+
+size_t CMS_cardinality(CMSketch *cms) {
+    size_t width = cms->width, card = 0, count = 0;
+
+    for(int i = 0; i < cms->depth; ++i, count = 0) { 
+        for(int j = 0; j < width; ++j) {
+            count += !!cms->array[i * width + j];
+        }
+        if(count == cms->width) return cms->width;
+        size_t tempCard = -(cms->width * log(1 - (count / (double)cms->width)));
+        card = (card < tempCard) ? tempCard : card;
+    }
+
+    return card;
 }

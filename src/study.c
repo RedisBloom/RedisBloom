@@ -55,7 +55,7 @@ int statisticsTest(double width, int depth) {
     int *srcArray = calloc(AMOUNT, sizeof(int));
     int *errArray= calloc(AMOUNT, sizeof(int));
     double resArray[AMOUNT/STAT_SIZE][2];
-    CMSketch * cms = NewCMSketch(AMOUNT * width, depth);
+    CMSketch *cms = NewCMSketch(AMOUNT * width, depth);
 
     srand(0);
     for(int i = 0; i < AMOUNT; ++i) {
@@ -80,8 +80,9 @@ int statisticsTest(double width, int depth) {
 
         resArray[i][0] = getMean(errArray, errIdx, idx);
         resArray[i][1] = getStdDev(errArray, errIdx, idx);
-        printf("%d itirations with %d errors, MEAN %f, STDEV is %f\n", 
+        printf("%d itirations with %d errors, MEAN %f, STDEV is %f\t", 
                         (i + 1) * STAT_SIZE, errIdx, resArray[i][0], resArray[i][1]);
+        printf("Cardinality of %lu\n", CMS_cardinality(cms));
     }
 
     CMS_Destroy(cms);

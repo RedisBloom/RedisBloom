@@ -50,4 +50,7 @@ void CMS_Merge(CMSketch *dest, size_t quantity,
 /* Help function */
 void CMS_Print(const CMSketch *cms);
 
+/* Checks cardinality of sketch */
+size_t CMS_cardinality(CMSketch *cms);
+
 #endif
