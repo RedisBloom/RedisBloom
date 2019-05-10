@@ -13,14 +13,9 @@
 #define CMS_FREE(ptr) free(ptr)
 #endif
 
-typedef struct
-{
-    size_t width;
-    size_t depth;
-    size_t *array;
-    size_t counter;
-    // TODO: requested n + current cardinality
-} CMSketch;
+typedef unsigned int uint;
+
+typedef struct CMS CMSketch;
 
 /* Creates a new Count-Min Sketch with dimentions of width * depth */
 CMSketch *NewCMSketch(size_t width, size_t depth);

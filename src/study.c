@@ -1,6 +1,6 @@
 
 #include <stdio.h>      // printf
-#include <stdlib.h>     
+#include <stdlib.h>     // calloc
 #include <string.h>     // strlen
 #include <math.h>       // rand
 #include <time.h>       // clock
@@ -12,24 +12,43 @@
 
 int statisticsTest(double width, int depth);
 
+struct CMS
+{
+    size_t width;
+    size_t depth;
+    uint *array;
+    size_t counter;
+    // TODO: requested n + current cardinality
+};
+
 int main(int argc, void*argv[]) {
 
-    if(argc % 2 == 0 && argc != 1) {
+    double width = 2.7;
+    int depth = 5;
+
+    if(argc == 1) {
+        statisticsTest(width, depth);
+    } else if(argc == 2 && ((char *)argv[1])[0] == 't') {
+        clock_t begin = clock();
+        for(double width = 1; width <= 4; width += 0.1) {
+            for(int depth = 1; depth < 7; ++depth) {
+                //printf("width %f, depth %d\n", width, depth);
+                statisticsTest(width, depth);
+            }
+        }
+    clock_t end = clock();
+    printf("execution time %f\n", (double)(end - begin) / CLOCKS_PER_SEC);
+    } else if(argc % 2 == 1) {
+        for(int i = 1; i < argc - 1; i += 2) {
+            width = atof(argv[i]);
+            depth = atoi(argv[i + 1]);
+            statisticsTest(width, depth);
+        }
+    }
+    else {
         printf("Invalid numbet of inputs\n");
         return 1;
     }
-    double width = exp(1);
-    int depth = 5;
-
-    if(argc == 1) statisticsTest(width, depth);
-
-
-    for(int i = 0; i < argc / 2; ++i) {
-        width = atof(argv[1 + 2 * i]);
-        depth = atoi(argv[2 + 2 * i]);
-        statisticsTest(width, depth);
-    }
-
     
     return 0;
 }
@@ -39,7 +58,7 @@ static double getMean(int *errArray, int errNum, int size) {
     for(int i = 0; i < errNum; ++i) {
         sum += errArray[i];
     }
-    return sum / size;
+    return sum / errNum;
 }
 
 static double getStdDev(int *errArray, int errNum, int size) {
@@ -47,7 +66,7 @@ static double getStdDev(int *errArray, int errNum, int size) {
     for(int i = 0; i < errNum; ++i) {
         sum += pow(errArray[i], 2);
     }
-    return sqrt(sum) / size;
+    return sqrt(sum) / errNum;
 }
 
 int statisticsTest(double width, int depth) {
@@ -59,7 +78,7 @@ int statisticsTest(double width, int depth) {
 
     srand(0);
     for(int i = 0; i < AMOUNT; ++i) {
-        srcArray[i] = rand() % 1000;
+        srcArray[i] = pow(rand() % 100, 2);
     }
     
     int i, j, k, idx = 0, errIdx = 0, resIdx = 0;
@@ -80,8 +99,9 @@ int statisticsTest(double width, int depth) {
 
         resArray[i][0] = getMean(errArray, errIdx, idx);
         resArray[i][1] = getStdDev(errArray, errIdx, idx);
-        printf("%d itirations with %d errors, MEAN %f, STDEV is %f\t", 
-                        (i + 1) * STAT_SIZE, errIdx, resArray[i][0], resArray[i][1]);
+        printf("width %f, depth %d, ", width, depth);
+        printf("%d itirations, counter %lu\t", (i + 1) * STAT_SIZE, cms->counter);
+        printf("with %d errors, MEAN %f, STDEV is %f\t", errIdx, resArray[i][0], resArray[i][1]);
         printf("Cardinality of %lu\n", CMS_cardinality(cms));
     }
 

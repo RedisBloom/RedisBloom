@@ -8,6 +8,15 @@
 
 #define BIT64 64
 
+struct CMS
+{
+    size_t width;
+    size_t depth;
+    uint *array;
+    size_t counter;
+    // TODO: requested n + current cardinality
+};
+
 CMSketch *NewCMSketch(size_t width, size_t depth) {
     assert(width > 0);
     assert(depth > 0);
@@ -17,7 +26,7 @@ CMSketch *NewCMSketch(size_t width, size_t depth) {
     cms->width = width;
     cms->depth = depth;
     cms->counter = 0;
-    cms->array = CMS_CALLOC(width * depth, sizeof(size_t));
+    cms->array = CMS_CALLOC(width * depth, sizeof(uint));
 
     return cms; 
 }
@@ -61,7 +70,7 @@ size_t CMS_Query(CMSketch *cms, const char *item, size_t strlen) {
     size_t temp = 0, res = -1;
 
     for(size_t i = 0; i < cms->depth; ++i) {
-        uint32_t hash = MurmurHash2(item, strlen, i);
+        uint hash = MurmurHash2(item, strlen, i);
         temp = cms->array[(hash % cms->width) + (i * cms->width)];
         if(temp < res) {
             res = temp;
@@ -103,11 +112,11 @@ void CMS_Print(const CMSketch *cms) {
 
     for(int i = 0; i < cms->depth; ++i) {
         for(int j = 0; j < cms->width; ++j) {
-            printf("%lu\t", cms->array[(i * cms->width) + j]);
+            printf("%d\t", cms->array[(i * cms->width) + j]);
         }
         printf("\n");
     }
-    printf("\tCounter is %lu\n", (size_t)cms->counter);
+    printf("\tCounter is %lu\n", cms->counter);
 }
 
 size_t CMS_cardinality(CMSketch *cms) {
