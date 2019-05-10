@@ -7,14 +7,16 @@
 
 #include "cms.h"
 
-int visualTest();
+#define AMOUNT 1000000
+#define STAT_SIZE (AMOUNT / 10)
+
+int visustatisticsTestalTest();
 int massiveTest();
 
-int main()
-{
-  //  visualTest();
+int main() {
+    visualTest();
     massiveTest();
-
+    
     return 0;
 }
 
@@ -57,7 +59,6 @@ int visualTest() {
 }
 
 int massiveTest() {
-    #define AMOUNT 100000
     CMSketch * cms = NewCMSketch(AMOUNT * 2.7, 5);
     int original[AMOUNT] = { 0 };
     int result[AMOUNT] = { 0 };
