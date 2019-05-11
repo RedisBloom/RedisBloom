@@ -273,7 +273,7 @@ void CMSRdbSave(RedisModuleIO *io, void *obj) {
     RedisModule_SaveUnsigned(io, cms->depth);
     RedisModule_SaveUnsigned(io, cms->counter);
     RedisModule_SaveStringBuffer(io, (const char *)cms->array, 
-                                cms->width * cms->depth * sizeof(size_t));
+                                cms->width * cms->depth * sizeof(uint));
 }
 
 void *CMSRdbLoad(RedisModuleIO *io, int encver) {
