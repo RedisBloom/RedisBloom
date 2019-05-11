@@ -8,15 +8,6 @@
 
 #define BIT64 64
 
-struct CMS
-{
-    size_t width;
-    size_t depth;
-    uint *array;
-    size_t counter;
-    // TODO: requested n + current cardinality
-};
-
 CMSketch *NewCMSketch(size_t width, size_t depth) {
     assert(width > 0);
     assert(depth > 0);

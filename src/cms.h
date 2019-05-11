@@ -15,7 +15,13 @@
 
 typedef unsigned int uint;
 
-typedef struct CMS CMSketch;
+typedef struct CMS {
+    size_t width;
+    size_t depth;
+    uint *array;
+    size_t counter;
+    // TODO: requested n + current cardinality
+} CMSketch;
 
 /* Creates a new Count-Min Sketch with dimentions of width * depth */
 CMSketch *NewCMSketch(size_t width, size_t depth);

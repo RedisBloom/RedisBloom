@@ -286,7 +286,7 @@ void *CMSRdbLoad(RedisModuleIO *io, int encver) {
     cms->depth = RedisModule_LoadUnsigned(io);
     cms->counter = RedisModule_LoadUnsigned(io);
     size_t length = cms->width * cms->depth * sizeof(size_t);
-    cms->array = (size_t *)RedisModule_LoadStringBuffer(io, &length);
+    cms->array = (uint *)RedisModule_LoadStringBuffer(io, &length);
 
     return cms;
 }

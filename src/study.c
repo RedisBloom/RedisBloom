@@ -12,15 +12,6 @@
 
 int statisticsTest(double width, int depth);
 
-struct CMS
-{
-    size_t width;
-    size_t depth;
-    uint *array;
-    size_t counter;
-    // TODO: requested n + current cardinality
-};
-
 int main(int argc, void*argv[]) {
 
     double width = 2.7;
