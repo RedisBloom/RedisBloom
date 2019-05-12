@@ -111,6 +111,56 @@ int CMSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_ReplicateVerbatim(ctx);
     return REDISMODULE_OK;
 }
+/*************************************************/
+/*          After change of API                  */
+/*************************************************/
+static int parseCreateArgsNew(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
+                    long long *width, long long *depth) {
+    long long size = 0;
+    double overEst = 0, prob = 0;
+    if(RMUtil_ArgIndex("ERROR", argv, argc) != 3) {
+        INNER_ERROR("CMS: invalid ERROR");
+    }
+    if((RedisModule_StringToDouble(argv[4], &overEst) != REDISMODULE_OK) ||
+                            overEst <= 0 || overEst >= 1) {
+        INNER_ERROR("CMS: invalid over estimation value");
+    }       
+    if((RedisModule_StringToDouble(argv[5], &prob) != REDISMODULE_OK) ||
+                            (prob <= 0 || prob >= 1)) {
+        INNER_ERROR("CMS: invalid prob value");  
+    }
+    CMS_DimFromProb(size, overEst, prob, (size_t *)width, (size_t *)depth);
+    
+    return REDISMODULE_OK;
+}
+
+int CMSketch_CreateNew(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    if((argc == 3 || argc == 6) == 0) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    CMSketch *cms = NULL;
+    long long width = 2.7, depth = 5, size = 0;
+    RedisModuleString *keyName = argv[1];
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ|REDISMODULE_WRITE);
+
+    if(RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_EMPTY) {
+        RedisModule_CloseKey(key);
+        return RedisModule_ReplyWithError(ctx,"CMS: key already exists");
+    }
+
+    if((RedisModule_StringToLongLong(argv[2], &size) != REDISMODULE_OK) || (size < 1)) {
+        INNER_ERROR("CMS: invalid n value");
+    } 
+
+    CreateCMSKey(ctx, keyName, width * size, depth, &cms, &key);
+
+    RedisModule_CloseKey(key);
+    RedisModule_ReplyWithSimpleString(ctx, "OK");
+    RedisModule_ReplicateVerbatim(ctx);
+    return REDISMODULE_OK;
+}
+/*************************************************/
 
 static int parseIncrByArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
                 CMSPair **pairs, int qty) {
@@ -316,6 +366,7 @@ int CMSModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
     RMUtil_RegisterWriteCmd(ctx, "cms.initbydim", CMSketch_Create);
     RMUtil_RegisterWriteCmd(ctx, "cms.initbyprob", CMSketch_Create);
+    RMUtil_RegisterWriteCmd(ctx, "cms.reserve", CMSketch_CreateNew);    // addition for new API
     RMUtil_RegisterWriteCmd(ctx, "cms.incrby", CMSketch_IncrBy);
     RMUtil_RegisterReadCmd(ctx, "cms.query", CMSketch_Query);
     RMUtil_RegisterWriteCmd(ctx, "cms.merge", CMSketch_Merge);
