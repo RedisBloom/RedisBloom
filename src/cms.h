@@ -1,7 +1,7 @@
 #ifndef RM_CMS_H
 #define RM_CMS_H
 
-#include <stddef.h>
+#include <stdint.h> // uint32_t
 
 // #define REDIS_MODULE_TARGET
 
@@ -13,12 +13,10 @@
 #define CMS_FREE(ptr) free(ptr)
 #endif
 
-typedef unsigned int uint;
-
 typedef struct CMS {
     size_t width;
     size_t depth;
-    uint *array;
+    uint32_t *array;
     size_t counter;
     // TODO: requested n + current cardinality
 } CMSketch;
@@ -26,11 +24,10 @@ typedef struct CMS {
 /* Creates a new Count-Min Sketch with dimentions of width * depth */
 CMSketch *NewCMSketch(size_t width, size_t depth);
 
-/*  Recommands width & depth for expected n different items, 
-    with probability of an error  - prob and over estimation   
+/*  Recommands width & depth for expected n different items,
+    with probability of an error  - prob and over estimation
     error - overEst (use 1 for max accuracy) */
-void CMS_DimFromProb(size_t n, double overEst, double prob,
-                       size_t *width, size_t *depth);
+void CMS_DimFromProb(size_t n, double overEst, double prob, size_t *width, size_t *depth);
 
 void CMS_Destroy(CMSketch *cms);
 
@@ -41,17 +38,16 @@ void CMS_IncrBy(CMSketch *cms, const char *item, size_t strlen, size_t value);
 /* Returns an estimate counter for item */
 size_t CMS_Query(CMSketch *cms, const char *item, size_t strlen);
 
-/*  Merges multiple CMSketches into a single one. 
-    All sketches must have identical width and depth. 
+/*  Merges multiple CMSketches into a single one.
+    All sketches must have identical width and depth.
     dest must be already initilized.
 */
-void CMS_Merge(CMSketch *dest, size_t quantity, 
-               const CMSketch **src, const long long *weights);
+void CMS_Merge(CMSketch *dest, size_t quantity, const CMSketch **src, const long long *weights);
 
 /* Help function */
 void CMS_Print(const CMSketch *cms);
 
 /* Checks cardinality of sketch */
-size_t CMS_cardinality(CMSketch *cms);
+size_t CMS_GetCardinality(CMSketch *cms);
 
 #endif
