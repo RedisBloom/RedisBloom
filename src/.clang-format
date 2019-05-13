@@ -1,0 +1,12 @@
+Language: Cpp
+BreakBeforeBraces: Attach
+PointerAlignment: Right
+TabWidth: 4
+IndentWidth: 4
+AccessModifierOffset: 0
+ColumnLimit: 120
+NamespaceIndentation: All
+AlignTrailingComments: true
+AllowAllParametersOfDeclarationOnNextLine: true
+AlwaysBreakTemplateDeclarations: true
+UseTab: Always
