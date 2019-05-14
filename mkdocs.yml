@@ -35,6 +35,7 @@ pages:
     - 'Quick Start': 'Quick_Start.md'
     - 'Bloom Commands': 'Bloom_Commands.md'
     - 'Cuckoo Filter Commands': 'Cuckoo_Commands.md'
+    - 'Count-Min-Sketch Commands': 'CountMinSketch_Commands.md'
     - 'Java API': 'Java_Client.md'
     - 'Contributor agreement': 'contrib.md'
 
