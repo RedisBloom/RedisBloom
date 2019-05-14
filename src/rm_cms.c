@@ -123,7 +123,7 @@ static int parseCreateArgsNew(RedisModuleCtx *ctx, RedisModuleString **argv, int
         }
         if ((RedisModule_StringToDouble(argv[4], &overEst) != REDISMODULE_OK) || overEst <= 0 ||
             overEst >= 1) {
-            INNER_ERROR("CMS: invalid over estimation value");
+            INNER_ERROR("CMS: invalid overestimation value");
         }
         if ((RedisModule_StringToDouble(argv[5], &prob) != REDISMODULE_OK) ||
             (prob <= 0 || prob >= 1)) {
