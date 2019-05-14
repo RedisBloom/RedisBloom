@@ -9,14 +9,16 @@
 #define BIT64 64
 #define CMS_HASH(item, itemlen, i) MurmurHash2(item, itemlen, i)
 
-CMSketch *NewCMSketch(size_t width, size_t depth) {
+CMSketch *NewCMSketch(size_t width, size_t depth, size_t size) {
     assert(width > 0);
     assert(depth > 0);
+    assert(size > 0);
 
     CMSketch *cms = CMS_CALLOC(1, sizeof(CMSketch));
 
     cms->width = width;
     cms->depth = depth;
+    cms->size = size;
     cms->counter = 0;
     cms->array = CMS_CALLOC(width * depth, sizeof(uint32_t));
 
@@ -28,7 +30,7 @@ void CMS_DimFromProb(size_t n, double overEstProb, double errProb, size_t *width
     assert(errProb > 0 && errProb < 1);
 
     /*  With large enough n, width can be reduced and maintain low
-	    over estimate probability */
+            over estimate probability */
     *width = n * exp(1) / ceil(n * pow(overEstProb, 2));
     *depth = -ceil(log(errProb));
 }
@@ -47,8 +49,8 @@ void CMS_IncrBy(CMSketch *cms, const char *item, size_t itemlen, size_t value) {
     assert(item);
 
     for (size_t i = 0; i < cms->depth; ++i) {
-	uint32_t hash = CMS_HASH(item, itemlen, i);
-	cms->array[(hash % cms->width) + (i * cms->width)] += value;
+        uint32_t hash = CMS_HASH(item, itemlen, i);
+        cms->array[(hash % cms->width) + (i * cms->width)] += value;
     }
     cms->counter += value;
 }
@@ -60,11 +62,11 @@ size_t CMS_Query(CMSketch *cms, const char *item, size_t itemlen) {
     size_t temp = 0, res = (size_t)-1;
 
     for (size_t i = 0; i < cms->depth; ++i) {
-	uint32_t hash = CMS_HASH(item, itemlen, i);
-	temp = cms->array[(hash % cms->width) + (i * cms->width)];
-	if (temp < res) {
-	    res = temp;
-	}
+        uint32_t hash = CMS_HASH(item, itemlen, i);
+        temp = cms->array[(hash % cms->width) + (i * cms->width)];
+        if (temp < res) {
+            res = temp;
+        }
     }
 
     return res;
@@ -81,34 +83,34 @@ void CMS_Merge(CMSketch *dest, size_t quantity, const CMSketch **src, const long
     size_t depth = dest->depth;
 
     for (size_t i = 0; i < depth; ++i) {
-	for (size_t j = 0; j < width; ++j) {
-	    itemCount = 0;
-	    for (size_t k = 0; k < quantity; ++k) {
-		itemCount += src[k]->array[(i * width) + j] * weights[k];
-	    }
-	    dest->array[(i * width) + j] = itemCount;
-	}
+        for (size_t j = 0; j < width; ++j) {
+            itemCount = 0;
+            for (size_t k = 0; k < quantity; ++k) {
+                itemCount += src[k]->array[(i * width) + j] * weights[k];
+            }
+            dest->array[(i * width) + j] = itemCount;
+        }
     }
 
     for (size_t i = 0; i < quantity; ++i) {
-	cmsCount += src[i]->counter * weights[i];
+        cmsCount += src[i]->counter * weights[i];
     }
     dest->counter = cmsCount;
 }
 
 void CMS_MergeParams(mergeParams params) {
     CMS_Merge(params.dest, params.numKeys, (const CMSketch **)params.cmsArray,
-	      (const long long *)params.weights);
+              (const long long *)params.weights);
 }
 
 void CMS_Print(const CMSketch *cms) {
     assert(cms);
 
     for (int i = 0; i < cms->depth; ++i) {
-	for (int j = 0; j < cms->width; ++j) {
-	    printf("%d\t", cms->array[(i * cms->width) + j]);
-	}
-	printf("\n");
+        for (int j = 0; j < cms->width; ++j) {
+            printf("%d\t", cms->array[(i * cms->width) + j]);
+        }
+        printf("\n");
     }
     printf("\tCounter is %lu\n", cms->counter);
 }
@@ -117,13 +119,13 @@ size_t CMS_GetCardinality(CMSketch *cms) {
     size_t width = cms->width, card = 0, count = 0;
 
     for (int i = 0; i < cms->depth; ++i, count = 0) {
-	for (int j = 0; j < width; ++j) {
-	    count += !!cms->array[i * width + j];
-	}
-	if (count == cms->width)
-	    return cms->width;
-	size_t tempCard = -(cms->width * log(1 - (count / (double)cms->width)));
-	card = (card < tempCard) ? tempCard : card;
+        for (int j = 0; j < width; ++j) {
+            count += !!cms->array[i * width + j];
+        }
+        if (count == cms->width)
+            return cms->width;
+        size_t tempCard = -(cms->width * log(1 - (count / (double)cms->width)));
+        card = (card < tempCard) ? tempCard : card;
     }
 
     return card;

@@ -18,7 +18,7 @@ typedef struct CMS {
     size_t depth;
     uint32_t *array;
     size_t counter;
-    // TODO: requested n + current cardinality
+    size_t size; // size requested by user
 } CMSketch;
 
 typedef struct {
@@ -28,10 +28,10 @@ typedef struct {
     long long *weights;
 } mergeParams;
 
-/* Creates a new Count-Min Sketch with dimentions of width * depth */
-CMSketch *NewCMSketch(size_t width, size_t depth);
+/* Creates a new Count-Min Sketch with dimensions of width * depth */
+CMSketch *NewCMSketch(size_t width, size_t depth, size_t size);
 
-/*  Recommands width & depth for expected n different items,
+/*  Recommends width & depth for expected n different items,
     with probability of an error  - prob and over estimation
     error - overEst (use 1 for max accuracy) */
 void CMS_DimFromProb(size_t n, double overEst, double prob, size_t *width, size_t *depth);
@@ -47,7 +47,7 @@ size_t CMS_Query(CMSketch *cms, const char *item, size_t strlen);
 
 /*  Merges multiple CMSketches into a single one.
     All sketches must have identical width and depth.
-    dest must be already initilized.
+    dest must be already initialized.
 */
 void CMS_Merge(CMSketch *dest, size_t quantity, const CMSketch **src, const long long *weights);
 void CMS_MergeParams(mergeParams params);
