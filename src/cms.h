@@ -21,6 +21,13 @@ typedef struct CMS {
     // TODO: requested n + current cardinality
 } CMSketch;
 
+typedef struct {
+    CMSketch *dest;
+    long long numKeys;
+    CMSketch **cmsArray;
+    long long *weights;
+} mergeParams;
+
 /* Creates a new Count-Min Sketch with dimentions of width * depth */
 CMSketch *NewCMSketch(size_t width, size_t depth);
 
@@ -43,6 +50,7 @@ size_t CMS_Query(CMSketch *cms, const char *item, size_t strlen);
     dest must be already initilized.
 */
 void CMS_Merge(CMSketch *dest, size_t quantity, const CMSketch **src, const long long *weights);
+void CMS_MergeParams(mergeParams params);
 
 /* Help function */
 void CMS_Print(const CMSketch *cms);
