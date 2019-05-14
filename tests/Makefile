@@ -7,6 +7,7 @@ test: test-basic test-cuckoo
 	./test-cuckoo
 	$(PYTHON) pytests.py
 	$(PYTHON) cuckoo.py
+	$(PYTHON) cms.py
 
 perf: test-perf
 	time ./test-perf
