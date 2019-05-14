@@ -2,7 +2,7 @@
 
 # RedisBloom - Probablistic Datatypes Module for Redis
 
-This module provides two datatypes, a Scalable Bloom Filter, Cuckoo Filter and a Count-Mins-Sketch.
+This module provides three datatypes, a Scalable Bloom Filter, Cuckoo Filter and a Count-Mins-Sketch.
 The first two datatypes are used to determine (with a given degree of certainty) whether
 an item is present (or absent) from a collection and while the last is uesed to count the 
 frequency of the different items in sub-linear space.
