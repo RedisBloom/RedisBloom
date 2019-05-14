@@ -3,8 +3,8 @@
 
 #include "redismodule.h"
 
-#define DEFAULT_WIDTH 2000
-#define DEFAULT_DEPTH 10
+#define DEFAULT_WIDTH 2.7
+#define DEFAULT_DEPTH 5
 
 #define CMS_ENC_VER 0
 
