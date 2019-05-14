@@ -4,9 +4,10 @@
 
 # RedisBloom - Bloom Filter Module for Redis
 
-This module provides two probabalistic data structures as Redis data types:
-**Bloom Filters** and **Cuckoo Filters**. These two structures are similar in
-their purpose but have different performance and functionality characteristics
+This module provides three probabalistic data structures as Redis data types:
+**Bloom Filters**, **Cuckoo Filters** and **Count-Min-Sketch**. The first two structures are similar in
+their purpose but have different performance and functionality characteristics while the last is used to count the 
+frequency of the different items in sub-linear space.
 
 ## Quick Start Guide
 1. [Launch RedisBloom with Docker](#launch-redisbloom-with-docker)
