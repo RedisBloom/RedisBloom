@@ -302,7 +302,9 @@ int CMSKetch_Info(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_OK;
     }
 
-    RedisModule_ReplyWithArray(ctx, 4 * 2);
+    RedisModule_ReplyWithArray(ctx, 5 * 2);
+    RedisModule_ReplyWithSimpleString(ctx, "capacity");
+    RedisModule_ReplyWithLongLong(ctx, cms->cap);
     RedisModule_ReplyWithSimpleString(ctx, "width");
     RedisModule_ReplyWithLongLong(ctx, cms->width);
     RedisModule_ReplyWithSimpleString(ctx, "depth");
@@ -310,13 +312,14 @@ int CMSKetch_Info(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_ReplyWithSimpleString(ctx, "count");
     RedisModule_ReplyWithLongLong(ctx, cms->counter);
     RedisModule_ReplyWithSimpleString(ctx, "fill rate %");
-    RedisModule_ReplyWithDouble(ctx, 100 * CMS_GetCardinality(cms) / cms->size);
+    RedisModule_ReplyWithDouble(ctx, 100 * CMS_GetCardinality(cms) / cms->cap);
 
     return REDISMODULE_OK;
 }
 
 void CMSRdbSave(RedisModuleIO *io, void *obj) {
     CMSketch *cms = obj;
+    RedisModule_SaveUnsigned(io, cms->cap);
     RedisModule_SaveUnsigned(io, cms->width);
     RedisModule_SaveUnsigned(io, cms->depth);
     RedisModule_SaveUnsigned(io, cms->counter);
@@ -330,6 +333,7 @@ void *CMSRdbLoad(RedisModuleIO *io, int encver) {
     }
 
     CMSketch *cms = CMS_CALLOC(1, sizeof(CMSketch));
+    cms->cap = RedisModule_LoadUnsigned(io);
     cms->width = RedisModule_LoadUnsigned(io);
     cms->depth = RedisModule_LoadUnsigned(io);
     cms->counter = RedisModule_LoadUnsigned(io);

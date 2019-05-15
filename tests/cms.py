@@ -12,8 +12,6 @@ def TestSimple(self):
     self.assertOk(self.cmd('cms.reserve', 'cms1', '20'))
     self.assertOk(self.cmd('cms.incrby', 'cms1', 'a', '5'))
     self.assertEqual([5L], self.cmd('cms.query', 'cms1', 'a'))
-#        self.assertEqual(['width', 20, 'depth', 5, 'count', 5], 
-#                         self.cmd('cms.info', 'cms1'))
 
 def TestMergeExt(self):
     self.cmd('cms.reserve', 'A', '2000')
@@ -37,7 +35,7 @@ class CMSTest(ModuleTestCase('../rebloom.so')):
         self.assertOk(self.cmd('cms.reserve', 'cms1', '20'))
         self.assertOk(self.cmd('cms.incrby', 'cms1', 'a', '5'))
         self.assertEqual([5L], self.cmd('cms.query', 'cms1', 'a'))
-        self.assertEqual(['width', 54L, 'depth', 5L, 'count', 5L, 'fill rate %', '5'], 
+        self.assertEqual(['capacity', 20L, 'width', 54L, 'depth', 5L, 'count', 5L, 'fill rate %', '5'], 
                          self.cmd('cms.info', 'cms1'))
 
     def test_validation(self):
@@ -60,13 +58,13 @@ class CMSTest(ModuleTestCase('../rebloom.so')):
 
         self.assertOk(self.cmd('cms.reserve', 'testDim', '100'))
         self.assertOk(self.cmd('cms.reserve', 'testProb1', '100', 'probability', '0.01'))
-        self.assertEqual(['width', 250L, 'depth', 5L, 'count', 0L, 'fill rate %', '0'], 
+        self.assertEqual(['capacity', 100L, 'width', 250L, 'depth', 5L, 'count', 0L, 'fill rate %', '0'], 
                          self.cmd('cms.info', 'testProb1'))
         self.assertOk(self.cmd('cms.reserve', 'testProb2', '100', 'probability', '0.03'))
-        self.assertEqual(['width', 189L, 'depth', 5L, 'count', 0L, 'fill rate %', '0'], 
+        self.assertEqual(['capacity', 100L, 'width', 189L, 'depth', 5L, 'count', 0L, 'fill rate %', '0'], 
                          self.cmd('cms.info', 'testProb2'))
         self.assertOk(self.cmd('cms.reserve', 'testProb3', '100', 'probability', '0.001'))
-        self.assertEqual(['width', 444L, 'depth', 5L, 'count', 0L, 'fill rate %', '0'], 
+        self.assertEqual(['capacity', 100L, 'width', 444L, 'depth', 5L, 'count', 0L, 'fill rate %', '0'], 
                          self.cmd('cms.info', 'testProb3'))
 
         for args in ((), ('test',)):
@@ -106,12 +104,12 @@ class CMSTest(ModuleTestCase('../rebloom.so')):
 
         # empty small batch
         self.assertOk(self.cmd('cms.merge', 'small_3', 2, 'small_1', 'small_2'))
-        self.assertEqual(['width', 54L, 'depth', 5L, 'count', 0L, 'fill rate %', '0'], 
+        self.assertEqual(['capacity', 20L, 'width', 54L, 'depth', 5L, 'count', 0L, 'fill rate %', '0'], 
                          self.cmd('cms.info', 'small_3'))
 
         # empty large batch
         self.assertOk(self.cmd('cms.merge', 'large_6', 2, 'large_4', 'large_5'))
-        self.assertEqual(['width', 5400L, 'depth', 5L, 'count', 0L, 'fill rate %', '0'], 
+        self.assertEqual(['capacity', 2000L, 'width', 5400L, 'depth', 5L, 'count', 0L, 'fill rate %', '0'], 
                          self.cmd('cms.info', 'large_6'))
 
         # non-empty small batch

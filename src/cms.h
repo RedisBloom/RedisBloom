@@ -14,11 +14,11 @@
 #endif
 
 typedef struct CMS {
+    size_t cap; // size requested by user
     size_t width;
     size_t depth;
     uint32_t *array;
     size_t counter;
-    size_t size; // size requested by user
 } CMSketch;
 
 typedef struct {

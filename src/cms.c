@@ -18,7 +18,7 @@ CMSketch *NewCMSketch(size_t width, size_t depth, size_t size) {
 
     cms->width = width;
     cms->depth = depth;
-    cms->size = size;
+    cms->cap = size;
     cms->counter = 0;
     cms->array = CMS_CALLOC(width * depth, sizeof(uint32_t));
 

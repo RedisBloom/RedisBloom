@@ -150,10 +150,14 @@ O(1)
 
 ```sql
 127.0.0.1:6379> CMS.INFO test
-1) width
-2) (integer) 2700
-3) depth
-4) (integer) 5
-5) count
-6) (integer) 10
+ 1) capacity
+ 2) (integer) 1000
+ 3) width
+ 4) (integer) 2700
+ 5) depth
+ 6) (integer) 5
+ 7) count
+ 8) (integer) 0
+ 9) fill rate %
+10) "0"
 ```
