@@ -25,14 +25,13 @@ CMSketch *NewCMSketch(size_t width, size_t depth, size_t size) {
     return cms;
 }
 
-void CMS_DimFromProb(size_t n, double overEstProb, double errProb, size_t *width, size_t *depth) {
-    assert(overEstProb > 0 && overEstProb < 1);
-    assert(errProb > 0 && errProb < 1);
+void CMS_DimFromProb(size_t size, double errprob, double delta, size_t *width, size_t *depth) {
+    assert(errprob > 0 && errprob < 1);
+    assert(delta > 0 && delta < 1);
 
-    /*  With large enough n, width can be reduced and maintain low
-            over estimate probability */
-    *width = n * exp(1) / ceil(n * pow(overEstProb, 2));
-    *depth = -ceil(log(errProb));
+    double calcWidth = 2.5 * pow((errprob * 100), -0.25);
+    *width = size * calcWidth;
+    *depth = ceil(-log(delta));
 }
 
 void CMS_Destroy(CMSketch *cms) {

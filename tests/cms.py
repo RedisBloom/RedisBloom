@@ -39,13 +39,6 @@ class CMSTest(ModuleTestCase('../rebloom.so')):
         self.assertEqual([5L], self.cmd('cms.query', 'cms1', 'a'))
         self.assertEqual(['width', 54L, 'depth', 5L, 'count', 5L, 'fill rate %', '5'], 
                          self.cmd('cms.info', 'cms1'))
-        '''
-        self.assertOk(self.cmd('cms.initbyprob', 'cms2', '1000', '0.001', '0.001'))
-        self.assertOk(self.cmd('cms.incrby', 'cms2', 'a', '5'))
-        self.assertEqual([5L], self.cmd('cms.query', 'cms2', 'a'))
-        self.assertEqual(['width', 2718, 'depth', 6, 'count', 5], 
-                         self.cmd('cms.info', 'cms2'))
-        '''
 
     def test_validation(self):
         for args in (
@@ -54,53 +47,28 @@ class CMSTest(ModuleTestCase('../rebloom.so')):
             ('foo', '0.1'),
             ('foo', 'blah'),
             ('foo', '0'),
+            ('foo', '100', '100'),
+            ('foo', '100', '0.1'),
+            ('foo', '0.1', '100'),
+            ('foo', '0.1', '0.1'),
+            ('foo', '0.1', 'probability', '0.1'),
+            ('foo', '100', 'probability', '100'),
+            ('foo', '0.1', 'probability', '100'),     
+            ('foo', '100', '100', 'probability'),
         ):
             self.assertRaises(ResponseError, self.cmd, 'cms.reserve', *args)
 
-        '''
-        for args in (
-            (),
-            ('foo', ),
-            ('foo', '0.1'),
-            ('foo', '0.1', 'blah'),
-            ('foo', '10'),
-            ('foo', '10', 'blah'),
-            ('foo', 'blah', '10'),
-            ('foo', '0', '0'),
-            ('foo', '0', '100'),
-            ('foo', '100', '0'),
-        ):
-            self.assertRaises(ResponseError, self.cmd, 'cms.initbydim', *args)
-           
-        for args in (
-            (),
-            ('foo', ),
-            ('foo', '1000'),
-            ('foo', '0.1'),
-            ('foo', '1000', '0.1'),
-            ('foo', '0.1', 'blah'),
-            ('foo', '1000', '0.1', 'blah'),
-            ('foo', '10'),
-            ('foo', '1000', '10'),
-            ('foo', '10', 'blah'),
-            ('foo', '1000', '10', 'blah'),
-            ('foo', 'blah', '10'),
-            ('foo', '1000', 'blah', '10'),
-            ('foo', '0', '0'),
-            ('foo', '1000', '0', '0'),
-            ('foo', '0', '100'),
-            ('foo', '1000', '0', '100'),
-            ('foo', '100', '0'),
-            ('foo', '1000', '100', '0'),
-        ):         
-            self.assertRaises(ResponseError, self.cmd, 'cms.initbyprob', *args)
-        '''
-        self.assertRaises(ResponseError, self.cmd, 'cms.reserve', '0.1')
-#        self.assertRaises(ResponseError, self.cmd, 'cms.initbyprob', '10', '10')
-
         self.assertOk(self.cmd('cms.reserve', 'testDim', '100'))
-#        self.assertOk(self.cmd('cms.initbyprob', 'testProb', '1000', '0.1', '0.1'))
-       
+        self.assertOk(self.cmd('cms.reserve', 'testProb1', '100', 'probability', '0.01'))
+        self.assertEqual(['width', 250L, 'depth', 5L, 'count', 0L, 'fill rate %', '0'], 
+                         self.cmd('cms.info', 'testProb1'))
+        self.assertOk(self.cmd('cms.reserve', 'testProb2', '100', 'probability', '0.03'))
+        self.assertEqual(['width', 189L, 'depth', 5L, 'count', 0L, 'fill rate %', '0'], 
+                         self.cmd('cms.info', 'testProb2'))
+        self.assertOk(self.cmd('cms.reserve', 'testProb3', '100', 'probability', '0.001'))
+        self.assertEqual(['width', 444L, 'depth', 5L, 'count', 0L, 'fill rate %', '0'], 
+                         self.cmd('cms.info', 'testProb3'))
+
         for args in ((), ('test',)):
             for cmd in ('cms.incrby', 'cms.query', 'cms.merge', 'cms.info'):
                 self.assertRaises(ResponseError, self.cmd, cmd, *args)

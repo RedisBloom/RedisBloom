@@ -1,4 +1,4 @@
-# RedisBloom Count Min Sketch Documentation
+# RedisBloom Count-Min Sketch Documentation
 
 ## Create
 
@@ -7,14 +7,19 @@
 Initializes a Count-Min Sketch to the to accommodate requested capacity.
 
 ```sql
-CMS.RESERVE key capacity 
+CMS.RESERVE key capacity [PROBABILITY error]
 ```
 
 ### Parameters:
 
 * **key**: The name of the sketch.
-* **capacity**: Expected capacity.
-
+* **capacity**: The number of unique entries you intend to count using sketch.
+* **error**: The desired probability for inflated count. This should
+    be a decimal value between 0 and 1. For example, for a desired false
+    positive rate of 0.1% (1 in 1000), error_rate should be set to 0.001.
+    The closer this number is to zero, the greater the memory consumption per
+    item and the more CPU usage per operation.
+    
 ### Complexity
 
 O(1)
@@ -126,7 +131,8 @@ CMS.MERGE merge 2 test1 test2 WEIGHTS 1 3
 
 ### CMS.INFO
 
-Returns width, depth and total count in the sketch. 
+Returns width, depth, total count and approximate fill rate 
+percentage in the sketch.
 
 ```sql
 CMS.INFO key

@@ -109,7 +109,7 @@ int CMSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 static int parseCreateArgsNew(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
                               long long *width, long long *depth, long long *size) {
     // long long size = 0;
-    double overEst = 0, prob = 0;
+    double err = 0;
 
     if ((RedisModule_StringToLongLong(argv[2], size) != REDISMODULE_OK) || (*size < 1)) {
         INNER_ERROR("CMS: invalid n value");
@@ -118,25 +118,21 @@ static int parseCreateArgsNew(RedisModuleCtx *ctx, RedisModuleString **argv, int
         *width = *size * DEFAULT_WIDTH;
         *depth = DEFAULT_DEPTH;
     } else {
-        if (RMUtil_ArgIndex("ERROR", argv, argc) != 3) {
-            INNER_ERROR("CMS: invalid ERROR");
+        if (RMUtil_ArgIndex("PROBABILITY", argv, argc) != 3) {
+            INNER_ERROR("CMS: PROBABILITY word not if 4th place");
         }
-        if ((RedisModule_StringToDouble(argv[4], &overEst) != REDISMODULE_OK) || overEst <= 0 ||
-            overEst >= 1) {
-            INNER_ERROR("CMS: invalid overestimation value");
+        if ((RedisModule_StringToDouble(argv[4], &err) != REDISMODULE_OK) ||
+            (err <= 0 || err >= 1)) {
+            INNER_ERROR("CMS: invalid error value");
         }
-        if ((RedisModule_StringToDouble(argv[5], &prob) != REDISMODULE_OK) ||
-            (prob <= 0 || prob >= 1)) {
-            INNER_ERROR("CMS: invalid prob value");
-        }
-        CMS_DimFromProb(*size, overEst, prob, (size_t *)width, (size_t *)depth);
+        CMS_DimFromProb(*size, err, 0.01, (size_t *)width, (size_t *)depth);
     }
     return REDISMODULE_OK;
 }
 
 int CMSketch_CreateNew(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    if ((argc == 3 || argc == 6) == 0) {
+    if ((argc == 3 || argc == 5) == 0) {
         return RedisModule_WrongArity(ctx);
     }
 
