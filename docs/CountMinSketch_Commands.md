@@ -4,7 +4,7 @@
 
 ### CMS.RESERVE
 
-Initializes a Count-Min Sketch to the to accommodate requested capacity.
+Initializes a Count-Min Sketch to accommodate requested capacity.
 
 ```sql
 CMS.RESERVE key capacity [PROBABILITY error]
@@ -38,10 +38,10 @@ CMS.RESERVE test 1000
 
 ### CMS.INCRBY
 
-Increases the count of item by increment. Multiple items can be increase with one call. 
+Increases the count of item by increment. Multiple items can be increased with one call. 
 
 ```sql
-CMS.INCRBY key item increment [item increment]
+CMS.INCRBY key item increment [item increment ...]
 ```
 
 ### Parameters:
@@ -68,10 +68,10 @@ CMS.INCRBY test foo 10 bar 42
 
 ### CMS.QUERY
 
-Increases the count of item by increment. Multiple items can be increase with one call. 
+Returns count for item. Multiple items can be queried with one call. 
 
 ```sql
-CMS.QUERY {key} item increment [item increment]
+CMS.QUERY {key} item [item ...]
 ```
 
 ### Parameters:
@@ -86,7 +86,7 @@ O(1)
 
 ### Return
 
-OK on success
+Count of one or more items
 
 #### Query example 
 
@@ -124,7 +124,7 @@ OK on success
 #### Merge example 
 
 ```sql
-CMS.MERGE merge 2 test1 test2 WEIGHTS 1 3
+CMS.MERGE dest 2 test1 test2 WEIGHTS 1 3
 ```
 
 ## General
@@ -144,7 +144,7 @@ CMS.INFO key
 
 ### Complexity
 
-O(1)
+O(n) due to fill rate percentage
 
 #### Info Example
 

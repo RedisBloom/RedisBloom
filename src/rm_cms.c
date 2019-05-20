@@ -119,7 +119,7 @@ static int parseCreateArgsNew(RedisModuleCtx *ctx, RedisModuleString **argv, int
         *depth = DEFAULT_DEPTH;
     } else {
         if (RMUtil_ArgIndex("PROBABILITY", argv, argc) != 3) {
-            INNER_ERROR("CMS: PROBABILITY word not if 4th place");
+            INNER_ERROR("CMS: Missing PROBABILITY keyword (or bad arguments)");
         }
         if ((RedisModule_StringToDouble(argv[4], &err) != REDISMODULE_OK) ||
             (err <= 0 || err >= 1)) {
