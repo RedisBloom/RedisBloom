@@ -9,29 +9,27 @@
 #define BIT64 64
 #define CMS_HASH(item, itemlen, i) MurmurHash2(item, itemlen, i)
 
-CMSketch *NewCMSketch(size_t width, size_t depth, size_t size) {
+CMSketch *NewCMSketch(size_t width, size_t depth) {
     assert(width > 0);
     assert(depth > 0);
-    assert(size > 0);
 
     CMSketch *cms = CMS_CALLOC(1, sizeof(CMSketch));
 
     cms->width = width;
     cms->depth = depth;
-    cms->cap = size;
     cms->counter = 0;
     cms->array = CMS_CALLOC(width * depth, sizeof(uint32_t));
 
     return cms;
 }
 
-void CMS_DimFromProb(size_t size, double errprob, double delta, size_t *width, size_t *depth) {
-    assert(errprob > 0 && errprob < 1);
+void CMS_DimFromProb(size_t size, double error, double delta, size_t *width, size_t *depth) {
+    assert(error > 0 && error < 1);
     assert(delta > 0 && delta < 1);
 
-    double calcWidth = 2.5 * pow((errprob * 100), -0.25);
-    *width = size * calcWidth;
-    *depth = ceil(-log(delta));
+ 
+    *width = ceil(2 / error);
+    *depth = ceil(log10f(delta) / log10f(0.5));
 }
 
 void CMS_Destroy(CMSketch *cms) {
@@ -112,20 +110,4 @@ void CMS_Print(const CMSketch *cms) {
         printf("\n");
     }
     printf("\tCounter is %lu\n", cms->counter);
-}
-
-size_t CMS_GetCardinality(CMSketch *cms) {
-    size_t width = cms->width, card = 0, count = 0;
-
-    for (int i = 0; i < cms->depth; ++i, count = 0) {
-        for (int j = 0; j < width; ++j) {
-            count += !!cms->array[i * width + j];
-        }
-        if (count == cms->width)
-            return cms->width;
-        size_t tempCard = -(cms->width * log(1 - (count / (double)cms->width)));
-        card = (card < tempCard) ? tempCard : card;
-    }
-
-    return card;
 }

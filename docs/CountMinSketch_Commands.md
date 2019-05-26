@@ -2,23 +2,20 @@
 
 ## Create
 
-### CMS.RESERVE
+### CMS.INITBYDIM
 
-Initializes a Count-Min Sketch to accommodate requested capacity.
+Initializes a Count-Min Sketch to dimensions specified by user.
 
 ```sql
-CMS.RESERVE key capacity [PROBABILITY error]
+CMS.INITBYDIM key width depth
 ```
 
 ### Parameters:
 
 * **key**: The name of the sketch.
-* **capacity**: The number of unique entries you intend to count using sketch.
-* **error**: The desired probability for inflated count. This should
-    be a decimal value between 0 and 1. For example, for a desired false
-    positive rate of 0.1% (1 in 1000), error_rate should be set to 0.001.
-    The closer this number is to zero, the greater the memory consumption per
-    item and the more CPU usage per operation.
+* **width**: Number of counter in each array. Reduces the error size.
+* **depth**: Number of counter-arrays. Reduces the probability for an
+    error of a certain size (percentage of total count).
     
 ### Complexity
 
@@ -31,7 +28,40 @@ OK on success, error otherwise
 #### Reserve example
 
 ```sql
-CMS.RESERVE test 1000
+CMS.INITBYDIM test 2000 5
+```
+
+### CMS.INITBYPROB
+
+Initializes a Count-Min Sketch to accommodate requested capacity.
+
+```sql
+CMS.INITBYPROB key error probability
+```
+
+### Parameters:
+
+* **key**: The name of the sketch.
+* **error**: Estimate size of error. The error is a percent of total counted
+    items. This effects the width of the sketch.
+* **probability**: The desired probability for inflated count. This should
+    be a decimal value between 0 and 1. This effects the depth of the sketch.
+    For example, for a desired false positive rate of 0.1% (1 in 1000),
+    error_rate should be set to 0.001. The closer this number is to zero, the
+    greater the memory consumption per item and the more CPU usage per operation. 
+    
+### Complexity
+
+O(1)
+
+### Return
+
+OK on success, error otherwise
+
+#### Reserve example
+
+```sql
+CMS.INITBYPROB test 0.001 0.01
 ```
 
 ## Update
@@ -71,7 +101,7 @@ CMS.INCRBY test foo 10 bar 42
 Returns count for item. Multiple items can be queried with one call. 
 
 ```sql
-CMS.QUERY {key} item [item ...]
+CMS.QUERY key item [item ...]
 ```
 
 ### Parameters:
@@ -150,14 +180,10 @@ O(n) due to fill rate percentage
 
 ```sql
 127.0.0.1:6379> CMS.INFO test
- 1) capacity
- 2) (integer) 1000
- 3) width
- 4) (integer) 2700
- 5) depth
- 6) (integer) 5
- 7) count
- 8) (integer) 0
- 9) fill rate %
-10) "0"
+ 1) width
+ 2) (integer) 2000
+ 3) depth
+ 4) (integer) 7
+ 5) count
+ 6) (integer) 0
 ```

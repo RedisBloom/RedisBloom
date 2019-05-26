@@ -33,12 +33,12 @@ static int GetCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName, CMSketch *
 }
 
 static int CreateCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName, long long width,
-                        long long depth, long long size, CMSketch **cms, RedisModuleKey **key) {
+                        long long depth, CMSketch **cms, RedisModuleKey **key) {
     if (*key == NULL) {
         *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ | REDISMODULE_WRITE);
     }
 
-    *cms = NewCMSketch(width, depth, size);
+    *cms = NewCMSketch(width, depth);
 
     if (RedisModule_ModuleTypeSetValue(*key, CMSketchType, *cms) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
@@ -46,7 +46,7 @@ static int CreateCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName, long lo
 
     return REDISMODULE_OK;
 }
-/*
+
 static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
                            long long *width, long long *depth) {
     if (argc == 4) {
@@ -102,62 +102,7 @@ int CMSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_ReplyWithSimpleString(ctx, "OK");
     RedisModule_ReplicateVerbatim(ctx);
     return REDISMODULE_OK;
-}*/
-/*************************************************/
-/*          After change of API                  */
-/*************************************************/
-static int parseCreateArgsNew(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
-                              long long *width, long long *depth, long long *size) {
-    // long long size = 0;
-    double err = 0;
-
-    if ((RedisModule_StringToLongLong(argv[2], size) != REDISMODULE_OK) || (*size < 1)) {
-        INNER_ERROR("CMS: invalid n value");
-    }
-    if (argc == 3) {
-        *width = *size * DEFAULT_WIDTH;
-        *depth = DEFAULT_DEPTH;
-    } else {
-        if (RMUtil_ArgIndex("PROBABILITY", argv, argc) != 3) {
-            INNER_ERROR("CMS: Missing PROBABILITY keyword (or bad arguments)");
-        }
-        if ((RedisModule_StringToDouble(argv[4], &err) != REDISMODULE_OK) ||
-            (err <= 0 || err >= 1)) {
-            INNER_ERROR("CMS: invalid error value");
-        }
-        CMS_DimFromProb(*size, err, 0.01, (size_t *)width, (size_t *)depth);
-    }
-    return REDISMODULE_OK;
 }
-
-int CMSketch_CreateNew(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-    if ((argc == 3 || argc == 5) == 0) {
-        return RedisModule_WrongArity(ctx);
-    }
-
-    CMSketch *cms = NULL;
-    long long width = DEFAULT_WIDTH, depth = DEFAULT_DEPTH, size;
-    RedisModuleString *keyName = argv[1];
-    RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ | REDISMODULE_WRITE);
-
-    if (RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_EMPTY) {
-        RedisModule_CloseKey(key);
-        return RedisModule_ReplyWithError(ctx, "CMS: key already exists");
-    }
-
-    if (parseCreateArgsNew(ctx, argv, argc, &width, &depth, &size) != REDISMODULE_OK) {
-        return REDISMODULE_OK;
-    }
-
-    CreateCMSKey(ctx, keyName, width, depth, size, &cms, &key);
-
-    RedisModule_CloseKey(key);
-    RedisModule_ReplyWithSimpleString(ctx, "OK");
-    RedisModule_ReplicateVerbatim(ctx);
-    return REDISMODULE_OK;
-}
-/*************************************************/
 
 static int parseIncrByArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int argc, CMSPair **pairs,
                            int qty) {
@@ -302,24 +247,19 @@ int CMSKetch_Info(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_OK;
     }
 
-    RedisModule_ReplyWithArray(ctx, 5 * 2);
-    RedisModule_ReplyWithSimpleString(ctx, "capacity");
-    RedisModule_ReplyWithLongLong(ctx, cms->cap);
+    RedisModule_ReplyWithArray(ctx, 3 * 2);
     RedisModule_ReplyWithSimpleString(ctx, "width");
     RedisModule_ReplyWithLongLong(ctx, cms->width);
     RedisModule_ReplyWithSimpleString(ctx, "depth");
     RedisModule_ReplyWithLongLong(ctx, cms->depth);
     RedisModule_ReplyWithSimpleString(ctx, "count");
     RedisModule_ReplyWithLongLong(ctx, cms->counter);
-    RedisModule_ReplyWithSimpleString(ctx, "fill rate %");
-    RedisModule_ReplyWithDouble(ctx, 100 * CMS_GetCardinality(cms) / cms->cap);
 
     return REDISMODULE_OK;
 }
 
 void CMSRdbSave(RedisModuleIO *io, void *obj) {
     CMSketch *cms = obj;
-    RedisModule_SaveUnsigned(io, cms->cap);
     RedisModule_SaveUnsigned(io, cms->width);
     RedisModule_SaveUnsigned(io, cms->depth);
     RedisModule_SaveUnsigned(io, cms->counter);
@@ -333,7 +273,6 @@ void *CMSRdbLoad(RedisModuleIO *io, int encver) {
     }
 
     CMSketch *cms = CMS_CALLOC(1, sizeof(CMSketch));
-    cms->cap = RedisModule_LoadUnsigned(io);
     cms->width = RedisModule_LoadUnsigned(io);
     cms->depth = RedisModule_LoadUnsigned(io);
     cms->counter = RedisModule_LoadUnsigned(io);
@@ -363,9 +302,8 @@ int CMSModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (CMSketchType == NULL)
         return REDISMODULE_ERR;
 
-    //  RMUtil_RegisterWriteCmd(ctx, "cms.initbydim", CMSketch_Create);
-    //  RMUtil_RegisterWriteCmd(ctx, "cms.initbyprob", CMSketch_Create);
-    RMUtil_RegisterWriteCmd(ctx, "cms.reserve", CMSketch_CreateNew); // addition for new API
+    RMUtil_RegisterWriteCmd(ctx, "cms.initbydim", CMSketch_Create);
+    RMUtil_RegisterWriteCmd(ctx, "cms.initbyprob", CMSketch_Create);
     RMUtil_RegisterWriteCmd(ctx, "cms.incrby", CMSketch_IncrBy);
     RMUtil_RegisterReadCmd(ctx, "cms.query", CMSketch_Query);
     RMUtil_RegisterWriteCmd(ctx, "cms.merge", CMSketch_Merge);

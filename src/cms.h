@@ -14,7 +14,6 @@
 #endif
 
 typedef struct CMS {
-    size_t cap; // size requested by user
     size_t width;
     size_t depth;
     uint32_t *array;
@@ -29,7 +28,7 @@ typedef struct {
 } mergeParams;
 
 /* Creates a new Count-Min Sketch with dimensions of width * depth */
-CMSketch *NewCMSketch(size_t width, size_t depth, size_t size);
+CMSketch *NewCMSketch(size_t width, size_t depth);
 
 /*  Recommends width & depth for expected n different items,
     with probability of an error  - prob and over estimation
@@ -54,8 +53,5 @@ void CMS_MergeParams(mergeParams params);
 
 /* Help function */
 void CMS_Print(const CMSketch *cms);
-
-/* Checks cardinality of sketch */
-size_t CMS_GetCardinality(CMSketch *cms);
 
 #endif
