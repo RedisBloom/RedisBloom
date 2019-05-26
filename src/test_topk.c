@@ -7,8 +7,16 @@
 #include "topk.h"
 #include "topk.c"
 
-#define TEST_SIZE 100
+#define TEST_SIZE 1000
 #define PRINT(str) printf("%s\n", str)
+
+static void printHeap(TopK *topk) {
+    for(int i = 0; i < topk->k; ++i) {
+        if(ceil(log2(i + 1)) == floor(log2(i + 1))) printf("\n");
+        if(topk->heap[i].item != NULL) printf("%s %ul\t\t", topk->heap[i].item, topk->heap[i].count);
+    }
+    printf("\n\n");
+}
 
 int heapTest() {
     HeapBucket array[7] = { 0 };
@@ -37,15 +45,40 @@ int heapTest() {
     return 0;
 }
 
+static void topkMultiAdd(TopK *topk, const char *str, size_t strlen, int repeat) {
+
+}
+
+int controlledTest() {
+    TopK *topk = TopK_Create(3, 100, 3);
+    TopK_Add(topk, "1", 2);
+    TopK_Add(topk, "2", 2);
+    TopK_Add(topk, "3", 2);
+    TopK_Add(topk, "4", 2);
+    TopK_Add(topk, "1", 2);
+    TopK_Add(topk, "1", 2);
+    TopK_Add(topk, "4", 2);
+    TopK_Add(topk, "3", 2);
+    TopK_Add(topk, "4", 2);
+    TopK_Add(topk, "1", 2);
+    TopK_Add(topk, "3", 2);
+    TopK_Add(topk, "4", 2);
+    TopK_Add(topk, "1", 2);
+    TopK_Add(topk, "1", 2);
+    TopK_Add(topk, "2", 2);
+    TopK_Add(topk, "2", 2);
+    TopK_Add(topk, "2", 2);
+    
+    printHeap(topk);
+
+}
 
 int test1() {
-    int arr[TEST_SIZE][2] = { 0 }, total = 0;
+    int arr[TEST_SIZE][2] = { 0 }, total = 0, idx = 0;
     char str[TEST_SIZE * 10] = { 0 };
-    TopK *topk = TopK_Create(7, TEST_SIZE/2, 4);
+    TopK *topk = TopK_Create(31, TEST_SIZE/2, 5);
   //  char str[12] = { 0 };
     char *runner = str;
-
-    PRINT("created");
 
     srand(0);
     for(int i = 0; i < TEST_SIZE; ++i) {
@@ -55,10 +88,17 @@ int test1() {
         runner +=10;
     }
 
-    PRINT("arr filled");
+//   if used, total in loop below must be extended
+   arr[10][0] = arr[10][1] = 2500;
+   arr[15][0] = arr[15][1] = 2500;
+   arr[76][0] = arr[76][1] = 2500;
+   arr[34][0] = arr[34][1] = 2500;
+   arr[88][0] = arr[88][1] = 2500;
+   arr[60][0] = arr[60][1] = 2500;
+   arr[40][0] = arr[40][1] = 2500;
 
-    for(int i = 0; i < total;) {
-        int idx = rand() % TEST_SIZE;
+    for(int i = 0; i < total + 10000;) {
+        idx = rand() % TEST_SIZE;
         if(arr[idx][0] > 0) {
             TopK_Add(topk, str + 10 * idx, strlen(str + 10 * idx));
             --arr[idx][0];
@@ -66,27 +106,20 @@ int test1() {
         }
     }
 
-    PRINT("added");
-
-    const char **res = TopK_List(topk);
-    for(int i = 0; i < topk->k; ++i) {
-        if(res[i]) printf("%s\n", res[i]);
-    }
-
-    PRINT("print Top K");
+    printHeap(topk);
 
     for(int i = 0; i < TEST_SIZE; ++i) {
-        if(arr[i][i] > TEST_SIZE * 4 / 5) {
-            printf("%d\t", i);
+        if(arr[i][1] > TEST_SIZE * 3 / 5) {
+            printf("%d-%ul\t", i, arr[i][1] - arr[i][0]);
         }
     }
-    PRINT("finished");
     return 0;
 }
 
 int main() {
     heapTest();
-   // test1();
+//    controlledTest();
+    test1();
 
     return 0;
 }

@@ -11,8 +11,6 @@
 #include <stdbool.h>    //  bool
 #include <string.h>     //  memcpy
 
-//#include "../rmutil/heap.h"       //  TODO: consider a better heap that runs array
-
 #define DECAY 1.08
 
 #ifdef REDIS_MODULE_TARGET // should be in .h or .c

@@ -130,6 +130,7 @@ static HeapBucket *checkExistInHeap(TopK *topk, const char *item, size_t itemlen
     return NULL;
 }
 
+
 void TopK_Add(TopK *topk, const char *item, size_t itemlen) {
     assert(topk);
     assert(item);
@@ -150,13 +151,13 @@ void TopK_Add(TopK *topk, const char *item, size_t itemlen) {
             runner->count = 1;
             maxv = max(maxv, runner->count);
         } else if(runner->fp == fp) {
-            if(itemHeapPtr || count < heapMin) {
+            if(itemHeapPtr || count <= heapMin) {
                 ++runner->count;
                 maxv = max(maxv, runner->count); // might be combined with next max call
                                                  // or might need to max even when <heapMin   
             }
         } else {
-            double decay = pow(DECAY, -count);
+            double decay = pow(1 / DECAY, count);
             double chance = rand() / (double)RAND_MAX;
             if(chance < decay) {
                 --runner->count;
@@ -169,13 +170,10 @@ void TopK_Add(TopK *topk, const char *item, size_t itemlen) {
         }
     }
     if(itemHeapPtr != NULL) {
-        //itemHeapPtr->count = max(itemHeapPtr->count, maxv);
-        printf("Exist in heap\n");
-        itemHeapPtr->count = maxv;
+        itemHeapPtr->count = maxv;  // Not max as might have been decayed
         heapifyDown(topk->heap, topk->k, itemHeapPtr - topk->heap);
     } else {
         if(maxv > heapMin) {
-            printf("Doesn't exist in heap\n");
             topk->heap->count = maxv;
             topk->heap->fp = fp;
             topk->heap->item = (char *)item;
