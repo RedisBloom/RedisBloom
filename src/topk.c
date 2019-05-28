@@ -3,6 +3,7 @@
 *
 * This file is available under the Redis Labs Source Available License Agreement
 */
+
 #include <assert.h>     // assert
 #include <math.h>       // q, ceil
 #include <stdio.h>      // printf
@@ -15,93 +16,59 @@
 #define TOPK_HASH(item, itemlen, i) MurmurHash2(item, itemlen, i)
 #define GA 1919
 
-/* Byte-wise swap two items of size SIZE. */
-#define SWAP(a, b, size)                  \
-  do {                                    \
-    register size_t __size = (size);      \
-    register char *__a = (a), *__b = (b); \
-    do {                                  \
-      char __tmp = *__a;                  \
-      *__a++ = *__b;                      \
-      *__b++ = __tmp;                     \
-    } while (--__size > 0);               \
-  } while (0)
-
-typedef uint32_t counter_t;
-
-struct Bucket {
-    uint32_t fp;        //  fingerprint
-    counter_t count;
-};
-
-struct HeapBucket {
-    uint32_t fp;
-    uint32_t itemlen;
-    char *item;
-    counter_t count;
-};
-
 static inline uint32_t max(uint32_t a, uint32_t b) {
   return a > b ? a : b;
 }
 
+static inline char *topKStrndup(const char *s, size_t n) {
+    char *ret = TOPK_CALLOC(n + 1, sizeof(char));
+    if (ret)
+        memcpy(ret, s, n);
+    return ret;
+}
+
 void heapifyDown(HeapBucket *array, size_t len, size_t start) {
-    // left-child of __start is at 2 * __start + 1
-    // right-child of __start is at 2 * __start + 2
     size_t child = start;
-
-    if (len < 2 || (len - 2) / 2 < child) return;
-
+    
+    // check whether larger than children
+    if (len < 2 || (len - 2) / 2 < child) { return; }
     child = 2 * child + 1;
-
     if ((child + 1) < len &&
-        (array[child].count > array[child + 1].count)) { // changed sign min heap
-        // right-child exists and is greater than left-child
+        (array[child].count > array[child + 1].count)) {
         ++child;
     }
+    if (array[child].count > array[start].count) { return; }
 
-    // check if we are in heap-order
-    if (array[child].count > array[start].count)
-        // we are, __start is larger than it's largest child
-        return;
-
+    // swap while larger than child
     HeapBucket top = { 0 };
     memcpy(&top, &array[start], sizeof(HeapBucket));
     do {
-        // we are not in heap-order, swap the parent with it's largest child
         memcpy(&array[start], &array[child], sizeof(HeapBucket));
         start = child;
 
-        if ((len - 2) / 2 < child) break;
-
-        // recompute the child based off of the updated parent
+        if ((len - 2) / 2 < child) { break; }
         child = 2 * child + 1;
 
         if ((child + 1) < len &&
-            (array[child].count > array[child + 1].count)) {  // changed sign min heap
-            // right-child exists and is greater than left-child
+            (array[child].count > array[child + 1].count)) {
             ++child;
         }
-
-        // check if we are in heap-order
     } while (array[child].count < top.count);
     memcpy(&array[start], &top, sizeof(HeapBucket));
 }
 
-void heapifyUp(HeapBucket *array, size_t len, size_t start) {
-    // TODO: for query
-}
-
-TopK *TopK_Create(uint32_t k, uint32_t width, uint32_t depth) {
+TopK *TopK_Create(uint32_t k, uint32_t width, uint32_t depth, double decay) {
     assert(k > 0);
     assert(width > 0);
     assert(depth > 0);
+    assert(decay > 0 && decay < 1);
     
-    TopK *topk = (TopK *)TOPK_CALLOC(1, sizeof(topk));
+    TopK *topk = (TopK *)TOPK_CALLOC(1, sizeof(TopK));
     topk->k = k;
     topk->width = width;
     topk->depth = depth;
-    topk->data = (Bucket *)TOPK_CALLOC(width * depth, sizeof(Bucket));
+    topk->decay = decay;
+    topk->data = TOPK_CALLOC(width * depth, sizeof(Bucket));
     topk->heap = TOPK_CALLOC(k, sizeof(HeapBucket));
 
     return topk;
@@ -110,11 +77,15 @@ TopK *TopK_Create(uint32_t k, uint32_t width, uint32_t depth) {
 void TopK_Destroy(TopK *topk) {
     assert(topk);
  
-    free(topk->heap);
+    for(int i = 0; i < topk->k; ++i) {
+        TOPK_FREE(topk->heap[i].item);
+    }
+
+    TOPK_FREE(topk->heap);
     topk->heap = NULL;
-    free(topk->data);
+    TOPK_FREE(topk->data);
     topk->data = NULL;
-    free(topk);
+    TOPK_FREE(topk);
 }
 
 // Complexity O(k + strlen)
@@ -130,56 +101,57 @@ static HeapBucket *checkExistInHeap(TopK *topk, const char *item, size_t itemlen
     return NULL;
 }
 
-
 void TopK_Add(TopK *topk, const char *item, size_t itemlen) {
     assert(topk);
     assert(item);
     assert(itemlen);
 
-    counter_t count = 0, maxv = 0;
-    counter_t heapMin = topk->heap->count;
+    Bucket *runner;
     uint32_t fp = TOPK_HASH(item, itemlen, GA);
+    counter_t maxCount = 0, heapMin = topk->heap->count;
+    counter_t *countPtr = 0;
     HeapBucket *itemHeapPtr = checkExistInHeap(topk, item, itemlen);
-    Bucket *runner = NULL;
 
+    // get max item count 
     for(int i = 0; i < topk->depth; ++i) {
         uint32_t loc = TOPK_HASH(item, itemlen, i) % topk->width;
         runner = topk->data + i * topk->width + loc;
-        count = runner->count;
-        if(count == 0) {
+        countPtr = &runner->count;
+        if(*countPtr == 0) {
             runner->fp = fp;
-            runner->count = 1;
-            maxv = max(maxv, runner->count);
+            *countPtr = 1;
+            maxCount = max(maxCount, *countPtr);
         } else if(runner->fp == fp) {
-            if(itemHeapPtr || count <= heapMin) {
-                ++runner->count;
-                maxv = max(maxv, runner->count); // might be combined with next max call
-                                                 // or might need to max even when <heapMin   
+            if(itemHeapPtr || *countPtr <= heapMin) {
+                ++*countPtr;
+                maxCount = max(maxCount, *countPtr);                                                     
             }
         } else {
-            double decay = pow(1 / DECAY, count);
+            double decay = pow(topk->decay, *countPtr);
             double chance = rand() / (double)RAND_MAX;
             if(chance < decay) {
-                --runner->count;
-                if(runner->count == 0) {
+                --*countPtr;
+                if(*countPtr == 0) {
                     runner->fp = fp;
-                    runner->count = 1;
+                    *countPtr = 1;
+                    maxCount = max(maxCount, *countPtr);
                 }
             }
-            maxv = max(maxv, runner->count);
         }
     }
+
+    // update heap
     if(itemHeapPtr != NULL) {
-        itemHeapPtr->count = maxv;  // Not max as might have been decayed
+        itemHeapPtr->count = maxCount;  // Not max of the two, as it might have been decayed
         heapifyDown(topk->heap, topk->k, itemHeapPtr - topk->heap);
-    } else {
-        if(maxv > heapMin) {
-            topk->heap->count = maxv;
-            topk->heap->fp = fp;
-            topk->heap->item = (char *)item;
-            topk->heap->itemlen = itemlen;
+    } else if(maxCount > heapMin) {
+            TOPK_FREE(topk->heap[0].item); 
+
+            topk->heap[0].count = maxCount;
+            topk->heap[0].fp = fp;
+            topk->heap[0].item = topKStrndup(item, itemlen);
+            topk->heap[0].itemlen = itemlen;
             heapifyDown(topk->heap, topk->k, 0);
-        }
     }
 }
 
@@ -193,13 +165,15 @@ size_t TopK_Count(TopK *topk, const char *item, size_t itemlen) {
     assert(itemlen);
 
     Bucket *runner = NULL;
-    uint32_t fp = TOPK_HASH(item, itemlen, GA);
+    uint32_t fp = TOPK_HASH(item, itemlen, GA);    
+    // TODO: The optimization of >heapMin should be revisited for performance
+    counter_t heapMin = checkExistInHeap(topk, item, itemlen) ? topk->heap->count : 0;
     counter_t res = 0;
 
     for(int i = 0; i < topk->depth; ++i) {
         uint32_t loc = TOPK_HASH(item, itemlen, i) % topk->width;
         runner = topk->data + i * topk->width + loc;
-        if(runner->fp == fp)
+        if(runner->fp == fp && runner->count > heapMin)
         {
             res = max(res, runner->count);
         }
@@ -207,10 +181,12 @@ size_t TopK_Count(TopK *topk, const char *item, size_t itemlen) {
     return res;
 }
 
-const char **TopK_List(TopK *topk) {
-    const char **ret = TOPK_CALLOC(topk->k, (sizeof(char *)));
+uint32_t TopK_List(TopK *topk, char **heapList) {
+    uint32_t count = 0;    
     for(uint32_t i = 0; i < topk->k; ++i) {
-        ret[i] = topk->heap[i].item;
+        if(topk->heap[i].item) {
+            heapList[count++] = topk->heap[i].item;
+        }
     }
-    return ret;
+    return count;
 }

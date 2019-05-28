@@ -32,6 +32,8 @@ DEPS = $(ROOT)/contrib/MurmurHash2.o \
 	   $(ROOT)/rmutil/util.o \
 	   $(SRCDIR)/sb.o \
 	   $(SRCDIR)/cf.o \
+	   $(SRCDIR)/rm_topk.o \
+	   $(SRCDIR)/topk.o \
 	   $(SRCDIR)/rm_cms.o \
 	   $(SRCDIR)/cms.o 
 
