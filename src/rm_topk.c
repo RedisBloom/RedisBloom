@@ -61,11 +61,11 @@ int TopK_Create_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     }
 
     TopK *topk = NULL;
-    if(createTopK(ctx, argv, argc, &topk) != REDISMODULE_OK)
+    if (createTopK(ctx, argv, argc, &topk) != REDISMODULE_OK)
         return REDISMODULE_OK;
 
     if (RedisModule_ModuleTypeSetValue(key, TopKType, topk) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
+        return REDISMODULE_OK;
     }
 
     RedisModule_CloseKey(key);
@@ -216,7 +216,7 @@ void TopKFree(void *value) { TopK_Destroy(value); }
 
 size_t TopKMemUsage(const void *value) {
     TopK *topk = (TopK *)value;
-    return sizeof(topk) + 
+    return sizeof(TopK) + 
             topk->width * topk->depth * sizeof(Bucket) + 
             topk->k * sizeof(HeapBucket);
 }
