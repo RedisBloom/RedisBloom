@@ -1,7 +1,7 @@
 site_name: RedisBloom Documentation
 site_url: http://redisbloom.io
-repo_url: https://github.com/RedisLabsModules/RedisBloom
-repo_name: RedisLabsModules/RedisBloom
+repo_url: https://github.com/RedisBloom/RedisBloom
+repo_name: RedisBloom/RedisBloom
 
 google_analytics:
   - 'UA-92003007-1'
@@ -31,10 +31,11 @@ markdown_extensions:
       permalink: True
  
 pages:
-    - 'ReBloom': 'index.md'
+    - 'RedisBloom': 'index.md'
     - 'Quick Start': 'Quick_Start.md'
     - 'Bloom Commands': 'Bloom_Commands.md'
     - 'Cuckoo Filter Commands': 'Cuckoo_Commands.md'
+    - 'Count-Min-Sketch Commands': 'CountMinSketch_Commands.md'
     - 'Java API': 'Java_Client.md'
     - 'Contributor agreement': 'contrib.md'
 

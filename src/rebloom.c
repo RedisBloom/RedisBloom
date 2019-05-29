@@ -1,6 +1,8 @@
 #include "redismodule.h"
 #include "sb.h"
 #include "cf.h"
+#include "rm_cms.h"
+#include "cms.h"
 #include "version.h"
 
 #include <assert.h>
@@ -1032,6 +1034,17 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     CREATE_WRCMD("CF.LOADCHUNK", CFLoadChunk_RedisCommand);
 
     CREATE_ROCMD("CF.DEBUG", CFInfo_RedisCommand);
+/*
+    // Count Min Sketch commcms.initbydimands
+    CREATE_WRCMD("CMS.INITBYDIM", CMSInit_RedisCommand);
+    CREATE_WRCMD("CMS.INITBYPROB", CMSInit_RedisCommand);
+    CREATE_WRCMD("CMS.INCRBY", CMSIncrBy_RedisCommand);
+    CREATE_ROCMD("CMS.QUERY", CMSQuery_RedisCommand);
+    CREATE_WRCMD("CMS.MERGE", CMSMerge_RedisCommand);
+    CREATE_ROCMD("CMS.DEBUG", CMSDebug_RedisCommand);
+*/
+
+    CMSModule_onLoad(ctx, argv, argc);
 
     static RedisModuleTypeMethods typeprocs = {.version = REDISMODULE_TYPE_METHOD_VERSION,
                                                .rdb_load = BFRdbLoad,

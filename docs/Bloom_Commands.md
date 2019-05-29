@@ -61,7 +61,7 @@ Adds an item to the Bloom Filter, creating the filter if it does not yet exist.
 
 ### Complexity
 
-O(log N).
+O(log N), where N is the number of stacked filters in the data structure.
 
 ### Returns
 
@@ -73,7 +73,7 @@ O(log N).
 ### Format
 
 ```
-{key} {item} [item...]
+BF.MADD {key} {item} [item...]
 ```
 
 ### Description
@@ -89,7 +89,7 @@ multiple values.
 
 ### Complexity
 
-O(log N).
+O(log N), where N is the number of stacked filters in the data structure.
 
 ### Returns
 
@@ -152,7 +152,7 @@ BF.INSERT filter NOCREATE ITEMS foo bar
 
 ### Complexity
 
-O(log N).
+O(log N), where N is the number of stacked filters in the data structure.
 
 ### Returns
 
@@ -179,7 +179,7 @@ Determines whether an item may exist in the Bloom Filter or not.
 
 ### Complexity
 
-O(log N).
+O(log N), where N is the number of stacked filters in the data structure.
 
 ### Returns
 
@@ -205,7 +205,7 @@ Determines if one or more items may exist in the filter or not.
 
 ### Complexity
 
-O(log N).
+O(log N), where N is the number of stacked filters in the data structure.
 
 ### Returns
 
@@ -256,7 +256,7 @@ for chunk in chunks:
 
 ### Complexity
 
-O(log N)
+O(log N), where N is the number of stacked filters in the data structure.
 
 ### Returns
 
@@ -291,7 +291,7 @@ the bloom filter will not be modified between invocations.
 
 ### Complexity O
 
-O(log N)
+O(log N), where N is the number of stacked filters in the data structure.
 
 ### Returns
 
