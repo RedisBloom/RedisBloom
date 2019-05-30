@@ -15,7 +15,7 @@ frequency of the different items in sub-linear space.
 
 Note: You can also [build and load the module](#building-and-loading-redisbloom) yourself.
 
-You can find a command reference in [Bloom_Commands.md](docs/Bloom_Commands.md)
+You can find command references in [Bloom_Commands.md](docs/Bloom_Commands.md) and [Cuckoo_Commands.md](docs/Cuckoo_Commands.md)
 
 
 ### 1. Launch RedisBloom with Docker
