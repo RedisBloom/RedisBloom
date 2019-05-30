@@ -47,10 +47,10 @@ class CMSTest(ModuleTestCase('../rebloom.so')):
         self.assertEqual(['width', 20, 'depth', 5, 'count', 5], 
                          self.cmd('cms.info', 'cms1'))
 
-        self.assertOk(self.cmd('cms.initbyprob', 'cms2', '1000', '0.001', '0.001'))
+        self.assertOk(self.cmd('cms.initbyprob', 'cms2', '0.001', '0.01'))
         self.assertOk(self.cmd('cms.incrby', 'cms2', 'a', '5'))
         self.assertEqual([5L], self.cmd('cms.query', 'cms2', 'a'))
-        self.assertEqual(['width', 2718, 'depth', 6, 'count', 5], 
+        self.assertEqual(['width', 2000, 'depth', 7, 'count', 5], 
                          self.cmd('cms.info', 'cms2'))
 
 
@@ -75,20 +75,14 @@ class CMSTest(ModuleTestCase('../rebloom.so')):
             ('foo', '1000'),
             ('foo', '0.1'),
             ('foo', '1000', '0.1'),
-            ('foo', '0.1', 'blah'),
-            ('foo', '1000', '0.1', 'blah'),
-            ('foo', '10'),
+            ('foo', '1000', 'blah'),
             ('foo', '1000', '10'),
+            ('foo', '0.1', 'blah'),
             ('foo', '10', 'blah'),
-            ('foo', '1000', '10', 'blah'),
             ('foo', 'blah', '10'),
-            ('foo', '1000', 'blah', '10'),
             ('foo', '0', '0'),
-            ('foo', '1000', '0', '0'),
+            ('foo', '1000', '0',),
             ('foo', '0', '100'),
-            ('foo', '1000', '0', '100'),
-            ('foo', '100', '0'),
-            ('foo', '1000', '100', '0'),
         ):         
             self.assertRaises(ResponseError, self.cmd, 'cms.initbyprob', *args)
 
@@ -96,13 +90,14 @@ class CMSTest(ModuleTestCase('../rebloom.so')):
         self.assertRaises(ResponseError, self.cmd, 'cms.initbyprob', '10', '10')
 
         self.assertOk(self.cmd('cms.initbydim', 'testDim', '100', '5'))
-        self.assertOk(self.cmd('cms.initbyprob', 'testProb', '1000', '0.1', '0.1'))
+        self.assertOk(self.cmd('cms.initbyprob', 'testProb', '0.1', '0.1'))
        
         for args in ((), ('test',)):
             for cmd in ('cms.incrby', 'cms.query', 'cms.merge', 'cms.info'):
                 self.assertRaises(ResponseError, self.cmd, cmd, *args)
     
     def test_incrby_query(self):
+        self.cmd('cms.initbydim', 'cms', '1000', '5') 
         self.cmd('cms.incrby', 'cms', 'bar', '5', 'baz', '42')
         self.assertEqual([0], self.cmd('cms.query', 'cms', 'foo'))
         self.assertEqual([0, 5, 42], self.cmd('cms.query',
@@ -113,6 +108,7 @@ class CMSTest(ModuleTestCase('../rebloom.so')):
                                     'cms', 'foo', 'bar', 'baz'))
 
         c = self.client
+        self.cmd('cms.initbydim', 'test', '1000', '5') 
         self.assertOk(self.cmd('cms.incrby', 'test', 'foo', '1'))
         self.assertEqual([1], self.cmd('cms.query', 'test', 'foo'))
         self.assertEqual([0], self.cmd('cms.query', 'test', 'bar'))
