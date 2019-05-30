@@ -33,7 +33,7 @@ CMSketch *NewCMSketch(size_t width, size_t depth);
 /*  Recommends width & depth for expected n different items,
     with probability of an error  - prob and over estimation
     error - overEst (use 1 for max accuracy) */
-void CMS_DimFromProb(size_t n, double overEst, double prob, size_t *width, size_t *depth);
+void CMS_DimFromProb(double overEst, double prob, size_t *width, size_t *depth);
 
 void CMS_Destroy(CMSketch *cms);
 

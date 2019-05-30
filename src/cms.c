@@ -23,7 +23,7 @@ CMSketch *NewCMSketch(size_t width, size_t depth) {
     return cms;
 }
 
-void CMS_DimFromProb(size_t size, double error, double delta, size_t *width, size_t *depth) {
+void CMS_DimFromProb(double error, double delta, size_t *width, size_t *depth) {
     assert(error > 0 && error < 1);
     assert(delta > 0 && delta < 1);
 
