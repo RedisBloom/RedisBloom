@@ -25,7 +25,7 @@ O(1)
 
 OK on success, error otherwise
 
-#### Reserve example
+#### Example
 
 ```sql
 CMS.INITBYDIM test 2000 5
@@ -58,7 +58,7 @@ O(1)
 
 OK on success, error otherwise
 
-#### Reserve example
+#### Example
 
 ```sql
 CMS.INITBYPROB test 0.001 0.01
@@ -88,7 +88,7 @@ O(1)
 
 OK on success
 
-#### Incrby example
+#### Example
 
 ```sql
 CMS.INCRBY test foo 10 bar 42
@@ -118,7 +118,7 @@ O(1)
 
 Count of one or more items
 
-#### Query example 
+#### Example 
 
 ```sql
 127.0.0.1:6379> CMS.QUERY test foo bar
@@ -151,7 +151,7 @@ O(n)
 
 OK on success
 
-#### Merge example 
+#### Example 
 
 ```sql
 CMS.MERGE dest 2 test1 test2 WEIGHTS 1 3
@@ -176,7 +176,7 @@ CMS.INFO key
 
 O(n) due to fill rate percentage
 
-#### Info Example
+#### Example
 
 ```sql
 127.0.0.1:6379> CMS.INFO test
