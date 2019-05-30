@@ -60,7 +60,6 @@ static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
             INNER_ERROR("CMS: invalid depth");
         }
     } else {
-        long long n = 0;
         double overEst = 0, prob = 0;
         if ((RedisModule_StringToDouble(argv[2], &overEst) != REDISMODULE_OK) || overEst <= 0 ||
             overEst >= 1) {
