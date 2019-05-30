@@ -1,6 +1,6 @@
-[![GitHub issues](https://img.shields.io/github/release/RedisLabsModules/redisbloom.svg)](https://github.com/RedisLabsModules/redisbloom/releases/latest)
-[![CircleCI](https://circleci.com/gh/RedisLabsModules/redisbloom.svg?style=svg)](https://circleci.com/gh/RedisLabsModules/redisbloom)
-[![DockerHub](https://dockerbuildbadges.quelltext.eu/status.svg?organization=redislabs&repository=rebloom)](https://hub.docker.com/r/redislabs/rebloom/builds/) 
+[![GitHub issues](https://img.shields.io/github/release/RedisLabsModules/redisbloom.svg)](https://github.com/RedisBloom/RedisBloom/releases/latest)
+[![CircleCI](https://circleci.com/gh/RedisBloom/RedisBloom.svg?style=svg)](https://circleci.com/gh/RedisBloom/RedisBloom)
+[![DockerHub](https://dockerbuildbadges.quelltext.eu/status.svg?organization=rebloom&repository=rebloom)](https://hub.docker.com/r/redislabs/rebloom/builds/) 
 
 # RedisBloom - Bloom Filter Module for Redis
 
