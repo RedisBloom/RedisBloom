@@ -1,3 +1,7 @@
+/* Compile using
+ * gcc test_topk.c  -I../  -I../src ../contrib/MurmurHash2.c -lm
+ */
+ 
 #include <stdio.h> // printf
 #include <stdlib.h>
 #include <string.h> // strlen

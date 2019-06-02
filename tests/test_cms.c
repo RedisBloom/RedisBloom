@@ -1,3 +1,6 @@
+/* Compile using  
+ * gcc test_cms.c  -I../  -I../src ../src/cms.c ../contrib/MurmurHash2.c -lm 
+ */
 
 #include <stdio.h> // printf
 #include <stdlib.h>

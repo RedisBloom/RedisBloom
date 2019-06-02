@@ -13,6 +13,7 @@
 #include <stdlib.h>     //  calloc
 
 #ifdef REDIS_MODULE_TARGET // should be in .h or .c
+#include "hiredis.h"
 #define TOPK_CALLOC(count, size) RedisModule_Calloc(count, size)
 #define TOPK_FREE(ptr) RedisModule_Free(ptr)
 #else

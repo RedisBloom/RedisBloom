@@ -1,5 +1,6 @@
 //#include <math.h>    // ceil, log10f
 //#include <strings.h> // strncasecmp
+#include <assert.h>
 
 #include "version.h"
 #include "rmutil/util.h"
@@ -17,17 +18,19 @@ static int GetTopKKey(RedisModuleCtx *ctx, RedisModuleString *keyName, TopK **to
     // All using this function should call RedisModule_AutoMemory to prevent memory leak
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, mode);
     if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
+        RedisModule_CloseKey(key);
         INNER_ERROR("TopK: key does not exist");
     } else if (RedisModule_ModuleTypeGetType(key) != TopKType) {
+        RedisModule_CloseKey(key);
         INNER_ERROR(REDISMODULE_ERRORMSG_WRONGTYPE);
     }
+
     *topk = RedisModule_ModuleTypeGetValue(key);
-    RedisModule_CloseKey(key); //TODO: check if this works
+    RedisModule_CloseKey(key);
     return REDISMODULE_OK;
 }
 
-
-static int createTopK(RedisModuleCtx *ctx, RedisModuleString **argv, int argc, TopK **topk) {
+static int createTopK(RedisModuleCtx *ctx, RedisModuleString **argv, TopK **topk) {
     long long k, width, depth;
     double decay;
     if ((RedisModule_StringToLongLong(argv[2], &k) != REDISMODULE_OK) || k < 1) {
@@ -41,7 +44,7 @@ static int createTopK(RedisModuleCtx *ctx, RedisModuleString **argv, int argc, T
     }    
     if ((RedisModule_StringToDouble(argv[5], &decay) != REDISMODULE_OK) ||
                                     (decay <= 0 || decay >= 1)) {
-        INNER_ERROR("TopK: invalid decay value. must be '> 1' & '< 0'");
+        INNER_ERROR("TopK: invalid decay value. must be '< 1' & '> 0'");
     }
 
     *topk = TopK_Create(k, width, depth, decay);
@@ -49,32 +52,32 @@ static int createTopK(RedisModuleCtx *ctx, RedisModuleString **argv, int argc, T
 }
 
 int TopK_Create_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
     if (argc != 6) {
         return RedisModule_WrongArity(ctx);
     }
 
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
     if (RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_EMPTY) {
-        RedisModule_CloseKey(key);
-        return RedisModule_ReplyWithError(ctx, "TopK: key already exists");
+        RedisModule_ReplyWithError(ctx, "TopK: key already exists");
+        goto final;
     }
 
     TopK *topk = NULL;
-    if (createTopK(ctx, argv, argc, &topk) != REDISMODULE_OK)
-        return REDISMODULE_OK;
+    if (createTopK(ctx, argv, &topk) != REDISMODULE_OK)
+        goto final;
 
     if (RedisModule_ModuleTypeSetValue(key, TopKType, topk) == REDISMODULE_ERR) {
-        return REDISMODULE_OK;
+        goto final;
     }
 
-    RedisModule_CloseKey(key);
     RedisModule_ReplyWithSimpleString(ctx, "OK");
+final:    
+    RedisModule_CloseKey(key);
     return REDISMODULE_OK;
 }
 
 int TopK_Add_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
+//    RedisModule_AutoMemory(ctx);
     if (argc < 3)
         return RedisModule_WrongArity(ctx);
 
@@ -95,7 +98,7 @@ int TopK_Add_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 }
 
 int TopK_Query_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);    
+//    RedisModule_AutoMemory(ctx);    
     if (argc < 3)
         return RedisModule_WrongArity(ctx);
     
@@ -116,7 +119,7 @@ int TopK_Query_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 }
 
 int TopK_Count_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-   RedisModule_AutoMemory(ctx);    
+//   RedisModule_AutoMemory(ctx);    
     if (argc < 3)
         return RedisModule_WrongArity(ctx);
     
@@ -137,7 +140,7 @@ int TopK_Count_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 }
 
 int TopK_List_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
+//    RedisModule_AutoMemory(ctx);
     if (argc != 2)
         return RedisModule_WrongArity(ctx);
 
@@ -160,7 +163,7 @@ int TopK_List_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 }
 
 int TopK_Info_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
+//    RedisModule_AutoMemory(ctx);
     if (argc != 2)
         return RedisModule_WrongArity(ctx);
 
@@ -209,6 +212,7 @@ void *TopKRdbLoad(RedisModuleIO *io, int encver) {
     topk->data = (Bucket *)RedisModule_LoadStringBuffer(io, &dataSize);
     size_t heapSize = topk->k * sizeof(HeapBucket);
     topk->heap = (HeapBucket *)RedisModule_LoadStringBuffer(io, &heapSize);
+
     return topk;
 }
 

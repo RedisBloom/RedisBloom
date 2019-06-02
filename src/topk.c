@@ -170,7 +170,7 @@ size_t TopK_Count(TopK *topk, const char *item, size_t itemlen) {
     counter_t heapMin = checkExistInHeap(topk, item, itemlen) ? topk->heap->count : 0;
     counter_t res = 0;
 
-    for(int i = 0; i < topk->depth; ++i) {
+    for(uint32_t i = 0; i < topk->depth; ++i) {
         uint32_t loc = TOPK_HASH(item, itemlen, i) % topk->width;
         runner = topk->data + i * topk->width + loc;
         if(runner->fp == fp && runner->count > heapMin)

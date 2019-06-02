@@ -11,7 +11,7 @@ Paper and additional information can be found [here](https://www.usenix.org/conf
 Initializes a TopK with specified parameters.
 
 ```sql
-BF.RESERVE key topk width depth decay
+TOPK.RESERVE key topk width depth decay
 ```
 
 ### Parameters
@@ -30,7 +30,7 @@ O(1)
 
 OK on success, error otherwise
 
-#### Reserve example
+#### Example
 
 ```sql
 TOPK.RESERVE test 50 2000 7 0.925
@@ -59,7 +59,7 @@ O(k + depth)
 
 OK on success
 
-#### Reserve example
+#### Example
 
 ```sql
 TOPK.ADD test foo bar 42
@@ -88,7 +88,7 @@ O(k)
 
 1 if item is in Top-K, otherwise 0.
 
-#### Reserve example
+#### Example
 
 ```sql
 TOPK.QUERY test 42 nonexist
@@ -117,9 +117,9 @@ O(k + depth)
 
 ### Return
 
-1 if item is in Top-K, otherwise 0.
+Count for item.
 
-#### Reserve example
+#### Example
 
 ```sql
 TOPK.COUNT test foo 42 nonexist
@@ -150,7 +150,7 @@ O(k)
 
 k (or less) items in Top K list.
 
-#### Reserve example
+#### Example
 
 ```sql
 TOPK.LIST test
@@ -181,7 +181,7 @@ O(1)
 
 Information.
 
-#### Reserve example
+#### Example
 
 ```sql
 TOPK.INFO test
