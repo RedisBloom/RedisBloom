@@ -40,7 +40,8 @@ TOPK.RESERVE test 50 2000 7 0.925
 
 ## TOPK.ADD
 
-Adds an item to the data structure.
+Adds an item to the data structure. 
+Multiple items can be added at once.
 
 ```sql
 TOPK.ADD key item [item ...]
@@ -49,7 +50,7 @@ TOPK.ADD key item [item ...]
 ### Parameters
 
 * **key**: Name of sketch where item is added.
-* **item**: Item to be added.
+* **item**: Item/s to be added.
 
 ### Complexity
 
@@ -70,6 +71,7 @@ TOPK.ADD test foo bar 42
 ## TOPK.QUERY
 
 Checks whether an item is one of Top-K items.
+Multiple items can be checked at once.
 
 ```sql
 TOPK.QUERY key item [item ...]
@@ -78,7 +80,7 @@ TOPK.QUERY key item [item ...]
 ### Parameters
 
 * **key**: Name of sketch where item is queried.
-* **item**: Item to be queried.
+* **item**: Item/s to be queried.
 
 ### Complexity
 
@@ -86,7 +88,7 @@ O(k)
 
 ### Return
 
-1 if item is in Top-K, otherwise 0.
+For each item requested, return 1 if item is in Top-K, otherwise 0.
 
 #### Example
 
@@ -101,6 +103,7 @@ TOPK.QUERY test 42 nonexist
 ## TOPK.COUNT
 
 Returns count for an item. Please note this number will never be higher than the real count and likely to be lower.
+Multiple items can be added at once.
 
 ```sql
 TOPK.COUNT key item [item ...]
@@ -109,7 +112,7 @@ TOPK.COUNT key item [item ...]
 ### Parameters
 
 * **key**: Name of sketch where item is counted.
-* **item**: Item to be counted.
+* **item**: Item/s to be counted.
 
 ### Complexity
 
@@ -117,7 +120,7 @@ O(k + depth)
 
 ### Return
 
-Count for item.
+For each item requested, count for item.
 
 #### Example
 
