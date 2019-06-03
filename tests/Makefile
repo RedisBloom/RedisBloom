@@ -8,6 +8,7 @@ test: test-basic test-cuckoo
 	$(PYTHON) pytests.py
 	$(PYTHON) cuckoo.py
 	$(PYTHON) cms.py
+	$(PYTHON) topk.py
 
 perf: test-perf
 	time ./test-perf

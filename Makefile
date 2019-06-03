@@ -6,7 +6,9 @@ endif
 # find the OS
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 CPPFLAGS =  -Wall -Wno-unused-function $(DEBUGFLAGS) -fPIC -std=gnu99 -D_GNU_SOURCE
-CC:=$(shell sh -c 'type $(CC) >/dev/null 2>/dev/null && echo $(CC) || echo gcc')
+# CC:=$(shell sh -c 'type $(CC) >/dev/null 2>/dev/null && echo $(CC) || echo gcc')
+CC=gcc
+LD=gcc
 
 # Compile flags for linux / osx
 ifeq ($(uname_S),Linux)
@@ -28,14 +30,20 @@ MODULE_OBJ = $(SRCDIR)/rebloom.o
 MODULE_SO = $(ROOT)/rebloom.so
 
 DEPS = $(ROOT)/contrib/MurmurHash2.o \
-	   $(ROOT)/contrib/xxhash.o \
 	   $(ROOT)/rmutil/util.o \
 	   $(SRCDIR)/sb.o \
 	   $(SRCDIR)/cf.o \
+	   $(SRCDIR)/rm_topk.o \
+	   $(SRCDIR)/topk.o \
 	   $(SRCDIR)/rm_cms.o \
 	   $(SRCDIR)/cms.o 
 
-export
+export 
+
+ifeq ($(COV),1)
+CFLAGS += -fprofile-arcs -ftest-coverage
+LDFLAGS += -fprofile-arcs
+endif
 
 all: $(MODULE_SO)
 
@@ -76,3 +84,17 @@ docker_push: docker
 # Compile an executable that prints the current version
 print_version:  $(SRCDIR)/version.h $(SRCDIR)/print_version.c
 	@$(CC) -o $@ -DPRINT_VERSION_TARGET $(SRCDIR)/$@.c
+
+#	$(MAKE) CFLAGS="-fprofile-arcs -ftest-coverage" LDFLAGS="-fprofile-arcs"
+
+COV_DIR=tmp/lcov
+
+cov coverage:
+	@$(MAKE) clean
+	@$(MAKE) test COV=1
+	mkdir -p $(COV_DIR)
+	gcov -c -b $(SRCDIR)/*
+	lcov -d . -c -o $(COV_DIR)/gcov.info --no-external
+	lcov -r $(COV_DIR)/gcov.info "*test*" "*contrib*" "*redismodule.h" "*util.c*" -o $(COV_DIR)/gcov.info
+	lcov -l $(COV_DIR)/gcov.info
+	genhtml --legend -o $(COV_DIR)/report $(COV_DIR)/gcov.info

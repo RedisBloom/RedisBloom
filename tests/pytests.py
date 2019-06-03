@@ -76,11 +76,22 @@ class RebloomTestCase(ModuleTestCase('../rebloom.so')):
 
     def test_oom(self):
         self.assertRaises(ResponseError, self.cmd, 'bf.reserve', 'test', 0.01, 4294967296)
-
+    
+    def test_rdb_reload(self):
+        self.assertEqual(1, self.cmd('bf.add', 'test', 'foo'))
+        c = self.client   
+        yield 1 
+        c.dr.dump_and_reload()
+        yield 2
+        self.assertEqual(1, self.cmd('bf.exists', 'test', 'foo'))
+        self.assertEqual(0, self.cmd('bf.exists', 'test', 'bar'))
+    
     def test_dump_and_load(self):
         # Store a filter
-        self.cmd('bf.reserve', 'myBloom', '0.0001', '100')
+        self.cmd('bf.reserve', 'myBloom', '0.0001', '1000')
 
+        # test is probabilistic and might fail. It is OK to change variables if 
+        # certain to not break anything
         def do_verify():
             for x in xrange(1000):
                 self.cmd('bf.add', 'myBloom', x)

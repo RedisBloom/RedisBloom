@@ -100,6 +100,8 @@ void CMS_MergeParams(mergeParams params) {
               (const long long *)params.weights);
 }
 
+
+/************ used for debugging *******************
 void CMS_Print(const CMSketch *cms) {
     assert(cms);
 
@@ -110,4 +112,4 @@ void CMS_Print(const CMSketch *cms) {
         printf("\n");
     }
     printf("\tCounter is %lu\n", cms->counter);
-}
+} */
