@@ -112,8 +112,6 @@ class TopKTest(ModuleTestCase('../rebloom.so')):
         self.assertEqual(100, len(heapList))
         res = sum(1 for i in range(len(heapList)) if int(heapList[i]) % 100 == 0)
         self.assertGreater(res, 45)
-
-
     
 if __name__ == "__main__":
     import unittest
