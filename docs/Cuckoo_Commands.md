@@ -91,8 +91,8 @@ O(log N)
 ## CF.INSERTNX
 
 ```
-CF.INSERT {key} [CAPACITY {cap}] ITEMS {item ...}
-CF.INSERTNX {key} [CAPACITY {cap}] ITEMS {item ...}
+CF.INSERT {key} [CAPACITY {cap}] [NOCREATE] ITEMS {item ...}
+CF.INSERTNX {key} [CAPACITY {cap}] [NOCREATE] ITEMS {item ...}
 ```
 
 ### Description
