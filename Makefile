@@ -71,6 +71,10 @@ clean:
 	$(RM) $(MODULE_OBJ) $(MODULE_SO) $(DEPS)
 	$(RM) -f print_version
 	$(RM) -rf build
+	$(RM) -rf tmp
+	find . -name '*.gcov' -delete
+	find . -name '*.gcda' -delete
+	find . -name '*.gcno' -delete
 	$(MAKE) -C tests clean
 
 distclean: clean
