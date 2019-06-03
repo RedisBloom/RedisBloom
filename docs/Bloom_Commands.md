@@ -5,7 +5,7 @@
 ### Format:
 
 ```
-BF.RESERVE {key} {error_rate} {size}
+BF.RESERVE {key} {error_rate} {capacity}
 ```
 
 ### Description:
@@ -15,7 +15,7 @@ This command is useful if you intend to add many items to a Bloom Filter,
 otherwise you can just use `BF.ADD` to add items. It will also create a Bloom Filter for
 you if one doesn't already exist.
 
-The initial size and error rate will dictate the performance and memory usage
+The initial capacity and error rate will dictate the performance and memory usage
 of the filter. In general, the smaller the error rate (i.e. the lower
 the tolerance for false positives) the greater the space consumption per
 filter entry.
@@ -28,7 +28,7 @@ filter entry.
     positive rate of 0.1% (1 in 1000), error_rate should be set to 0.001.
     The closer this number is to zero, the greater the memory consumption per
     item and the more CPU usage per operation.
-* **size**: The number of entries you intend to add to the filter.
+* **capacity**: The number of entries you intend to add to the filter.
     Performance will begin to degrade after adding more items than this
     number. The actual degradation will depend on how far the limit has
     been exceeded. Performance will degrade linearly as the number of entries
