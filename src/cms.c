@@ -23,14 +23,13 @@ CMSketch *NewCMSketch(size_t width, size_t depth) {
     return cms;
 }
 
-void CMS_DimFromProb(size_t n, double overEstProb, double errProb, size_t *width, size_t *depth) {
-    assert(overEstProb > 0 && overEstProb < 1);
-    assert(errProb > 0 && errProb < 1);
+void CMS_DimFromProb(double error, double delta, size_t *width, size_t *depth) {
+    assert(error > 0 && error < 1);
+    assert(delta > 0 && delta < 1);
 
-    /*  With large enough n, width can be reduced and maintain low
-	    over estimate probability */
-    *width = n * exp(1) / ceil(n * pow(overEstProb, 2));
-    *depth = -ceil(log(errProb));
+ 
+    *width = ceil(2 / error);
+    *depth = ceil(log10f(delta) / log10f(0.5));
 }
 
 void CMS_Destroy(CMSketch *cms) {
@@ -47,8 +46,8 @@ void CMS_IncrBy(CMSketch *cms, const char *item, size_t itemlen, size_t value) {
     assert(item);
 
     for (size_t i = 0; i < cms->depth; ++i) {
-	    uint32_t hash = CMS_HASH(item, itemlen, i);
-	    cms->array[(hash % cms->width) + (i * cms->width)] += value;
+        uint32_t hash = CMS_HASH(item, itemlen, i);
+        cms->array[(hash % cms->width) + (i * cms->width)] += value;
     }
     cms->counter += value;
 }
@@ -60,11 +59,11 @@ size_t CMS_Query(CMSketch *cms, const char *item, size_t itemlen) {
     size_t temp = 0, res = (size_t)-1;
 
     for (size_t i = 0; i < cms->depth; ++i) {
-	    uint32_t hash = CMS_HASH(item, itemlen, i);
-	    temp = cms->array[(hash % cms->width) + (i * cms->width)];
+        uint32_t hash = CMS_HASH(item, itemlen, i);
+        temp = cms->array[(hash % cms->width) + (i * cms->width)];
         if (temp < res) {
             res = temp;
-    	}
+        }
     }
 
     return res;
@@ -91,14 +90,14 @@ void CMS_Merge(CMSketch *dest, size_t quantity, const CMSketch **src, const long
     }
 
     for (size_t i = 0; i < quantity; ++i) {
-	    cmsCount += src[i]->counter * weights[i];
+        cmsCount += src[i]->counter * weights[i];
     }
     dest->counter = cmsCount;
 }
 
 void CMS_MergeParams(mergeParams params) {
     CMS_Merge(params.dest, params.numKeys, (const CMSketch **)params.cmsArray,
-	      (const long long *)params.weights);
+              (const long long *)params.weights);
 }
 
 
@@ -110,23 +109,7 @@ void CMS_Print(const CMSketch *cms) {
         for (int j = 0; j < cms->width; ++j) {
             printf("%d\t", cms->array[(i * cms->width) + j]);
         }
-	    printf("\n");
+        printf("\n");
     }
     printf("\tCounter is %lu\n", cms->counter);
-}
-
-size_t CMS_GetCardinality(CMSketch *cms) {
-    size_t width = cms->width, card = 0, count = 0;
-
-    for (int i = 0; i < cms->depth; ++i, count = 0) {
-        for (int j = 0; j < width; ++j) {
-            count += !!cms->array[i * width + j];
-        }
-        if (count == cms->width)
-            return cms->width;
-        size_t tempCard = -(cms->width * log(1 - (count / (double)cms->width)));
-        card = (card < tempCard) ? tempCard : card;
-    }
-
-    return card;
 } */
