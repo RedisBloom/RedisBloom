@@ -1,6 +1,6 @@
-[![GitHub issues](https://img.shields.io/github/release/RedisLabsModules/redisbloom.svg)](https://github.com/RedisLabsModules/redisbloom/releases/latest)
-[![CircleCI](https://circleci.com/gh/RedisLabsModules/redisbloom.svg?style=svg)](https://circleci.com/gh/RedisLabsModules/redisbloom)
-[![DockerHub](https://dockerbuildbadges.quelltext.eu/status.svg?organization=redislabs&repository=rebloom)](https://hub.docker.com/r/redislabs/rebloom/builds/) 
+[![GitHub issues](https://img.shields.io/github/release/RedisLabsModules/redisbloom.svg)](https://github.com/RedisBloom/RedisBloom/releases/latest)
+[![CircleCI](https://circleci.com/gh/RedisBloom/RedisBloom.svg?style=svg)](https://circleci.com/gh/RedisBloom/RedisBloom)
+[![DockerHub](https://dockerbuildbadges.quelltext.eu/status.svg?organization=rebloom&repository=rebloom)](https://hub.docker.com/r/redislabs/rebloom/builds/) 
 
 # RedisBloom - Bloom Filter Module for Redis
 
@@ -15,7 +15,7 @@ frequency of the different items in sub-linear space.
 
 Note: You can also [build and load the module](#building-and-loading-redisbloom) yourself.
 
-You can find a command reference in [Bloom_Commands.md](docs/Bloom_Commands.md)
+You can find command references in [Bloom_Commands.md](docs/Bloom_Commands.md) and [Cuckoo_Commands.md](docs/Cuckoo_Commands.md)
 
 
 ### 1. Launch RedisBloom with Docker
