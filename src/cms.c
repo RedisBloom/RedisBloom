@@ -101,6 +101,8 @@ void CMS_MergeParams(mergeParams params) {
 	      (const long long *)params.weights);
 }
 
+
+/************ used for debugging *******************
 void CMS_Print(const CMSketch *cms) {
     assert(cms);
 
@@ -127,4 +129,4 @@ size_t CMS_GetCardinality(CMSketch *cms) {
     }
 
     return card;
-}
+} */

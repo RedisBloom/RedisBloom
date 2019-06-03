@@ -82,7 +82,7 @@ class RebloomTestCase(ModuleTestCase('../rebloom.so')):
         self.cmd('bf.reserve', 'myBloom', '0.0001', '100')
 
         def do_verify():
-            for x in xrange(1000):
+            for x in xrange(100):
                 self.cmd('bf.add', 'myBloom', x)
                 rv = self.cmd('bf.exists', 'myBloom', x)
                 self.assertTrue(rv)
