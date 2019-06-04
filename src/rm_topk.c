@@ -197,6 +197,9 @@ void TopKRdbSave(RedisModuleIO *io, void *obj) {
                                  topk->width * topk->depth * sizeof(Bucket));
     RedisModule_SaveStringBuffer(io, (const char *)topk->heap,
                                  topk->k * sizeof(HeapBucket));
+    for(uint32_t i = 0; i < topk->k; ++i) {
+        RedisModule_SaveStringBuffer(io, topk->heap[i].item, strlen(topk->heap[i].item) + 1);
+    }
 }
 
 void *TopKRdbLoad(RedisModuleIO *io, int encver) {
@@ -208,10 +211,14 @@ void *TopKRdbLoad(RedisModuleIO *io, int encver) {
     topk->width = RedisModule_LoadUnsigned(io);
     topk->depth = RedisModule_LoadUnsigned(io);
     topk->decay = RedisModule_LoadDouble(io);
-    size_t dataSize = topk->width * topk->depth * sizeof(Bucket);
+    size_t dataSize, heapSize, itemSize;
     topk->data = (Bucket *)RedisModule_LoadStringBuffer(io, &dataSize);
-    size_t heapSize = topk->k * sizeof(HeapBucket);
+    assert(dataSize == topk->width * topk->depth * sizeof(Bucket));
     topk->heap = (HeapBucket *)RedisModule_LoadStringBuffer(io, &heapSize);
+    assert(heapSize == topk->k * sizeof(HeapBucket));
+    for(uint32_t i = 0; i < topk->k; ++i) {
+        topk->heap[i].item = RedisModule_LoadStringBuffer(io, &itemSize);
+    }
 
     return topk;
 }

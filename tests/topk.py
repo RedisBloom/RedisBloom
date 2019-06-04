@@ -62,16 +62,16 @@ class TopKTest(ModuleTestCase('../rebloom.so')):
         self.assertEqual([0, 2, 2, 1], self.cmd('topk.count',
                                     'topk', 'foo', 'bar', 'baz', '42'))
         
-        c = self.client
         self.assertOk(self.cmd('topk.add', 'topk', 'foo'))
         self.assertEqual([1], self.cmd('topk.query', 'topk', 'foo'))
         self.assertEqual([0], self.cmd('topk.query', 'topk', 'xyxxy'))
 
         self.assertOk(self.cmd('topk.add', 'topk', 'foo', '1', 'bar', '1'))
-        for _ in c.retry_with_rdb_reload():
-            self.assertEqual([2], self.cmd('topk.count', 'topk', 'foo'))
-            self.assertEqual([3L], self.cmd('topk.count', 'topk', 'bar'))
-            self.assertEqual([0], self.cmd('topk.count', 'topk', 'nonexist'))
+        
+        self.client.retry_with_rdb_reload()
+        self.assertEqual([2], self.cmd('topk.count', 'topk', 'foo'))
+        self.assertEqual([3L], self.cmd('topk.count', 'topk', 'bar'))
+        self.assertEqual([0], self.cmd('topk.count', 'topk', 'nonexist'))
         
 
     def test_list_info(self):
@@ -91,6 +91,8 @@ class TopKTest(ModuleTestCase('../rebloom.so')):
         self.assertEqual(5, info[5])
         self.assertEqual('decay', info[6])
         self.assertAlmostEqual(0.9, float(info[7]))
+
+        self.client.retry_with_rdb_reload()
 
         self.cmd('topk.reserve', 'test', '3', '50', '5', '0.9')
         self.cmd('topk.add', 'test', 'foo')
