@@ -43,7 +43,11 @@ class TopKTest(ModuleTestCase('../rebloom.so')):
 
         for args in ((), ('topk',)):
             for cmd in ('topk.add', 'topk.query', 'topk.count'):
-                self.assertRaises(ResponseError, self.cmd, cmd, *args)        
+                self.assertRaises(ResponseError, self.cmd, cmd, *args)      
+
+        self.cmd('SET', 'king', 'kong')
+        self.assertRaises(ResponseError, self.cmd, 'topk.add', 'king', 'kong')              
+        self.assertRaises(ResponseError, self.cmd, 'topk.add', 'kong', 'kong')              
     
     def test_add_query_count(self):
         self.assertOk(self.cmd('topk.reserve', 'topk', '20', '50', '5', '0.9'))
@@ -76,11 +80,13 @@ class TopKTest(ModuleTestCase('../rebloom.so')):
 
     def test_list_info(self):
         self.cmd('topk.reserve', 'topk', '2', '50', '5', '0.9')
+        self.assertRaises(ResponseError, self.cmd, 'topk.reserve', 'topk', '2', '50', '5', '0.9')        
         self.cmd('topk.add', 'topk', 'foo', 'bar', 'baz', '42', 'foo', 'bar', 'baz',)
         self.cmd('topk.add', 'topk', 'foo', 'baz', '42', 'foo', 'baz',)
         self.cmd('topk.add', 'topk', 'foo', 'bar', 'baz', 'foo', 'baz',)
      
         self.assertEqual(['foo', 'baz'], self.cmd('topk.list', 'topk'))
+        self.assertRaises(ResponseError, self.cmd, 'topk.list', 'topk', '_topk_')        
 
         info = self.cmd('topk.info', 'topk')
         self.assertEqual('k', info[0])
@@ -91,6 +97,7 @@ class TopKTest(ModuleTestCase('../rebloom.so')):
         self.assertEqual(5, info[5])
         self.assertEqual('decay', info[6])
         self.assertAlmostEqual(0.9, float(info[7]))
+        self.assertRaises(ResponseError, self.cmd, 'topk.info', 'topk', '_topk_')        
 
         c = self.client
         c.save()
