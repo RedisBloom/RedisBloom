@@ -181,12 +181,8 @@ size_t TopK_Count(TopK *topk, const char *item, size_t itemlen) {
     return res;
 }
 
-uint32_t TopK_List(TopK *topk, char **heapList) {
-    uint32_t count = 0;    
+void TopK_List(TopK *topk, char **heapList) {
     for(uint32_t i = 0; i < topk->k; ++i) {
-        if(topk->heap[i].item) {
-            heapList[count++] = topk->heap[i].item;
-        }
+        heapList[i] = topk->heap[i].item;
     }
-    return count;
 }

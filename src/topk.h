@@ -51,6 +51,6 @@ void TopK_Destroy(TopK *topk);
 void TopK_Add(TopK *topk, const char *item, size_t itemlen);
 bool TopK_Query(TopK *topk, const char *item, size_t itemlen);
 size_t TopK_Count(TopK *topk, const char *item, size_t itemlen);
-uint32_t TopK_List(TopK *topk, char **heapList);
+void TopK_List(TopK *topk, char **heapList);
 
 #endif

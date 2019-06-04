@@ -148,14 +148,14 @@ int TopK_List_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (GetTopKKey(ctx, argv[1], &topk, REDISMODULE_READ) != REDISMODULE_OK) {
         return REDISMODULE_OK;
     }
-
-    char **heapList = TOPK_CALLOC(topk->k, (sizeof(char *)));
-    uint32_t qty = TopK_List(topk, heapList);
-    RedisModule_ReplyWithArray(ctx, qty);
-    for(int i = 0; i < qty; ++i) {
-        if(heapList[i]) {
+    uint32_t k = topk->k;
+    char **heapList = TOPK_CALLOC(k, (sizeof(char *)));
+    TopK_List(topk, heapList);
+    RedisModule_ReplyWithArray(ctx, k);
+    for(int i = 0; i < k; ++i) {
+        if(heapList[i] != NULL) {
             RedisModule_ReplyWithSimpleString(ctx, heapList[i]);
-        }
+        } else RedisModule_ReplyWithNull(ctx);
     }
     TOPK_FREE(heapList);
 

@@ -92,6 +92,9 @@ class TopKTest(ModuleTestCase('../rebloom.so')):
         self.assertEqual('decay', info[6])
         self.assertAlmostEqual(0.9, float(info[7]))
 
+        self.cmd('topk.reserve', 'test', '3', '50', '5', '0.9')
+        self.cmd('topk.add', 'test', 'foo')
+        self.assertEqual([None, 'foo', None], self.cmd('topk.list', 'test'))
 
     def test_time(self):
         self.cmd('topk.reserve', 'topk', '100', '1000', '5', '0.9')
