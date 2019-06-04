@@ -152,7 +152,7 @@ O(log N)
 
 ### Returns
 
-"0" if the item certainlty does not exist, "1" if the item may exist. Because this
+"0" if the item certainly does not exist, "1" if the item may exist. Because this
 is a probablistic data structure, false positives (but not false negatives) may
 be returned.
 
