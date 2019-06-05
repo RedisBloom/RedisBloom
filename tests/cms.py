@@ -52,6 +52,7 @@ class CMSTest(ModuleTestCase('../rebloom.so')):
         self.assertEqual([5L], self.cmd('cms.query', 'cms2', 'a'))
         self.assertEqual(['width', 2000, 'depth', 7, 'count', 5], 
                          self.cmd('cms.info', 'cms2'))
+        self.assertEqual(838, self.client.memory_usage('cms1'))
 
 
     def test_validation(self):
@@ -152,6 +153,17 @@ class CMSTest(ModuleTestCase('../rebloom.so')):
         # mixed batch
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'small_3', 2,
                                     'small_2', 'large_5')
+
+    def test_errors(self):
+        self.cmd('SET', 'A', '2000')
+        self.assertRaises(ResponseError, self.cmd, 'cms.initbydim', 'A', '2000', '10')
+        self.assertRaises(ResponseError, self.cmd, 'cms.incrby', 'A', 'foo')
+
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'A', 3, 'foo')
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'A', 'B', 3, 'foo')
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'A', 3, 'foo', 'weights', 'B')
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'A', 3, 'foo', 'weights', 1, 2)
+
     
     def test_merge_extensive(self):
         self.cmd('cms.initbydim', 'A', '2000', '10')
