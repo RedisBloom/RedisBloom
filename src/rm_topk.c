@@ -211,6 +211,7 @@ void *TopKRdbLoad(RedisModuleIO *io, int encver) {
     topk->width = RedisModule_LoadUnsigned(io);
     topk->depth = RedisModule_LoadUnsigned(io);
     topk->decay = RedisModule_LoadDouble(io);
+  
     size_t dataSize, heapSize, itemSize;
     topk->data = (Bucket *)RedisModule_LoadStringBuffer(io, &dataSize);
     assert(dataSize == topk->width * topk->depth * sizeof(Bucket));
