@@ -161,8 +161,7 @@ CMS.MERGE dest 2 test1 test2 WEIGHTS 1 3
 
 ### CMS.INFO
 
-Returns width, depth, total count and approximate fill rate 
-percentage in the sketch.
+Returns width, depth and total count of the sketch.
 
 ```sql
 CMS.INFO key
