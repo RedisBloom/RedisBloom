@@ -8,37 +8,6 @@ import math
 if sys.version >= '3':
     xrange = range
 
-def TestSimple(self):
-    self.assertOk(self.cmd('cms.initbydim', 'cms1', '20', '5'))
-    self.assertOk(self.cmd('cms.incrby', 'cms1', 'a', '5'))
-    self.assertEqual([5L], self.cmd('cms.query', 'cms1', 'a'))
-#        self.assertEqual(['width', 20, 'depth', 5, 'count', 5], 
-#                         self.cmd('cms.info', 'cms1'))
-
-    self.assertOk(self.cmd('cms.initbyprob', 'cms2', '0.1', '0.1'))
-    self.assertOk(self.cmd('cms.incrby', 'cms2', 'a', '5'))
-    self.assertEqual([5L], self.cmd('cms.query', 'cms2', 'a'))
-#        self.assertEqual(['width', 20, 'depth', 4, 'count', 5], 
-#                         self.cmd('cms.info', 'cms2'))
-
-
-def TestMergeExt(self):
-    self.cmd('cms.initbydim', 'A', '2000', '10')
-    self.cmd('cms.initbydim', 'B', '2000', '10')
-    self.cmd('cms.initbydim', 'C', '2000', '10')
-    
-    itemsA = []
-    itemsB = []
-    for i in range(9000):
-        itemsA.append(randint(0, 100))
-        self.cmd('cms.incrby', 'A', i, itemsA[i])
-        itemsB.append(randint(0, 100))
-        self.cmd('cms.incrby', 'B', i, itemsB[i])    
-    self.assertOk(self.cmd('cms.merge', 'C', 2, 'A', 'B'))
-    for i in range(9000):
-        print(i, itemsA[i], self.cmd('cms.query', 'A', i), itemsB[i], self.cmd('cms.query', 'B', i), self.cmd('cms.query', 'C', i))
-#       print(itemsA[i], itemsB[i], self.cmd('cms.query', 'C', i))
-
 class CMSTest(ModuleTestCase('../rebloom.so')):
     def test_simple(self):
         self.assertOk(self.cmd('cms.initbydim', 'cms1', '20', '5'))
