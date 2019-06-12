@@ -203,8 +203,7 @@ void TopKRdbSave(RedisModuleIO *io, void *obj) {
         if(topk->heap[i].item != NULL) {
             RedisModule_SaveStringBuffer(io, topk->heap[i].item, strlen(topk->heap[i].item) + 1);
         } else {
-            char *emptystr = "\n";
-            RedisModule_SaveStringBuffer(io, emptystr, 1);
+            RedisModule_SaveStringBuffer(io, "\n", 1);
         }
     }
 }
@@ -226,6 +225,9 @@ void *TopKRdbLoad(RedisModuleIO *io, int encver) {
     assert(heapSize == topk->k * sizeof(HeapBucket));
     for(uint32_t i = 0; i < topk->k; ++i) {
         topk->heap[i].item = RedisModule_LoadStringBuffer(io, &itemSize);
+        if(itemSize == 1) {
+            topk->heap[i].item = NULL;
+        }
     }
 
     return topk;
