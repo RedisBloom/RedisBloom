@@ -168,7 +168,7 @@ size_t TopK_Count(TopK *topk, const char *item, size_t itemlen) {
     uint32_t fp = TOPK_HASH(item, itemlen, GA);    
     // TODO: The optimization of >heapMin should be revisited for performance
     counter_t heapMin = topk->heap->count;
-    HeapBucket *heapPtr = checkExistInHeap(topk, item, itemlen) ? topk->heap->count : 0;
+    HeapBucket *heapPtr = checkExistInHeap(topk, item, itemlen);
     counter_t res = 0;
 
     for(uint32_t i = 0; i < topk->depth; ++i) {

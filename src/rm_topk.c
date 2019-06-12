@@ -155,7 +155,9 @@ int TopK_List_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     for(int i = 0; i < k; ++i) {
         if(heapList[i] != NULL) {
             RedisModule_ReplyWithSimpleString(ctx, heapList[i]);
-        } else RedisModule_ReplyWithNull(ctx);
+        } else  {
+            RedisModule_ReplyWithNull(ctx);
+        }
     }
     TOPK_FREE(heapList);
 
@@ -198,7 +200,12 @@ void TopKRdbSave(RedisModuleIO *io, void *obj) {
     RedisModule_SaveStringBuffer(io, (const char *)topk->heap,
                                  topk->k * sizeof(HeapBucket));
     for(uint32_t i = 0; i < topk->k; ++i) {
-        RedisModule_SaveStringBuffer(io, topk->heap[i].item, strlen(topk->heap[i].item) + 1);
+        if(topk->heap[i].item != NULL) {
+            RedisModule_SaveStringBuffer(io, topk->heap[i].item, strlen(topk->heap[i].item) + 1);
+        } else {
+            char *emptystr = "\n";
+            RedisModule_SaveStringBuffer(io, emptystr, 1);
+        }
     }
 }
 
