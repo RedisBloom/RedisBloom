@@ -203,7 +203,7 @@ void TopKRdbSave(RedisModuleIO *io, void *obj) {
         if(topk->heap[i].item != NULL) {
             RedisModule_SaveStringBuffer(io, topk->heap[i].item, strlen(topk->heap[i].item) + 1);
         } else {
-            RedisModule_SaveStringBuffer(io, "\n", 1);
+            RedisModule_SaveStringBuffer(io, "", 1);
         }
     }
 }
