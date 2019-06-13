@@ -8,37 +8,6 @@ import math
 if sys.version >= '3':
     xrange = range
 
-def TestSimple(self):
-    self.assertOk(self.cmd('cms.initbydim', 'cms1', '20', '5'))
-    self.assertOk(self.cmd('cms.incrby', 'cms1', 'a', '5'))
-    self.assertEqual([5L], self.cmd('cms.query', 'cms1', 'a'))
-#        self.assertEqual(['width', 20, 'depth', 5, 'count', 5], 
-#                         self.cmd('cms.info', 'cms1'))
-
-    self.assertOk(self.cmd('cms.initbyprob', 'cms2', '0.1', '0.1'))
-    self.assertOk(self.cmd('cms.incrby', 'cms2', 'a', '5'))
-    self.assertEqual([5L], self.cmd('cms.query', 'cms2', 'a'))
-#        self.assertEqual(['width', 20, 'depth', 4, 'count', 5], 
-#                         self.cmd('cms.info', 'cms2'))
-
-
-def TestMergeExt(self):
-    self.cmd('cms.initbydim', 'A', '2000', '10')
-    self.cmd('cms.initbydim', 'B', '2000', '10')
-    self.cmd('cms.initbydim', 'C', '2000', '10')
-    
-    itemsA = []
-    itemsB = []
-    for i in range(9000):
-        itemsA.append(randint(0, 100))
-        self.cmd('cms.incrby', 'A', i, itemsA[i])
-        itemsB.append(randint(0, 100))
-        self.cmd('cms.incrby', 'B', i, itemsB[i])    
-    self.assertOk(self.cmd('cms.merge', 'C', 2, 'A', 'B'))
-    for i in range(9000):
-        print(i, itemsA[i], self.cmd('cms.query', 'A', i), itemsB[i], self.cmd('cms.query', 'B', i), self.cmd('cms.query', 'C', i))
-#       print(itemsA[i], itemsB[i], self.cmd('cms.query', 'C', i))
-
 class CMSTest(ModuleTestCase('../rebloom.so')):
     def test_simple(self):
         self.assertOk(self.cmd('cms.initbydim', 'cms1', '20', '5'))
@@ -52,6 +21,7 @@ class CMSTest(ModuleTestCase('../rebloom.so')):
         self.assertEqual([5L], self.cmd('cms.query', 'cms2', 'a'))
         self.assertEqual(['width', 2000, 'depth', 7, 'count', 5], 
                          self.cmd('cms.info', 'cms2'))
+#        self.assertEqual(838, self.client.memory_usage('cms1'))
 
 
     def test_validation(self):
@@ -152,6 +122,21 @@ class CMSTest(ModuleTestCase('../rebloom.so')):
         # mixed batch
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'small_3', 2,
                                     'small_2', 'large_5')
+
+    def test_errors(self):
+        self.cmd('SET', 'A', '2000')
+        self.assertRaises(ResponseError, self.cmd, 'cms.initbydim', 'A', '2000', '10')
+        self.assertRaises(ResponseError, self.cmd, 'cms.incrby', 'A', 'foo')
+
+        self.assertOk(self.cmd('cms.initbydim', 'foo', '2000', '10'))
+        self.assertOk(self.cmd('cms.initbydim', 'bar', '2000', '10'))
+        self.assertOk(self.cmd('cms.initbydim', 'baz', '2000', '10'))
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 2, 'foo')
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 'B', 3, 'foo')
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 3, 'foo', 'weights', 'B')
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 'A', 'foo', 'weights', 1)
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 3, 'bar', 'baz' 'weights', 1, 'a')
+
     
     def test_merge_extensive(self):
         self.cmd('cms.initbydim', 'A', '2000', '10')

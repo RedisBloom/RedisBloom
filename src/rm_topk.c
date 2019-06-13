@@ -148,13 +148,15 @@ int TopK_List_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (GetTopKKey(ctx, argv[1], &topk, REDISMODULE_READ) != REDISMODULE_OK) {
         return REDISMODULE_OK;
     }
-
-    char **heapList = TOPK_CALLOC(topk->k, (sizeof(char *)));
-    uint32_t qty = TopK_List(topk, heapList);
-    RedisModule_ReplyWithArray(ctx, qty);
-    for(int i = 0; i < qty; ++i) {
-        if(heapList[i]) {
+    uint32_t k = topk->k;
+    char **heapList = TOPK_CALLOC(k, (sizeof(char *)));
+    TopK_List(topk, heapList);
+    RedisModule_ReplyWithArray(ctx, k);
+    for(int i = 0; i < k; ++i) {
+        if(heapList[i] != NULL) {
             RedisModule_ReplyWithSimpleString(ctx, heapList[i]);
+        } else  {
+            RedisModule_ReplyWithNull(ctx);
         }
     }
     TOPK_FREE(heapList);
@@ -197,6 +199,13 @@ void TopKRdbSave(RedisModuleIO *io, void *obj) {
                                  topk->width * topk->depth * sizeof(Bucket));
     RedisModule_SaveStringBuffer(io, (const char *)topk->heap,
                                  topk->k * sizeof(HeapBucket));
+    for(uint32_t i = 0; i < topk->k; ++i) {
+        if(topk->heap[i].item != NULL) {
+            RedisModule_SaveStringBuffer(io, topk->heap[i].item, strlen(topk->heap[i].item) + 1);
+        } else {
+            RedisModule_SaveStringBuffer(io, "", 1);
+        }
+    }
 }
 
 void *TopKRdbLoad(RedisModuleIO *io, int encver) {
@@ -208,10 +217,18 @@ void *TopKRdbLoad(RedisModuleIO *io, int encver) {
     topk->width = RedisModule_LoadUnsigned(io);
     topk->depth = RedisModule_LoadUnsigned(io);
     topk->decay = RedisModule_LoadDouble(io);
-    size_t dataSize = topk->width * topk->depth * sizeof(Bucket);
+  
+    size_t dataSize, heapSize, itemSize;
     topk->data = (Bucket *)RedisModule_LoadStringBuffer(io, &dataSize);
-    size_t heapSize = topk->k * sizeof(HeapBucket);
+    assert(dataSize == topk->width * topk->depth * sizeof(Bucket));
     topk->heap = (HeapBucket *)RedisModule_LoadStringBuffer(io, &heapSize);
+    assert(heapSize == topk->k * sizeof(HeapBucket));
+    for(uint32_t i = 0; i < topk->k; ++i) {
+        topk->heap[i].item = RedisModule_LoadStringBuffer(io, &itemSize);
+        if(itemSize == 1) {
+            topk->heap[i].item = NULL;
+        }
+    }
 
     return topk;
 }

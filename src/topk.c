@@ -167,13 +167,14 @@ size_t TopK_Count(TopK *topk, const char *item, size_t itemlen) {
     Bucket *runner = NULL;
     uint32_t fp = TOPK_HASH(item, itemlen, GA);    
     // TODO: The optimization of >heapMin should be revisited for performance
-    counter_t heapMin = checkExistInHeap(topk, item, itemlen) ? topk->heap->count : 0;
+    counter_t heapMin = topk->heap->count;
+    HeapBucket *heapPtr = checkExistInHeap(topk, item, itemlen);
     counter_t res = 0;
 
     for(uint32_t i = 0; i < topk->depth; ++i) {
         uint32_t loc = TOPK_HASH(item, itemlen, i) % topk->width;
         runner = topk->data + i * topk->width + loc;
-        if(runner->fp == fp && runner->count > heapMin)
+        if(runner->fp == fp && (heapPtr == NULL || runner->count > heapMin))
         {
             res = max(res, runner->count);
         }
@@ -181,12 +182,8 @@ size_t TopK_Count(TopK *topk, const char *item, size_t itemlen) {
     return res;
 }
 
-uint32_t TopK_List(TopK *topk, char **heapList) {
-    uint32_t count = 0;    
+void TopK_List(TopK *topk, char **heapList) {
     for(uint32_t i = 0; i < topk->k; ++i) {
-        if(topk->heap[i].item) {
-            heapList[count++] = topk->heap[i].item;
-        }
+        heapList[i] = topk->heap[i].item;
     }
-    return count;
 }
