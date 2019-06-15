@@ -42,6 +42,8 @@ TOPK.RESERVE test 50 2000 7 0.925
 
 Adds an item to the data structure. 
 Multiple items can be added at once.
+If an item enters the Top-K list, the item which is expelled is returned.
+This allows dynamic heavy-hitter detection of items being entered or expelled from Top-K list. 
 
 ```sql
 TOPK.ADD key item [item ...]
@@ -58,12 +60,15 @@ O(k + depth)
 
 ### Return
 
-OK on success
+(nil), if no change to Top-K list occurred else, returns item dropped from list. 
 
 #### Example
 
 ```sql
 TOPK.ADD test foo bar 42
+1) (nil)
+2) baz
+3) (nil)
 ```
 
 ***

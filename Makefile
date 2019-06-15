@@ -97,8 +97,8 @@ cov coverage:
 	@$(MAKE) clean
 	@$(MAKE) test COV=1
 	mkdir -p $(COV_DIR)
-	gcov -c -b $(SRCDIR)/*
-	lcov -d . -c -o $(COV_DIR)/gcov.info --no-external
-	lcov -r $(COV_DIR)/gcov.info "*test*" "*contrib*" "*redismodule.h" "*util.c*" -o $(COV_DIR)/gcov.info
+	gcov -c -b $(SRCDIR)/* > /dev/null 2>&1
+	lcov -d . -c -o $(COV_DIR)/gcov.info --no-external > /dev/null 2>&1
+	lcov -r $(COV_DIR)/gcov.info "*test*" "*contrib*" "*redismodule.h" "*util.c*" -o $(COV_DIR)/gcov.info > /dev/null 2>&1
 	lcov -l $(COV_DIR)/gcov.info
-	genhtml --legend -o $(COV_DIR)/report $(COV_DIR)/gcov.info
+	genhtml --legend -o $(COV_DIR)/report $(COV_DIR)/gcov.info > /dev/null 2>&1
