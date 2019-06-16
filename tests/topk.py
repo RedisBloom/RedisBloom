@@ -9,7 +9,7 @@ if sys.version >= '3':
     xrange = range
 
 
-class TopKTest(ModuleTestCase('../rebloom.so')):
+class TopKTest(ModuleTestCase('../redisbloom.so')):
     def test_simple(self):
         self.assertOk(self.cmd('topk.reserve', 'topk', '20', '50', '5', '0.9'))
         self.assertOk(self.cmd('topk.add', 'topk', 'a'))

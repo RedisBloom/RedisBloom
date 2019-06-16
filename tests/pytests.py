@@ -7,7 +7,7 @@ if sys.version >= '3':
     xrange = range
 
 
-class RebloomTestCase(ModuleTestCase('../rebloom.so')):
+class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
     def test_custom_filter(self):
         # Can we create a client?
         c = self.client
