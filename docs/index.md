@@ -53,7 +53,7 @@ In order to use this module, build it using `make` and load it into Redis.
 **Invoking redis with the module loaded**
 
 ```
-$ redis-server --loadmodule /path/to/rebloom.so
+$ redis-server --loadmodule /path/to/redisbloom.so
 ```
 
 You can find a command reference in [Bloom\_Commands.md](Bloom_Commands.md)
@@ -71,7 +71,7 @@ using the `ERROR_RATE` and `INITIAL_SIZE` options respectively when loading the
 module, e.g.
 
 ```
-$ redis-server --loadmodule /path/to/rebloom.so INITIAL_SIZE 400 ERROR_RATE 0.004
+$ redis-server --loadmodule /path/to/redisbloom.so INITIAL_SIZE 400 ERROR_RATE 0.004
 ```
 
 The default error rate is `0.01` and the default initial capacity is `100`.
