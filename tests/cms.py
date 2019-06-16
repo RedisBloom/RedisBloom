@@ -8,7 +8,7 @@ import math
 if sys.version >= '3':
     xrange = range
 
-class CMSTest(ModuleTestCase('../rebloom.so')):
+class CMSTest(ModuleTestCase('../redisbloom.so')):
     def test_simple(self):
         self.assertOk(self.cmd('cms.initbydim', 'cms1', '20', '5'))
         self.assertOk(self.cmd('cms.incrby', 'cms1', 'a', '5'))
