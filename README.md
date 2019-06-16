@@ -53,7 +53,7 @@ In order to use this module, build it using `make` and load it into Redis.
 **Invoking redis with the module loaded**
 
 ```
-$ redis-server --loadmodule /path/to/rebloom.so
+$ redis-server --loadmodule /path/to/redisbloom.so
 ```
 
 You can find a command reference in [docs/Bloom_Commands.md](docs/Bloom_Commands.md)
