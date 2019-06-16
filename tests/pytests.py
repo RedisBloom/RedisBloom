@@ -155,6 +155,12 @@ class RebloomTestCase(ModuleTestCase('../rebloom.so')):
         self.assertEqual(['size:3', 'bytes:131072 bits:1048576 hashes:10 hashwidth:64 capacity:72931 size:3 ratio:0.001'],
                          [x.decode() for x in self.cmd('bf.debug', 'missingFilter')])
 
+    def test_mem_usage(self):
+        self.assertOk(self.cmd('bf.reserve', 'bf', '0.05', '1000'))
+        self.assertEqual(1148, self.cmd('MEMORY USAGE', 'bf'))
+        self.assertEqual([1, 1, 1], self.cmd(
+            'bf.madd', 'bf', 'foo', 'bar', 'baz'))
+        self.assertEqual(1148, self.cmd('MEMORY USAGE', 'bf'))
 
 if __name__ == "__main__":
     import unittest

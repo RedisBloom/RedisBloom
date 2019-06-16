@@ -107,7 +107,7 @@ class TopKTest(ModuleTestCase('../rebloom.so')):
         self.cmd('topk.reserve', 'test', '3', '50', '5', '0.9')
         self.cmd('topk.add', 'test', 'foo')
         self.assertEqual([None, 'foo', None], self.cmd('topk.list', 'test'))
-        #self.assertEqual(2118, c.memory_usage('topk'))
+        self.assertEqual(2142, self.cmd('MEMORY USAGE', 'test'))
 
     def test_time(self):
         self.cmd('topk.reserve', 'topk', '100', '1000', '5', '0.9')

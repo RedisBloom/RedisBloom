@@ -21,8 +21,7 @@ class CMSTest(ModuleTestCase('../rebloom.so')):
         self.assertEqual([5L], self.cmd('cms.query', 'cms2', 'a'))
         self.assertEqual(['width', 2000, 'depth', 7, 'count', 5], 
                          self.cmd('cms.info', 'cms2'))
-#        self.assertEqual(838, self.client.memory_usage('cms1'))
-
+        self.assertEqual(838, self.cmd('MEMORY USAGE', 'cms1'))
 
     def test_validation(self):
         for args in (
