@@ -7,7 +7,7 @@ if sys.version >= '3':
     xrange = range
 
 
-class CuckooTestCase(ModuleTestCase('../rebloom.so')):
+class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
     def test_count(self):
         c = self.client
         s = self.server
