@@ -27,7 +27,7 @@ LDFLAGS = -lm -lc
 CPPFLAGS += -I$(ROOT) -I$(ROOT)/contrib
 SRCDIR := $(ROOT)/src
 MODULE_OBJ = $(SRCDIR)/rebloom.o
-MODULE_SO = $(ROOT)/rebloom.so
+MODULE_SO = $(ROOT)/redisbloom.so
 
 DEPS = $(ROOT)/contrib/MurmurHash2.o \
 	   $(ROOT)/rmutil/util.o \
