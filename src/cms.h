@@ -3,9 +3,9 @@
 
 #include <stdint.h> // uint32_t
 
-// #define REDIS_MODULE_TARGET
-
-#ifdef REDIS_MODULE_TARGET // should be in .h or .c
+#define REDIS_MODULE_TARGET
+#ifdef REDIS_MODULE_TARGET 
+#include "redismodule.h"
 #define CMS_CALLOC(count, size) RedisModule_Calloc(count, size)
 #define CMS_FREE(ptr) RedisModule_Free(ptr)
 #else
