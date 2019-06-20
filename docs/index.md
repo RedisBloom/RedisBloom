@@ -1,23 +1,22 @@
-<img src="icon-probabilistic.png" alt="logo" width="200"/>
+<img src="images/logo.svg" alt="logo" width="200"/>
 
 # RedisBloom - Probablistic Datatypes Module for Redis
 
 RedisBloom module provides four datatypes, a Scalable **Bloom Filter** and **Cuckoo Filter**, a **Count-Mins-Sketch** and a **Top-K**.
-**Bloom and Cuckoo filters** are used to determine (with a given degree of certainty) whether an item is present or absent from a collection. While **Count-Min Sketch** is used to count the frequency of the elephant items in sub-linear space and **Top-K** maintains a list of K most frequent items.
+**Bloom and Cuckoo filters** are used to determine (with a given degree of certainty) whether an item is present or absent from a collection. While **Count-Min Sketch** is used to approximate count of items in sub-linear space and **Top-K** maintains a list of K most frequent items.
 
 ## Quick Start Guide
 1. [Command references](#command-references)
 1. [Launch RedisBloom with Docker](#launch-redisbloom-with-docker)
-1. [Use RedisBloom with redis-cli](#use-redisbloom-with-redis-cli)
-1. [Clients](#clients)
+1. [Client libraries](#client-libraries)
 1. [Webinars](#webinars)
 1. [Past blog posts](#past-blog-posts)
+1. [License](#license)
 
 Note: You can also [build and load the module](#building-and-loading-redisbloom) yourself.
 
 ## Command references
-Detailed command references can be found at [Bloom Commands](Bloom_Commands.md),
-[Cuckoo Commands](Cuckoo_Commands.md), [Count-Min Sketch Commands](CountMinSketch_Commands.md) or [Top-K Commands](TopK_Commands.md)
+Detailed command references can be found at [redisbloom.io](redisbloom.io).
 
 ### Launch RedisBloom with Docker
 ```
@@ -60,11 +59,12 @@ Bloom Filters typically exhibit better performance and scalability when insertin
 items (so if you're often adding items to your dataset then Bloom may be ideal),
 whereas Cuckoo Filters are quicker on check operations and also allow deletions.
 
-## Clients
-1. [Python client](https://github.com/RedisBloom/redisbloom-py)
-1. [Java client](https://github.com/RedisBloom/JReBloom)
-1. [JavaScript client](https://github.com/albert-team/rebloom)
-
+## Client libraries
+| Project | Language | License | Author | URL |
+| ------- | -------- | ------- | ------ | --- |
+| redisbloom-py | Python | BSD | [Redis Labs](https://redislabs.com) | [GitHub](https://github.com/RedisBloom/redisbloom-py) |
+| JReBloom | Java | BSD | [Redis Labs](https://redislabs.com) | [GitHub](https://github.com/RedisBloom/JReBloom) |
+| rebloom | JavaScript | MIT | [Albert Team](https://cvitae.now.sh/) | [GitHub](https://github.com/albert-team/rebloom) |
 
 ## Webinars
 1. [Probabilistic Data Structures - The most useful thing in Redis you probably aren't use](https://youtu.be/dq-0xagF7v8?t=102)
@@ -73,3 +73,7 @@ whereas Cuckoo Filters are quicker on check operations and also allow deletions.
 1. [ReBloom Quick Start Tutorial](https://docs.redislabs.com/latest/rs/getting-started/creating-database/rebloom/)
 1. [Developing with Bloom Filters](https://docs.redislabs.com/latest/rs/developing/modules/bloom-filters/)
 1. [ReBloom – Bloom Filter Datatype for Redis + Benchmark](https://redislabs.com/blog/rebloom-bloom-filter-datatype-redis/)
+
+
+## License
+Redis Source Available License Agreement - see [LICENSE](LICENSE)
