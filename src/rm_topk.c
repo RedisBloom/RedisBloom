@@ -99,7 +99,7 @@ int TopK_Add_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
             RedisModule_ReplyWithNull(ctx);
         } else {
             RedisModule_ReplyWithSimpleString(ctx, expelledItem);
-            free(expelledItem);
+            TOPK_FREE(expelledItem);
         }
     }
     
