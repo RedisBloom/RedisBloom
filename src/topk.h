@@ -46,11 +46,33 @@ typedef struct topk
     //  TODO: add function pointers for fast vs accurate
 } TopK;
 
+
+/*  Returns a new Top-K DS which will keep to 'k' heavyhitter, using 
+    'depth' arrays of 'width' counters at 'decay' rate.
+    Complexity - O(1) */
 TopK *TopK_Create(uint32_t k, uint32_t width, uint32_t depth, double decay);
+
+/*  Releases resources of a Top-K DS.
+    Complexity - O(k) */
 void TopK_Destroy(TopK *topk);
-void TopK_Add(TopK *topk, const char *item, size_t itemlen);
+
+/*  Inserts an 'item' with length 'itemlen' into 'topk' DS. 
+    Return value is NULL if no change to Top-K list occurred else,
+    it returns the item expelled from list. If returned pointer 
+    is not NULL, it should be free()d.
+    Complexity - O(k) */
+char *TopK_Add(TopK *topk, const char *item, size_t itemlen);
+
+/*  Checks whether an 'item' is in Top-K list of 'topk'. 
+    Complexity - O(k) */
 bool TopK_Query(TopK *topk, const char *item, size_t itemlen);
+
+/*  Returns count for an 'item' in 'topk' DS. 
+    This number can be significantly lower than real count.
+    Complexity - O(k) */
 size_t TopK_Count(TopK *topk, const char *item, size_t itemlen);
+
+/*  Returns full 'heapList' of items in 'topk' DS. */
 void TopK_List(TopK *topk, char **heapList);
 
 #endif

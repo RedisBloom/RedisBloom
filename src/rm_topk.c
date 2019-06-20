@@ -1,5 +1,5 @@
-//#include <math.h>    // ceil, log10f
-//#include <strings.h> // strncasecmp
+//#include <math.h>     ceil, log10f
+//#include <strings.h>  strncasecmp
 #include <assert.h>
 
 #include "version.h"
@@ -77,28 +77,37 @@ final:
 }
 
 int TopK_Add_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-//    RedisModule_AutoMemory(ctx);
+
     if (argc < 3)
         return RedisModule_WrongArity(ctx);
-
+        
     TopK *topk;
     if(GetTopKKey(ctx, argv[1], &topk,  REDISMODULE_READ | REDISMODULE_WRITE) != 
                             REDISMODULE_OK) {
         return REDISMODULE_OK;
     }
 
-    size_t itemlen;
-    for(int i = 2; i < argc; ++i) {
-        const char *item = RedisModule_StringPtrLen(argv[i], &itemlen);
-        TopK_Add(topk, item, itemlen);
+    int itemCount = argc - 2;
+    RedisModule_ReplyWithArray(ctx, itemCount);
+
+    for(int i = 0; i < itemCount; ++i) {
+        size_t itemlen;
+        const char *item = RedisModule_StringPtrLen(argv[i + 2], &itemlen);
+        char *expelledItem = TopK_Add(topk, item, itemlen);
+  
+        if(expelledItem == NULL) {
+            RedisModule_ReplyWithNull(ctx);
+        } else {
+            RedisModule_ReplyWithSimpleString(ctx, expelledItem);
+            TOPK_FREE(expelledItem);
+        }
     }
     
-    RedisModule_ReplyWithSimpleString(ctx, "OK");
     return REDISMODULE_OK;
 }
 
 int TopK_Query_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-//    RedisModule_AutoMemory(ctx);    
+    
     if (argc < 3)
         return RedisModule_WrongArity(ctx);
     
@@ -119,7 +128,6 @@ int TopK_Query_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 }
 
 int TopK_Count_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-//   RedisModule_AutoMemory(ctx);    
     if (argc < 3)
         return RedisModule_WrongArity(ctx);
     
@@ -140,7 +148,7 @@ int TopK_Count_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 }
 
 int TopK_List_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-//    RedisModule_AutoMemory(ctx);
+
     if (argc != 2)
         return RedisModule_WrongArity(ctx);
 
@@ -165,7 +173,7 @@ int TopK_List_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 }
 
 int TopK_Info_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-//    RedisModule_AutoMemory(ctx);
+
     if (argc != 2)
         return RedisModule_WrongArity(ctx);
 
