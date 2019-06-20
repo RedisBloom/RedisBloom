@@ -6,14 +6,14 @@ repo_name: RedisBloom/RedisBloom
 google_analytics:
   - 'UA-92003007-1'
   - 'auto'
-  
+
 use_directory_urls: true
 
 theme:
   name: 'material'
   language: 'en'
-  logo: 'logo.png'
-  favicon: 'favicon.png'
+  logo: 'images/logo_small.png'
+  favicon: 'images/favicon.png'
   palette:
     primary: 'indigo'
     accent: 'red'
@@ -22,14 +22,14 @@ theme:
     code: 'Roboto Mono'
   feature:
     tabs: false
-  
+
 markdown_extensions:
   - admonition
   - codehilite:
       guess_lang: False
   - toc:
       permalink: True
- 
+
 pages:
     - 'RedisBloom': 'index.md'
     - 'Quick Start': 'Quick_Start.md'
@@ -39,4 +39,3 @@ pages:
     - 'Top-K Commands': 'TopK_Commands.md'
     - 'Java API': 'Java_Client.md'
     - 'Contributor agreement': 'contrib.md'
-
