@@ -6,11 +6,11 @@
 #define REDIS_MODULE_TARGET
 #ifdef REDIS_MODULE_TARGET 
 #include "redismodule.h"
-#define TOPK_CALLOC(count, size) RedisModule_Calloc(count, size)
-#define TOPK_FREE(ptr) RedisModule_Free(ptr)
+#define CMS_CALLOC(count, size) RedisModule_Calloc(count, size)
+#define CMS_FREE(ptr) RedisModule_Free(ptr)
 #else
-#define TOPK_CALLOC(count, size) calloc(count, size)
-#define TOPK_FREE(ptr) free(ptr)
+#define CMS_CALLOC(count, size) calloc(count, size)
+#define CMS_FREE(ptr) free(ptr)
 #endif
 
 typedef struct CMS {
