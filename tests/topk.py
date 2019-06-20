@@ -12,8 +12,8 @@ if sys.version >= '3':
 class TopKTest(ModuleTestCase('../redisbloom.so')):
     def test_simple(self):
         self.assertOk(self.cmd('topk.reserve', 'topk', '20', '50', '5', '0.9'))
-        self.assertOk(self.cmd('topk.add', 'topk', 'a'))
-        self.assertOk(self.cmd('topk.add', 'topk', 'a', 'b'))
+        self.assertEqual([None], self.cmd('topk.add', 'topk', 'a'))
+        self.assertEqual([None, None], self.cmd('topk.add', 'topk', 'a', 'b'))
         
         self.assertEqual([1L], self.cmd('topk.query', 'topk', 'a'))
         self.assertEqual([0L], self.cmd('topk.query', 'topk', 'c'))
@@ -66,11 +66,11 @@ class TopKTest(ModuleTestCase('../redisbloom.so')):
         self.assertEqual([0, 2, 2, 1], self.cmd('topk.count',
                                     'topk', 'foo', 'bar', 'baz', '42'))
         
-        self.assertOk(self.cmd('topk.add', 'topk', 'foo'))
+        self.assertEqual([None], self.cmd('topk.add', 'topk', 'foo'))
         self.assertEqual([1], self.cmd('topk.query', 'topk', 'foo'))
         self.assertEqual([0], self.cmd('topk.query', 'topk', 'xyxxy'))
 
-        self.assertOk(self.cmd('topk.add', 'topk', 'foo', '1', 'bar', '1'))      
+        self.assertEqual([None, None, None, None], self.cmd('topk.add', 'topk', 'foo', '1', 'bar', '1'))      
         self.client.retry_with_rdb_reload()
         self.assertEqual([2], self.cmd('topk.count', 'topk', 'foo'))
         self.assertEqual([3L], self.cmd('topk.count', 'topk', 'bar'))
@@ -83,6 +83,10 @@ class TopKTest(ModuleTestCase('../redisbloom.so')):
         self.cmd('topk.add', 'topk', 'foo', 'baz', '42', 'foo', 'baz',)
         self.cmd('topk.add', 'topk', 'foo', 'bar', 'baz', 'foo', 'baz',)
         self.assertEqual(['foo', 'baz'], self.cmd('topk.list', 'topk'))
+        self.assertEqual([None, None, None, 'foo', None], 
+                         self.cmd('topk.add', 'topk', 'bar', 'bar', 'bar', 'bar', 'bar'))
+        self.assertEqual(['baz', 'bar'], self.cmd('topk.list', 'topk'))
+
         self.assertRaises(ResponseError, self.cmd, 'topk.list', 'topk', '_topk_')        
 
         info = self.cmd('topk.info', 'topk')
@@ -103,7 +107,7 @@ class TopKTest(ModuleTestCase('../redisbloom.so')):
         self.cmd('topk.reserve', 'test', '3', '50', '5', '0.9')
         self.cmd('topk.add', 'test', 'foo')
         self.assertEqual([None, 'foo', None], self.cmd('topk.list', 'test'))
-        #self.assertEqual(2118, c.memory_usage('topk'))
+        self.assertEqual(2142, self.cmd('MEMORY USAGE', 'test'))
 
     def test_time(self):
         self.cmd('topk.reserve', 'topk', '100', '1000', '5', '0.9')

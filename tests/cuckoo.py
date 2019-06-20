@@ -125,6 +125,11 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertRaises(ResponseError, self.cmd, 'CF.EXISTS', 'key')
         self.assertRaises(ResponseError, self.cmd, 'CF.EXISTS')
 
+    def test_mem_usage(self):
+        self.cmd('CF.RESERVE', 'cf', '1000')
+        self.assertEqual(1092, self.cmd('MEMORY USAGE', 'cf'))
+        self.cmd('cf.insert', 'cf', 'nocreate', 'items', 'foo')
+        self.assertEqual(1092, self.cmd('MEMORY USAGE', 'cf'))
 
 if __name__ == "__main__":
     import unittest

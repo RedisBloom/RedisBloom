@@ -101,7 +101,7 @@ static HeapBucket *checkExistInHeap(TopK *topk, const char *item, size_t itemlen
     return NULL;
 }
 
-void TopK_Add(TopK *topk, const char *item, size_t itemlen) {
+char *TopK_Add(TopK *topk, const char *item, size_t itemlen) {
     assert(topk);
     assert(item);
     assert(itemlen);
@@ -145,14 +145,17 @@ void TopK_Add(TopK *topk, const char *item, size_t itemlen) {
         itemHeapPtr->count = maxCount;  // Not max of the two, as it might have been decayed
         heapifyDown(topk->heap, topk->k, itemHeapPtr - topk->heap);
     } else if(maxCount > heapMin) {
-            TOPK_FREE(topk->heap[0].item); 
-
+            //TOPK_FREE(topk->heap[0].item); 
+            char *expelled = topk->heap[0].item;
+    
             topk->heap[0].count = maxCount;
             topk->heap[0].fp = fp;
             topk->heap[0].item = topKStrndup(item, itemlen);
             topk->heap[0].itemlen = itemlen;
             heapifyDown(topk->heap, topk->k, 0);
+            return expelled;
     }
+    return NULL;
 }
 
 bool TopK_Query(TopK *topk, const char *item, size_t itemlen) {
@@ -174,7 +177,7 @@ size_t TopK_Count(TopK *topk, const char *item, size_t itemlen) {
     for(uint32_t i = 0; i < topk->depth; ++i) {
         uint32_t loc = TOPK_HASH(item, itemlen, i) % topk->width;
         runner = topk->data + i * topk->width + loc;
-        if(runner->fp == fp && (heapPtr == NULL || runner->count > heapMin))
+        if(runner->fp == fp && (heapPtr == NULL || runner->count >= heapMin))
         {
             res = max(res, runner->count);
         }
