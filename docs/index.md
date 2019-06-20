@@ -1,10 +1,10 @@
-<img src="icon-probabilistic.png" alt="logo" width="200"/>
+<img src="images/logo.svg" alt="logo" width="200"/>
 
 # RedisBloom - Probablistic Datatypes Module for Redis
 
 This module provides three datatypes, a Scalable **Bloom Filter**, **Cuckoo Filter** and a **Count-Mins-Sketch**.
 The first two datatypes are used to determine (with a given degree of certainty) whether
-an item is present or absent from a collection while the last is used to count the 
+an item is present or absent from a collection while the last is used to count the
 frequency of the different items in sub-linear space.
 
 
@@ -28,14 +28,14 @@ docker run -p 6379:6379 --name redis-redisbloom redislabs/rebloom:latest
 docker exec -it redis-redisbloom bash
 
 # redis-cli
-# 127.0.0.1:6379> 
+# 127.0.0.1:6379>
 ```
 
 Start a new bloom filter by adding a new item
 ```
 # 127.0.0.1:6379> BF.ADD newFilter foo
 (integer) 1
-``` 
+```
 
  Checking if an item exists in the filter
 ```
