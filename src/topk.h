@@ -12,7 +12,7 @@
 #include <string.h>     //  memcpy
 #include <stdlib.h>     //  calloc
 
-//#define REDIS_MODULE_TARGET
+#define REDIS_MODULE_TARGET
 #ifdef REDIS_MODULE_TARGET 
 #include "redismodule.h"
 #define TOPK_CALLOC(count, size) RedisModule_Calloc(count, size)
