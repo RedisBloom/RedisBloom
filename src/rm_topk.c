@@ -43,8 +43,8 @@ static int createTopK(RedisModuleCtx *ctx, RedisModuleString **argv, TopK **topk
         INNER_ERROR("TopK: invalid depth");
     }    
     if ((RedisModule_StringToDouble(argv[5], &decay) != REDISMODULE_OK) ||
-                                    (decay <= 0 || decay >= 1)) {
-        INNER_ERROR("TopK: invalid decay value. must be '< 1' & '> 0'");
+                                    (decay <= 0 || decay > 1)) {
+        INNER_ERROR("TopK: invalid decay value. must be '<= 1' & '> 0'");
     }
 
     *topk = TopK_Create(k, width, depth, decay);
@@ -93,7 +93,39 @@ int TopK_Add_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     for(int i = 0; i < itemCount; ++i) {
         size_t itemlen;
         const char *item = RedisModule_StringPtrLen(argv[i + 2], &itemlen);
-        char *expelledItem = TopK_Add(topk, item, itemlen);
+        char *expelledItem = TopK_Add(topk, item, itemlen, 1);
+  
+        if(expelledItem == NULL) {
+            RedisModule_ReplyWithNull(ctx);
+        } else {
+            RedisModule_ReplyWithSimpleString(ctx, expelledItem);
+            TOPK_FREE(expelledItem);
+        }
+    }
+    
+    return REDISMODULE_OK;
+}
+
+int TopK_Incrby_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+
+    if (argc < 4 || (argc % 2) == 1)
+        return RedisModule_WrongArity(ctx);
+        
+    TopK *topk;
+    if(GetTopKKey(ctx, argv[1], &topk,  REDISMODULE_READ | REDISMODULE_WRITE) != 
+                            REDISMODULE_OK) {
+        return REDISMODULE_OK;
+    }
+
+    int itemCount = (argc - 2) / 2;
+    RedisModule_ReplyWithArray(ctx, itemCount);
+
+    for(int i = 0; i < itemCount; ++i) {
+        size_t itemlen;
+        const char *item = RedisModule_StringPtrLen(argv[2 + i * 2], &itemlen);
+        long long increment;
+        RedisModule_StringToLongLong(argv[2 + i * 2 + 1], &increment);
+        char *expelledItem = TopK_Add(topk, item, itemlen, (uint32_t)increment);
   
         if(expelledItem == NULL) {
             RedisModule_ReplyWithNull(ctx);
@@ -265,6 +297,7 @@ int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
     RMUtil_RegisterWriteCmd(ctx, "topk.reserve", TopK_Create_Cmd);
     RMUtil_RegisterWriteCmd(ctx, "topk.add", TopK_Add_Cmd);
+    RMUtil_RegisterWriteCmd(ctx, "topk.incrby", TopK_Incrby_Cmd);
     RMUtil_RegisterReadCmd(ctx, "topk.query", TopK_Query_Cmd);
     RMUtil_RegisterWriteCmd(ctx, "topk.count", TopK_Count_Cmd);
     RMUtil_RegisterReadCmd(ctx, "topk.list", TopK_List_Cmd);
