@@ -61,7 +61,7 @@ TopK *TopK_Create(uint32_t k, uint32_t width, uint32_t depth, double decay) {
     assert(k > 0);
     assert(width > 0);
     assert(depth > 0);
-    assert(decay > 0 && decay < 1);
+    assert(decay > 0 && decay <= 1);
     
     TopK *topk = (TopK *)TOPK_CALLOC(1, sizeof(TopK));
     topk->k = k;
@@ -101,10 +101,11 @@ static HeapBucket *checkExistInHeap(TopK *topk, const char *item, size_t itemlen
     return NULL;
 }
 
-char *TopK_Add(TopK *topk, const char *item, size_t itemlen) {
+char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment) {
     assert(topk);
     assert(item);
     assert(itemlen);
+    assert(increment >= 0);
 
     Bucket *runner;
     uint32_t fp = TOPK_HASH(item, itemlen, GA);
@@ -119,22 +120,25 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen) {
         countPtr = &runner->count;
         if(*countPtr == 0) {
             runner->fp = fp;
-            *countPtr = 1;
+            *countPtr = increment;
             maxCount = max(maxCount, *countPtr);
         } else if(runner->fp == fp) {
             if(itemHeapPtr || *countPtr <= heapMin) {
-                ++*countPtr;
+                *countPtr += increment;
                 maxCount = max(maxCount, *countPtr);                                                     
             }
         } else {
-            double decay = pow(topk->decay, *countPtr);
-            double chance = rand() / (double)RAND_MAX;
-            if(chance < decay) {
-                --*countPtr;
-                if(*countPtr == 0) {
-                    runner->fp = fp;
-                    *countPtr = 1;
-                    maxCount = max(maxCount, *countPtr);
+            uint32_t local_incr = increment;
+            for(; local_incr > 0; --local_incr) {
+                double decay = pow(topk->decay, *countPtr);
+                double chance = rand() / (double)RAND_MAX;
+                if(chance < decay) {
+                    --*countPtr;
+                    if(*countPtr == 0) {
+                        runner->fp = fp;
+                        *countPtr = local_incr;
+                        maxCount = max(maxCount, *countPtr);
+                    }
                 }
             }
         }
