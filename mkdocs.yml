@@ -37,5 +37,6 @@ pages:
     - 'Cuckoo Filter Commands': 'Cuckoo_Commands.md'
     - 'Count-Min-Sketch Commands': 'CountMinSketch_Commands.md'
     - 'Top-K Commands': 'TopK_Commands.md'
+    - 'Python API': 'Python_Client.md'
     - 'Java API': 'Java_Client.md'
     - 'Contributor agreement': 'contrib.md'
