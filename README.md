@@ -41,24 +41,25 @@ Start a new bloom filter by adding a new item
 (integer) 1
 ```
 
-
 ## Building and Loading RedisBloom
-
 In order to use this module, build it using `make` and load it into Redis.
 
 ### Loading
 
 **Invoking redis with the module loaded**
-
 ```
 $ redis-server --loadmodule /path/to/redisbloom.so
 ```
 
-## Documentation
+## Client libraries
+| Project | Language | License | Author | URL |
+| ------- | -------- | ------- | ------ | --- |
+| redisbloom-py | Python | BSD | [Redis Labs](https://redislabs.com) | [GitHub](https://github.com/RedisBloom/redisbloom-py) |
+| JReBloom | Java | BSD | [Redis Labs](https://redislabs.com) | [GitHub](https://github.com/RedisBloom/JReBloom) |
+| rebloom | JavaScript | MIT | [Albert Team](https://cvitae.now.sh/) | [GitHub](https://github.com/albert-team/rebloom) |
 
+## Documentation
 Documentation and full command reference at [redisbloom.io](http://redisbloom.io).
 
-
 ## License
-
 Redis Source Available License Agreement - see [LICENSE](LICENSE)
