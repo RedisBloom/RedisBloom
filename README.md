@@ -4,10 +4,8 @@
 
 # RedisBloom - Bloom Filter Module for Redis
 
-This module provides three probabalistic data structures as Redis data types:
-**Bloom Filters**, **Cuckoo Filters** and **Count-Min-Sketch**. The first two structures are similar in
-their purpose but have different performance and functionality characteristics while the last is used to count the 
-frequency of the different items in sub-linear space.
+RedisBloom module provides four datatypes, a Scalable **Bloom Filter** and **Cuckoo Filter**, a **Count-Mins-Sketch** and a **Top-K**.
+**Bloom and Cuckoo filters** are used to determine (with a given degree of certainty) whether an item is present or absent from a collection. While **Count-Min Sketch** is used to approximate count of items in sub-linear space and **Top-K** maintains a list of K most frequent items.
 
 ## Quick Start Guide
 1. [Launch RedisBloom with Docker](#launch-redisbloom-with-docker)
@@ -56,11 +54,9 @@ In order to use this module, build it using `make` and load it into Redis.
 $ redis-server --loadmodule /path/to/redisbloom.so
 ```
 
-You can find a command reference in [docs/Bloom_Commands.md](docs/Bloom_Commands.md)
-
 ## Documentation
 
-Read the docs at [redisbloom.io](http://redisbloom.io).
+Documentation and full command reference at [redisbloom.io](http://redisbloom.io).
 
 
 ## License
