@@ -6,13 +6,11 @@ RedisBloom module provides four datatypes, a Scalable **Bloom Filter** and **Cuc
 **Bloom and Cuckoo filters** are used to determine (with a given degree of certainty) whether an item is present or absent from a collection. While **Count-Min Sketch** is used to approximate count of items in sub-linear space and **Top-K** maintains a list of K most frequent items.
 
 ## Quick Start Guide
+1. [Quick Start](Quick_Start.md)
 1. [Command references](#command-references)
-1. [Launch RedisBloom with Docker](#launch-redisbloom-with-docker)
 1. [Client libraries](#client-libraries)
 1. [References](#references)
 1. [License](#license)
-
-Note: You can also [build and load the module](#building-and-loading-redisbloom) yourself.
 
 ## Command references
 Detailed command references for each data structure:
@@ -20,34 +18,6 @@ Detailed command references for each data structure:
 * [Cuckoo Filter](Cuckoo_Commands.md)
 * [Count-Min Sketch](CountMinSketch_Commands.md)
 * [Top-K](TopK_Commands.md)
- 
-## Launch RedisBloom with Docker
-```
-docker run -p 6379:6379 --name redis-redisbloom redislabs/rebloom:latest
-```
-
-## Building and Loading RedisBloom
-
-In order to use this module, build it using `make` and load it into Redis.
-
-### Loading
-
-**Invoking redis with the module loaded**
-
-```
-$ redis-server --loadmodule /path/to/redisbloom.so
-```
-
-## Module Options
-You can adjust the default error ratio and the initial filter size (for bloom filters)
-using the `ERROR_RATE` and `INITIAL_SIZE` options respectively when loading the
-module, e.g.
-
-```
-$ redis-server --loadmodule /path/to/redisbloom.so INITIAL_SIZE 400 ERROR_RATE 0.004
-```
-
-The default error rate is `0.01` and the default initial capacity is `100`.
 
 ## Bloom vs. Cuckoo
 Bloom Filters typically exhibit better performance and scalability when inserting

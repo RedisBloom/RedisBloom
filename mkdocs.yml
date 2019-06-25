@@ -33,8 +33,10 @@ markdown_extensions:
 pages:
     - 'RedisBloom': 'index.md'
     - 'Quick Start': 'Quick_Start.md'
-    - 'Bloom Commands': 'Bloom_Commands.md'
-    - 'Cuckoo Filter Commands': 'Cuckoo_Commands.md'
-    - 'Count-Min-Sketch Commands': 'CountMinSketch_Commands.md'
-    - 'Top-K Commands': 'TopK_Commands.md'
+    - 'Configuration': 'Configuration.md'  
+    - Command References:
+      - 'Bloom Commands': 'Bloom_Commands.md'
+      - 'Cuckoo Filter Commands': 'Cuckoo_Commands.md'
+      - 'Count-Min-Sketch Commands': 'CountMinSketch_Commands.md'
+      - 'Top-K Commands': 'TopK_Commands.md'
     - 'Contributor agreement': 'contrib.md'
