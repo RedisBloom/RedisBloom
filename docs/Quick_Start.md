@@ -1,9 +1,10 @@
 
 # Quick Start Guide for RedisBloom
 
-Bloom filters and cuckoo filters work fairly similarly at the API level; they
-both allow you to add items to a set (in effect making sure the item has been
-'seen' by the set).
+## Launch RedisBloom with Docker
+```
+docker run -p 6379:6379 --name redis-redisbloom redislabs/rebloom:latest
+```
 
 ## Building and running
 
