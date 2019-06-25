@@ -1,7 +1,6 @@
 import requests
 import redis
 import time
-from redis import Redis
 
 def create_topk(ctx, k, width, depth):
     ctx.execute_command('topk.reserve', 'bm_topk', k, k * width, depth, 0.5)
@@ -25,24 +24,23 @@ start_time = time.time()
 print "\nUsing sorted set with pipeline"
 #for line in page:
 for line in page.iter_lines():
-    for word in line.split():
-        redis_pipe.zincrby('bm_text', 1, word)
+	if line is not '' and line is not ' ':
+		for word in line.split():
+			redis_pipe.zincrby('bm_text', 1, word)
 
 responses = redis_pipe.execute()
 for response in responses:
 	pass
 
 real_results = redis.zrevrange('bm_text', 0, 49)
+print("--- %s seconds ---" % (time.time() - start_time))
 print('Memory used %s'% redis.memory_usage('bm_text'))
 print('This is an accurate list for comparison')
-print("--- %s seconds ---" % (time.time() - start_time))
 print(redis.zcount('bm_text', '-inf', '+inf'))
-start_time = time.time()
 
 # test Top-K
 print("K Width(*k) Depth Memory Accuracy Time")
 k_list = [10, 50, 100, 1000]
-pipe = redis.pipeline()
 for k in k_list:
 	real_results = redis.zrevrange('bm_text', 0, k - 1)
 	for width in [4, 8]:
@@ -54,9 +52,9 @@ for k in k_list:
 			for line in page.iter_lines():
 				if line is not '' and line is not ' ':
 					a = line.split()
-					pipe.execute_command('topk.add', 'bm_topk', *a)
+					redis_pipe.execute_command('topk.add', 'bm_topk', *a)
 
-			responses = pipe.execute()
+			responses = redis_pipe.execute()
 			for response in responses:
 				pass
 
