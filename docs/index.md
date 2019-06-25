@@ -25,6 +25,7 @@ items (so if you're often adding items to your dataset then Bloom may be ideal),
 whereas Cuckoo Filters are quicker on check operations and also allow deletions.
 
 ## Client libraries
+Each driver comes with its own documentation in the Readme of the driver repo.
 | Project | Language | License | Author | URL |
 | ------- | -------- | ------- | ------ | --- |
 | redisbloom-py | Python | BSD | [Redis Labs](https://redislabs.com) | [GitHub](https://github.com/RedisBloom/redisbloom-py) |
