@@ -14,6 +14,7 @@ RedisBloom module provides four datatypes, a Scalable **Bloom Filter** and **Cuc
 
 ## Command references
 Detailed command references for each data structure:
+
 * [Bloom Filter](Bloom_Commands.md)
 * [Cuckoo Filter](Cuckoo_Commands.md)
 * [Count-Min Sketch](CountMinSketch_Commands.md)
@@ -26,6 +27,7 @@ whereas Cuckoo Filters are quicker on check operations and also allow deletions.
 
 ## Client libraries
 Each driver comes with its own documentation in the Readme of the driver repo.
+
 | Project | Language | License | Author | URL |
 | ------- | -------- | ------- | ------ | --- |
 | redisbloom-py | Python | BSD | [Redis Labs](https://redislabs.com) | [GitHub](https://github.com/RedisBloom/redisbloom-py) |
