@@ -13,9 +13,6 @@ RedisBloom module provides four datatypes, a Scalable **Bloom Filter** and **Cuc
 
 Note: You can also [build and load the module](#building-and-loading-redisbloom) yourself.
 
-You can find command references in [Bloom_Commands.md](docs/Bloom_Commands.md) and [Cuckoo_Commands.md](docs/Cuckoo_Commands.md)
-
-
 ### 1. Launch RedisBloom with Docker
 ```
 docker run -p 6379:6379 --name redis-redisbloom redislabs/rebloom:latest
