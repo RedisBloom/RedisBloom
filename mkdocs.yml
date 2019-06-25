@@ -35,8 +35,8 @@ pages:
     - 'Quick Start': 'Quick_Start.md'
     - 'Configuration': 'Configuration.md'  
     - Command References:
-      - 'Bloom Commands': 'Bloom_Commands.md'
-      - 'Cuckoo Filter Commands': 'Cuckoo_Commands.md'
-      - 'Count-Min-Sketch Commands': 'CountMinSketch_Commands.md'
-      - 'Top-K Commands': 'TopK_Commands.md'
+      - 'Bloom Filter': 'Bloom_Commands.md'
+      - 'Cuckoo Filter': 'Cuckoo_Commands.md'
+      - 'Count-Min-Sketch': 'CountMinSketch_Commands.md'
+      - 'Top-K': 'TopK_Commands.md'
     - 'Contributor agreement': 'contrib.md'
