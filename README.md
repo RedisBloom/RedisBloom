@@ -4,19 +4,14 @@
 
 # RedisBloom - Bloom Filter Module for Redis
 
-This module provides three probabalistic data structures as Redis data types:
-**Bloom Filters**, **Cuckoo Filters** and **Count-Min-Sketch**. The first two structures are similar in
-their purpose but have different performance and functionality characteristics while the last is used to count the 
-frequency of the different items in sub-linear space.
+RedisBloom module provides four datatypes, a Scalable **Bloom Filter** and **Cuckoo Filter**, a **Count-Mins-Sketch** and a **Top-K**.
+**Bloom and Cuckoo filters** are used to determine (with a given degree of certainty) whether an item is present or absent from a collection. While **Count-Min Sketch** is used to approximate count of items in sub-linear space and **Top-K** maintains a list of K most frequent items.
 
 ## Quick Start Guide
 1. [Launch RedisBloom with Docker](#launch-redisbloom-with-docker)
 1. [Use RedisBloom with redis-cli](#use-redisbloom-with-redis-cli)
 
 Note: You can also [build and load the module](#building-and-loading-redisbloom) yourself.
-
-You can find command references in [Bloom_Commands.md](docs/Bloom_Commands.md) and [Cuckoo_Commands.md](docs/Cuckoo_Commands.md)
-
 
 ### 1. Launch RedisBloom with Docker
 ```
@@ -43,26 +38,25 @@ Start a new bloom filter by adding a new item
 (integer) 1
 ```
 
-
 ## Building and Loading RedisBloom
-
 In order to use this module, build it using `make` and load it into Redis.
 
 ### Loading
 
 **Invoking redis with the module loaded**
-
 ```
 $ redis-server --loadmodule /path/to/redisbloom.so
 ```
 
-You can find a command reference in [docs/Bloom_Commands.md](docs/Bloom_Commands.md)
+## Client libraries
+| Project | Language | License | Author | URL |
+| ------- | -------- | ------- | ------ | --- |
+| redisbloom-py | Python | BSD | [Redis Labs](https://redislabs.com) | [GitHub](https://github.com/RedisBloom/redisbloom-py) |
+| JReBloom | Java | BSD | [Redis Labs](https://redislabs.com) | [GitHub](https://github.com/RedisBloom/JReBloom) |
+| rebloom | JavaScript | MIT | [Albert Team](https://cvitae.now.sh/) | [GitHub](https://github.com/albert-team/rebloom) |
 
 ## Documentation
-
-Read the docs at [redisbloom.io](http://redisbloom.io).
-
+Documentation and full command reference at [redisbloom.io](http://redisbloom.io).
 
 ## License
-
 Redis Source Available License Agreement - see [LICENSE](LICENSE)
