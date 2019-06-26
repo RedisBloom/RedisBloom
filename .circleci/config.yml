@@ -24,9 +24,9 @@ jobs:
       - run:
           name: Coverage
           command: >- 
-            apt-get update
-            apt-get install -y lcov curl
-            make coverage
+            apt-get update &&
+            apt-get install -y lcov curl &&
+            make coverage &&
             bash <(curl -s https://codecov.io/bash)
 
   package_branch:
