@@ -101,7 +101,11 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
                 self.assertFalse(rv, x)
 
         with self.assertResponseError():
-            self.cmd('bf.scandump', 'myBloom')   
+            self.cmd('bf.scandump', 'myBloom') 
+        with self.assertResponseError():
+            self.cmd('bf.scandump', 'myBloom', 'str')   
+        with self.assertResponseError():
+            self.cmd('bf.scandump', 'myCuckoo', 0) 
         with self.assertResponseError():
             self.cmd('bf.loadchunk', 'myBloom')   
         with self.assertResponseError():
@@ -147,13 +151,13 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         with self.assertResponseError():
             self.cmd('bf.insert', 'missingFilter', 'NOCREATE', 'ITEMS', 'foo', 'bar')
         with self.assertResponseError():
-            self.cmd('bf.insert', 'missingFilter', 'DONTEXIST')
+            self.cmd('bf.insert', 'missingFilter', 'DONTEXIST', 'NOCREATE')
         with self.assertResponseError():
             self.cmd('bf.insert', 'missingFilter')
         with self.assertResponseError():
-            self.cmd('bf.insert', 'missingFilter', 'ITEMS')
+            self.cmd('bf.insert', 'missingFilter', 'NOCREATE', 'ITEMS')
         with self.assertResponseError():
-            self.cmd('bf.insert', 'missingFilter', 'CAPACITY')
+            self.cmd('bf.insert', 'missingFilter', 'NOCREATE', 'CAPACITY')
         with self.assertResponseError():
             self.cmd('bf.insert', 'missingFilter', 'CAPACITY', 0.3)
         with self.assertResponseError():
@@ -180,6 +184,8 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertEqual(1148, self.cmd('MEMORY USAGE', 'bf'))
         with self.assertResponseError():
             self.cmd('bf.debug', 'bf', 'noexist')
+        with self.assertResponseError():
+            self.cmd('bf.debug', 'cf')
 
 if __name__ == "__main__":
     import unittest
