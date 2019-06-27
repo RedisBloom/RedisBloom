@@ -66,11 +66,16 @@ class CMSTest(ModuleTestCase('../redisbloom.so')):
                 self.assertRaises(ResponseError, self.cmd, cmd, *args)
     
     def test_incrby_query(self):
+        self.cmd('SET', 'A', 'B')
         self.cmd('cms.initbydim', 'cms', '1000', '5') 
         self.cmd('cms.incrby', 'cms', 'bar', '5', 'baz', '42')
         self.assertEqual([0], self.cmd('cms.query', 'cms', 'foo'))
         self.assertEqual([0, 5, 42], self.cmd('cms.query',
                                     'cms', 'foo', 'bar', 'baz'))
+        self.assertRaises(ResponseError, self.cmd, 'cms.incrby', 'noexist', 'bar', '5')
+        self.assertRaises(ResponseError, self.cmd, 'cms.incrby', 'A', 'bar', '5')
+        self.assertRaises(ResponseError, self.cmd, 'cms.incrby',
+                                    'cms', 'bar', '5', 'baz')
         self.assertRaises(ResponseError, self.cmd, 'cms.incrby',
                                     'cms', 'bar', '5', 'baz')
         self.assertEqual([0, 5, 42], self.cmd('cms.query',
@@ -126,12 +131,15 @@ class CMSTest(ModuleTestCase('../redisbloom.so')):
         self.cmd('SET', 'A', '2000')
         self.assertRaises(ResponseError, self.cmd, 'cms.initbydim', 'A', '2000', '10')
         self.assertRaises(ResponseError, self.cmd, 'cms.incrby', 'A', 'foo')
+        self.assertRaises(ResponseError, self.cmd, 'cms.incrby', 'B', '5')
+        self.assertRaises(ResponseError, self.cmd, 'cms.info', 'A')
 
         self.assertOk(self.cmd('cms.initbydim', 'foo', '2000', '10'))
         self.assertOk(self.cmd('cms.initbydim', 'bar', '2000', '10'))
         self.assertOk(self.cmd('cms.initbydim', 'baz', '2000', '10'))
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 2, 'foo')
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 'B', 3, 'foo')
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 1, 'bar', 'weights', 'B')
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 3, 'foo', 'weights', 'B')
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 'A', 'foo', 'weights', 1)
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 3, 'bar', 'baz' 'weights', 1, 'a')

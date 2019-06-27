@@ -34,9 +34,9 @@ static int GetCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName, CMSketch *
 
 static int CreateCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName, long long width,
                         long long depth, CMSketch **cms, RedisModuleKey **key) {
-    if (*key == NULL) {
+    /*if (*key == NULL) {
         *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ | REDISMODULE_WRITE);
-    }
+    } */
 
     *cms = NewCMSketch(width, depth);
 
