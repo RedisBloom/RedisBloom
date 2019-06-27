@@ -62,7 +62,7 @@ void TopK_Destroy(TopK *topk);
     it returns the item expelled from list. If returned pointer 
     is not NULL, it should be free()d.
     Complexity - O(k) */
-char *TopK_Add(TopK *topk, const char *item, size_t itemlen);
+char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment);
 
 /*  Checks whether an 'item' is in Top-K list of 'topk'. 
     Complexity - O(k) */

@@ -76,6 +76,12 @@ class TopKTest(ModuleTestCase('../redisbloom.so')):
         self.assertEqual([3L], self.cmd('topk.count', 'topk', 'bar'))
         self.assertEqual([0], self.cmd('topk.count', 'topk', 'nonexist'))
 
+    def test_madd(self):
+        self.assertOk(self.cmd('topk.reserve', 'topk', '3', '10', '3', '1'))
+        self.assertEqual([None, None, None], self.cmd('topk.incrby', 'topk', 'bar', 3, 'baz', 6, '42', 2))
+        self.assertEqual([None, 'bar'], self.cmd('topk.incrby', 'topk', '42', 8, 'xyzzy', 4))
+        self.assertEqual([3, 6, 10, 4, 0], self.cmd('topk.count', 'topk', 'bar', 'baz', '42', 'xyzzy', 4))
+
     def test_list_info(self):
         self.cmd('topk.reserve', 'topk', '2', '50', '5', '0.9')
         self.assertRaises(ResponseError, self.cmd, 'topk.reserve', 'topk', '2', '50', '5', '0.9')        

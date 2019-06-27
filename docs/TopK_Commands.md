@@ -6,6 +6,10 @@ Paper and additional information can be found [here](https://www.usenix.org/conf
 
 ***
 
+Note - all counts in this data structure are probabilistic and are likely to be lower than real value.
+
+***
+
 ## TOPK.RESERVE
 
 Initializes a TopK with specified parameters.
@@ -69,6 +73,41 @@ TOPK.ADD test foo bar 42
 1) (nil)
 2) baz
 3) (nil)
+```
+
+***
+
+## TOPK.INCRBY
+
+Increase the score of an item in the data structure by increment. 
+Multiple items' score can be increased at once.
+If an item enters the Top-K list, the item which is expelled is returned.
+
+```sql
+TOPK.INCRBY key item increment [item increment ...]
+```
+
+### Parameters
+
+* **key**: Name of sketch where item is added.
+* **item**: Item/s to be added.
+* **increment**: increment to current item score.
+
+### Complexity
+
+O(k + (increment * depth))
+
+### Return
+
+(nil), if no change to Top-K list occurred else, returns item dropped from list. 
+
+#### Example
+
+```sql
+TOPK.ADD test foo 3 bar 2 42 30
+1) (nil)
+2) (nil)
+3) foo
 ```
 
 ***

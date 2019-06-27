@@ -55,23 +55,23 @@ static void topkMultiAdd(TopK *topk, const char *str, size_t strlen, int repeat)
 
 int controlledTest() {
     TopK *topk = TopK_Create(3, 100, 3, 0.925);
-    TopK_Add(topk, "1", 2);
-    TopK_Add(topk, "2", 2);
-    TopK_Add(topk, "3", 2);
-    TopK_Add(topk, "4", 2);
-    TopK_Add(topk, "1", 2);
-    TopK_Add(topk, "1", 2);
-    TopK_Add(topk, "4", 2);
-    TopK_Add(topk, "3", 2);
-    TopK_Add(topk, "4", 2);
-    TopK_Add(topk, "1", 2);
-    TopK_Add(topk, "3", 2);
-    TopK_Add(topk, "4", 2);
-    TopK_Add(topk, "1", 2);
-    TopK_Add(topk, "1", 2);
-    TopK_Add(topk, "2", 2);
-    TopK_Add(topk, "2", 2);
-    TopK_Add(topk, "2", 2);
+    TopK_Add(topk, "1", 2, 1);
+    TopK_Add(topk, "2", 2, 1);
+    TopK_Add(topk, "3", 2, 1);
+    TopK_Add(topk, "4", 2, 1);
+    TopK_Add(topk, "1", 2, 1);
+    TopK_Add(topk, "1", 2, 1);
+    TopK_Add(topk, "4", 2, 1);
+    TopK_Add(topk, "3", 2, 1);
+    TopK_Add(topk, "4", 2, 1);
+    TopK_Add(topk, "1", 2, 1);
+    TopK_Add(topk, "3", 2, 1);
+    TopK_Add(topk, "4", 2, 1);
+    TopK_Add(topk, "1", 2, 1);
+    TopK_Add(topk, "1", 2, 1);
+    TopK_Add(topk, "2", 2, 1);
+    TopK_Add(topk, "2", 2, 1);
+    TopK_Add(topk, "2", 2, 1);
     
     printHeap(topk);
     TopK_Destroy(topk);
@@ -97,7 +97,7 @@ int testLong() {
     for(int i = 0; i < total - pow(TEST_SIZE, 2) * 3;) {
         idx = rand() % TEST_SIZE;
         if(arr[idx][0] > 0) {
-            TopK_Add(topk, str + 10 * idx, strlen(str + 10 * idx));
+            TopK_Add(topk, str + 10 * idx, strlen(str + 10 * idx), 1);
             --arr[idx][0];
             ++i;
         }
@@ -121,13 +121,13 @@ int testDecay() {
     for(int i = 0; i < 30; ++i) {
         for(int j = 0; j < TEST_SIZE; j += 20) {
             sprintf(str, "%d", j);
-            TopK_Add(topk, str, strlen(str));
+            TopK_Add(topk, str, strlen(str), 1);
         }
     }
     for(int i = 0; i < 10; ++i) {
         for(int j = 0; j < TEST_SIZE; j += 10) {
             sprintf(str, "%d", j);
-            TopK_Add(topk, str, strlen(str));
+            TopK_Add(topk, str, strlen(str), 1);
         }
     }
     printHeap(topk);
@@ -135,7 +135,7 @@ int testDecay() {
         for(int j = 0; j < TEST_SIZE; ++j) {
             sprintf(str, "%d", j);
             uint32_t len = strlen(str);
-            TopK_Add(topk, str, len);
+            TopK_Add(topk, str, len, 1);
         }
     }
     printHeap(topk);
@@ -143,14 +143,36 @@ int testDecay() {
     return 0;
 }
 
+int testIncrby() {
+    TopK *topk = TopK_Create(3, 5, 3, 0.9);
+    TopK_Add(topk, "1", 2, 1);
+    TopK_Add(topk, "2", 2, 1);
+    TopK_Add(topk, "3", 2, 1);
+    printHeap(topk);
+    TopK_Add(topk, "4", 2, 3);
+    TopK_Add(topk, "5", 2, 1);
+    printHeap(topk);
+    TopK_Add(topk, "5", 2, 10);
+    TopK_Add(topk, "1", 2, 5);
+    TopK_Add(topk, "2", 2, 20);
+    TopK_Add(topk, "3", 2, 30);
+    TopK_Add(topk, "1", 2, 5);
+    printHeap(topk);
+    TopK_Add(topk, "5", 2, 10);
+    TopK_Add(topk, "4", 2, 5);
+    TopK_Add(topk, "4", 2, 15);
+    printHeap(topk);
 
+    return 0;
+}
 
 
 int main() {
-    heapTest();
-    controlledTest();
-    testLong();
-    testDecay();
+//    heapTest();
+//    controlledTest();
+//    testLong();
+//    testDecay();
+    testIncrby();
 
     return 0;
 }
