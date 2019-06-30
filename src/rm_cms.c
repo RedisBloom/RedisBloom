@@ -139,6 +139,7 @@ int CMSketch_IncrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     }
 
     CMS_FREE(pairArray);
+    RedisModule_ReplicateVerbatim(ctx);
     RedisModule_ReplyWithSimpleString(ctx, "OK");
     RedisModule_CloseKey(key);
     return REDISMODULE_OK;
