@@ -102,7 +102,7 @@ static int TopK_Add_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             RedisModule_ReplyWithSimpleString(ctx, expelledItem);
             TOPK_FREE(expelledItem);
         }
-    }    
+    }
     RedisModule_ReplicateVerbatim(ctx);
     return REDISMODULE_OK;
 }
