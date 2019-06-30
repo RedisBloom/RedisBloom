@@ -43,7 +43,7 @@ static int CreateCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName, long lo
     if (RedisModule_ModuleTypeSetValue(*key, CMSketchType, *cms) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
-    RedisModule_ReplicateVerbatim(ctx);
+
     return REDISMODULE_OK;
 }
 
@@ -137,9 +137,9 @@ int CMSketch_IncrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     for (int i = 0; i < pairCount; ++i) {
         CMS_IncrBy(cms, pairArray[i].key, pairArray[i].keylen, pairArray[i].value);
     }
-    RedisModule_ReplicateVerbatim(ctx);
 
     CMS_FREE(pairArray);
+    RedisModule_ReplicateVerbatim(ctx);
     RedisModule_ReplyWithSimpleString(ctx, "OK");
     RedisModule_CloseKey(key);
     return REDISMODULE_OK;
