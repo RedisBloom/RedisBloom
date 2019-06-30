@@ -232,6 +232,7 @@ int CMSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     CMS_FREE(params.cmsArray);
     CMS_FREE(params.weights);
     RedisModule_ReplyWithSimpleString(ctx, "OK");
+    RedisModule_ReplicateVerbatim(ctx);
     return REDISMODULE_OK;
 }
 
