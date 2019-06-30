@@ -70,8 +70,8 @@ static int TopK_Create_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         goto final;
     }
 
-    RedisModule_ReplyWithSimpleString(ctx, "OK");
     RedisModule_ReplicateVerbatim(ctx);
+    RedisModule_ReplyWithSimpleString(ctx, "OK");
 final:    
     RedisModule_CloseKey(key);
     return REDISMODULE_OK;
