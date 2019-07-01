@@ -32,21 +32,6 @@ static int GetCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName, CMSketch *
     return REDISMODULE_OK;
 }
 
-static int CreateCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName, long long width,
-                        long long depth, CMSketch **cms, RedisModuleKey **key) {
-    /*if (*key == NULL) {
-        *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ | REDISMODULE_WRITE);
-    } */
-
-    *cms = NewCMSketch(width, depth);
-
-    if (RedisModule_ModuleTypeSetValue(*key, CMSketchType, *cms) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
-
-    return REDISMODULE_OK;
-}
-
 static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
                            long long *width, long long *depth) {
 
@@ -94,7 +79,8 @@ int CMSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (parseCreateArgs(ctx, argv, argc, &width, &depth) != REDISMODULE_OK)
         return REDISMODULE_OK;
 
-    CreateCMSKey(ctx, keyName, width, depth, &cms, &key);
+    cms = NewCMSketch(width, depth);
+    RedisModule_ModuleTypeSetValue(key, CMSketchType, cms);
 
     RedisModule_CloseKey(key);
     RedisModule_ReplyWithSimpleString(ctx, "OK");
@@ -123,7 +109,6 @@ int CMSketch_IncrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     CMSketch *cms = NULL;
 
     if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
-        // CreateCMSKey(ctx, keyName, DEFAULT_WIDTH * 1000, DEFAULT_DEPTH, &cms, &key);
         INNER_ERROR("CMS: key does not exist");
     } else if (RedisModule_ModuleTypeGetType(key) != CMSketchType) {
         return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
