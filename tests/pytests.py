@@ -74,6 +74,9 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         for cmd in ('bf.exists', 'bf.add'):
             self.assertRaises(ResponseError, self.cmd, cmd, 'test', 1, 2)
 
+        self.cmd('set', 'foo', 'bar')
+        self.assertRaises(ResponseError, self.cmd, 'bf.reserve', 'foo')
+
     def test_oom(self):
         self.assertRaises(ResponseError, self.cmd, 'bf.reserve', 'test', 0.01, 4294967296)
     

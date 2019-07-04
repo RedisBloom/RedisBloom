@@ -28,7 +28,7 @@ int CuckooFilter_Init(CuckooFilter *filter, size_t capacity) {
     memset(filter, 0, sizeof(*filter));
     filter->numBuckets = getNextN2(capacity / CUCKOO_BKTSIZE);
     if (filter->numBuckets == 0) {
-        filter->numBuckets = 1;
+        filter->numBuckets = 1; 
     }
     if (CuckooFilter_Grow(filter) != 0) {
         return -1;
@@ -139,7 +139,7 @@ static size_t bucketCount(const CuckooBucket bucket, size_t len, CuckooFingerpri
 static size_t filterCount(const CuckooBucket *filter, const LookupParams *params) {
     const size_t ixs[2] = {params->i1, params->i2};
     if (params->i1 == params->i2) {
-        return bucketCount(filter[params->i1], CUCKOO_BKTSIZE, params->fp);
+        return bucketCount(filter[params->i1], CUCKOO_BKTSIZE, params->fp); // LCOV_EXCL_LINE probablistic
     }
 
     size_t ret = 0;
