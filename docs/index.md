@@ -42,6 +42,7 @@ Each driver comes with its own documentation in the Readme of the driver repo.
 1. [ReBloom Quick Start Tutorial](https://docs.redislabs.com/latest/rs/getting-started/creating-database/rebloom/)
 1. [Developing with Bloom Filters](https://docs.redislabs.com/latest/rs/developing/modules/bloom-filters/)
 1. [ReBloom – Bloom Filter Datatype for Redis + Benchmark](https://redislabs.com/blog/rebloom-bloom-filter-datatype-redis/)
+1. [Meet Top-K: an Awesome Probabilistic Addition to RedisBloom](https://redislabs.com/blog/meet-top-k-awesome-probabilistic-addition-redisbloom/)
 
 ## License
 Redis Source Available License Agreement - see [LICENSE](LICENSE)
