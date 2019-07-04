@@ -70,6 +70,7 @@ static int TopK_Create_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         goto final;
     }
 
+    RedisModule_ReplicateVerbatim(ctx);
     RedisModule_ReplyWithSimpleString(ctx, "OK");
 final:    
     RedisModule_CloseKey(key);
@@ -102,7 +103,7 @@ static int TopK_Add_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             TOPK_FREE(expelledItem);
         }
     }
-    
+    RedisModule_ReplicateVerbatim(ctx);
     return REDISMODULE_OK;
 }
 
@@ -134,7 +135,7 @@ static int TopK_Incrby_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
             TOPK_FREE(expelledItem);
         }
     }
-    
+    RedisModule_ReplicateVerbatim(ctx);    
     return REDISMODULE_OK;
 }
 
@@ -175,7 +176,6 @@ static int TopK_Count_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
         res = TopK_Count(topk, item, itemlen);
         RedisModule_ReplyWithLongLong(ctx, res);
     }
-    
     return REDISMODULE_OK;
 }
 

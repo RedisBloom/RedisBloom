@@ -83,8 +83,8 @@ int CMSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_ModuleTypeSetValue(key, CMSketchType, cms);
 
     RedisModule_CloseKey(key);
-    RedisModule_ReplyWithSimpleString(ctx, "OK");
     RedisModule_ReplicateVerbatim(ctx);
+    RedisModule_ReplyWithSimpleString(ctx, "OK");
     return REDISMODULE_OK;
 }
 
@@ -124,8 +124,9 @@ int CMSketch_IncrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     }
 
     CMS_FREE(pairArray);
-    RedisModule_ReplyWithSimpleString(ctx, "OK");
     RedisModule_CloseKey(key);
+    RedisModule_ReplicateVerbatim(ctx);
+    RedisModule_ReplyWithSimpleString(ctx, "OK");
     return REDISMODULE_OK;
 }
 
@@ -216,6 +217,7 @@ int CMSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
     CMS_FREE(params.cmsArray);
     CMS_FREE(params.weights);
+    RedisModule_ReplicateVerbatim(ctx);
     RedisModule_ReplyWithSimpleString(ctx, "OK");
     return REDISMODULE_OK;
 }

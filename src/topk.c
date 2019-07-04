@@ -181,8 +181,7 @@ size_t TopK_Count(TopK *topk, const char *item, size_t itemlen) {
     for(uint32_t i = 0; i < topk->depth; ++i) {
         uint32_t loc = TOPK_HASH(item, itemlen, i) % topk->width;
         runner = topk->data + i * topk->width + loc;
-        if(runner->fp == fp && (heapPtr == NULL || runner->count >= heapMin))
-        {
+        if(runner->fp == fp && (heapPtr == NULL || runner->count >= heapMin)) {
             res = max(res, runner->count);
         }
     }
