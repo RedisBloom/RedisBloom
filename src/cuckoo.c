@@ -374,6 +374,7 @@ size_t CuckooFilter_Compact(CuckooFilter *cf) {
     return ret;
 }
 
+/* CF.DEBUG uses another function
 void CuckooFilter_GetInfo(const CuckooFilter *cf, CuckooHash hash, CuckooKey *out) {
     LookupParams params;
     getLookupParams(hash, cf->numBuckets, &params);
@@ -382,4 +383,4 @@ void CuckooFilter_GetInfo(const CuckooFilter *cf, CuckooHash hash, CuckooKey *ou
     out->i2 = params.i2;
     assert(getAltIndex(params.fp, out->i1, cf->numBuckets) == out->i2);
     assert(getAltIndex(params.fp, out->i2, cf->numBuckets) == out->i1);
-}
+}*/

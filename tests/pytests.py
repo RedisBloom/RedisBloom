@@ -100,6 +100,17 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
                 rv = self.cmd('bf.exists', 'myBloom', 'nonexist_{}'.format(x))
                 self.assertFalse(rv, x)
 
+        with self.assertResponseError():
+            self.cmd('bf.scandump', 'myBloom') 
+        with self.assertResponseError():
+            self.cmd('bf.scandump', 'myBloom', 'str')   
+        with self.assertResponseError():
+            self.cmd('bf.scandump', 'myCuckoo', 0) 
+        with self.assertResponseError():
+            self.cmd('bf.loadchunk', 'myBloom')   
+        with self.assertResponseError():
+            self.cmd('bf.loadchunk', 'myBloom', 'str', 'data')            
+
         do_verify()
         cmds = []
         cur = self.cmd('bf.scandump', 'myBloom', 0)
@@ -140,9 +151,19 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         with self.assertResponseError():
             self.cmd('bf.insert', 'missingFilter', 'NOCREATE', 'ITEMS', 'foo', 'bar')
         with self.assertResponseError():
+            self.cmd('bf.insert', 'missingFilter', 'DONTEXIST', 'NOCREATE')
+        with self.assertResponseError():
             self.cmd('bf.insert', 'missingFilter')
         with self.assertResponseError():
-            self.cmd('bf.insert', 'missingFilter', 'ITEMS')
+            self.cmd('bf.insert', 'missingFilter', 'NOCREATE', 'ITEMS')
+        with self.assertResponseError():
+            self.cmd('bf.insert', 'missingFilter', 'NOCREATE', 'CAPACITY')
+        with self.assertResponseError():
+            self.cmd('bf.insert', 'missingFilter', 'CAPACITY', 0.3)
+        with self.assertResponseError():
+            self.cmd('bf.insert', 'missingFilter', 'ERROR')
+        with self.assertResponseError():
+            self.cmd('bf.insert', 'missingFilter', 'ERROR', 'big')
 
         rep = self.cmd('BF.INSERT', 'missingFilter', 'ERROR',
                        '0.001', 'CAPACITY', '50000', 'ITEMS', 'foo')
@@ -161,6 +182,10 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertEqual([1, 1, 1], self.cmd(
             'bf.madd', 'bf', 'foo', 'bar', 'baz'))
         self.assertEqual(1148, self.cmd('MEMORY USAGE', 'bf'))
+        with self.assertResponseError():
+            self.cmd('bf.debug', 'bf', 'noexist')
+        with self.assertResponseError():
+            self.cmd('bf.debug', 'cf')
 
 if __name__ == "__main__":
     import unittest
