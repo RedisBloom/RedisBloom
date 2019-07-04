@@ -104,7 +104,7 @@ O(k + (increment * depth))
 #### Example
 
 ```sql
-TOPK.ADD test foo 3 bar 2 42 30
+TOPK.INCRBY test foo 3 bar 2 42 30
 1) (nil)
 2) (nil)
 3) foo
