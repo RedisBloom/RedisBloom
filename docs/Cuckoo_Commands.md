@@ -153,7 +153,7 @@ O(log N)
 ### Returns
 
 "0" if the item certainly does not exist, "1" if the item may exist. Because this
-is a probablistic data structure, false positives (but not false negatives) may
+is a probabilistic data structure, false positives (but not false negatives) may
 be returned.
 
 ## CF.DEL
@@ -193,7 +193,7 @@ CF.COUNT {key} {item}
 ### Description
 
 Returns the number of times an item may be in the filter. Because this is a
-probablistic data structure, this may not necessarily be accurate.
+probabilistic data structure, this may not necessarily be accurate.
 
 If you simply want to know if an item exists in the filter, use `CF.EXISTS`, as
 that function is more efficient for that purpose.

@@ -1,6 +1,6 @@
 <img src="images/logo.svg" alt="logo" width="200"/>
 
-# RedisBloom - Probablistic Datatypes Module for Redis
+# RedisBloom - Probabilistic Datatypes Module for Redis
 
 RedisBloom module provides four datatypes, a Scalable **Bloom Filter** and **Cuckoo Filter**, a **Count-Mins-Sketch** and a **Top-K**.
 **Bloom and Cuckoo filters** are used to determine (with a given degree of certainty) whether an item is present or absent from a collection. While **Count-Min Sketch** is used to approximate count of items in sub-linear space and **Top-K** maintains a list of K most frequent items.
