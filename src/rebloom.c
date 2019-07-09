@@ -927,7 +927,6 @@ static void CFAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *obj) 
     }
 }
 
-// LCOV_EXCL_START
 static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2) {
     size_t n1 = strlen(s2);
     size_t n2;
@@ -937,7 +936,6 @@ static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2) {
     }
     return strncasecmp(s1, s2, n1);
 }
-// LCOV_EXCL_STOP
 
 #define BAIL(s, ...)                                                                               \
     do {                                                                                           \
@@ -950,7 +948,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         REDISMODULE_OK) {
         return REDISMODULE_ERR;
     }
-// LCOV_EXCL_START
+
     if (argc == 1) {
         RedisModule_Log(ctx, "notice", "Found empty string. Assuming ramp-packer validation");
         // Hack for ramp-packer which gives us an empty string.
@@ -994,7 +992,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         } else {
             BAIL("Unrecognized option");
         } 
-    } // LCOV_EXCL_STOP
+    } 
 
 #define CREATE_CMD(name, tgt, attr)                                                                \
     do {                                                                                           \

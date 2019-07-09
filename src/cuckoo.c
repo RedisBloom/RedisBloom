@@ -139,7 +139,7 @@ static size_t bucketCount(const CuckooBucket bucket, size_t len, CuckooFingerpri
 static size_t filterCount(const CuckooBucket *filter, const LookupParams *params) {
     const size_t ixs[2] = {params->i1, params->i2};
     if (params->i1 == params->i2) {
-        return bucketCount(filter[params->i1], CUCKOO_BKTSIZE, params->fp); // LCOV_EXCL_LINE probablistic
+        return bucketCount(filter[params->i1], CUCKOO_BKTSIZE, params->fp);
     }
 
     size_t ret = 0;

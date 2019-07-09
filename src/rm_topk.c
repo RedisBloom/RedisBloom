@@ -287,8 +287,6 @@ static size_t TopKMemUsage(const void *value) {
 }
 
 int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    // ignore coverage
-    // LCOV_EXCL_START
     // TODO: add option to set defaults from command line and in program
     RedisModuleTypeMethods tm = {.version = REDISMODULE_TYPE_METHOD_VERSION,
                                  .rdb_load = TopKRdbLoad,
@@ -310,5 +308,4 @@ int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RMUtil_RegisterReadCmd(ctx, "topk.info", TopK_Info_Cmd);
 
     return REDISMODULE_OK;
-    // LCOV_EXCL_STOP
 }
