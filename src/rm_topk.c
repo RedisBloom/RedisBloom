@@ -271,7 +271,7 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
             topk->heap[i].item = NULL;
         }
     }
-    topk->lookupTable = (Bucket *)RedisModule_LoadStringBuffer(io, &lookupTableSize);
+    topk->lookupTable = (double *)RedisModule_LoadStringBuffer(io, &lookupTableSize);
     assert(lookupTableSize == TOPK_DECAY_LOOKUP_TABLE * sizeof(double));
 
     return topk;
