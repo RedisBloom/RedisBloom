@@ -108,10 +108,13 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
     assert(increment >= 0);
 
     Bucket *runner;
+    counter_t *countPtr;
+    counter_t maxCount = 0;
     uint32_t fp = TOPK_HASH(item, itemlen, GA);
-    counter_t maxCount = 0, heapMin = topk->heap->count;
-    counter_t *countPtr = 0;
-    HeapBucket *itemHeapPtr = checkExistInHeap(topk, item, itemlen);
+
+    bool heapSearched = false;
+    HeapBucket *itemHeapPtr = NULL;
+    counter_t heapMin = topk->heap->count;
 
     // get max item count 
     for(int i = 0; i < topk->depth; ++i) {
@@ -123,6 +126,10 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
             *countPtr = increment;
             maxCount = max(maxCount, *countPtr);
         } else if(runner->fp == fp) {
+            if (*countPtr >= heapMin && heapSearched == false) {
+                itemHeapPtr = checkExistInHeap(topk, item, itemlen);
+                heapSearched = true;
+            }
             if(itemHeapPtr || *countPtr <= heapMin) {
                 *countPtr += increment;
                 maxCount = max(maxCount, *countPtr);                                                     
