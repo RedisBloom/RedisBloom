@@ -71,7 +71,6 @@ TopK *TopK_Create(uint32_t k, uint32_t width, uint32_t depth, double decay) {
     topk->data = TOPK_CALLOC(width * depth, sizeof(Bucket));
     topk->heap = TOPK_CALLOC(k, sizeof(HeapBucket));
 
-    topk->lookupTable = TOPK_CALLOC(TOPK_DECAY_LOOKUP_TABLE, sizeof(double));
     for (uint32_t i = 0; i < TOPK_DECAY_LOOKUP_TABLE; ++i) {
         topk->lookupTable[i] = pow(decay, i);
     }
