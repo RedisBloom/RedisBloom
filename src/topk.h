@@ -46,8 +46,8 @@ typedef struct topk
     double decay;
 
     Bucket *data;
-    double lookupTable[TOPK_DECAY_LOOKUP_TABLE];
     struct HeapBucket *heap;
+    double lookupTable[TOPK_DECAY_LOOKUP_TABLE];
     //  TODO: add function pointers for fast vs accurate
 } TopK;
 
