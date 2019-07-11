@@ -71,8 +71,7 @@ TopK *TopK_Create(uint32_t k, uint32_t width, uint32_t depth, double decay) {
     topk->data = TOPK_CALLOC(width * depth, sizeof(Bucket));
     topk->heap = TOPK_CALLOC(k, sizeof(HeapBucket));
 
-    topk->lookupTable = TOPK_CALLOC(TOPK_DECAY_LOOKUP_TABLE, sizeof(double));
-    for (int i = 0; i < TOPK_DECAY_LOOKUP_TABLE; ++i) {
+    for (uint32_t i = 0; i < TOPK_DECAY_LOOKUP_TABLE; ++i) {
         topk->lookupTable[i] = pow(decay, i);
     }
 
@@ -82,7 +81,7 @@ TopK *TopK_Create(uint32_t k, uint32_t width, uint32_t depth, double decay) {
 void TopK_Destroy(TopK *topk) {
     assert(topk);
  
-    for(int i = 0; i < topk->k; ++i) {
+    for(uint32_t i = 0; i < topk->k; ++i) {
         TOPK_FREE(topk->heap[i].item);
     }
 
@@ -98,7 +97,7 @@ static HeapBucket *checkExistInHeap(TopK *topk, const char *item, size_t itemlen
     uint32_t fp = TOPK_HASH(item, itemlen, GA);
     HeapBucket *runner = topk->heap;
  
-    for(int i = topk->k - 1; i >= 0; --i) 
+    for(int32_t i = topk->k - 1; i >= 0; --i) 
         if(fp == (runner + i)->fp && itemlen == (runner + i)->itemlen && 
                     memcmp((runner + i)->item, item, itemlen) == 0) {
             return runner + i;     
@@ -122,7 +121,7 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
     counter_t heapMin = topk->heap->count;
 
     // get max item count 
-    for(int i = 0; i < topk->depth; ++i) {
+    for(uint32_t i = 0; i < topk->depth; ++i) {
         uint32_t loc = TOPK_HASH(item, itemlen, i) % topk->width;
         runner = topk->data + i * topk->width + loc;
         countPtr = &runner->count;

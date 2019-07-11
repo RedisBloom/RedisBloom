@@ -84,6 +84,12 @@ class TopKTest(ModuleTestCase('../redisbloom.so')):
         self.assertEqual([3, 6, 10, 4, 0], self.cmd('topk.count', 'topk', 'bar', 'baz', '42', 'xyzzy', 4))
         self.assertRaises(ResponseError, self.cmd, 'topk.incrby')
 
+    def test_lookup_table(self):
+        self.assertOk(self.cmd('topk.reserve', 'topk', '1', '3', '3', '.9'))
+        self.cmd('topk.incrby', 'topk', 'bar', 300, 'baz', 600, '42', 200)
+        self.cmd('topk.incrby', 'topk', '42', 80, 'xyzzy', 400)
+        self.assertEqual(['baz'], self.cmd('topk.list', 'topk'))
+
     def test_list_info(self):
         self.cmd('topk.reserve', 'topk', '2', '50', '5', '0.9')
         self.assertRaises(ResponseError, self.cmd, 'topk.reserve', 'topk', '2', '50', '5', '0.9')        
@@ -115,7 +121,7 @@ class TopKTest(ModuleTestCase('../redisbloom.so')):
         self.cmd('topk.reserve', 'test', '3', '50', '5', '0.9')
         self.cmd('topk.add', 'test', 'foo')
         self.assertEqual([None, 'foo', None], self.cmd('topk.list', 'test'))
-        self.assertEqual(6246, self.cmd('MEMORY USAGE', 'test'))
+        self.assertEqual(4190, self.cmd('MEMORY USAGE', 'test'))
 
     def test_time(self):
         self.cmd('topk.reserve', 'topk', '100', '1000', '5', '0.9')
