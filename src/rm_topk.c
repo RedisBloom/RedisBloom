@@ -246,6 +246,8 @@ static void TopKRdbSave(RedisModuleIO *io, void *obj) {
             RedisModule_SaveStringBuffer(io, "", 1);
         }
     }
+    RedisModule_SaveStringBuffer(io, (const char *)topk->lookupTable,
+                        TOPK_DECAY_LOOKUP_TABLE * sizeof(double));
 }
 
 static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
@@ -258,7 +260,7 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
     topk->depth = RedisModule_LoadUnsigned(io);
     topk->decay = RedisModule_LoadDouble(io);
   
-    size_t dataSize, heapSize, itemSize;
+    size_t dataSize, heapSize, itemSize, lookupTableSize;
     topk->data = (Bucket *)RedisModule_LoadStringBuffer(io, &dataSize);
     assert(dataSize == topk->width * topk->depth * sizeof(Bucket));
     topk->heap = (HeapBucket *)RedisModule_LoadStringBuffer(io, &heapSize);
@@ -269,6 +271,8 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
             topk->heap[i].item = NULL;
         }
     }
+    topk->lookupTable = (Bucket *)RedisModule_LoadStringBuffer(io, &lookupTableSize);
+    assert(lookupTableSize == TOPK_DECAY_LOOKUP_TABLE * sizeof(double));
 
     return topk;
 }
@@ -279,7 +283,8 @@ static size_t TopKMemUsage(const void *value) {
     TopK *topk = (TopK *)value;
     return sizeof(TopK) + 
             topk->width * topk->depth * sizeof(Bucket) + 
-            topk->k * sizeof(HeapBucket);
+            topk->k * sizeof(HeapBucket) +
+            TOPK_DECAY_LOOKUP_TABLE * sizeof(double);
 }
 
 int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
