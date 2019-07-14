@@ -16,6 +16,7 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE', 'cf', 'str')
         self.cmd('CF.RESERVE', 'cf', '1000')
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE', 'cf', '1000')
+        self.assertEqual('OK', self.cmd('CF.RESERVE', 'tooSmall', '1'))
         self.assertEqual(0, self.cmd('cf.exists', 'cf', 'k1'))
         self.assertEqual(1, self.cmd('cf.add', 'cf', 'k1'))
         self.assertEqual(1, self.cmd('cf.add', 'cf', 'k1'))

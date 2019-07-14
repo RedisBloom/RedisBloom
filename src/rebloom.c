@@ -70,7 +70,7 @@ static const char *statusStrerror(int status) {
         return REDISMODULE_ERRORMSG_WRONGTYPE;
     case SB_OK:
         return "ERR item exists";
-    default:
+    default: // LCOV_EXCL_LINE
         return "Unknown error";
     }
 }
@@ -90,8 +90,8 @@ static SBChain *bfCreateChain(RedisModuleKey *key, double error_rate, size_t cap
 static CuckooFilter *cfCreate(RedisModuleKey *key, size_t capacity) {
     CuckooFilter *cf = RedisModule_Calloc(1, sizeof(*cf));
     if (CuckooFilter_Init(cf, capacity) != 0) {
-        RedisModule_Free(cf);
-        cf = NULL;
+        RedisModule_Free(cf); // LCOV_EXCL_LINE
+        cf = NULL; // LCOV_EXCL_LINE
     }
     RedisModule_ModuleTypeSetValue(key, CFType, cf);
     return cf;
@@ -133,7 +133,7 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     }
 
     if (bfCreateChain(key, error_rate, capacity) == NULL) {
-        RedisModule_ReplyWithSimpleString(ctx, "ERR could not create filter");
+        RedisModule_ReplyWithSimpleString(ctx, "ERR could not create filter"); // LCOV_EXCL_LINE
     } else {
         RedisModule_ReplyWithSimpleString(ctx, "OK");
     }
@@ -196,7 +196,7 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
     if (status == SB_EMPTY && options->autocreate) {
         sb = bfCreateChain(key, options->error_rate, options->capacity);
         if (sb == NULL) {
-            return RedisModule_ReplyWithError(ctx, "ERR could not create filter");
+            return RedisModule_ReplyWithError(ctx, "ERR could not create filter"); // LCOV_EXCL_LINE
         }
     } else if (status != SB_OK) {
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
@@ -446,7 +446,7 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
 
     cf = cfCreate(key, capacity);
     if (cf == NULL) {
-        return RedisModule_ReplyWithError(ctx, "Couldn't create Cuckoo Filter");
+        return RedisModule_ReplyWithError(ctx, "Couldn't create Cuckoo Filter"); // LCOV_EXCL_LINE
     } else {
         return RedisModule_ReplyWithSimpleString(ctx, "OK");
     }
@@ -467,7 +467,7 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
 
     if (status == SB_EMPTY && options->autocreate) {
         if ((cf = cfCreate(key, options->capacity)) == NULL) {
-            return RedisModule_ReplyWithError(ctx, "Could not create filter");
+            return RedisModule_ReplyWithError(ctx, "Could not create filter"); // LCOV_EXCL_LINE
         }
     } else if (status != SB_OK) {
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
@@ -991,8 +991,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
             CFMaxExpansions = l;
         } else {
             BAIL("Unrecognized option");
-        }
-    }
+        } 
+    } 
 
 #define CREATE_CMD(name, tgt, attr)                                                                \
     do {                                                                                           \

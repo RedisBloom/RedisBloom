@@ -28,7 +28,7 @@ int CuckooFilter_Init(CuckooFilter *filter, size_t capacity) {
     memset(filter, 0, sizeof(*filter));
     filter->numBuckets = getNextN2(capacity / CUCKOO_BKTSIZE);
     if (filter->numBuckets == 0) {
-        filter->numBuckets = 1;
+        filter->numBuckets = 1; 
     }
     if (CuckooFilter_Grow(filter) != 0) {
         return -1;
