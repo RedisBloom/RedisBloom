@@ -86,7 +86,7 @@ O(1)
 
 ### Return
 
-OK on success
+Count of each item after increment.
 
 #### Example
 

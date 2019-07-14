@@ -119,14 +119,15 @@ int CMSketch_IncrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     int pairCount = (argc - 2) / 2;
     CMSPair *pairArray = CMS_CALLOC(pairCount, sizeof(CMSPair));
     parseIncrByArgs(ctx, argv, argc, &pairArray, pairCount);
+    RedisModule_ReplyWithArray(ctx, pairCount);
     for (int i = 0; i < pairCount; ++i) {
-        CMS_IncrBy(cms, pairArray[i].key, pairArray[i].keylen, pairArray[i].value);
+        size_t count = CMS_IncrBy(cms, pairArray[i].key, pairArray[i].keylen, pairArray[i].value);
+        RedisModule_ReplyWithLongLong(ctx, (long long)count);
     }
 
     CMS_FREE(pairArray);
     RedisModule_CloseKey(key);
     RedisModule_ReplicateVerbatim(ctx);
-    RedisModule_ReplyWithSimpleString(ctx, "OK");
     return REDISMODULE_OK;
 }
 
