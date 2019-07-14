@@ -71,13 +71,17 @@ TopK *TopK_Create(uint32_t k, uint32_t width, uint32_t depth, double decay) {
     topk->data = TOPK_CALLOC(width * depth, sizeof(Bucket));
     topk->heap = TOPK_CALLOC(k, sizeof(HeapBucket));
 
+    for (uint32_t i = 0; i < TOPK_DECAY_LOOKUP_TABLE; ++i) {
+        topk->lookupTable[i] = pow(decay, i);
+    }
+
     return topk;
 }
 
 void TopK_Destroy(TopK *topk) {
     assert(topk);
  
-    for(int i = 0; i < topk->k; ++i) {
+    for(uint32_t i = 0; i < topk->k; ++i) {
         TOPK_FREE(topk->heap[i].item);
     }
 
@@ -93,7 +97,7 @@ static HeapBucket *checkExistInHeap(TopK *topk, const char *item, size_t itemlen
     uint32_t fp = TOPK_HASH(item, itemlen, GA);
     HeapBucket *runner = topk->heap;
  
-    for(int i = topk->k - 1; i >= 0; --i) 
+    for(int32_t i = topk->k - 1; i >= 0; --i) 
         if(fp == (runner + i)->fp && itemlen == (runner + i)->itemlen && 
                     memcmp((runner + i)->item, item, itemlen) == 0) {
             return runner + i;     
@@ -108,13 +112,16 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
     assert(increment >= 0);
 
     Bucket *runner;
+    counter_t *countPtr;
+    counter_t maxCount = 0;
     uint32_t fp = TOPK_HASH(item, itemlen, GA);
-    counter_t maxCount = 0, heapMin = topk->heap->count;
-    counter_t *countPtr = 0;
-    HeapBucket *itemHeapPtr = checkExistInHeap(topk, item, itemlen);
+
+    bool heapSearched = false;
+    HeapBucket *itemHeapPtr = NULL;
+    counter_t heapMin = topk->heap->count;
 
     // get max item count 
-    for(int i = 0; i < topk->depth; ++i) {
+    for(uint32_t i = 0; i < topk->depth; ++i) {
         uint32_t loc = TOPK_HASH(item, itemlen, i) % topk->width;
         runner = topk->data + i * topk->width + loc;
         countPtr = &runner->count;
@@ -123,6 +130,10 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
             *countPtr = increment;
             maxCount = max(maxCount, *countPtr);
         } else if(runner->fp == fp) {
+            if (*countPtr >= heapMin && heapSearched == false) {
+                itemHeapPtr = checkExistInHeap(topk, item, itemlen);
+                heapSearched = true;
+            }
             if(itemHeapPtr || *countPtr <= heapMin) {
                 *countPtr += increment;
                 maxCount = max(maxCount, *countPtr);                                                     
@@ -130,7 +141,14 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
         } else {
             uint32_t local_incr = increment;
             for(; local_incr > 0; --local_incr) {
-                double decay = pow(topk->decay, *countPtr);
+                double decay;
+                if (*countPtr < TOPK_DECAY_LOOKUP_TABLE) {
+                    decay = topk->lookupTable[*countPtr];
+                } else {
+                    //  using precalculate lookup table to save cpu
+                    decay = pow(topk->lookupTable[TOPK_DECAY_LOOKUP_TABLE - 1], (*countPtr / TOPK_DECAY_LOOKUP_TABLE) * 
+                            topk->lookupTable[*countPtr % TOPK_DECAY_LOOKUP_TABLE]);
+                }
                 double chance = rand() / (double)RAND_MAX;
                 if(chance < decay) {
                     --*countPtr;

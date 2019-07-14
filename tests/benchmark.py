@@ -46,8 +46,8 @@ for k in k_list:
 	for width in [4, 8]:
 		for depth in [3, 7, 10]:
 			redis.execute_command('DEL', 'bm_topk')
-			start_time = time.time()
 			create_topk(redis, k, width, depth)
+			start_time = time.time()
 
 			for line in page.iter_lines():
 				if line is not '' and line is not ' ':

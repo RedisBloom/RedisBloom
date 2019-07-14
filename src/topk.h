@@ -22,6 +22,8 @@
 #define TOPK_FREE(ptr) free(ptr)
 #endif
 
+#define TOPK_DECAY_LOOKUP_TABLE 256
+
 typedef uint32_t counter_t;
 
 typedef struct HeapBucket {
@@ -42,8 +44,10 @@ typedef struct topk
     uint32_t width;
     uint32_t depth;
     double decay;
+
     Bucket *data;
     struct HeapBucket *heap;
+    double lookupTable[TOPK_DECAY_LOOKUP_TABLE];
     //  TODO: add function pointers for fast vs accurate
 } TopK;
 
