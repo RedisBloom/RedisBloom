@@ -8,7 +8,6 @@ uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 CPPFLAGS =  -Wall -Wno-unused-function $(DEBUGFLAGS) -fPIC -std=gnu99 -D_GNU_SOURCE
 # CC:=$(shell sh -c 'type $(CC) >/dev/null 2>/dev/null && echo $(CC) || echo gcc')
 CC=gcc
-LD=gcc
 
 # Compile flags for linux / osx
 ifeq ($(uname_S),Linux)
