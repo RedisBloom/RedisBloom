@@ -18,7 +18,7 @@ else
 	CC=clang
 	CFLAGS += -mmacosx-version-min=10.6
 	SHOBJ_CFLAGS ?= -dynamic -fno-common -g -ggdb
-	SHOBJ_LDFLAGS ?= -dylib -exported_symbol _RedisModule_OnLoad -macosx_version_min 10.6 -Bsymbolic -Bsymbolic-functions
+	SHOBJ_LDFLAGS ?= -dylib -exported_symbol _RedisModule_OnLoad -macosx_version_min 10.6
 endif
 
 ROOT=$(shell pwd)
