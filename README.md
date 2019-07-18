@@ -59,5 +59,8 @@ $ redis-server --loadmodule /path/to/redisbloom.so
 ## Documentation
 Documentation and full command reference at [redisbloom.io](http://redisbloom.io).
 
+## Mailing List / Forum
+Got questions? Feel free to ask at the [RedisBloom mailing list](https://groups.google.com/forum/#!forum/redisbloom).
+
 ## License
 Redis Source Available License Agreement - see [LICENSE](LICENSE)
