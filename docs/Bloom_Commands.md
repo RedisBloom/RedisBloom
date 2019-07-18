@@ -141,7 +141,7 @@ BF.INSERT filter ITEMS foo bar baz
 Add one item to a filter, specifying a capacity of 10000 to be used if it does not
 already exist:
 ```
-BF.INSERT filter CAPACITY 10000 ITEMS hello world
+BF.INSERT filter CAPACITY 10000 ITEMS hello
 ```
 
 Add 2 items to a filter, returning an error if the filter does not already exist
