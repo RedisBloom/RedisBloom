@@ -44,5 +44,8 @@ Each driver comes with its own documentation in the Readme of the driver repo.
 1. [ReBloom – Bloom Filter Datatype for Redis + Benchmark](https://redislabs.com/blog/rebloom-bloom-filter-datatype-redis/)
 1. [Meet Top-K: an Awesome Probabilistic Addition to RedisBloom](https://redislabs.com/blog/meet-top-k-awesome-probabilistic-addition-redisbloom/)
 
+## Mailing List / Forum
+Got questions? Feel free to ask at the [RedisBloom mailing list](https://groups.google.com/forum/#!forum/redisbloom).
+
 ## License
 Redis Source Available License Agreement - see [LICENSE](LICENSE)
