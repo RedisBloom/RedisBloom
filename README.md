@@ -2,6 +2,7 @@
 [![CircleCI](https://circleci.com/gh/RedisBloom/RedisBloom.svg?style=svg)](https://circleci.com/gh/RedisBloom/RedisBloom)
 [![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/redislabs/rebloom.svg)](https://hub.docker.com/r/redislabs/rebloom/builds/)
 [![codecov](https://codecov.io/gh/RedisBloom/RedisBloom/branch/master/graph/badge.svg)](https://codecov.io/gh/RedisBloom/RedisBloom)
+[![Mailing List](https://img.shields.io/badge/Mailing%20List-RedisBloom-blue)](https://groups.google.com/forum/#!forum/redisbloom)
 
 # RedisBloom - Bloom Filter Module for Redis
 
