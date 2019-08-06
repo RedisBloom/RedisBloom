@@ -1,3 +1,6 @@
+[![Mailing List](https://img.shields.io/badge/Mailing%20List-RedisBloom-blue)](https://groups.google.com/forum/#!forum/redisbloom)
+[![Gitter](https://badges.gitter.im/RedisLabs/RedisBloom.svg)](https://gitter.im/RedisLabs/RedisBloom?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
 <img src="images/logo.svg" alt="logo" width="200"/>
 
 # RedisBloom - Probabilistic Datatypes Module for Redis
