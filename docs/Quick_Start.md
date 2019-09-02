@@ -71,10 +71,18 @@ OK
 
 ## Cuckoo: Adding new items to a filter
 
+
+> Create an empty cuckoo filter with an initial capacity (of 1000 items)
+
+```
+127.0.0.1:6379> CF.RESERVE newCuckooFilter 1000
+(integer) 1
+```
+
 > A new filter is created for you if it does not yet exist
 
 ```
-127.0.0.1:6379> CF.ADD newFilter foo
+127.0.0.1:6379> CF.ADD newCuckooFilter foo
 (integer) 1
 ```
 
@@ -83,18 +91,18 @@ You can add the item multiple times. The filter will attempt to count it.
 ## Cuckoo: Checking whether item exists
 
 ```
-127.0.0.1:6379> CF.EXISTS newFilter foo
+127.0.0.1:6379> CF.EXISTS newCuckooFilter foo
 (integer) 1
 ```
 
 ```
-127.0.0.1:6379> CF.EXISTS newFilter notpresent
+127.0.0.1:6379> CF.EXISTS newCuckooFilter notpresent
 (integer) 0
 ```
 
 ## Cuckoo: Deleting item from filter
 
 ```
-127.0.0.1:6379> CF.DEL newFilter foo
+127.0.0.1:6379> CF.DEL newCuckooFilter foo
 (integer) 1
 ```
