@@ -6,6 +6,20 @@ import sys
 if sys.version >= '3':
     xrange = range
 
+class InitTestCase1(ModuleTestCase('../redisbloom.so', module_args=['INITIAL_SIZE', '400'])):
+    def test_fake(self):
+        c, s = self.client, self.server
+        self.assertEqual(1, self.cmd('bf.add', 'test', 'foo'))
+
+class InitTestCase2(ModuleTestCase('../redisbloom.so', module_args=['ERROR_RATE', '0.01'])):
+    def test_fake(self):
+        c, s = self.client, self.server
+        self.assertEqual(1, self.cmd('bf.add', 'test', 'foo'))
+
+class InitTestCase3(ModuleTestCase('../redisbloom.so', module_args=['CF_MAX_EXPANSIONS', '512'])):
+    def test_fake(self):
+        c, s = self.client, self.server
+        self.assertEqual(1, self.cmd('bf.add', 'test', 'foo'))
 
 class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
     def test_custom_filter(self):
