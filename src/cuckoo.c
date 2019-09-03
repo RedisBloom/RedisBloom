@@ -154,7 +154,7 @@ size_t CuckooFilter_Count(const CuckooFilter *filter, CuckooHash hash) {
     getLookupParams(hash, filter->numBuckets, &params);
     size_t ret = 0;
     for (size_t ii = 0; ii < filter->numFilters; ++ii) {
-        ret += filterCount(filter->filters[ii], &params);
+        ret += filterCount((const CuckooBucket *)filter->filters[ii], &params);
     }
     return ret;
 }
@@ -318,7 +318,7 @@ static CuckooInsertStatus Filter_KOInsert(CuckooBucket *curFilter, size_t numBuc
  */
 static int relocateSlot(CuckooFilter *cf, CuckooBucket bucket, size_t filterIx, size_t bucketIx,
                         size_t slotIx) {
-    LookupParams params = {};
+    LookupParams params = { 0 };
     if ((params.fp = bucket[slotIx]) == CUCKOO_NULLFP) {
         // Nothing in this slot.
         return RELOC_EMPTY;
