@@ -115,10 +115,7 @@ class TopKTest(ModuleTestCase('../redisbloom.so')):
         self.assertAlmostEqual(0.9, float(info[7]))
         self.assertRaises(ResponseError, self.cmd, 'topk.info', 'topk', '_topk_')        
 
-        c = self.client
-        c.save()
-        c.dr.force_start()
-        c.dr.dump_and_reload()
+        self.client.dr.dump_and_reload()
         self.cmd('topk.reserve', 'test', '3', '50', '5', '0.9')
         self.cmd('topk.add', 'test', 'foo')
         self.assertEqual([None, 'foo', None], self.cmd('topk.list', 'test'))
