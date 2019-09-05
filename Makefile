@@ -1,6 +1,6 @@
 DEBUGFLAGS = -g -ggdb -O2
 ifeq ($(DEBUG), 1)
-	DEBUGFLAGS = -g -ggdb -O0
+	DEBUGFLAGS = -g -ggdb -O0 -pedantic
 endif
 
 # find the OS
