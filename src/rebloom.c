@@ -967,7 +967,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         if (!rsStrcasecmp(argv[ii], "initial_size")) {
             long long v;
             if (RedisModule_StringToLongLong(argv[ii + 1], &v) == REDISMODULE_ERR) {
-                BAIL("Invalid argument for 'INITIAL_SIZE'", NULL);
+                BAIL("Invalid argument for 'INITIAL_SIZE'", NULL); 
             }
             if (v > 0) {
                 BFDefaultInitCapacity = v;
@@ -985,7 +985,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
             }
         } else if (!rsStrcasecmp(argv[ii], "cf_max_expansions")) {
             long long l;
-            if (RedisModule_StringToLongLong(argv[ii + 1], &l) == REDISMODULE_ERR || l == 0) {
+            if (RedisModule_StringToLongLong(argv[ii + 1], &l) == REDISMODULE_ERR || l <= 0) {
                 BAIL("Invalid argument for 'CF_MAX_EXPANSIONS'", NULL);
             }
             CFMaxExpansions = l;
