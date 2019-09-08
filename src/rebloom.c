@@ -972,21 +972,21 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
             if (v > 0) {
                 BFDefaultInitCapacity = v;
             } else {
-                BAIL("INITIAL_SIZE must be > 0", NULL); 
+                BAIL("INITIAL_SIZE must be > 0", NULL);
             }
         } else if (!rsStrcasecmp(argv[ii], "error_rate")) {
             double d;
             if (RedisModule_StringToDouble(argv[ii + 1], &d) == REDISMODULE_ERR) {
-                BAIL("Invalid argument for 'ERROR_RATE'", NULL); 
+                BAIL("Invalid argument for 'ERROR_RATE'", NULL);
             } else if (d <= 0) {
-                BAIL("ERROR_RATE must be > 0", NULL); 
+                BAIL("ERROR_RATE must be > 0", NULL);
             } else {
                 BFDefaultErrorRate = d;
             }
         } else if (!rsStrcasecmp(argv[ii], "cf_max_expansions")) {
             long long l;
-            if (RedisModule_StringToLongLong(argv[ii + 1], &l) == REDISMODULE_ERR || l <= 0) {
-                BAIL("Invalid argument for 'CF_MAX_EXPANSIONS'", NULL); 
+            if (RedisModule_StringToLongLong(argv[ii + 1], &l) == REDISMODULE_ERR || l == 0) {
+                BAIL("Invalid argument for 'CF_MAX_EXPANSIONS'", NULL);
             }
             CFMaxExpansions = l;
         } else {
