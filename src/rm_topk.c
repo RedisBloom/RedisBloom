@@ -299,9 +299,9 @@ int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (TopKType == NULL)
         return REDISMODULE_ERR;
 
-    RMUtil_RegisterWriteCmd(ctx, "topk.reserve", TopK_Create_Cmd);
-    RMUtil_RegisterWriteCmd(ctx, "topk.add", TopK_Add_Cmd);
-    RMUtil_RegisterWriteCmd(ctx, "topk.incrby", TopK_Incrby_Cmd);
+    RMUtil_RegisterWriteDenyOOMCmd(ctx, "topk.reserve", TopK_Create_Cmd);
+    RMUtil_RegisterWriteDenyOOMCmd(ctx, "topk.add", TopK_Add_Cmd);
+    RMUtil_RegisterWriteDenyOOMCmd(ctx, "topk.incrby", TopK_Incrby_Cmd);
     RMUtil_RegisterReadCmd(ctx, "topk.query", TopK_Query_Cmd);
     RMUtil_RegisterWriteCmd(ctx, "topk.count", TopK_Count_Cmd);
     RMUtil_RegisterReadCmd(ctx, "topk.list", TopK_List_Cmd);

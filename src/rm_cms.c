@@ -287,14 +287,12 @@ int CMSModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (CMSketchType == NULL)
         return REDISMODULE_ERR;
 
-    RMUtil_RegisterWriteCmd(ctx, "cms.initbydim", CMSketch_Create);
-    RMUtil_RegisterWriteCmd(ctx, "cms.initbyprob", CMSketch_Create);
-    RMUtil_RegisterWriteCmd(ctx, "cms.incrby", CMSketch_IncrBy);
+    RMUtil_RegisterWriteDenyOOMCmd(ctx, "cms.initbydim", CMSketch_Create);
+    RMUtil_RegisterWriteDenyOOMCmd(ctx, "cms.initbyprob", CMSketch_Create);
+    RMUtil_RegisterWriteDenyOOMCmd(ctx, "cms.incrby", CMSketch_IncrBy);
     RMUtil_RegisterReadCmd(ctx, "cms.query", CMSketch_Query);
-    RMUtil_RegisterWriteCmd(ctx, "cms.merge", CMSketch_Merge);
+    RMUtil_RegisterWriteDenyOOMCmd(ctx, "cms.merge", CMSketch_Merge);
     RMUtil_RegisterReadCmd(ctx, "cms.info", CMSKetch_Info);
-    //    RMUtil_RegisterReadCmd(ctx, "cms.gettopk", CMSketch_getTopK);
-    //    RMUtil_RegisterReadCmd(ctx, "cms.findtopk", CMSketch_findTopK);
 
     return REDISMODULE_OK;
 }
