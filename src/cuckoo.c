@@ -137,15 +137,11 @@ static size_t bucketCount(const CuckooBucket bucket, size_t len, CuckooFingerpri
 }
 
 static size_t filterCount(const CuckooBucket *filter, const LookupParams *params) {
-    const size_t ixs[2] = {params->i1, params->i2};
-    if (params->i1 == params->i2) {
-        return bucketCount(filter[params->i1], CUCKOO_BKTSIZE, params->fp);
+    size_t ret = bucketCount(filter[params->i1], CUCKOO_BKTSIZE, params->fp);
+    if (params->i1 != params->i2) {
+        ret += bucketCount(filter[params->i2], CUCKOO_BKTSIZE, params->fp);
     }
 
-    size_t ret = 0;
-    for (size_t ii = 0; ii < 2; ++ii) {
-        ret += bucketCount(filter[ixs[ii]], CUCKOO_BKTSIZE, params->fp);
-    }
     return ret;
 }
 
