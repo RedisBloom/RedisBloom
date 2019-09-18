@@ -4,12 +4,12 @@ import sys
 
 if sys.version >= '3':
     xrange = range
-class InitTestSize(ModuleTestCase('../redisbloom.so', module_args=['INITIAL_SIZE', '400'])):
+class InitTestEmpty(ModuleTestCase('../redisbloom.so', module_args=[""])):
     def test_fake(self):
         c, s = self.client, self.server
         self.assertOk('OK', self.cmd('set', 'test', 'foo'))
 
-class InitTest0(ModuleTestCase('../redisbloom.so', module_args=[""])):
+class InitTestSize(ModuleTestCase('../redisbloom.so', module_args=['INITIAL_SIZE', '400'])):
     def test_fake(self):
         c, s = self.client, self.server
         self.assertOk('OK', self.cmd('set', 'test', 'foo'))
