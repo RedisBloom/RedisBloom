@@ -9,6 +9,11 @@ class InitTestSize(ModuleTestCase('../redisbloom.so', module_args=['INITIAL_SIZE
         c, s = self.client, self.server
         self.assertOk('OK', self.cmd('set', 'test', 'foo'))
 
+class InitTest0(ModuleTestCase('../redisbloom.so', module_args=[""])):
+    def test_fake(self):
+        c, s = self.client, self.server
+        self.assertOk('OK', self.cmd('set', 'test', 'foo'))
+
 class InitTestError(ModuleTestCase('../redisbloom.so', module_args=['ERROR_RATE', '0.1'])):
     def test_fake(self):
         c, s = self.client, self.server
