@@ -98,3 +98,6 @@ class InitTestCaseFailCFMaxExpStr(ModuleTestCase('../redisbloom.so', module_args
         else:
             self.assertOk('NotOK')
 
+if __name__ == "__main__":
+    import unittest
+    unittest.main()
