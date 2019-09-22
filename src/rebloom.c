@@ -33,9 +33,6 @@ typedef struct {
     int is_multi;
 } BFInsertOptions;
 
-static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisModuleString **items,
-                          size_t nitems, const BFInsertOptions *options);
-
 static int getValue(RedisModuleKey *key, RedisModuleType *expType, void **sbout) {
     *sbout = NULL;
     if (key == NULL) {
@@ -103,7 +100,6 @@ static CuckooFilter *cfCreate(RedisModuleKey *key, size_t capacity) {
  */
 static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    RedisModule_ReplicateVerbatim(ctx);
 
     if (argc != 4) {
         RedisModule_WrongArity(ctx);
@@ -137,6 +133,7 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     } else {
         RedisModule_ReplyWithSimpleString(ctx, "OK");
     }
+    RedisModule_ReplicateVerbatim(ctx);
     return REDISMODULE_OK;
 }
 
@@ -212,6 +209,7 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
         int rv = SBChain_Add(sb, s, n);
         RedisModule_ReplyWithLongLong(ctx, !!rv);
     }
+    RedisModule_ReplicateVerbatim(ctx);
     return REDISMODULE_OK;
 }
 
@@ -223,7 +221,6 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
  */
 static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    RedisModule_ReplicateVerbatim(ctx);
     BFInsertOptions options = {
         .capacity = BFDefaultInitCapacity, .error_rate = BFDefaultErrorRate, .autocreate = 1};
     options.is_multi = isMulti(argv[0]);
@@ -240,7 +237,6 @@ static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
  */
 static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    RedisModule_ReplicateVerbatim(ctx);
     BFInsertOptions options = {.capacity = BFDefaultInitCapacity,
                                .error_rate = BFDefaultErrorRate,
                                .autocreate = 1,
@@ -383,7 +379,6 @@ static int BFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
  */
 static int BFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    RedisModule_ReplicateVerbatim(ctx);
 
     if (argc != 4) {
         return RedisModule_WrongArity(ctx);
@@ -419,6 +414,7 @@ static int BFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     if (SBChain_LoadEncodedChunk(sb, iter, buf, bufLen, &errMsg) != 0) {
         return RedisModule_ReplyWithError(ctx, errMsg);
     } else {
+        RedisModule_ReplicateVerbatim(ctx); // Should be replicated?
         return RedisModule_ReplyWithSimpleString(ctx, "OK");
     }
 }
@@ -426,7 +422,6 @@ static int BFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **arg
 /** CF.RESERVE <KEY> <CAPACITY> */
 static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    RedisModule_ReplicateVerbatim(ctx);
     //
     if (argc != 3) {
         return RedisModule_WrongArity(ctx);
@@ -448,6 +443,7 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     if (cf == NULL) {
         return RedisModule_ReplyWithError(ctx, "Couldn't create Cuckoo Filter"); // LCOV_EXCL_LINE
     } else {
+        RedisModule_ReplicateVerbatim(ctx);
         return RedisModule_ReplyWithSimpleString(ctx, "OK");
     }
 }
@@ -511,6 +507,7 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
         }
     }
 
+    RedisModule_ReplicateVerbatim(ctx);
     return REDISMODULE_OK;
 }
 
@@ -521,7 +518,6 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
  */
 static int CFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    RedisModule_ReplicateVerbatim(ctx);
     CFInsertOptions options = {.autocreate = 1, .capacity = CFDefaultInitCapacity, .is_multi = 0};
     size_t cmdlen;
     const char *cmdstr = RedisModule_StringPtrLen(argv[0], &cmdlen);
@@ -537,7 +533,6 @@ static int CFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
  */
 static int CFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    RedisModule_ReplicateVerbatim(ctx);
     CFInsertOptions options = {.autocreate = 1, .capacity = CFDefaultInitCapacity, .is_multi = 1};
     size_t cmdlen;
     const char *cmdstr = RedisModule_StringPtrLen(argv[0], &cmdlen);
@@ -592,7 +587,6 @@ static int isCount(RedisModuleString *s) {
  */
 static int CFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    RedisModule_ReplicateVerbatim(ctx);
 
     int is_multi = isMulti(argv[0]);
     int is_count = isCount(argv[0]);
@@ -636,7 +630,6 @@ static int CFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
 
 static int CFDel_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    RedisModule_ReplicateVerbatim(ctx);
 
     if (argc != 3) {
         return RedisModule_WrongArity(ctx);
@@ -649,6 +642,8 @@ static int CFDel_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
         return RedisModule_ReplyWithError(ctx, "Not found");
     }
 
+    RedisModule_ReplicateVerbatim(ctx);
+    
     size_t elemlen;
     const char *elem = RedisModule_StringPtrLen(argv[2], &elemlen);
     CuckooHash hash = CUCKOO_GEN_HASH(elem, elemlen);
