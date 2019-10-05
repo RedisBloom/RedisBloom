@@ -123,6 +123,7 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
     // get max item count 
     for(uint32_t i = 0; i < topk->depth; ++i) {
         uint32_t loc = TOPK_HASH(item, itemlen, i) % topk->width;
+        srand(loc);
         runner = topk->data + i * topk->width + loc;
         countPtr = &runner->count;
         if(*countPtr == 0) {
