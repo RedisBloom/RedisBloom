@@ -151,6 +151,12 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
         self.cmd('cf.insert', 'cf', 'nocreate', 'items', 'foo')
         self.assertEqual(1092, self.cmd('MEMORY USAGE', 'cf'))
 
+    def test_max_expansions(self):
+        self.cmd('CF.RESERVE', 'cf', '1')
+        for i in range(2047):
+            self.assertEqual(1, self.cmd('cf.add', 'cf', str(i)))
+        self.assertRaises(ResponseError, self.cmd, 'cf.add', 'cf', str(2048))        
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
