@@ -223,7 +223,7 @@ static CuckooInsertStatus CuckooFilter_InsertFP(CuckooFilter *filter, const Look
         Filter_KOInsert(curFilter, filter->numBuckets, CUCKOO_BKTSIZE, params, &victim);
     if (status == CuckooInsert_Inserted) {
         filter->numItems++;
-        return status;
+        return CuckooInsert_Inserted;
     }
 
     if (CuckooFilter_Grow(filter) != 0) {
