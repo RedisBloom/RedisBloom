@@ -203,24 +203,6 @@ static uint8_t *Filter_FindAvailableDbg(CuckooBucket *filter, size_t bucketSize,
     return slot;
 }
 
-static uint8_t *Filter_FindUnique(CuckooBucket bucket, size_t index, size_t bucketSize,
-                                  CuckooFingerprint fp, CuckooInsertStatus *err) {
-    uint8_t *firstEmpty = NULL;
-    bucket += (index * bucketSize);
-    for (size_t ii = 0; ii < bucketSize; ++ii) {
-        if (bucket[ii] == fp) {
-            *err = CuckooInsert_Exists;
-            return NULL;
-        } else if (firstEmpty == 0 && bucket[ii] == 0) {
-            firstEmpty = bucket + ii;
-        }
-    }
-    if (firstEmpty == NULL) {
-        *err = CuckooInsert_NoSpace;
-    }
-    return firstEmpty;
-}
-
 #define MAX_ITERATIONS 500
 static CuckooInsertStatus Filter_KOInsert(CuckooBucket *curFilter, size_t numBuckets,
                                           size_t bucketSize, const LookupParams *params,
@@ -245,7 +227,7 @@ static CuckooInsertStatus CuckooFilter_InsertFP(CuckooFilter *filter, const Look
     }
 
     if (CuckooFilter_Grow(filter) != 0) {
-        return CuckooInsert_NoSpace;
+        return CuckooInsert_MemAllocFailed;
     }
 
     // Try to insert the filter again
