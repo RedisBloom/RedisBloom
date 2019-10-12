@@ -68,7 +68,7 @@ TopK *TopK_Create(uint32_t k, uint32_t width, uint32_t depth, double decay) {
     topk->width = width;
     topk->depth = depth;
     topk->decay = decay;
-    topk->data = TOPK_CALLOC(width * depth, sizeof(Bucket));
+    topk->data = TOPK_CALLOC(((size_t)width) * depth, sizeof(Bucket));
     topk->heap = TOPK_CALLOC(k, sizeof(HeapBucket));
 
     for (uint32_t i = 0; i < TOPK_DECAY_LOOKUP_TABLE; ++i) {
@@ -109,7 +109,6 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
     assert(topk);
     assert(item);
     assert(itemlen);
-    assert(increment >= 0);
 
     Bucket *runner;
     counter_t *countPtr;
