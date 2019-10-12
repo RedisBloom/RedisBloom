@@ -160,6 +160,8 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
         d2 = self.cmd('cf.debug', 'b')
         self.assertEqual('bktsize:2 buckets:8 items:0 deletes:0 filters:1 max_iterations:500', d2)
 
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE a 10 MAXITERATIONS string')
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
