@@ -4,11 +4,14 @@
 #include "rm_cms.h"
 #include "rm_topk.h"
 #include "version.h"
+#include "rmutil/util.h"
 
 #include <assert.h>
 #include <strings.h> // strncasecmp
 #include <string.h>
 #include <ctype.h>
+
+#define CF_MAX_ITERATIONS 500
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -87,9 +90,9 @@ static SBChain *bfCreateChain(RedisModuleKey *key, double error_rate, size_t cap
     return sb;
 }
 
-static CuckooFilter *cfCreate(RedisModuleKey *key, size_t capacity) {
+static CuckooFilter *cfCreate(RedisModuleKey *key, size_t capacity, size_t maxIterations) {
     CuckooFilter *cf = RedisModule_Calloc(1, sizeof(*cf));
-    if (CuckooFilter_Init(cf, capacity) != 0) {
+    if (CuckooFilter_Init(cf, capacity, maxIterations) != 0) {
         RedisModule_Free(cf); // LCOV_EXCL_LINE
         cf = NULL; // LCOV_EXCL_LINE
     }
@@ -423,18 +426,27 @@ static int BFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     }
 }
 
-/** CF.RESERVE <KEY> <CAPACITY> */
+/** CF.RESERVE <KEY> <CAPACITY> [MAXITERATIONS] */
 static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     RedisModule_ReplicateVerbatim(ctx);
     //
-    if (argc != 3) {
+    if (argc != 3 && argc != 5) {
         return RedisModule_WrongArity(ctx);
     }
 
     long long capacity;
     if (RedisModule_StringToLongLong(argv[2], &capacity)) {
         return RedisModule_ReplyWithError(ctx, "Bad capacity");
+    }
+
+    long long maxIterations = CF_MAX_ITERATIONS;
+    int mi_loc =RMUtil_ArgIndex("MAXITERATIONS", argv, argc);    
+    if (mi_loc != -1) {
+        if (RedisModule_StringToLongLong(argv[mi_loc + 1], &maxIterations) != REDISMODULE_OK) {
+            RedisModule_ReplyWithError(ctx, "Couldn't parse MAXITERATIONS");
+            return REDISMODULE_ERR;
+        }
     }
 
     CuckooFilter *cf;
@@ -444,7 +456,7 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
 
-    cf = cfCreate(key, capacity);
+    cf = cfCreate(key, capacity, maxIterations);
     if (cf == NULL) {
         return RedisModule_ReplyWithError(ctx, "Couldn't create Cuckoo Filter"); // LCOV_EXCL_LINE
     } else {
@@ -466,7 +478,7 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
     int status = cfGetFilter(key, &cf);
 
     if (status == SB_EMPTY && options->autocreate) {
-        if ((cf = cfCreate(key, options->capacity)) == NULL) {
+        if ((cf = cfCreate(key, options->capacity, CF_MAX_ITERATIONS)) == NULL) {
             return RedisModule_ReplyWithError(ctx, "Could not create filter"); // LCOV_EXCL_LINE
         }
     } else if (status != SB_OK) {
@@ -659,7 +671,8 @@ static void fillCFHeader(CFHeader *header, const CuckooFilter *cf) {
     *header = (CFHeader){.numItems = cf->numItems,
                          .numBuckets = cf->numBuckets,
                          .numDeletes = cf->numDeletes,
-                         .numFilters = cf->numFilters};
+                         .numFilters = cf->numFilters,
+                         .maxIterations = cf->maxIterations};
 }
 
 static int CFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
@@ -767,8 +780,8 @@ static int CFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     }
 
     RedisModuleString *resp = RedisModule_CreateStringPrintf(
-        ctx, "bktsize:%lu buckets:%lu items:%lu deletes:%lu filters:%lu", CUCKOO_BKTSIZE,
-        cf->numBuckets, cf->numItems, cf->numDeletes, cf->numFilters);
+        ctx, "bktsize:%lu buckets:%lu items:%lu deletes:%lu filters:%lu max_iterations:%lu", CUCKOO_BKTSIZE,
+        cf->numBuckets, cf->numItems, cf->numDeletes, cf->numFilters, cf->maxIterations);
     return RedisModule_ReplyWithString(ctx, resp);
 }
 
@@ -883,6 +896,7 @@ static void CFRdbSave(RedisModuleIO *io, void *obj) {
     CuckooFilter *cf = obj;
     RedisModule_SaveUnsigned(io, cf->numFilters);
     RedisModule_SaveUnsigned(io, cf->numBuckets);
+    RedisModule_SaveUnsigned(io, cf->maxIterations);
     RedisModule_SaveUnsigned(io, cf->numItems);
     for (size_t ii = 0; ii < cf->numFilters; ++ii) {
         RedisModule_SaveStringBuffer(io, (char *)cf->filters[ii],
@@ -898,6 +912,7 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
     CuckooFilter *cf = RedisModule_Calloc(1, sizeof(*cf));
     cf->numFilters = RedisModule_LoadUnsigned(io);
     cf->numBuckets = RedisModule_LoadUnsigned(io);
+    cf->maxIterations = RedisModule_LoadUnsigned(io);
     cf->numItems = RedisModule_LoadUnsigned(io);
     cf->filters = RedisModule_Calloc(cf->numFilters, sizeof(*cf->filters));
     for (size_t ii = 0; ii < cf->numFilters; ++ii) {
