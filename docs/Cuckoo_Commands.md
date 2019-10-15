@@ -5,7 +5,7 @@
 ### Format:
 
 ```
-CF.RESERVE {key} {capacity}
+CF.RESERVE {key} {capacity} [MAXITERATIONS maxIterations]
 ```
 
 Create an empty cuckoo filter with an initial capacity of {capacity} items.
@@ -21,6 +21,12 @@ increase by for every additional {capacity} items beyond initial capacity.
 
 * **key**: The key under which the filter is to be found
 * **capacity**: Estimated capacity for the filter.
+
+Optional parameters:
+
+* **maxIterations**: Number of attempts to swap buckets before declaring
+filter as full and creating an additional filter. A low value is better for
+speed while a higher number is better for filter fill rate.
 
 ### Complexity
 
