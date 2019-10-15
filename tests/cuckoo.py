@@ -118,7 +118,7 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertRaises(ResponseError, self.cmd, 'cf.insert', 'f3', 'NOCREATE', 'DONTEXIST')
         self.assertRaises(ResponseError, self.cmd, 'cf.insert', 'f3', 'NOCREATE', 'ITEMS')
         d3 = self.cmd('cf.debug', 'f3')
-        self.assertEqual('bktsize:2 buckets:8192 items:1 deletes:0 filters:1', d3.decode())
+        self.assertEqual('bktsize:2 buckets:8192 items:1 deletes:0 filters:1 max_iterations:500', d3.decode())
         self.assertNotEqual(d1, d3)
 
         # Test multi
@@ -147,9 +147,20 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
 
     def test_mem_usage(self):
         self.cmd('CF.RESERVE', 'cf', '1000')
-        self.assertEqual(1092, self.cmd('MEMORY USAGE', 'cf'))
+        self.assertEqual(1100, self.cmd('MEMORY USAGE', 'cf'))
         self.cmd('cf.insert', 'cf', 'nocreate', 'items', 'foo')
-        self.assertEqual(1092, self.cmd('MEMORY USAGE', 'cf'))
+        self.assertEqual(1100, self.cmd('MEMORY USAGE', 'cf'))
+
+    def test_max_iterations(self):
+        self.cmd('CF.RESERVE a 10 MAXITERATIONS 10')
+        d1 = self.cmd('cf.debug', 'a')
+        self.assertEqual('bktsize:2 buckets:8 items:0 deletes:0 filters:1 max_iterations:10', d1)
+        
+        self.cmd('CF.RESERVE b 10')
+        d2 = self.cmd('cf.debug', 'b')
+        self.assertEqual('bktsize:2 buckets:8 items:0 deletes:0 filters:1 max_iterations:500', d2)
+
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE a 10 MAXITERATIONS string')
 
     def test_num_deletes(self):
         self.cmd('cf.add', 'nums', 'RedisLabs')
