@@ -162,6 +162,15 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
 
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE a 10 MAXITERATIONS string')
 
+    def test_num_deletes(self):
+        self.cmd('cf.add', 'nums', 'RedisLabs')
+        self.cmd('cf.del', 'nums', 'RedisLabs')
+        d1 = self.cmd('cf.debug', 'nums')
+        for _ in self.client.retry_with_rdb_reload():   
+            self.cmd('ping')    
+        d2 = self.cmd('cf.debug', 'nums')
+        self.assertEqual(d1, d2)
+
 if __name__ == "__main__":
     import unittest
     unittest.main()

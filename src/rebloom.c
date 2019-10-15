@@ -897,6 +897,7 @@ static void CFRdbSave(RedisModuleIO *io, void *obj) {
     RedisModule_SaveUnsigned(io, cf->numFilters);
     RedisModule_SaveUnsigned(io, cf->numBuckets);
     RedisModule_SaveUnsigned(io, cf->maxIterations);
+    RedisModule_SaveUnsigned(io, cf->numDeletes);
     RedisModule_SaveUnsigned(io, cf->numItems);
     for (size_t ii = 0; ii < cf->numFilters; ++ii) {
         RedisModule_SaveStringBuffer(io, (char *)cf->filters[ii],
@@ -913,6 +914,7 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
     cf->numFilters = RedisModule_LoadUnsigned(io);
     cf->numBuckets = RedisModule_LoadUnsigned(io);
     cf->maxIterations = RedisModule_LoadUnsigned(io);
+    cf->numDeletes = RedisModule_LoadUnsigned(io);
     cf->numItems = RedisModule_LoadUnsigned(io);
     cf->filters = RedisModule_Calloc(cf->numFilters, sizeof(*cf->filters));
     for (size_t ii = 0; ii < cf->numFilters; ++ii) {
