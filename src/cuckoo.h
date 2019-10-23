@@ -17,6 +17,7 @@ typedef struct {
     size_t numItems;
     size_t numFilters;
     size_t numDeletes;
+    size_t maxIterations;
     CuckooBucket **filters;
 } CuckooFilter;
 
@@ -34,7 +35,7 @@ typedef enum {
     CuckooInsert_NoSpace = -1
 } CuckooInsertStatus;
 
-int CuckooFilter_Init(CuckooFilter *filter, size_t capacity);
+int CuckooFilter_Init(CuckooFilter *filter, size_t capacity, size_t maxIterations);
 void CuckooFilter_Free(CuckooFilter *filter);
 CuckooInsertStatus CuckooFilter_InsertUnique(CuckooFilter *filter, CuckooHash hash);
 CuckooInsertStatus CuckooFilter_Insert(CuckooFilter *filter, CuckooHash hash);

@@ -16,7 +16,7 @@ TEST_DEFINE_GLOBALS();
 TEST_F(cuckoo, testBasicOps) {
 
     CuckooFilter ck;
-    CuckooFilter_Init(&ck, 50);
+    CuckooFilter_Init(&ck, 50, 500);
     ASSERT_EQ(0, ck.numItems);
     ASSERT_EQ(1, ck.numFilters);
     // ASSERT_EQ(16, ck.numBuckets);
@@ -50,7 +50,7 @@ TEST_F(cuckoo, testBasicOps) {
 
 TEST_F(cuckoo, testCount) {
     CuckooFilter ck;
-    CuckooFilter_Init(&ck, 10);
+    CuckooFilter_Init(&ck, 10, 500);
     CuckooHash kfoo = CUCKOO_GEN_HASH("foo", 3);
 
     ASSERT_EQ(0, CuckooFilter_Count(&ck, kfoo));
@@ -76,7 +76,7 @@ TEST_F(cuckoo, testCount) {
 
 TEST_F(cuckoo, testRelocations) {
     CuckooFilter ck;
-    CuckooFilter_Init(&ck, NUM_BULK / 8);
+    CuckooFilter_Init(&ck, NUM_BULK / 8, 500);
     ASSERT_EQ(0, ck.numItems);
     ASSERT_EQ(1, ck.numFilters);
 
@@ -124,7 +124,7 @@ TEST_F(cuckoo, testFPR) {
     // We should never expect > 3% FPR (False positive rate) on a single filter.
     // The basic idea is that the false positive rate doubles with each
     CuckooFilter ck;
-    CuckooFilter_Init(&ck, NUM_BULK);
+    CuckooFilter_Init(&ck, NUM_BULK, 500);
     ASSERT_EQ(0, ck.numItems);
     ASSERT_EQ(1, ck.numFilters);
 
@@ -134,19 +134,19 @@ TEST_F(cuckoo, testFPR) {
     CuckooFilter_Free(&ck);
 
     // Try again
-    CuckooFilter_Init(&ck, NUM_BULK / 2);
+    CuckooFilter_Init(&ck, NUM_BULK / 2, 500);
     doFill(&ck);
     ASSERT_EQ(NUM_BULK, ck.numItems);
     ASSERT_LE((double)countColls(&ck), (double)NUM_BULK * 0.03);
     CuckooFilter_Free(&ck);
 
-    CuckooFilter_Init(&ck, NUM_BULK / 4);
+    CuckooFilter_Init(&ck, NUM_BULK / 4, 500);
     doFill(&ck);
     ASSERT_EQ(NUM_BULK, ck.numItems);
     ASSERT_LE((double)countColls(&ck), (double)NUM_BULK * 0.06);
     CuckooFilter_Free(&ck);
 
-    CuckooFilter_Init(&ck, NUM_BULK / 8);
+    CuckooFilter_Init(&ck, NUM_BULK / 8, 500);
     doFill(&ck);
     ASSERT_EQ(NUM_BULK, ck.numItems);
     ASSERT_LE((double)countColls(&ck), (double)NUM_BULK * 0.08);
@@ -155,7 +155,7 @@ TEST_F(cuckoo, testFPR) {
 
 TEST_F(cuckoo, testBulkDel) {
     CuckooFilter ck;
-    CuckooFilter_Init(&ck, NUM_BULK / 8);
+    CuckooFilter_Init(&ck, NUM_BULK / 8, 500);
     doFill(&ck);
     for (size_t ii = 0; ii < NUM_BULK; ++ii) {
         ASSERT_EQ(1, CuckooFilter_Delete(&ck, CUCKOO_GEN_HASH(&ii, sizeof ii)));
