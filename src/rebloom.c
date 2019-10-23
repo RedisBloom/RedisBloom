@@ -517,9 +517,9 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
             } else {
                 RedisModule_ReplyWithLongLong(ctx, -1);
             }
-        } else {
+        } else if (insStatus == CuckooInsert_MemAllocFailed){                   // LCOV_EXCL_LINE
             // Should never happen
-            RedisModule_ReplyWithLongLong(ctx, -2);
+            return RedisModule_ReplyWithError(ctx, "Memory allocation failure");// LCOV_EXCL_LINE
         }
     }
 

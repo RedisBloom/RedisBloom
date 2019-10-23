@@ -242,11 +242,11 @@ static CuckooInsertStatus CuckooFilter_InsertFP(CuckooFilter *filter, const Look
                         CUCKOO_BKTSIZE, params, &victim);
     if (status == CuckooInsert_Inserted) {
         filter->numItems++;
-        return status;
+        return CuckooInsert_Inserted;
     }
 
     if (CuckooFilter_Grow(filter) != 0) {
-        return CuckooInsert_NoSpace;
+        return CuckooInsert_MemAllocFailed;
     }
 
     // Try to insert the filter again
