@@ -24,8 +24,9 @@ static size_t getNextN2(size_t n) {
     return n;
 }
 
-int CuckooFilter_Init(CuckooFilter *filter, size_t capacity) {
+int CuckooFilter_Init(CuckooFilter *filter, size_t capacity, size_t maxIterations) {
     memset(filter, 0, sizeof(*filter));
+    filter->maxIterations = maxIterations;
     filter->numBuckets = getNextN2(capacity / CUCKOO_BKTSIZE);
     if (filter->numBuckets == 0) {
         filter->numBuckets = 1; 
@@ -203,10 +204,9 @@ static uint8_t *Filter_FindAvailableDbg(CuckooBucket *filter, size_t bucketSize,
     return slot;
 }
 
-#define MAX_ITERATIONS 500
 static CuckooInsertStatus Filter_KOInsert(CuckooBucket *curFilter, size_t numBuckets,
-                                          size_t bucketSize, const LookupParams *params,
-                                          LookupParams *victim);
+                                          size_t maxIterations, size_t bucketSize,
+                                          const LookupParams *params, LookupParams *victim);
 
 static CuckooInsertStatus CuckooFilter_InsertFP(CuckooFilter *filter, const LookupParams *params) {
     CuckooBucket *curFilter = filter->filters[filter->numFilters - 1];
@@ -220,7 +220,8 @@ static CuckooInsertStatus CuckooFilter_InsertFP(CuckooFilter *filter, const Look
     // No space. Time to evict!
     LookupParams victim = {0};
     CuckooInsertStatus status =
-        Filter_KOInsert(curFilter, filter->numBuckets, CUCKOO_BKTSIZE, params, &victim);
+        Filter_KOInsert(curFilter, filter->numBuckets, filter->maxIterations,
+                        CUCKOO_BKTSIZE, params, &victim);
     if (status == CuckooInsert_Inserted) {
         filter->numItems++;
         return CuckooInsert_Inserted;
@@ -250,8 +251,8 @@ CuckooInsertStatus CuckooFilter_InsertUnique(CuckooFilter *filter, CuckooHash ha
 }
 
 static CuckooInsertStatus Filter_KOInsert(CuckooBucket *curFilter, size_t numBuckets,
-                                          size_t bucketSize, const LookupParams *params,
-                                          LookupParams *victim) {
+                                          size_t maxIterations, size_t bucketSize,
+                                          const LookupParams *params, LookupParams *victim) {
     // printf("Starting kickout sequence.. FP: %d, I1=%lu, I2=%lu\n", params->fp, params->i1,
     //        params->i2);
     CuckooFingerprint fp = params->fp;
@@ -259,7 +260,7 @@ static CuckooInsertStatus Filter_KOInsert(CuckooBucket *curFilter, size_t numBuc
     size_t ii = params->i1;
     // params = NULL; // Don't reference 'params' again!
 
-    while (counter++ < MAX_ITERATIONS) {
+    while (counter++ < maxIterations) {
         uint8_t *bucket = curFilter[ii];
 
         // Try random record to evict
