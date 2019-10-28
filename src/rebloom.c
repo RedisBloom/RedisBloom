@@ -667,6 +667,24 @@ static int CFDel_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     return RedisModule_ReplyWithLongLong(ctx, CuckooFilter_Delete(cf, hash));
 }
 
+static int CFCompact_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+    RedisModule_ReplicateVerbatim(ctx);
+
+    if (argc != 2) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
+    CuckooFilter *cf;
+    int status = cfGetFilter(key, &cf);
+    if (status != SB_OK) {
+        return RedisModule_ReplyWithError(ctx, "Cuckoo filter was not found");
+    }
+    CuckooFilter_Compact(cf);
+    return RedisModule_ReplyWithSimpleString(ctx, "OK");
+}
+
 static void fillCFHeader(CFHeader *header, const CuckooFilter *cf) {
     *header = (CFHeader){.numItems = cf->numItems,
                          .numBuckets = cf->numBuckets,
@@ -1046,20 +1064,13 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     // Technically a write command, but doesn't change memory profile
     CREATE_CMD("CF.DEL", CFDel_RedisCommand, "write fast");
 
+    CREATE_ROCMD("CF.COMPACT", CFCompact_RedisCommand);
     // AOF:
     CREATE_ROCMD("CF.SCANDUMP", CFScanDump_RedisCommand);
     CREATE_WRCMD("CF.LOADCHUNK", CFLoadChunk_RedisCommand);
 
     CREATE_ROCMD("CF.DEBUG", CFInfo_RedisCommand);
-/*
-    // Count Min Sketch commcms.initbydimands
-    CREATE_WRCMD("CMS.INITBYDIM", CMSInit_RedisCommand);
-    CREATE_WRCMD("CMS.INITBYPROB", CMSInit_RedisCommand);
-    CREATE_WRCMD("CMS.INCRBY", CMSIncrBy_RedisCommand);
-    CREATE_ROCMD("CMS.QUERY", CMSQuery_RedisCommand);
-    CREATE_WRCMD("CMS.MERGE", CMSMerge_RedisCommand);
-    CREATE_ROCMD("CMS.DEBUG", CMSDebug_RedisCommand);
-*/
+
 
     CMSModule_onLoad(ctx, argv, argc);
     TopKModule_onLoad(ctx, argv, argc);

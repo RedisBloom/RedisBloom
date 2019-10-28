@@ -170,6 +170,22 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
             self.cmd('ping')    
         d2 = self.cmd('cf.debug', 'nums')
         self.assertEqual(d1, d2)
+    
+    def test_compact(self):
+        q = int(1000)
+        self.cmd('CF.RESERVE cf 8 MAXITERATIONS 50')
+
+        for x in xrange(q):
+            self.cmd('cf.add cf', str(x))
+
+        for x in xrange(q):
+            self.assertEqual(1, self.cmd('cf.exists cf', str(x)))
+
+        str1 = self.cmd('cf.debug cf')[49:52]
+        self.assertGreaterEqual(str1, 130)  # In experiments was larger than 130
+        self.assertEqual(self.cmd('cf.compact cf'), 'OK')
+        str2 = self.cmd('cf.debug cf')[49:52]
+        self.assertGreaterEqual(str1, str2) # Expect to see reduction after compaction
 
 if __name__ == "__main__":
     import unittest
