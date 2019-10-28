@@ -11,7 +11,8 @@ typedef struct __attribute__((packed)) {
     uint64_t numBuckets;
     uint64_t numDeletes;
     uint64_t numFilters;
-    uint64_t maxIterations;
+    uint16_t bucketSize;
+    uint16_t maxIterations;
 } CFHeader;
 CuckooFilter *CFHeader_Load(const CFHeader *header);
 #endif
