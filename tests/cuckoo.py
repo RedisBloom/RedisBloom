@@ -84,6 +84,7 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
             if not chunk[0]:
                 break
             chunks.append(chunk)
+            print("Scaning chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
 
         self.cmd('del', 'cf')
         self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf')
@@ -170,6 +171,27 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
             self.cmd('ping')    
         d2 = self.cmd('cf.debug', 'nums')
         self.assertEqual(d1, d2)
+
+    def test_bucket_size(self):
+        self.cmd('CF.RESERVE a 64 BUCKETSIZE 1')
+        self.cmd('CF.RESERVE b 64 BUCKETSIZE 2')
+        self.cmd('CF.RESERVE c 64 BUCKETSIZE 4 MAXITERATIONS 500')
+        for i in range(1000):
+            self.cmd('CF.ADD a', str(i))
+            self.cmd('CF.ADD b', str(i))
+            self.cmd('CF.ADD c', str(i))
+
+        for i in range(1000):
+            self.assertEqual(self.cmd('CF.EXISTS a', str(i)), 1)
+            self.assertEqual(self.cmd('CF.EXISTS b', str(i)), 1)
+            self.assertEqual(self.cmd('CF.EXISTS c', str(i)), 1)
+
+        self.assertEqual(self.cmd('CF.DEBUG a'), 'bktsize:1 buckets:64 items:1000 deletes:0 filters:24 max_iterations:500')
+        self.assertEqual(self.cmd('CF.DEBUG b'), 'bktsize:2 buckets:32 items:1000 deletes:0 filters:18 max_iterations:500')
+        self.assertEqual(self.cmd('CF.DEBUG c'), 'bktsize:4 buckets:16 items:1000 deletes:0 filters:16 max_iterations:500')
+
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 BUCKETSIZE')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 BUCKETSIZE string')
 
 if __name__ == "__main__":
     import unittest

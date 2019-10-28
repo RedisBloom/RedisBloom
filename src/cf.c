@@ -39,22 +39,22 @@ const char *CF_GetEncodedChunk(const CuckooFilter *cf, long long *pos, size_t *b
         return NULL;
     }
     size_t chunksz = cf->numBuckets - offset;
-    size_t max_buckets = (bytelimit / CUCKOO_BKTSIZE);
+    size_t max_buckets = (bytelimit / cf->bucketSize);
     if (chunksz > max_buckets) {
         chunksz = max_buckets;
     }
     *pos += chunksz;
-    *buflen = chunksz * CUCKOO_BKTSIZE;
+    *buflen = chunksz * cf->bucketSize;
     return (const char *)bucket;
 }
 
 int CF_LoadEncodedChunk(const CuckooFilter *cf, long long pos, const char *data, size_t datalen) {
-    if (datalen == 0 || datalen % CUCKOO_BKTSIZE != 0) {
+    if (datalen == 0 || datalen % cf->bucketSize != 0) {
         // printf("problem with datalen!\n");
         return REDISMODULE_ERR;
     }
 
-    size_t nbuckets = datalen / CUCKOO_BKTSIZE;
+    size_t nbuckets = datalen / cf->bucketSize;
     if (nbuckets > pos) {
         // printf("nbuckets>pos. pos=%lu. nbuckets=%lu\n", nbuckets, pos);
         return REDISMODULE_ERR;
@@ -87,9 +87,11 @@ CuckooFilter *CFHeader_Load(const CFHeader *header) {
     filter->numFilters = header->numFilters;
     filter->numItems = header->numItems;
     filter->numDeletes = header->numDeletes;
+    filter->bucketSize = header->bucketSize;
+    filter->maxIterations = header->maxIterations;
     filter->filters = RedisModule_Alloc(sizeof(*filter->filters) * header->numFilters);
     for (size_t ii = 0; ii < filter->numFilters; ++ii) {
-        filter->filters[ii] = RedisModule_Calloc(filter->numBuckets, sizeof(CuckooBucket));
+        filter->filters[ii] = RedisModule_Calloc(filter->numBuckets * filter->bucketSize, sizeof(CuckooBucket));
     }
     return filter;
 }

@@ -10,14 +10,15 @@
 
 typedef uint8_t CuckooFingerprint;
 typedef uint32_t CuckooHash;
-typedef uint8_t CuckooBucket[CUCKOO_BKTSIZE];
+typedef uint8_t CuckooBucket[1];
 
 typedef struct {
     size_t numBuckets;
     size_t numItems;
     size_t numFilters;
     size_t numDeletes;
-    size_t maxIterations;
+    uint16_t bucketSize;
+    uint16_t maxIterations;
     CuckooBucket **filters;
 } CuckooFilter;
 
@@ -35,7 +36,7 @@ typedef enum {
     CuckooInsert_NoSpace = -1
 } CuckooInsertStatus;
 
-int CuckooFilter_Init(CuckooFilter *filter, size_t capacity, size_t maxIterations);
+int CuckooFilter_Init(CuckooFilter *filter, size_t capacity, uint16_t bucketSize, uint16_t maxIterations);
 void CuckooFilter_Free(CuckooFilter *filter);
 CuckooInsertStatus CuckooFilter_InsertUnique(CuckooFilter *filter, CuckooHash hash);
 CuckooInsertStatus CuckooFilter_Insert(CuckooFilter *filter, CuckooHash hash);
