@@ -187,6 +187,9 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
         str2 = self.cmd('cf.debug cf')[49:52]
         self.assertGreaterEqual(str1, str2) # Expect to see reduction after compaction
 
+        self.assertRaises(ResponseError, self.cmd, 'CF.COMPACT a')
+        self.assertRaises(ResponseError, self.cmd, 'CF.COMPACT a b')
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
