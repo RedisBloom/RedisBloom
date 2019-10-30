@@ -8,9 +8,9 @@ redis.flushall()
 
 start_time = time.time()
 
-filters = ['1f1b', '2f1b', '4f1b', '8f1b', '2f2b', '4f2b', '8f2b', '2f3b', '4f3b', '8f3b']
+filters = ['1f1b', '2f1b', '4f1b', '8f1b', '2f2b', '4f2b', '8f2b', '2f4b', '4f4b', '8f4b']
 
-q = 4096
+q = 1024 * 4
 redis.execute_command('CF.RESERVE 1f1b ' + str(q) + ' BUCKETSIZE 1 MAXITERATIONS 50')
 redis.execute_command('CF.RESERVE 2f1b ' + str(q / 2) + ' BUCKETSIZE 1 MAXITERATIONS 50')
 redis.execute_command('CF.RESERVE 4f1b ' + str(q / 4) + ' BUCKETSIZE 1 MAXITERATIONS 50')
