@@ -311,26 +311,25 @@ static void swapFPs(uint8_t *a, uint8_t *b) {
 static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter, 
                                           const LookupParams *params) {
     uint16_t maxIterations = filter->maxIterations;
+    uint32_t numBuckets = curFilter->numBuckets;
     uint16_t bucketSize = filter->bucketSize;
     CuckooFingerprint fp = params->fp;
 
     size_t counter = 0;
     size_t victimIx =  0;
-    size_t ii = getLocSubCF(params->i1, curFilter);
+//    size_t ii = getLocSubCF(params->i1, curFilter);
+    size_t ii = params->i1 % numBuckets;
     // params = NULL; // Don't reference 'params' again!
 
     while (counter++ < maxIterations) {
-        uint8_t *bucket = &curFilter->data[ii];
+        uint8_t *bucket = &curFilter->data[ii * bucketSize];
         //printf("fp %d victim %d \t", fp, *(bucket + victimIx));
         swapFPs(bucket + victimIx, &fp);
         //printf("fp %d victim %d \t", fp, *(bucket + victimIx));
-/*        CuckooFingerprint tmpFp = bucket[victimIx];
-        bucket[victimIx] = fp;
-        fp = tmpFp; */
         //printf("first loc %lu victim index %lu\n", ii / bucketSize, victimIx);
-        ii = getLocSubCF(getAltIndex(fp, ii / bucketSize), curFilter);
+        ii = getAltIndex(fp, ii) % numBuckets;
         // Insert the new item in potentially the same bucket
-        uint8_t *empty = Bucket_FindAvailable(&curFilter->data[ii], bucketSize);
+        uint8_t *empty = Bucket_FindAvailable(&curFilter->data[ii * bucketSize], bucketSize);
         if (empty) {
             // printf("Found slot. Bucket[%lu], Pos=%lu\n", ii, empty - curFilter[ii]);
             // printf("Old FP Value: %d\n", *empty);
@@ -346,15 +345,11 @@ static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter
     while (counter++ < maxIterations) {
         //printf("reinsert %lu\n", counter);
         victimIx = (victimIx + bucketSize - 1) % bucketSize;
-        ii = getLocSubCF(getAltIndex(fp, ii / bucketSize), curFilter);
-        uint8_t *bucket = &curFilter->data[ii];
+        ii = getAltIndex(fp, ii) % numBuckets;
+        uint8_t *bucket = &curFilter->data[ii * bucketSize];
         //printf("Extraction fp %d victim %d\t", fp, *(bucket + victimIx));
         swapFPs(bucket + victimIx, &fp);
         //printf("fp %d victim %d *** loc %lu vicIdx %lu\n", fp, *(bucket + victimIx), ii / bucketSize, victimIx);
-/*        CuckooFingerprint tmpFp = bucket[victimIx];
-        bucket[victimIx] = fp;
-        fp = tmpFp;*/
-
     }
 
     return CuckooInsert_NoSpace;
