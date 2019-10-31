@@ -30,11 +30,8 @@ static size_t getNextN2(size_t n) {
 }
 
 int CuckooFilter_Init(CuckooFilter *filter, size_t capacity, uint16_t bucketSize, uint16_t maxIterations, uint16_t expansion) {
-    //assert(capacity >= bucketSize);
-    assert(isPower2(expansion));
-
     memset(filter, 0, sizeof(*filter));
-    filter->expansion = expansion;
+    filter->expansion = getNextN2(expansion);
     filter->bucketSize = bucketSize;
     filter->maxIterations = maxIterations;
     filter->numBuckets = getNextN2(capacity / bucketSize);
@@ -44,7 +41,7 @@ int CuckooFilter_Init(CuckooFilter *filter, size_t capacity, uint16_t bucketSize
     assert(isPower2(filter->numBuckets));   
 
     if (CuckooFilter_Grow(filter) != 0) {
-        return -1;
+        return -1;          // LCOV_EXCL_LINE memory failure
     }
     return 0;
 }
@@ -62,7 +59,7 @@ static int CuckooFilter_Grow(CuckooFilter *filter) {
                            sizeof(*filtersArray) * (*numFilters + 1));
 
     if (!filtersArray) {
-        return -1;
+        return -1;          // LCOV_EXCL_LINE memory failure
     }
     SubCF *currentFilter = filtersArray + *numFilters;
 
@@ -72,7 +69,7 @@ static int CuckooFilter_Grow(CuckooFilter *filter) {
     currentFilter->data = CUCKOO_CALLOC(currentFilter->numBuckets * filter->bucketSize,
                                         sizeof(CuckooBucket));
     if (!currentFilter->data) {
-        return -1;
+        return -1;          // LCOV_EXCL_LINE memory failure
     }
 
     (*numFilters)++;
@@ -279,8 +276,7 @@ static CuckooInsertStatus CuckooFilter_InsertFP(CuckooFilter *filter, const Look
         return status;
     } else if(status == CuckooInsert_NoSpace) {
         if (CuckooFilter_Grow(filter) != 0) {
-            printf("Grow after max iterations\n");
-            return CuckooInsert_NoSpace;
+            return CuckooInsert_NoSpace;    // LCOV_EXCL_LINE memory failure
         }
     }
     // Try to insert the filter again
@@ -317,16 +313,11 @@ static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter
 
     size_t counter = 0;
     size_t victimIx =  0;
-//    size_t ii = getLocSubCF(params->i1, curFilter);
     size_t ii = params->i1 % numBuckets;
-    // params = NULL; // Don't reference 'params' again!
 
     while (counter++ < maxIterations) {
         uint8_t *bucket = &curFilter->data[ii * bucketSize];
-        //printf("fp %d victim %d \t", fp, *(bucket + victimIx));
         swapFPs(bucket + victimIx, &fp);
-        //printf("fp %d victim %d \t", fp, *(bucket + victimIx));
-        //printf("first loc %lu victim index %lu\n", ii / bucketSize, victimIx);
         ii = getAltIndex(fp, ii) % numBuckets;
         // Insert the new item in potentially the same bucket
         uint8_t *empty = Bucket_FindAvailable(&curFilter->data[ii * bucketSize], bucketSize);
@@ -340,16 +331,13 @@ static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter
         victimIx = (victimIx + 1) % bucketSize;
     }
 
+    // If we weren't able to insert, we roll back and try to insert new element in new filter
     counter = 0;
-    // If we weren't able to insert, we must roll back for case of exponential filter growth
     while (counter++ < maxIterations) {
-        //printf("reinsert %lu\n", counter);
         victimIx = (victimIx + bucketSize - 1) % bucketSize;
         ii = getAltIndex(fp, ii) % numBuckets;
         uint8_t *bucket = &curFilter->data[ii * bucketSize];
-        //printf("Extraction fp %d victim %d\t", fp, *(bucket + victimIx));
         swapFPs(bucket + victimIx, &fp);
-        //printf("fp %d victim %d *** loc %lu vicIdx %lu\n", fp, *(bucket + victimIx), ii / bucketSize, victimIx);
     }
 
     return CuckooInsert_NoSpace;

@@ -48,6 +48,11 @@ TEST_F(cuckoo, testBasicOps) {
     ASSERT_EQ(2, ck.numItems);
 
     CuckooFilter_Free(&ck);
+
+    // Try capacity < numBuckets == 1
+    CuckooFilter_Init(&ck, 8, 32, 500, 1);
+    ASSERT_EQ(1, ck.numBuckets);
+    CuckooFilter_Free(&ck);
 }
 
 TEST_F(cuckoo, testCount) {
@@ -89,7 +94,6 @@ TEST_F(cuckoo, testRelocations) {
         for(jj = 0; jj < ii; ++jj) {
             CuckooHash hashjj = CUCKOO_GEN_HASH(&jj, sizeof jj);
             ASSERT_NE(0, CuckooFilter_Check(&ck, hashjj));
-        //printf("ii %lu jj %lu\n", ii, jj);
         }
     }
 
