@@ -11,7 +11,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#define CF_MAX_ITERATIONS 500
+#define CF_MAX_ITERATIONS 20
 #define CF_DEFAULT_BUCKETSIZE 2
 #define CF_DEFAULT_EXPANSION 1
 
@@ -472,6 +472,11 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         }
     }
 
+    if (bucketSize * 2 > capacity) {
+        RedisModule_ReplyWithError(ctx, "Capacity must be at least (BucketSize * 2)");
+        return REDISMODULE_ERR;
+    }
+
     CuckooFilter *cf;
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
     int status = cfGetFilter(key, &cf);
@@ -795,8 +800,9 @@ static int CFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     }
 
     RedisModuleString *resp = RedisModule_CreateStringPrintf(
-        ctx, "bktsize:%lu buckets:%lu items:%lu deletes:%lu filters:%lu max_iterations:%lu", cf->bucketSize,
-        cf->numBuckets, cf->numItems, cf->numDeletes, cf->numFilters, cf->maxIterations);
+        ctx, "bktsize:%lu buckets:%lu items:%lu deletes:%lu filters:%lu max_iterations:%lu expansion:%lu",
+        cf->bucketSize, cf->numBuckets, cf->numItems, cf->numDeletes, 
+        cf->numFilters, cf->maxIterations, cf->expansion);
     return RedisModule_ReplyWithString(ctx, resp);
 }
 
@@ -953,13 +959,15 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
 
 static size_t CFMemUsage(const void *value) {
     const CuckooFilter *cf = value;
+
     size_t filtersSize = 0;
     for (size_t ii = 0; ii < cf->numFilters; ++ii) {
         filtersSize +=  cf->filters[ii].bucketSize * 
                         cf->filters[ii].numBuckets * 
                         sizeof(*cf->filters[ii].data);
     }
-    return sizeof(*cf) + filtersSize;
+    
+    return sizeof(*cf) + sizeof(*cf->filters) * cf->numFilters + filtersSize;
 }
 
 static void CFAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *obj) {
