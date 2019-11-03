@@ -812,6 +812,7 @@ static int CFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 #define BF_ENCODING_VERSION 3
+#define CF_MIN_EXPANSION_VERSION 4
 #define BF_MIN_OPTIONS_ENC 2
 
 static void BFRdbSave(RedisModuleIO *io, void *obj) {
@@ -917,11 +918,11 @@ static void CFRdbSave(RedisModuleIO *io, void *obj) {
     CuckooFilter *cf = obj;
     RedisModule_SaveUnsigned(io, cf->numFilters);
     RedisModule_SaveUnsigned(io, cf->numBuckets);
+    RedisModule_SaveUnsigned(io, cf->numItems);
+    RedisModule_SaveUnsigned(io, cf->numDeletes);
     RedisModule_SaveUnsigned(io, cf->bucketSize);
     RedisModule_SaveUnsigned(io, cf->maxIterations);
     RedisModule_SaveUnsigned(io, cf->expansion);
-    RedisModule_SaveUnsigned(io, cf->numDeletes);
-    RedisModule_SaveUnsigned(io, cf->numItems);
     for (size_t ii = 0; ii < cf->numFilters; ++ii) {
         RedisModule_SaveUnsigned(io, cf->filters[ii].numBuckets);
         RedisModule_SaveStringBuffer(io, (char *)cf->filters[ii].data,
@@ -932,22 +933,36 @@ static void CFRdbSave(RedisModuleIO *io, void *obj) {
 }
 
 static void *CFRdbLoad(RedisModuleIO *io, int encver) {
-    if (encver > BF_ENCODING_VERSION) {
+    if (encver > CF_MIN_EXPANSION_VERSION) {
         return NULL;
     }
 
     CuckooFilter *cf = RedisModule_Calloc(1, sizeof(*cf));
     cf->numFilters = RedisModule_LoadUnsigned(io);
     cf->numBuckets = RedisModule_LoadUnsigned(io);
-    cf->bucketSize = RedisModule_LoadUnsigned(io);
-    cf->maxIterations = RedisModule_LoadUnsigned(io);
-    cf->expansion = RedisModule_LoadUnsigned(io);
-    cf->numDeletes = RedisModule_LoadUnsigned(io);
     cf->numItems = RedisModule_LoadUnsigned(io);
+    cf->numDeletes = RedisModule_LoadUnsigned(io);
+
+    if (encver < CF_MIN_EXPANSION_VERSION) { // CF_ENCODING_VERSION when added
+        cf->bucketSize = 2;
+        cf->maxIterations = 500;
+        cf->expansion = 1;    
+    } else {
+        cf->bucketSize = RedisModule_LoadUnsigned(io);
+        cf->maxIterations = RedisModule_LoadUnsigned(io);
+        cf->expansion = RedisModule_LoadUnsigned(io);
+    }
+
     cf->filters = RedisModule_Calloc(cf->numFilters, sizeof(*cf->filters));
     for (size_t ii = 0, exp = 1; ii < cf->numFilters; ++ii, exp *= cf->expansion) {
-        cf->filters[ii].numBuckets = RedisModule_LoadUnsigned(io);
         cf->filters[ii].bucketSize = cf->bucketSize;
+
+        if (encver < CF_MIN_EXPANSION_VERSION) {
+            cf->filters[ii].numBuckets = cf->numBuckets;
+        } else {
+            cf->filters[ii].numBuckets = RedisModule_LoadUnsigned(io);
+        }
+        
         size_t lenDummy = 0;
         cf->filters[ii].data = (MyCuckooBucket *)RedisModule_LoadStringBuffer(io, &lenDummy);
         assert(cf->filters[ii].data != NULL && lenDummy == cf->filters[ii].bucketSize *
@@ -1121,7 +1136,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
                                                  .aof_rewrite = CFAofRewrite,
                                                  .free = CFFree,
                                                  .mem_usage = CFMemUsage};
-    CFType = RedisModule_CreateDataType(ctx, "MBbloomCF", BF_ENCODING_VERSION, &cfTypeProcs);
+    CFType = RedisModule_CreateDataType(ctx, "MBbloomCF", CF_MIN_EXPANSION_VERSION, &cfTypeProcs);
     if (CFType == NULL) {
         return REDISMODULE_ERR;
     }
