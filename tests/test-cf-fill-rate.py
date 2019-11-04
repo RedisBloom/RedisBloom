@@ -8,11 +8,11 @@ redis.flushall()
 
 start_time = time.time()
 
-filters = [['1b5i', '2b5i', '4b5i'], ['1b10i', '2b10i', '4b10i'],
-           ['1b20i', '2b20i', '4b20i'], ['1b50i', '2b50i', '4b50i'],
-           ['1b100i', '2b100i', '4b100i'], ['1b500i', '2b500i', '4b500i']]
-buckets = [1, 2, 4]
-iterations = [5, 10, 20, 50, 100, 500]
+filters = [['1b5i', '2b5i', '4b5i', '8b5i'], ['1b10i', '2b10i', '4b10i', '8b10i'],
+           ['1b25i', '2b25i', '4b25i', '8b25i'], ['1b50i', '2b50i', '4b50i', '8b50i'],
+           ['1b100i', '2b100i', '4b100i', '8b100i'], ['1b500i', '2b500i', '4b500i', '8b500i']]
+buckets = [1, 2, 4, 8]
+iterations = [5, 10, 25, 50, 100, 500]
 
 q = 1024 * 128
 for i in range(len(iterations)):
@@ -24,7 +24,7 @@ for i in range(len(iterations)):
 print 'add'
 for i in range(len(filters)):
   for j in range(len(filters[i])):
-    for x in xrange(q * 4):
+    for x in xrange(q * 20):
       redis_pipe.execute_command('cf.add ' + filters[i][j] + ' ' + str(x))
     redis_pipe.execute()
     print redis.execute_command('cf.debug ' + filters[i][j]) + '\n'
