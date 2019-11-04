@@ -944,13 +944,8 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
     cf->numFilters = RedisModule_LoadUnsigned(io);
     cf->numBuckets = RedisModule_LoadUnsigned(io);
     cf->numItems = RedisModule_LoadUnsigned(io);
-    cf->numDeletes = RedisModule_LoadUnsigned(io);
-
-    if (encver < CF_MIN_EXPANSION_VERSION) { // CF_ENCODING_VERSION when added
-        cf->bucketSize = 2;
-        cf->maxIterations = 500;
-        cf->expansion = 1;    
-    } else {
+    if (encver >= CF_MIN_EXPANSION_VERSION) { // CF_ENCODING_VERSION when added
+        cf->numDeletes = RedisModule_LoadUnsigned(io);    
         cf->bucketSize = RedisModule_LoadUnsigned(io);
         cf->maxIterations = RedisModule_LoadUnsigned(io);
         cf->expansion = RedisModule_LoadUnsigned(io);
