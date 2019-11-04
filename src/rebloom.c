@@ -936,6 +936,9 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
     if (encver > CF_MIN_EXPANSION_VERSION) {
         return NULL;
     }
+    if (encver == BF_ENCODING_VERSION) { // 3
+        globalCuckooHash64Bit = 0;
+    }
 
     CuckooFilter *cf = RedisModule_Calloc(1, sizeof(*cf));
     cf->numFilters = RedisModule_LoadUnsigned(io);
