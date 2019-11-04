@@ -67,8 +67,8 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
         self.restart_and_reload()
         for x in xrange(100):
             self.assertEqual(1, self.cmd('cf.exists', 'smallCF2', str(x)))
-        self.assertEqual(5073, self.cmd('MEMORY USAGE', 'smallCF'))
-        self.assertEqual(2262, self.cmd('MEMORY USAGE', 'smallCF2'))
+        self.assertEqual(573, self.cmd('MEMORY USAGE', 'smallCF'))
+        self.assertEqual(278, self.cmd('MEMORY USAGE', 'smallCF2'))
 
 
     def test_setnx(self):
@@ -194,12 +194,12 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
             self.cmd('CF.ADD a', str(i))
             self.cmd('CF.ADD b', str(i))
             self.cmd('CF.ADD c', str(i))
-
+        
         for i in range(1000):
             self.assertEqual(self.cmd('CF.EXISTS a', str(i)), 1)
             self.assertEqual(self.cmd('CF.EXISTS b', str(i)), 1)
             self.assertEqual(self.cmd('CF.EXISTS c', str(i)), 1)
-
+        
         self.assertEqual(self.cmd('CF.DEBUG a'), 'bktsize:1 buckets:64 items:1000 deletes:0 filters:18 max_iterations:20 expansion:1')
         self.assertEqual(self.cmd('CF.DEBUG b'), 'bktsize:2 buckets:32 items:1000 deletes:0 filters:17 max_iterations:20 expansion:1')
         self.assertEqual(self.cmd('CF.DEBUG c'), 'bktsize:4 buckets:16 items:1000 deletes:0 filters:16 max_iterations:500 expansion:1')
@@ -223,7 +223,7 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
 
         self.assertEqual(self.cmd('CF.DEBUG a'), 'bktsize:2 buckets:32 items:1000 deletes:0 filters:17 max_iterations:20 expansion:1')
         self.assertEqual(self.cmd('CF.DEBUG b'), 'bktsize:2 buckets:32 items:1000 deletes:0 filters:5 max_iterations:20 expansion:2')
-        self.assertEqual(self.cmd('CF.DEBUG c'), 'bktsize:2 buckets:32 items:1000 deletes:0 filters:4 max_iterations:500 expansion:4')
+        self.assertEqual(self.cmd('CF.DEBUG c'), 'bktsize:2 buckets:32 items:1000 deletes:0 filters:3 max_iterations:500 expansion:4')
 
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 EXPANSION')
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 EXPANSION string')

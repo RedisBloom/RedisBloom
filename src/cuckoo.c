@@ -89,7 +89,7 @@ static uint64_t getAltIndex(CuckooFingerprint fp, uint64_t index) {
 
 static void getLookupParams(CuckooHash hash, LookupParams *params) {
     if (globalCuckooHash64Bit == 1) {
-        params->fp = hash % 255;
+        params->fp = hash % 255 + 1;
     } else {
         // Truncate the hash to uint8
         if ((params->fp = (hash >> 24)) == CUCKOO_NULLFP) {
