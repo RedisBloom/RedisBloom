@@ -13,11 +13,11 @@
 
 static int CuckooFilter_Grow(CuckooFilter *filter);
 
-static int isPower2(uint32_t num) {
+static int isPower2(uint64_t num) {
     return (num & (num - 1)) == 0 && num != 0;
 }
 
-static size_t getNextN2(size_t n) {
+static uint64_t getNextN2(uint64_t n) {
     n--;
     n |= n >> 1;
     n |= n >> 2;
@@ -29,7 +29,7 @@ static size_t getNextN2(size_t n) {
     return n;
 }
 
-int CuckooFilter_Init(CuckooFilter *filter, size_t capacity, uint16_t bucketSize, uint16_t maxIterations, uint16_t expansion) {
+int CuckooFilter_Init(CuckooFilter *filter, uint64_t capacity, uint16_t bucketSize, uint16_t maxIterations, uint16_t expansion) {
     memset(filter, 0, sizeof(*filter));
     filter->expansion = getNextN2(expansion);
     filter->bucketSize = bucketSize;
@@ -47,14 +47,14 @@ int CuckooFilter_Init(CuckooFilter *filter, size_t capacity, uint16_t bucketSize
 }
 
 void CuckooFilter_Free(CuckooFilter *filter) {
-    for (size_t ii = 0; ii < filter->numFilters; ++ii) {
+    for (uint16_t ii = 0; ii < filter->numFilters; ++ii) {
         CUCKOO_FREE(filter->filters[ii].data);
     }
     CUCKOO_FREE(filter->filters);
 }
 
 static int CuckooFilter_Grow(CuckooFilter *filter) {
-    size_t *numFilters = &filter->numFilters;
+    uint16_t *numFilters = &filter->numFilters;
     SubCF *filtersArray = (SubCF *)CUCKOO_REALLOC(filter->filters,
                            sizeof(*filtersArray) * (*numFilters + 1));
 
@@ -63,7 +63,7 @@ static int CuckooFilter_Grow(CuckooFilter *filter) {
     }
     SubCF *currentFilter = filtersArray + *numFilters;
 
-    size_t growth = pow(filter->expansion, *numFilters);
+    uint64_t growth = pow(filter->expansion, *numFilters);
     currentFilter->bucketSize = filter->bucketSize;
     currentFilter->numBuckets = filter->numBuckets * growth;
     currentFilter->data = CUCKOO_CALLOC(currentFilter->numBuckets * filter->bucketSize,
@@ -78,19 +78,23 @@ static int CuckooFilter_Grow(CuckooFilter *filter) {
 }
 
 typedef struct {
-    size_t i1;
-    size_t i2;
+    uint64_t i1;
+    uint64_t i2;
     CuckooFingerprint fp;
 } LookupParams;
 
-static size_t getAltIndex(CuckooFingerprint fp, size_t index) {
-    return ((uint32_t)(index ^ ((uint32_t)fp * 0x5bd1e995)));
+static uint64_t getAltIndex(CuckooFingerprint fp, uint64_t index) {
+    return index ^ ((uint64_t)fp * 0x5bd1e995);
 }
 
 static void getLookupParams(CuckooHash hash, LookupParams *params) {
-    // Truncate the hash to uint8
-    if ((params->fp = (hash >> 24)) == CUCKOO_NULLFP) {
-        params->fp = 7;
+    if (globalCuckooHash64Bit == 1) {
+        params->fp = hash % 255;
+    } else {
+        // Truncate the hash to uint8
+        if ((params->fp = (hash >> 24)) == CUCKOO_NULLFP) {
+            params->fp = 7;
+        }
     }
 
     params->i1 = hash;
@@ -138,7 +142,7 @@ static int Filter_Delete(const SubCF *filter, const LookupParams *params) {
 }
 
 static int CuckooFilter_CheckFP(const CuckooFilter *filter, const LookupParams *params) {
-    for (size_t ii = 0; ii < filter->numFilters; ++ii) {
+    for (uint16_t ii = 0; ii < filter->numFilters; ++ii) {
         if (Filter_Find(&filter->filters[ii], params)) {
             return 1;
         }
@@ -152,8 +156,8 @@ int CuckooFilter_Check(const CuckooFilter *filter, CuckooHash hash) {
     return CuckooFilter_CheckFP(filter, &params);
 }
 
-static size_t bucketCount(const CuckooBucket bucket, uint16_t bucketSize, CuckooFingerprint fp) {
-    size_t ret = 0;
+static uint16_t bucketCount(const CuckooBucket bucket, uint16_t bucketSize, CuckooFingerprint fp) {
+    uint16_t ret = 0;
     for (uint16_t ii = 0; ii < bucketSize; ++ii) {
         if (bucket[ii] == fp) {
             ret++;
@@ -163,12 +167,12 @@ static size_t bucketCount(const CuckooBucket bucket, uint16_t bucketSize, Cuckoo
 }
 
 //static size_t filterCount(const CuckooBucket *filter, uint16_t bucketSize, const LookupParams *params) {
-static size_t filterCount(const SubCF *filter, const LookupParams *params) {
+static uint64_t filterCount(const SubCF *filter, const LookupParams *params) {
     uint8_t bucketSize = filter->bucketSize;
     uint64_t loc1 = getLocSubCF(params->i1, filter);
     uint64_t loc2 = getLocSubCF(params->i2, filter);
 
-    size_t ret = bucketCount(&filter->data[loc1], bucketSize, params->fp);
+    uint64_t ret = bucketCount(&filter->data[loc1], bucketSize, params->fp);
   /*  if (params->i1 != params->i2) { // TODO: check if feasible*/
         ret += bucketCount(&filter->data[loc2], bucketSize, params->fp);
     //}
@@ -176,11 +180,11 @@ static size_t filterCount(const SubCF *filter, const LookupParams *params) {
     return ret;
 }
 
-size_t CuckooFilter_Count(const CuckooFilter *filter, CuckooHash hash) {
+uint64_t CuckooFilter_Count(const CuckooFilter *filter, CuckooHash hash) {
     LookupParams params;
     getLookupParams(hash, &params);
-    size_t ret = 0;
-    for (size_t ii = 0; ii < filter->numFilters; ++ii) {
+    uint64_t ret = 0;
+    for (uint16_t ii = 0; ii < filter->numFilters; ++ii) {
         ret += filterCount(&filter->filters[ii], &params);
     }
     return ret;
@@ -189,7 +193,7 @@ size_t CuckooFilter_Count(const CuckooFilter *filter, CuckooHash hash) {
 int CuckooFilter_Delete(CuckooFilter *filter, CuckooHash hash) {
     LookupParams params;
     getLookupParams(hash, &params);
-    for (size_t ii = 0; ii < filter->numFilters; ++ii) {
+    for (uint16_t ii = 0; ii < filter->numFilters; ++ii) {
         if (Filter_Delete(&filter->filters[ii], &params)) {
             filter->numItems--;
             filter->numDeletes++;
@@ -259,7 +263,7 @@ static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter
                                           const LookupParams *params);
 
 static CuckooInsertStatus CuckooFilter_InsertFP(CuckooFilter *filter, const LookupParams *params) {
-    for(size_t ii = filter->numFilters; ii > 0; --ii) {
+    for(uint16_t ii = filter->numFilters; ii > 0; --ii) {
         uint8_t *slot = Filter_FindAvailable(&filter->filters[ii - 1], params);
         if (slot) {
             *slot = params->fp;
@@ -311,9 +315,9 @@ static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter
     uint16_t bucketSize = filter->bucketSize;
     CuckooFingerprint fp = params->fp;
 
-    size_t counter = 0;
-    size_t victimIx =  0;
-    size_t ii = params->i1 % numBuckets;
+    uint16_t counter = 0;
+    uint32_t victimIx =  0;
+    uint64_t ii = params->i1 % numBuckets;
 
     while (counter++ < maxIterations) {
         uint8_t *bucket = &curFilter->data[ii * bucketSize];
@@ -350,8 +354,8 @@ static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter
 /**
  * Attempt to move a slot from one bucket to another filter
  */
-static int relocateSlot(CuckooFilter *cf, CuckooBucket bucket, size_t filterIx, size_t bucketIx,
-                        size_t slotIx) {
+static int relocateSlot(CuckooFilter *cf, CuckooBucket bucket, uint16_t filterIx, uint64_t bucketIx,
+                        uint16_t slotIx) {
     LookupParams params = { 0 };
     if ((params.fp = bucket[slotIx]) == CUCKOO_NULLFP) {
         // Nothing in this slot.
@@ -364,7 +368,7 @@ static int relocateSlot(CuckooFilter *cf, CuckooBucket bucket, size_t filterIx, 
     params.i2 = getAltIndex(params.fp, bucketIx);
 
     // Look at all the prior filters and attempt to find a home
-    for (size_t ii = 0; ii < filterIx; ++ii) {
+    for (uint16_t ii = 0; ii < filterIx; ++ii) {
         uint8_t *slot = Filter_FindAvailable(&cf->filters[ii], &params);
         if (slot) {
             *slot = params.fp;
@@ -378,13 +382,13 @@ static int relocateSlot(CuckooFilter *cf, CuckooBucket bucket, size_t filterIx, 
 /**
  * Attempt to strip a single filter moving it down a slot
  */
-static size_t CuckooFilter_CompactSingle(CuckooFilter *cf, size_t filterIx) {
+static uint64_t CuckooFilter_CompactSingle(CuckooFilter *cf, uint16_t filterIx) {
     MyCuckooBucket *filter = cf->filters[filterIx].data;
     int dirty = 0;
-    size_t numRelocs = 0;
+    uint64_t numRelocs = 0;
 
-    for (size_t bucketIx = 0; bucketIx < cf->numBuckets; ++bucketIx) {
-        for (size_t slotIx = 0; slotIx < cf->bucketSize; ++slotIx) {
+    for (uint64_t bucketIx = 0; bucketIx < cf->numBuckets; ++bucketIx) {
+        for (uint16_t slotIx = 0; slotIx < cf->bucketSize; ++slotIx) {
             int status = relocateSlot(cf, &filter[bucketIx * cf->bucketSize], filterIx, bucketIx, slotIx);
             if (status == RELOC_FAIL) {
                 dirty = 1;
@@ -400,9 +404,9 @@ static size_t CuckooFilter_CompactSingle(CuckooFilter *cf, size_t filterIx) {
     return numRelocs;
 }
 
-size_t CuckooFilter_Compact(CuckooFilter *cf) {
-    size_t ret = 0;
-    for (size_t ii = cf->numFilters; ii > 1; --ii) {
+uint64_t CuckooFilter_Compact(CuckooFilter *cf) {
+    uint64_t ret = 0;
+    for (uint64_t ii = cf->numFilters; ii > 1; --ii) {
         ret += CuckooFilter_CompactSingle(cf, ii - 1);
     }
     cf->numDeletes = 0;

@@ -47,28 +47,28 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
         self.spawn_server(use_aof=True)
         # Ensure we have a pretty small filter
         self.cmd('cf.reserve', 'smallCF', 4)
-        for x in xrange(1000):
+        for x in xrange(100):
             self.cmd('cf.add', 'smallCF', str(x))
         # Sanity check
-        for x in xrange(1000):
+        for x in xrange(100):
             self.assertEqual(1, self.cmd('cf.exists', 'smallCF', str(x)))
 
         self.restart_and_reload()
-        for x in xrange(1000):
+        for x in xrange(100):
             self.assertEqual(1, self.cmd('cf.exists', 'smallCF', str(x)))
 
         self.cmd('cf.reserve', 'smallCF2', 4, 'expansion', 2)
-        for x in xrange(1000):
+        for x in xrange(100):
             self.cmd('cf.add', 'smallCF2', str(x))
         # Sanity check
-        for x in xrange(1000):
+        for x in xrange(100):
             self.assertEqual(1, self.cmd('cf.exists', 'smallCF2', str(x)))
 
         self.restart_and_reload()
-        for x in xrange(1000):
+        for x in xrange(100):
             self.assertEqual(1, self.cmd('cf.exists', 'smallCF2', str(x)))
-        self.assertEqual(5081, self.cmd('MEMORY USAGE', 'smallCF'))
-        self.assertEqual(2270, self.cmd('MEMORY USAGE', 'smallCF2'))
+        self.assertEqual(5073, self.cmd('MEMORY USAGE', 'smallCF'))
+        self.assertEqual(2262, self.cmd('MEMORY USAGE', 'smallCF2'))
 
 
     def test_setnx(self):
@@ -162,9 +162,9 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
 
     def test_mem_usage(self):
         self.cmd('CF.RESERVE', 'cf', '1000')
-        self.assertEqual(1116, self.cmd('MEMORY USAGE', 'cf'))
+        self.assertEqual(1108, self.cmd('MEMORY USAGE', 'cf'))
         self.cmd('cf.insert', 'cf', 'nocreate', 'items', 'foo')
-        self.assertEqual(1116, self.cmd('MEMORY USAGE', 'cf'))
+        self.assertEqual(1108, self.cmd('MEMORY USAGE', 'cf'))
 
     def test_max_iterations(self):
         self.cmd('CF.RESERVE a 10 MAXITERATIONS 10')
