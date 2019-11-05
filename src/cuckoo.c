@@ -11,6 +11,8 @@
 #define CUCKOO_FREE free
 #endif
 
+//int globalCuckooHash64Bit;
+
 static int CuckooFilter_Grow(CuckooFilter *filter);
 
 static int isPower2(uint64_t num) {
@@ -88,6 +90,8 @@ static uint64_t getAltIndex(CuckooFingerprint fp, uint64_t index) {
 }
 
 static void getLookupParams(CuckooHash hash, LookupParams *params) {
+    params->fp = hash % 255 + 1;
+/*
     if (globalCuckooHash64Bit == 1) {
         params->fp = hash % 255 + 1;
     } else {
@@ -95,7 +99,7 @@ static void getLookupParams(CuckooHash hash, LookupParams *params) {
         if ((params->fp = (hash >> 24)) == CUCKOO_NULLFP) {
             params->fp = 7;
         }
-    }
+    } */
 
     params->i1 = hash;
     params->i2 = getAltIndex(params->fp, params->i1);

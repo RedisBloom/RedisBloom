@@ -7,10 +7,10 @@
 
 // Defines whether 32bit or 64bit hash function will be used.
 // It will be deprecated in RedisBloom 3.0.
-static int globalCuckooHash64Bit = 1;
 
 #define CUCKOO_BKTSIZE 2
 #define CUCKOO_NULLFP 0
+//extern int globalCuckooHash64Bit;
 
 typedef uint8_t CuckooFingerprint;
 typedef uint64_t CuckooHash;
@@ -35,11 +35,14 @@ typedef struct {
     SubCF *filters;
 } CuckooFilter;
 
+#define CUCKOO_GEN_HASH(s, n)  MurmurHash64A_Bloom(s, n, 0)
+
+/*
 #define CUCKOO_GEN_HASH(s, n)                       \
             globalCuckooHash64Bit == 1 ?            \
                 MurmurHash64A_Bloom(s, n, 0) :      \
                 murmurhash2(s, n, 0)
-
+*/
 typedef struct {
     uint64_t i1;
     uint64_t i2;
