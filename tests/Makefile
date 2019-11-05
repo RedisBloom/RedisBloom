@@ -4,7 +4,7 @@ PYTHON:=python
 
 test: test-basic test-cuckoo
 	./test-basic
-#	./test-cuckoo
+	./test-cuckoo
 	$(PYTHON) pytests.py
 	$(PYTHON) cuckoo.py
 	$(PYTHON) cms.py
