@@ -54,16 +54,15 @@ void CuckooFilter_Free(CuckooFilter *filter) {
 }
 
 static int CuckooFilter_Grow(CuckooFilter *filter) {
-    size_t *numFilters = &filter->numFilters;
-    SubCF *filtersArray = (SubCF *)CUCKOO_REALLOC(filter->filters,
-                           sizeof(*filtersArray) * (*numFilters + 1));
+    SubCF *filtersArray = CUCKOO_REALLOC(filter->filters,
+                           sizeof(*filtersArray) * (filter->numFilters + 1));
 
     if (!filtersArray) {
         return -1;          // LCOV_EXCL_LINE memory failure
     }
-    SubCF *currentFilter = filtersArray + *numFilters;
+    SubCF *currentFilter = filtersArray + filter->numFilters;
 
-    size_t growth = pow(filter->expansion, *numFilters);
+    size_t growth = pow(filter->expansion, filter->numFilters);
     currentFilter->bucketSize = filter->bucketSize;
     currentFilter->numBuckets = filter->numBuckets * growth;
     currentFilter->data = CUCKOO_CALLOC(currentFilter->numBuckets * filter->bucketSize,
@@ -72,19 +71,19 @@ static int CuckooFilter_Grow(CuckooFilter *filter) {
         return -1;          // LCOV_EXCL_LINE memory failure
     }
 
-    (*numFilters)++;
+    filter->numFilters++;
     filter->filters = filtersArray;
     return 0;
 }
 
 typedef struct {
-    size_t i1;
-    size_t i2;
+    CuckooHash h1;
+    CuckooHash h2;
     CuckooFingerprint fp;
 } LookupParams;
 
-static size_t getAltIndex(CuckooFingerprint fp, size_t index) {
-    return ((uint32_t)(index ^ ((uint32_t)fp * 0x5bd1e995)));
+static CuckooHash getAltHash(CuckooFingerprint fp, size_t index) {
+    return ((CuckooHash)(index ^ ((CuckooHash)fp * 0x5bd1e995)));
 }
 
 static void getLookupParams(CuckooHash hash, LookupParams *params) {
@@ -93,13 +92,13 @@ static void getLookupParams(CuckooHash hash, LookupParams *params) {
         params->fp = 7;
     }
 
-    params->i1 = hash;
-    params->i2 = getAltIndex(params->fp, params->i1);
-    // assert(getAltIndex(params->fp, params->i2, numBuckets) == params->i1);
+    params->h1 = hash;
+    params->h2 = getAltHash(params->fp, params->h1);
+    // assert(getAltHash(params->fp, params->h2, numBuckets) == params->h1);
 }
 
-static uint32_t getLocSubCF(uint32_t num, const SubCF *subCF) {
-    return (num % subCF->numBuckets) * subCF->bucketSize;
+static uint32_t SubCF_GetIndex(const SubCF *subCF, uint32_t hash) {
+    return (hash % subCF->numBuckets) * subCF->bucketSize;
 }
 
 static uint8_t *Bucket_Find(CuckooBucket bucket, uint16_t bucketSize, CuckooFingerprint fp) {
@@ -113,8 +112,8 @@ static uint8_t *Bucket_Find(CuckooBucket bucket, uint16_t bucketSize, CuckooFing
 
 static int Filter_Find(const SubCF *filter, const LookupParams *params) {
     uint8_t bucketSize = filter->bucketSize;
-    uint64_t loc1 = getLocSubCF(params->i1, filter);
-    uint64_t loc2 = getLocSubCF(params->i2, filter);
+    uint64_t loc1 = SubCF_GetIndex(filter, params->h1);
+    uint64_t loc2 = SubCF_GetIndex(filter, params->h2);
     return Bucket_Find(&filter->data[loc1], bucketSize, params->fp) != NULL ||
            Bucket_Find(&filter->data[loc2], bucketSize, params->fp) != NULL;
 }
@@ -131,8 +130,8 @@ static int Bucket_Delete(CuckooBucket bucket, uint16_t bucketSize, CuckooFingerp
 
 static int Filter_Delete(const SubCF *filter, const LookupParams *params) {
     uint8_t bucketSize = filter->bucketSize;
-    uint64_t loc1 = getLocSubCF(params->i1, filter);
-    uint64_t loc2 = getLocSubCF(params->i2, filter);
+    uint64_t loc1 = SubCF_GetIndex(filter, params->h1);
+    uint64_t loc2 = SubCF_GetIndex(filter, params->h2);
     return Bucket_Delete(&filter->data[loc1], bucketSize, params->fp) ||
            Bucket_Delete(&filter->data[loc2], bucketSize, params->fp);
 }
@@ -165,11 +164,11 @@ static size_t bucketCount(const CuckooBucket bucket, uint16_t bucketSize, Cuckoo
 //static size_t filterCount(const CuckooBucket *filter, uint16_t bucketSize, const LookupParams *params) {
 static size_t filterCount(const SubCF *filter, const LookupParams *params) {
     uint8_t bucketSize = filter->bucketSize;
-    uint64_t loc1 = getLocSubCF(params->i1, filter);
-    uint64_t loc2 = getLocSubCF(params->i2, filter);
+    uint64_t loc1 = SubCF_GetIndex(filter, params->h1);
+    uint64_t loc2 = SubCF_GetIndex(filter, params->h2);
 
     size_t ret = bucketCount(&filter->data[loc1], bucketSize, params->fp);
-  /*  if (params->i1 != params->i2) { // TODO: check if feasible*/
+  /*  if (params->h1 != params->h2) { // TODO: check if feasible*/
         ret += bucketCount(&filter->data[loc2], bucketSize, params->fp);
     //}
 
@@ -214,8 +213,8 @@ static uint8_t *Bucket_FindAvailable(CuckooBucket bucket, uint16_t bucketSize) {
 static uint8_t *Filter_FindAvailable(SubCF *filter, const LookupParams *params) {
     uint8_t *slot;
     uint8_t bucketSize = filter->bucketSize;
-    uint64_t loc1 = getLocSubCF(params->i1, filter);
-    uint64_t loc2 = getLocSubCF(params->i2, filter);
+    uint64_t loc1 = SubCF_GetIndex(filter, params->h1);
+    uint64_t loc2 = SubCF_GetIndex(filter, params->h2);
     if ((slot = Bucket_FindAvailable(&filter->data[loc1], bucketSize)) ||
         (slot = Bucket_FindAvailable(&filter->data[loc2], bucketSize))) {
         return slot;
@@ -227,10 +226,10 @@ static uint8_t *Filter_FindAvailable(SubCF *filter, const LookupParams *params) 
 static uint8_t *Filter_FindAvailableDbg(CuckooBucket *filter, uint16_t bucketSize,
                                         const LookupParams *params, size_t *newIx) {
     uint8_t *slot;
-    if ((slot = Bucket_FindAvailable(filter[params->i1 * bucketSize], bucketSize))) {
-        *newIx = params->i1;
-    } else if ((slot = Bucket_FindAvailable(filter[params->i2 * bucketSize], bucketSize))) {
-        *newIx = params->i2;
+    if ((slot = Bucket_FindAvailable(filter[params->h1 * bucketSize], bucketSize))) {
+        *newIx = params->h1;
+    } else if ((slot = Bucket_FindAvailable(filter[params->h2 * bucketSize], bucketSize))) {
+        *newIx = params->h2;
     } else {
         *newIx = -1;
     }
@@ -259,7 +258,7 @@ static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter
                                           const LookupParams *params);
 
 static CuckooInsertStatus CuckooFilter_InsertFP(CuckooFilter *filter, const LookupParams *params) {
-    for(size_t ii = filter->numFilters; ii > 0; --ii) {
+    for (size_t ii = filter->numFilters; ii > 0; --ii) {
         uint8_t *slot = Filter_FindAvailable(&filter->filters[ii - 1], params);
         if (slot) {
             *slot = params->fp;
@@ -274,7 +273,7 @@ static CuckooInsertStatus CuckooFilter_InsertFP(CuckooFilter *filter, const Look
     if (status == CuckooInsert_Inserted) {
         filter->numItems++;
         return status;
-    } else if(status == CuckooInsert_NoSpace) {
+    } else if (status == CuckooInsert_NoSpace) {
         if (CuckooFilter_Grow(filter) != 0) {
             return CuckooInsert_NoSpace;    // LCOV_EXCL_LINE memory failure
         }
@@ -313,12 +312,12 @@ static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter
 
     size_t counter = 0;
     size_t victimIx =  0;
-    size_t ii = params->i1 % numBuckets;
+    size_t ii = params->h1 % numBuckets;
 
     while (counter++ < maxIterations) {
         uint8_t *bucket = &curFilter->data[ii * bucketSize];
         swapFPs(bucket + victimIx, &fp);
-        ii = getAltIndex(fp, ii) % numBuckets;
+        ii = getAltHash(fp, ii) % numBuckets;
         // Insert the new item in potentially the same bucket
         uint8_t *empty = Bucket_FindAvailable(&curFilter->data[ii * bucketSize], bucketSize);
         if (empty) {
@@ -335,7 +334,7 @@ static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter
     counter = 0;
     while (counter++ < maxIterations) {
         victimIx = (victimIx + bucketSize - 1) % bucketSize;
-        ii = getAltIndex(fp, ii) % numBuckets;
+        ii = getAltHash(fp, ii) % numBuckets;
         uint8_t *bucket = &curFilter->data[ii * bucketSize];
         swapFPs(bucket + victimIx, &fp);
     }
@@ -360,8 +359,8 @@ static int relocateSlot(CuckooFilter *cf, CuckooBucket bucket, size_t filterIx, 
 
     // Because We try to insert in sub filter with less or equal number of
     // buckets, our current fingerprint is sufficient
-    params.i1 = bucketIx;
-    params.i2 = getAltIndex(params.fp, bucketIx);
+    params.h1 = bucketIx;
+    params.h2 = getAltHash(params.fp, bucketIx);
 
     // Look at all the prior filters and attempt to find a home
     for (size_t ii = 0; ii < filterIx; ++ii) {
@@ -414,8 +413,8 @@ void CuckooFilter_GetInfo(const CuckooFilter *cf, CuckooHash hash, CuckooKey *ou
     LookupParams params;
     getLookupParams(hash, cf->numBuckets, &params);
     out->fp = params.fp;
-    out->i1 = params.i1;
-    out->i2 = params.i2;
-    assert(getAltIndex(params.fp, out->i1, cf->numBuckets) == out->i2);
-    assert(getAltIndex(params.fp, out->i2, cf->numBuckets) == out->i1);
+    out->h1 = params.h1;
+    out->h2 = params.h2;
+    assert(getAltHash(params.fp, out->h1, cf->numBuckets) == out->h2);
+    assert(getAltHash(params.fp, out->h2, cf->numBuckets) == out->h1);
 }*/
