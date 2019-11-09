@@ -185,7 +185,13 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
             self.cmd('ping')    
         d2 = self.cmd('cf.debug', 'nums')
         self.assertEqual(d1, d2)
-    
+
+    def test_max_expansions(self):
+        self.cmd('CF.RESERVE', 'cf', '4')
+        for i in range(4093):
+            self.assertEqual(1, self.cmd('cf.add', 'cf', str(i)))
+        self.assertRaises(ResponseError, self.cmd, 'cf.add', 'cf', str(2048))        
+
     def test_bucket_size(self):
         self.cmd('CF.RESERVE a 64 BUCKETSIZE 1')
         self.cmd('CF.RESERVE b 64 BUCKETSIZE 2')
