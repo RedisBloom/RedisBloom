@@ -70,7 +70,6 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertEqual(573, self.cmd('MEMORY USAGE', 'smallCF'))
         self.assertEqual(278, self.cmd('MEMORY USAGE', 'smallCF2'))
 
-
     def test_setnx(self):
         self.assertEqual(1, self.cmd('cf.addnx', 'cf', 'k1'))
         self.assertEqual(0, self.cmd('cf.addnx', 'cf', 'k1'))
@@ -185,7 +184,13 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
             self.cmd('ping')    
         d2 = self.cmd('cf.debug', 'nums')
         self.assertEqual(d1, d2)
-    
+
+    def test_max_expansions(self):
+        self.cmd('CF.RESERVE', 'cf', '4')
+        for i in range(4093):
+            self.assertEqual(1, self.cmd('cf.add', 'cf', str(i)))
+        self.assertRaises(ResponseError, self.cmd, 'cf.add', 'cf', str(2048))        
+
     def test_bucket_size(self):
         self.cmd('CF.RESERVE a 64 BUCKETSIZE 1')
         self.cmd('CF.RESERVE b 64 BUCKETSIZE 2')
@@ -199,7 +204,7 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
             self.assertEqual(self.cmd('CF.EXISTS a', str(i)), 1)
             self.assertEqual(self.cmd('CF.EXISTS b', str(i)), 1)
             self.assertEqual(self.cmd('CF.EXISTS c', str(i)), 1)
-        
+
         self.assertEqual(self.cmd('CF.DEBUG a'), 'bktsize:1 buckets:64 items:1000 deletes:0 filters:18 max_iterations:20 expansion:1')
         self.assertEqual(self.cmd('CF.DEBUG b'), 'bktsize:2 buckets:32 items:1000 deletes:0 filters:17 max_iterations:20 expansion:1')
         self.assertEqual(self.cmd('CF.DEBUG c'), 'bktsize:4 buckets:16 items:1000 deletes:0 filters:16 max_iterations:500 expansion:1')
@@ -224,7 +229,6 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertEqual(self.cmd('CF.DEBUG a'), 'bktsize:2 buckets:32 items:1000 deletes:0 filters:17 max_iterations:20 expansion:1')
         self.assertEqual(self.cmd('CF.DEBUG b'), 'bktsize:2 buckets:32 items:1000 deletes:0 filters:5 max_iterations:20 expansion:2')
         self.assertEqual(self.cmd('CF.DEBUG c'), 'bktsize:2 buckets:32 items:1000 deletes:0 filters:3 max_iterations:500 expansion:4')
-
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 EXPANSION')
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 EXPANSION string')
     

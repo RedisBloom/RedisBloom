@@ -15,7 +15,8 @@ on how full the filter is.
 The filter will auto-expand (at the cost of reduced performance) if the initial
 capacity is exceeded, though the performance degradation is variable depending
 on how far the capacity is exceeded. In general, the false positive rate will
-increase by for every additional {capacity} items beyond initial capacity.
+increase by for every additional {capacity} items beyond initial capacity. The
+filter grows up to 1024 times.
 
 ## Parameters:
 
