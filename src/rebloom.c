@@ -883,20 +883,6 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
     return sb;
 }
 
-static void BFAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
-    SBChain *sb = value;
-    size_t len;
-    char *hdr = SBChain_GetEncodedHeader(sb, &len);
-    RedisModule_EmitAOF(aof, "BF.LOADCHUNK", "slb", key, 0, hdr, len);
-    SB_FreeEncodedHeader(hdr);
-
-    long long iter = SB_CHUNKITER_INIT;
-    const char *chunk;
-    while ((chunk = SBChain_GetEncodedChunk(sb, &iter, &len, MAX_SCANDUMP_SIZE)) != NULL) {
-        RedisModule_EmitAOF(aof, "BF.LOADCHUNK", "slb", key, iter, chunk, len);
-    }
-}
-
 static void BFFree(void *value) { SBChain_Free(value); }
 
 static size_t BFMemUsage(const void *value) {
@@ -983,20 +969,6 @@ static size_t CFMemUsage(const void *value) {
     }
     
     return sizeof(*cf) + sizeof(*cf->filters) * cf->numFilters + filtersSize;
-}
-
-static void CFAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *obj) {
-    CuckooFilter *cf = obj;
-    const char *chunk;
-    size_t nchunk;
-    CFHeader header;
-    fillCFHeader(&header, cf);
-
-    long long pos = 1;
-    RedisModule_EmitAOF(aof, "CF.LOADCHUNK", "slb", key, pos, (const char *)&header, sizeof header);
-    while ((chunk = CF_GetEncodedChunk(cf, &pos, &nchunk, MAX_SCANDUMP_SIZE))) {
-        RedisModule_EmitAOF(aof, "CF.LOADCHUNK", "slb", key, pos, chunk, nchunk);
-    }
 }
 
 static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2) {
@@ -1122,7 +1094,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     static RedisModuleTypeMethods typeprocs = {.version = REDISMODULE_TYPE_METHOD_VERSION,
                                                .rdb_load = BFRdbLoad,
                                                .rdb_save = BFRdbSave,
-                                               .aof_rewrite = BFAofRewrite,
+                                               .aof_rewrite = RMUtil_DefaultAofRewrite,
                                                .free = BFFree,
                                                .mem_usage = BFMemUsage};
     BFType = RedisModule_CreateDataType(ctx, "MBbloom--", BF_ENCODING_VERSION, &typeprocs);
@@ -1133,7 +1105,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     static RedisModuleTypeMethods cfTypeProcs = {.version = REDISMODULE_TYPE_METHOD_VERSION,
                                                  .rdb_load = CFRdbLoad,
                                                  .rdb_save = CFRdbSave,
-                                                 .aof_rewrite = CFAofRewrite,
+                                                 .aof_rewrite = RMUtil_DefaultAofRewrite,
                                                  .free = CFFree,
                                                  .mem_usage = CFMemUsage};
     CFType = RedisModule_CreateDataType(ctx, "MBbloomCF", CF_MIN_EXPANSION_VERSION, &cfTypeProcs);
