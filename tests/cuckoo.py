@@ -187,7 +187,7 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
 
     def test_max_expansions(self):
         self.cmd('CF.RESERVE', 'cf', '4')
-        for i in range(4093):
+        for i in range(124):
             self.assertEqual(1, self.cmd('cf.add', 'cf', str(i)))
         self.assertRaises(ResponseError, self.cmd, 'cf.add', 'cf', str(2048))        
 
