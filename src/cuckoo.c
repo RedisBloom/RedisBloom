@@ -83,34 +83,20 @@ typedef struct {
     CuckooFingerprint fp;
 } LookupParams;
 
-static CuckooHash getAltHash(CuckooFingerprint fp, size_t index) {
+static CuckooHash getAltHash(CuckooFingerprint fp, CuckooHash index) {
     return ((CuckooHash)(index ^ ((CuckooHash)fp * 0x5bd1e995)));
 }
 
 static void getLookupParams(CuckooHash hash, LookupParams *params) {
     params->fp = hash % 255 + 1;
-/*
-    if (globalCuckooHash64Bit == 1) {
-        params->fp = hash % 255 + 1;
-    } else {
-        // Truncate the hash to uint8
-        if ((params->fp = (hash >> 24)) == CUCKOO_NULLFP) {
-            params->fp = 7;
-        }
-    } */
-
 
     params->h1 = hash;
     params->h2 = getAltHash(params->fp, params->h1);
     // assert(getAltHash(params->fp, params->h2, numBuckets) == params->h1);
 }
 
-static uint32_t SubCF_GetIndex(const SubCF *subCF, uint32_t hash) {
+static uint32_t SubCF_GetIndex(const SubCF *subCF, CuckooHash hash) {
     return (hash % subCF->numBuckets) * subCF->bucketSize;
-}
-
-static uint32_t getLocSubCF(uint32_t num, const SubCF *subCF) {
-    return (num % subCF->numBuckets) * subCF->bucketSize;
 }
 
 static uint8_t *Bucket_Find(CuckooBucket bucket, uint16_t bucketSize, CuckooFingerprint fp) {
@@ -173,18 +159,13 @@ static uint16_t bucketCount(const CuckooBucket bucket, uint16_t bucketSize, Cuck
     return ret;
 }
 
-//static size_t filterCount(const CuckooBucket *filter, uint16_t bucketSize, const LookupParams *params) {
-static uint64_t filterCount(const SubCF *filter, const LookupParams *params) {
+static uint64_t subFilterCount(const SubCF *filter, const LookupParams *params) {
     uint8_t bucketSize = filter->bucketSize;
     uint64_t loc1 = SubCF_GetIndex(filter, params->h1);
     uint64_t loc2 = SubCF_GetIndex(filter, params->h2);
 
-    uint64_t ret = bucketCount(&filter->data[loc1], bucketSize, params->fp);
-  /*  if (params->h1 != params->h2) { // TODO: check if feasible*/
-        ret += bucketCount(&filter->data[loc2], bucketSize, params->fp);
-    //}
-
-    return ret;
+    return bucketCount(&filter->data[loc1], bucketSize, params->fp) +
+           bucketCount(&filter->data[loc2], bucketSize, params->fp);
 }
 
 uint64_t CuckooFilter_Count(const CuckooFilter *filter, CuckooHash hash) {
@@ -192,7 +173,7 @@ uint64_t CuckooFilter_Count(const CuckooFilter *filter, CuckooHash hash) {
     getLookupParams(hash, &params);
     uint64_t ret = 0;
     for (uint16_t ii = 0; ii < filter->numFilters; ++ii) {
-        ret += filterCount(&filter->filters[ii], &params);
+        ret += subFilterCount(&filter->filters[ii], &params);
     }
     return ret;
 }
@@ -233,38 +214,6 @@ static uint8_t *Filter_FindAvailable(SubCF *filter, const LookupParams *params) 
     }
     return NULL;
 }
-
-/**** Unused and unfixed for SubCF struct
-static uint8_t *Filter_FindAvailableDbg(CuckooBucket *filter, uint16_t bucketSize,
-                                        const LookupParams *params, size_t *newIx) {
-    uint8_t *slot;
-    if ((slot = Bucket_FindAvailable(filter[params->h1 * bucketSize], bucketSize))) {
-        *newIx = params->h1;
-    } else if ((slot = Bucket_FindAvailable(filter[params->h2 * bucketSize], bucketSize))) {
-        *newIx = params->h2;
-    } else {
-        *newIx = -1;
-    }
-    return slot;
-}
-
-static uint8_t *Filter_FindUnique(CuckooBucket bucket, size_t index, uint16_t bucketSize,
-                                  CuckooFingerprint fp, CuckooInsertStatus *err) {
-    uint8_t *firstEmpty = NULL;
-    bucket += (index * bucketSize);
-    for (uint16_t ii = 0; ii < bucketSize; ++ii) {
-        if (bucket[ii] == fp) {
-            *err = CuckooInsert_Exists;
-            return NULL;
-        } else if (firstEmpty == 0 && bucket[ii] == 0) {
-            firstEmpty = bucket + ii;
-        }
-    }
-    if (firstEmpty == NULL) {
-        *err = CuckooInsert_NoSpace;
-    }
-    return firstEmpty;
-}*/
 
 static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter, 
                                           const LookupParams *params);
@@ -322,9 +271,9 @@ static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter
     uint16_t bucketSize = filter->bucketSize;
     CuckooFingerprint fp = params->fp;
 
-    size_t counter = 0;
-    size_t victimIx =  0;
-    size_t ii = params->h1 % numBuckets;
+    uint16_t counter = 0;
+    uint32_t victimIx =  0;
+    uint32_t ii = params->h1 % numBuckets;
 
     while (counter++ < maxIterations) {
         uint8_t *bucket = &curFilter->data[ii * bucketSize];
