@@ -138,9 +138,10 @@ TEST_F(cuckoo, testFPR) {
     CuckooFilter_Init(&ck, NUM_BULK, DEFAULT_BUCKETSIZE, 500, 1);
     ASSERT_EQ(0, ck.numItems);
     ASSERT_EQ(1, ck.numFilters);
+    ASSERT_EQ(16384, ck.numBuckets * ck.bucketSize);
 
     doFill(&ck);
-    ASSERT_EQ(2, ck.numFilters);
+    ASSERT_EQ(1, ck.numFilters);
     ASSERT_EQ(NUM_BULK, ck.numItems);
     ASSERT_LE((double)countColls(&ck), (double)NUM_BULK * 0.015);
     CuckooFilter_Free(&ck);
