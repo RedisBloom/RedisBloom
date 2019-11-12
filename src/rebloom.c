@@ -25,7 +25,7 @@ static RedisModuleType *CFType;
 static double BFDefaultErrorRate = 0.01;
 static size_t BFDefaultInitCapacity = 100;
 static size_t CFDefaultInitCapacity = 1000;
-static size_t CFMaxExpansions = 1024;
+static size_t CFMaxExpansions = 32;
 static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2);
 
 typedef enum { SB_OK = 0, SB_MISSING, SB_EMPTY, SB_MISMATCH } lookupStatus;
@@ -936,18 +936,29 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
     if (encver > CF_MIN_EXPANSION_VERSION) {
         return NULL;
     }
+/* RDBCF
+    if (encver == BF_ENCODING_VERSION) { // 3
+        globalCuckooHash64Bit = 0;
+     //   RedisModule_Log(io->ctx, "warning", "RedisBloom Cuckoo filter started with 32 bit hashing. \
+                                  This mode will be deprecated in RedisBloom 3.0")
+        printf("\n32 bit mode\n\n");
+    } else {
+        globalCuckooHash64Bit = 1;
+      //  RedisModule_Log(io->ctx, "warning", "RedisBloom Cuckoo filter started with 64 bit hashing")
+        printf("\n64 bit mode\n\n");
+    }*/
 
     CuckooFilter *cf = RedisModule_Calloc(1, sizeof(*cf));
     cf->numFilters = RedisModule_LoadUnsigned(io);
     cf->numBuckets = RedisModule_LoadUnsigned(io);
     cf->numItems = RedisModule_LoadUnsigned(io);
-    cf->numDeletes = RedisModule_LoadUnsigned(io);
-
-    if (encver < CF_MIN_EXPANSION_VERSION) { // CF_ENCODING_VERSION when added
-        cf->bucketSize = 2;
-        cf->maxIterations = 500;
-        cf->expansion = 1;    
+    if (encver < CF_MIN_EXPANSION_VERSION) {    // CF_ENCODING_VERSION when added
+        cf->numDeletes = 0;                     // Didn't exist earlier. bug fix         
+        cf->bucketSize = CF_DEFAULT_BUCKETSIZE;
+        cf->maxIterations = CF_MAX_ITERATIONS;
+        cf->expansion = CF_DEFAULT_EXPANSION;
     } else {
+        cf->numDeletes = RedisModule_LoadUnsigned(io);    
         cf->bucketSize = RedisModule_LoadUnsigned(io);
         cf->maxIterations = RedisModule_LoadUnsigned(io);
         cf->expansion = RedisModule_LoadUnsigned(io);
