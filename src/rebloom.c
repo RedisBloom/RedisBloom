@@ -786,7 +786,52 @@ static int CFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     return RedisModule_ReplyWithSimpleString(ctx, "OK");
 }
 
+uint64_t CFSize(CuckooFilter *cf) {
+    uint64_t numBuckets = 0;
+    for(uint16_t ii = 0; ii < cf->numFilters; ++ii) {
+        numBuckets += cf->filters[ii].numBuckets;
+    }
+
+    return  sizeof(*cf) + 
+            sizeof(*cf->filters) * cf->numFilters +
+            numBuckets * cf->bucketSize;
+}
+
 static int CFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+    if (argc != 2) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    CuckooFilter *cf;
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
+    int status = cfGetFilter(key, &cf);
+    if (status != REDISMODULE_OK) {
+        return RedisModule_ReplyWithError(ctx, statusStrerror(status));
+    }
+
+    RedisModule_ReplyWithArray(ctx, 8 * 2);
+    RedisModule_ReplyWithSimpleString(ctx, "Size");
+    RedisModule_ReplyWithLongLong(ctx, CFSize(cf));
+    RedisModule_ReplyWithSimpleString(ctx, "Number of buckets");
+    RedisModule_ReplyWithLongLong(ctx, cf->numBuckets);
+    RedisModule_ReplyWithSimpleString(ctx, "Number of filter");
+    RedisModule_ReplyWithLongLong(ctx, cf->numFilters);
+    RedisModule_ReplyWithSimpleString(ctx, "Number of items insert");
+    RedisModule_ReplyWithLongLong(ctx, cf->numItems);
+    RedisModule_ReplyWithSimpleString(ctx, "Number of items deleted");
+    RedisModule_ReplyWithLongLong(ctx, cf->numDeletes);
+    RedisModule_ReplyWithSimpleString(ctx, "Bucket size");
+    RedisModule_ReplyWithLongLong(ctx, cf->bucketSize);
+    RedisModule_ReplyWithSimpleString(ctx, "Expansion rate");
+    RedisModule_ReplyWithLongLong(ctx, cf->expansion);
+    RedisModule_ReplyWithSimpleString(ctx, "Max iteration");
+    RedisModule_ReplyWithLongLong(ctx, cf->maxIterations);
+
+    return REDISMODULE_OK;
+}
+
+static int CFDebug_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     if (argc != 2) {
         return RedisModule_WrongArity(ctx);
@@ -1116,16 +1161,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     CREATE_ROCMD("CF.SCANDUMP", CFScanDump_RedisCommand);
     CREATE_WRCMD("CF.LOADCHUNK", CFLoadChunk_RedisCommand);
 
-    CREATE_ROCMD("CF.DEBUG", CFInfo_RedisCommand);
-/*
-    // Count Min Sketch commcms.initbydimands
-    CREATE_WRCMD("CMS.INITBYDIM", CMSInit_RedisCommand);
-    CREATE_WRCMD("CMS.INITBYPROB", CMSInit_RedisCommand);
-    CREATE_WRCMD("CMS.INCRBY", CMSIncrBy_RedisCommand);
-    CREATE_ROCMD("CMS.QUERY", CMSQuery_RedisCommand);
-    CREATE_WRCMD("CMS.MERGE", CMSMerge_RedisCommand);
-    CREATE_ROCMD("CMS.DEBUG", CMSDebug_RedisCommand);
-*/
+    CREATE_ROCMD("CF.INFO", CFInfo_RedisCommand);
+    CREATE_ROCMD("CF.DEBUG", CFDebug_RedisCommand);
 
     CMSModule_onLoad(ctx, argv, argc);
     TopKModule_onLoad(ctx, argv, argc);
