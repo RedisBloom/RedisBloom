@@ -189,6 +189,25 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         with self.assertResponseError():
             self.cmd('bf.debug', 'cf')
 
+    def test_debug(self):
+        self.assertOk(self.cmd('bf.reserve', 'bf', '0.01', '10'))
+        for i in range(100):
+            self.cmd('bf.add', 'bf', str(i))
+        self.assertEqual(self.cmd('bf.debug', 'bf'), ['size:99',
+                'bytes:16 bits:128 hashes:7 hashwidth:64 capacity:13 size:13 ratio:0.01',
+                'bytes:64 bits:512 hashes:9 hashwidth:64 capacity:40 size:40 ratio:0.0025',
+                'bytes:256 bits:2048 hashes:12 hashwidth:64 capacity:121 size:46 ratio:0.0003125'])
+
+        self.cmd('del', 'bf')
+        
+        self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '100'))
+        for i in range(1000):
+            self.cmd('bf.add', 'bf', str(i))
+        self.assertEqual(self.cmd('bf.debug', 'bf'), ['size:1000',
+                'bytes:256 bits:2048 hashes:10 hashwidth:64 capacity:142 size:142 ratio:0.001',
+                'bytes:1024 bits:8192 hashes:12 hashwidth:64 capacity:474 size:474 ratio:0.00025',
+                'bytes:4096 bits:32768 hashes:15 hashwidth:64 capacity:1517 size:384 ratio:3.125e-05'])
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
