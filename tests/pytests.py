@@ -201,12 +201,13 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         self.cmd('del', 'bf')
         
         self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '100'))
-        for i in range(1000):
+        for i in range(4000):
             self.cmd('bf.add', 'bf', str(i))
-        self.assertEqual(self.cmd('bf.debug', 'bf'), ['size:1000',
+        self.assertEqual(self.cmd('bf.debug', 'bf'), ['size:3990',
                 'bytes:256 bits:2048 hashes:10 hashwidth:64 capacity:142 size:142 ratio:0.001',
                 'bytes:1024 bits:8192 hashes:12 hashwidth:64 capacity:474 size:474 ratio:0.00025',
-                'bytes:4096 bits:32768 hashes:15 hashwidth:64 capacity:1517 size:384 ratio:3.125e-05'])
+                'bytes:4096 bits:32768 hashes:15 hashwidth:64 capacity:1517 size:1517 ratio:3.125e-05',
+                'bytes:16384 bits:131072 hashes:19 hashwidth:64 capacity:4790 size:1857 ratio:1.95313e-06'])
 
 if __name__ == "__main__":
     import unittest
