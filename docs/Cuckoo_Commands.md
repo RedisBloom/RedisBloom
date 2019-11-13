@@ -5,7 +5,7 @@
 ### Format:
 
 ```
-CF.RESERVE {key} {capacity} [BUCKETSIZE bucketSize] [MAXITERATIONS maxIterations]
+CF.RESERVE {key} {capacity} [BUCKETSIZE bucketSize] [MAXITERATIONS maxIterations] [EXPANSION expansion] 
 ```
 
 Create an empty cuckoo filter with an initial capacity of {capacity} items.
@@ -15,12 +15,14 @@ on how full the filter is.
 The filter will auto-expand (at the cost of reduced performance) if the initial
 capacity is exceeded, though the performance degradation is variable depending
 on how far the capacity is exceeded. In general, the false positive rate will
-increase by for every additional {capacity} items beyond initial capacity.
+increase by for every additional {capacity} items beyond initial capacity. The
+filter grows up to 1024 times.
 
 ## Parameters:
 
 * **key**: The key under which the filter is to be found
-* **capacity**: Estimated capacity for the filter.
+* **capacity**: Estimated capacity for the filter. Capacity is rounded to the
+next `2^n` number.
 
 Optional parameters:
 
@@ -30,6 +32,9 @@ operation speed.
 * **maxIterations**: Number of attempts to swap buckets before declaring
 filter as full and creating an additional filter. A low value is better for
 speed while a higher number is better for filter fill rate.
+* **expansion**: When a new filter is created, its size will be the size of the
+current filter multiplied by `expansion`. Expansion is rounded to the next
+`2^n` number.
 
 ### Complexity
 
