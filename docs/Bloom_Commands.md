@@ -5,7 +5,7 @@
 ### Format:
 
 ```
-BF.RESERVE {key} {error_rate} {capacity}
+BF.RESERVE {key} {error_rate} {capacity} [EXPANSION expansion] 
 ```
 
 ### Description:
@@ -33,6 +33,13 @@ filter entry.
     number. The actual degradation will depend on how far the limit has
     been exceeded. Performance will degrade linearly as the number of entries
     grow exponentially.
+
+Optional parameters:
+
+* **expansion**: When a new filter is created, its size will be the size of the
+current filter multiplied by `expansion`.
+Default expansion value is 2. New sub-filter size is (2 * expansion) of the
+previous sub-filter.
 
 ### Complexity
 

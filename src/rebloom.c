@@ -14,6 +14,7 @@
 #define CF_MAX_ITERATIONS 20
 #define CF_DEFAULT_BUCKETSIZE 2
 #define CF_DEFAULT_EXPANSION 1
+#define BF_DEFAULT_EXPANSION 2
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -84,8 +85,8 @@ static const char *statusStrerror(int status) {
  * Common function for adding one or more items to a bloom filter.
  * capacity and error rate must not be 0.
  */
-static SBChain *bfCreateChain(RedisModuleKey *key, double error_rate, size_t capacity) {
-    SBChain *sb = SB_NewChain(capacity, error_rate, BLOOM_OPT_FORCE64);
+static SBChain *bfCreateChain(RedisModuleKey *key, double error_rate, size_t capacity, unsigned expansion) {
+    SBChain *sb = SB_NewChain(capacity, error_rate, BLOOM_OPT_FORCE64, expansion);
     if (sb != NULL) {
         RedisModule_ModuleTypeSetValue(key, BFType, sb);
     }
@@ -113,7 +114,7 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     RedisModule_AutoMemory(ctx);
     RedisModule_ReplicateVerbatim(ctx);
 
-    if (argc != 4) {
+    if (argc != 4 && argc != 6) {
         RedisModule_WrongArity(ctx);
         return REDISMODULE_ERR;
     }
@@ -129,6 +130,15 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         return RedisModule_ReplyWithError(ctx, "ERR bad capacity");
     }
 
+    long long expansion = BF_DEFAULT_EXPANSION;
+    int ex_loc = RMUtil_ArgIndex("EXPANSION", argv, argc);    
+    if (ex_loc != -1) {
+        if (RedisModule_StringToLongLong(argv[ex_loc + 1], &expansion) != REDISMODULE_OK) {
+            RedisModule_ReplyWithError(ctx, "ERR bad expansion");
+            return REDISMODULE_ERR;
+        }
+    }
+
     if (error_rate == 0 || capacity == 0) {
         return RedisModule_ReplyWithError(ctx, "ERR capacity and error must not be 0");
     }
@@ -140,7 +150,7 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
 
-    if (bfCreateChain(key, error_rate, capacity) == NULL) {
+    if (bfCreateChain(key, error_rate, capacity, expansion) == NULL) {
         RedisModule_ReplyWithSimpleString(ctx, "ERR could not create filter"); // LCOV_EXCL_LINE
     } else {
         RedisModule_ReplyWithSimpleString(ctx, "OK");
@@ -202,7 +212,7 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
     SBChain *sb;
     int status = bfGetChain(key, &sb);
     if (status == SB_EMPTY && options->autocreate) {
-        sb = bfCreateChain(key, options->error_rate, options->capacity);
+        sb = bfCreateChain(key, options->error_rate, options->capacity, BF_DEFAULT_EXPANSION);
         if (sb == NULL) {
             return RedisModule_ReplyWithError(ctx, "ERR could not create filter"); // LCOV_EXCL_LINE
         }
@@ -811,9 +821,11 @@ static int CFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 /// Datatype Functions                                                       ///
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-#define BF_ENCODING_VERSION 3
-#define CF_MIN_EXPANSION_VERSION 4
 #define BF_MIN_OPTIONS_ENC 2
+#define BF_ENCODING_VERSION 3
+#define BF_MIN_GROWTH_ENC 4
+
+#define CF_MIN_EXPANSION_VERSION 4
 
 static void BFRdbSave(RedisModuleIO *io, void *obj) {
     // Save the setting!
@@ -822,6 +834,7 @@ static void BFRdbSave(RedisModuleIO *io, void *obj) {
     RedisModule_SaveUnsigned(io, sb->size);
     RedisModule_SaveUnsigned(io, sb->nfilters);
     RedisModule_SaveUnsigned(io, sb->options);
+    RedisModule_SaveUnsigned(io, sb->growth);
 
     for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         const SBLink *lb = sb->filters + ii;
@@ -841,7 +854,7 @@ static void BFRdbSave(RedisModuleIO *io, void *obj) {
 }
 
 static void *BFRdbLoad(RedisModuleIO *io, int encver) {
-    if (encver > BF_ENCODING_VERSION) {
+    if (encver > BF_MIN_GROWTH_ENC) {
         return NULL;
     }
 
@@ -852,6 +865,12 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
     if (encver >= BF_MIN_OPTIONS_ENC) {
         sb->options = RedisModule_LoadUnsigned(io);
     }
+    if (encver >= BF_MIN_GROWTH_ENC) {
+        sb->growth = RedisModule_LoadUnsigned(io);
+    } else {
+        sb->growth = 2;
+    }
+    
 
     // Sanity:
     assert(sb->nfilters < 1000);
@@ -1136,7 +1155,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
                                                .aof_rewrite = BFAofRewrite,
                                                .free = BFFree,
                                                .mem_usage = BFMemUsage};
-    BFType = RedisModule_CreateDataType(ctx, "MBbloom--", BF_ENCODING_VERSION, &typeprocs);
+    BFType = RedisModule_CreateDataType(ctx, "MBbloom--", BF_MIN_GROWTH_ENC, &typeprocs);
     if (BFType == NULL) {
         return REDISMODULE_ERR;
     }

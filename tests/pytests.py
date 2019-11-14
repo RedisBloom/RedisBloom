@@ -189,6 +189,23 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         with self.assertResponseError():
             self.cmd('bf.debug', 'cf')
 
+    def test_expansion(self):
+        self.assertOk(self.cmd('bf.reserve exp1 0.01 4 expansion 1'))
+        self.assertOk(self.cmd('bf.reserve exp2 0.01 4 expansion 2'))
+        self.assertOk(self.cmd('bf.reserve exp4 0.01 4 expansion 4'))
+        for i in range(1000):
+            self.cmd('bf.add exp1', str(i))
+            self.cmd('bf.add exp2', str(i))
+            self.cmd('bf.add exp4', str(i))
+        for i in range(1000):
+            self.assertEqual(1, self.cmd('bf.exists exp1', str(i)))
+            self.assertEqual(1, self.cmd('bf.exists exp2', str(i)))
+            self.assertEqual(1, self.cmd('bf.exists exp4', str(i)))
+        
+        self.assertEqual(12, len(self.cmd('bf.debug', 'exp1')))
+        self.assertEqual(7, len(self.cmd('bf.debug', 'exp2')))
+        self.assertEqual(5, len(self.cmd('bf.debug', 'exp4')))
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
