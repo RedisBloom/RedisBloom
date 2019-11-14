@@ -66,7 +66,7 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
     SBLink *cur = CUR_FILTER(sb);
     if (cur->size >= cur->inner.entries) {
         double error = cur->inner.error * pow(ERROR_TIGHTENING_RATIO, sb->nfilters + 1);
-        if (SBChain_AddLink(sb, cur->inner.entries * sb->growth, error) != 0) {
+        if (SBChain_AddLink(sb, cur->inner.entries * (size_t)sb->growth, error) != 0) {
             return -1;
         }
         cur = CUR_FILTER(sb);
