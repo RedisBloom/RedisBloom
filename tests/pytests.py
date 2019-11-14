@@ -206,6 +206,11 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertEqual(7, len(self.cmd('bf.debug', 'exp2')))
         self.assertEqual(5, len(self.cmd('bf.debug', 'exp4')))
 
+        with self.assertResponseError():
+            self.cmd('bf.reserve exp4 0.01 4 expansion')
+        with self.assertResponseError():
+            self.cmd('bf.reserve exp4 0.01 4 expansion str')            
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
