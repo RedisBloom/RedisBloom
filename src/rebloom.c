@@ -141,7 +141,7 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     }
 
     if (bfCreateChain(key, error_rate, capacity) == NULL) {
-        RedisModule_ReplyWithSimpleString(ctx, "ERR could not create filter"); // LCOV_EXCL_LINE
+        RedisModule_ReplyWithError(ctx, "ERR could not create filter"); // LCOV_EXCL_LINE
     } else {
         RedisModule_ReplyWithSimpleString(ctx, "OK");
     }

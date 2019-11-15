@@ -189,6 +189,10 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         with self.assertResponseError():
             self.cmd('bf.debug', 'cf')
 
+    def test_no_1_error_rate(self):
+        with self.assertResponseError():
+            self.cmd('bf.reserve cf 1 1000')
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
