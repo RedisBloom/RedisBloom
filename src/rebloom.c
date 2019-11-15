@@ -692,7 +692,6 @@ static int CFDel_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
 
 static int CFCompact_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    RedisModule_ReplicateVerbatim(ctx);
 
     if (argc != 2) {
         return RedisModule_WrongArity(ctx);
@@ -705,16 +704,8 @@ static int CFCompact_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         return RedisModule_ReplyWithError(ctx, "Cuckoo filter was not found");
     }
     CuckooFilter_Compact(cf);
+    RedisModule_ReplicateVerbatim(ctx);
     return RedisModule_ReplyWithSimpleString(ctx, "OK");
-}
-
-static void fillCFHeader(CFHeader *header, const CuckooFilter *cf) {
-    *header = (CFHeader){.numItems = cf->numItems,
-                         .numBuckets = cf->numBuckets,
-                         .numDeletes = cf->numDeletes,
-                         .numFilters = cf->numFilters,
-                         .bucketSize = cf->bucketSize,
-                         .maxIterations = cf->maxIterations};
 }
 
 static int CFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
