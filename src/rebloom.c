@@ -507,19 +507,25 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
         } else {
             insStatus = CuckooFilter_Insert(cf, hash);
         }
-        if (insStatus == CuckooInsert_Inserted) {
+        switch (insStatus)
+        {
+        case CuckooInsert_Inserted:
             RedisModule_ReplyWithLongLong(ctx, 1);
-        } else if (insStatus == CuckooInsert_Exists) {
+            break;
+        case CuckooInsert_Exists:
             RedisModule_ReplyWithLongLong(ctx, 0);
-        } else if (insStatus == CuckooInsert_NoSpace) {
+            break;
+        case CuckooInsert_NoSpace:
             if (!options->is_multi) {
                 return RedisModule_ReplyWithError(ctx, "Filter is full");
             } else {
                 RedisModule_ReplyWithLongLong(ctx, -1);
             }
-        } else if (insStatus == CuckooInsert_MemAllocFailed){                   // LCOV_EXCL_LINE
-            // Should never happen
-            return RedisModule_ReplyWithError(ctx, "Memory allocation failure");// LCOV_EXCL_LINE
+        case CuckooInsert_MemAllocFailed:
+            RedisModule_ReplyWithError(ctx, "Memory allocation failure");// LCOV_EXCL_LINE
+            break;
+        default:
+            break;
         }
     }
 
