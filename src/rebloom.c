@@ -115,8 +115,7 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     RedisModule_ReplicateVerbatim(ctx);
 
     if (argc != 4 && argc != 6) {
-        RedisModule_WrongArity(ctx);
-        return REDISMODULE_ERR;
+        return RedisModule_WrongArity(ctx);
     }
 
     double error_rate;
@@ -135,7 +134,7 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     if (ex_loc != -1) {
         if (RedisModule_StringToLongLong(argv[ex_loc + 1], &expansion) != REDISMODULE_OK) {
             RedisModule_ReplyWithError(ctx, "ERR bad expansion");
-            return REDISMODULE_ERR;
+            return REDISMODULE_OK;
         }
     }
 
@@ -174,8 +173,7 @@ static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     int is_multi = isMulti(argv[0]);
 
     if ((is_multi == 0 && argc != 3) || (is_multi && argc < 3)) {
-        RedisModule_WrongArity(ctx);
-        return REDISMODULE_ERR;
+        return RedisModule_WrongArity(ctx);
     }
 
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
@@ -323,8 +321,7 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     RedisModule_AutoMemory(ctx);
 
     if (argc != 2) {
-        RedisModule_WrongArity(ctx);
-        return REDISMODULE_ERR;
+        return RedisModule_WrongArity(ctx);
     }
 
     const SBChain *sb = NULL;
@@ -459,8 +456,7 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     int mi_loc = RMUtil_ArgIndex("MAXITERATIONS", argv, argc);    
     if (mi_loc != -1) {
         if (RedisModule_StringToLongLong(argv[mi_loc + 1], &maxIterations) != REDISMODULE_OK) {
-            RedisModule_ReplyWithError(ctx, "Couldn't parse MAXITERATIONS");
-            return REDISMODULE_ERR;
+            return RedisModule_ReplyWithError(ctx, "Couldn't parse MAXITERATIONS");
         }
     }
 
@@ -468,8 +464,7 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     int bs_loc = RMUtil_ArgIndex("BUCKETSIZE", argv, argc);    
     if (bs_loc != -1) {
         if (RedisModule_StringToLongLong(argv[bs_loc + 1], &bucketSize) != REDISMODULE_OK) {
-            RedisModule_ReplyWithError(ctx, "Couldn't parse BUCKETSIZE");
-            return REDISMODULE_ERR;
+            return RedisModule_ReplyWithError(ctx, "Couldn't parse BUCKETSIZE");
         }
     }
 
@@ -477,14 +472,12 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     int ex_loc = RMUtil_ArgIndex("EXPANSION", argv, argc);    
     if (ex_loc != -1) {
         if (RedisModule_StringToLongLong(argv[ex_loc + 1], &expansion) != REDISMODULE_OK) {
-            RedisModule_ReplyWithError(ctx, "Couldn't parse EXPANSION");
-            return REDISMODULE_ERR;
+            return RedisModule_ReplyWithError(ctx, "Couldn't parse EXPANSION");
         }
     }
 
     if (bucketSize * 2 > capacity) {
-        RedisModule_ReplyWithError(ctx, "Capacity must be at least (BucketSize * 2)");
-        return REDISMODULE_ERR;
+        return RedisModule_ReplyWithError(ctx, "Capacity must be at least (BucketSize * 2)");
     }
 
     CuckooFilter *cf;
