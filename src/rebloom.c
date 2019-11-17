@@ -780,7 +780,15 @@ static int CFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     }
     return RedisModule_ReplyWithSimpleString(ctx, "OK");
 }
-/*
+
+uint64_t BFCapacity(SBChain *bf) {
+    uint64_t capacity = 0;
+    for(uint16_t ii = 0; ii < bf->nfilters; ++ii) {
+        capacity += bf->filters[ii].inner.entries; // * sizeof(unsigned char);
+    }
+    return capacity;
+}
+
 uint64_t BFSize(SBChain *bf) {
     uint64_t bytes = 0;
     for(uint16_t ii = 0; ii < bf->nfilters; ++ii) {
@@ -806,7 +814,9 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
 
-    RedisModule_ReplyWithArray(ctx, 8 * 2);
+    RedisModule_ReplyWithArray(ctx, 4 * 2);
+    RedisModule_ReplyWithSimpleString(ctx, "Capacity");
+    RedisModule_ReplyWithLongLong(ctx, BFCapacity(bf));
     RedisModule_ReplyWithSimpleString(ctx, "Size");
     RedisModule_ReplyWithLongLong(ctx, BFSize(bf));
     RedisModule_ReplyWithSimpleString(ctx, "Number of filters");
@@ -818,7 +828,7 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 
     return REDISMODULE_OK;
 }
-*/
+
 uint64_t CFSize(CuckooFilter *cf) {
     uint64_t numBuckets = 0;
     for(uint16_t ii = 0; ii < cf->numFilters; ++ii) {
@@ -1170,7 +1180,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     CREATE_WRCMD("BF.INSERT", BFInsert_RedisCommand);
     CREATE_ROCMD("BF.EXISTS", BFCheck_RedisCommand);
     CREATE_ROCMD("BF.MEXISTS", BFCheck_RedisCommand);
-    CREATE_ROCMD("BF.INFO", CFInfo_RedisCommand);
+    CREATE_ROCMD("BF.INFO", BFInfo_RedisCommand);
 
     // Bloom - Debug
     CREATE_ROCMD("BF.DEBUG", BFDebug_RedisCommand);
