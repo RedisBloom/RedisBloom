@@ -308,3 +308,42 @@ O(log N)
 ### Returns
 
 `OK` on success, or an error on failure.
+
+
+```
+CF.INFO {key}
+```
+
+### Description
+
+Return information about `key`
+
+### Parameters
+
+* **key** Name of the key to restore
+
+### Complexity O
+
+O(1)
+
+### Returns
+
+```sql
+127.0.0.1:6379> CF.INFO cf
+ 1) Size
+ 2) (integer) 1080
+ 3) Number of buckets
+ 4) (integer) 512
+ 5) Number of filter
+ 6) (integer) 1
+ 7) Number of items inserted
+ 8) (integer) 0
+ 9) Number of items deleted
+10) (integer) 0
+11) Bucket size
+12) (integer) 2
+13) Expansion rate
+14) (integer) 1
+15) Max iteration
+16) (integer) 20
+```
