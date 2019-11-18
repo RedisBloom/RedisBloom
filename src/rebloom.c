@@ -82,7 +82,7 @@ static const char *statusStrerror(int status) {
  * capacity and error rate must not be 0.
  */
 static SBChain *bfCreateChain(RedisModuleKey *key, double error_rate, size_t capacity) {
-    SBChain *sb = SB_NewChain(capacity, error_rate, BLOOM_OPT_FORCE64);
+    SBChain *sb = SB_NewChain(capacity, error_rate, BLOOM_OPT_FORCE64 | BLOOM_OPT_NOROUND);
     if (sb != NULL) {
         RedisModule_ModuleTypeSetValue(key, BFType, sb);
     }

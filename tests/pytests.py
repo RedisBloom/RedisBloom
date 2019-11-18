@@ -170,20 +170,20 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         rep = self.cmd('BF.INSERT', 'missingFilter', 'ERROR',
                        '0.001', 'CAPACITY', '50000', 'ITEMS', 'foo')
         self.assertEqual([1], rep)
-        self.assertEqual(['size:1', 'bytes:131072 bits:1048576 hashes:10 hashwidth:64 capacity:72931 size:1 ratio:0.001'],
+        self.assertEqual(['size:1', 'bytes:89860 bits:718880 hashes:10 hashwidth:64 capacity:50000 size:1 ratio:0.001'],
                          [x.decode() for x in self.cmd('bf.debug', 'missingFilter')])
 
         rep = self.cmd('BF.INSERT', 'missingFilter', 'ERROR', '0.1', 'ITEMS', 'foo', 'bar', 'baz')
         self.assertEqual([0, 1, 1], rep)
-        self.assertEqual(['size:3', 'bytes:131072 bits:1048576 hashes:10 hashwidth:64 capacity:72931 size:3 ratio:0.001'],
+        self.assertEqual(['size:3', 'bytes:89860 bits:718880 hashes:10 hashwidth:64 capacity:50000 size:3 ratio:0.001'],
                          [x.decode() for x in self.cmd('bf.debug', 'missingFilter')])
 
     def test_mem_usage(self):
         self.assertOk(self.cmd('bf.reserve', 'bf', '0.05', '1000'))
-        self.assertEqual(1148, self.cmd('MEMORY USAGE', 'bf'))
+        self.assertEqual(904, self.cmd('MEMORY USAGE', 'bf'))
         self.assertEqual([1, 1, 1], self.cmd(
             'bf.madd', 'bf', 'foo', 'bar', 'baz'))
-        self.assertEqual(1148, self.cmd('MEMORY USAGE', 'bf'))
+        self.assertEqual(904, self.cmd('MEMORY USAGE', 'bf'))
         with self.assertResponseError():
             self.cmd('bf.debug', 'bf', 'noexist')
         with self.assertResponseError():
