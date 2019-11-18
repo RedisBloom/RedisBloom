@@ -90,11 +90,11 @@ bloom_hashval bloom_calc_hash64(const void *buffer, int len) {
     return found_unset;
 
 static int bloom_check_add32(struct bloom *bloom, bloom_hashval hashval, int mode) {
-    CHECK_ADD_FUNC(uint32_t, (1 << bloom->n2));
+    CHECK_ADD_FUNC(uint32_t, bloom->bytes * 8);
 }
 
 static int bloom_check_add64(struct bloom *bloom, bloom_hashval hashval, int mode) {
-    CHECK_ADD_FUNC(uint64_t, (1LLU << bloom->n2));
+    CHECK_ADD_FUNC(uint64_t, bloom->bytes * 8);
 }
 
 // This function is used for older bloom filters whose bit count was not
@@ -166,6 +166,7 @@ int bloom_init(struct bloom *bloom, unsigned entries, double error, unsigned opt
     } else {
         bloom->bytes = bits / 8;
     }
+    bloom->bits = bloom->bytes * 8;
 
     bloom->force64 = (options & BLOOM_OPT_FORCE64);
     bloom->hashes = (int)ceil(0.693147180559945 * bloom->bpe); // ln(2)
@@ -178,10 +179,12 @@ int bloom_init(struct bloom *bloom, unsigned entries, double error, unsigned opt
 }
 
 int bloom_check_h(const struct bloom *bloom, bloom_hashval hash) {
-    if (bloom->force64 || bloom->n2 > 31) {
-        return bloom_check_add64((void *)bloom, hash, MODE_READ);
-    } else if (bloom->n2 > 0) {
-        return bloom_check_add32((void *)bloom, hash, MODE_READ);
+    if (bloom->n2 > 0) {
+        if (bloom->force64 || bloom->n2 > 31) {
+            return bloom_check_add64((void *)bloom, hash, MODE_READ);
+        } else {
+            return bloom_check_add32((void *)bloom, hash, MODE_READ);
+        }
     } else {
         return bloom_check_add_compat((void *)bloom, hash, MODE_READ);
     }
@@ -192,10 +195,12 @@ int bloom_check(const struct bloom *bloom, const void *buffer, int len) {
 }
 
 int bloom_add_h(struct bloom *bloom, bloom_hashval hash) {
-    if (bloom->force64 || bloom->n2 > 31) {
-        return !bloom_check_add64(bloom, hash, MODE_WRITE);
-    } else if (bloom->n2) {
-        return !bloom_check_add32(bloom, hash, MODE_WRITE);
+    if (bloom->n2 > 0) {
+        if (bloom->force64 || bloom->n2 > 31) {
+            return !bloom_check_add64(bloom, hash, MODE_WRITE);
+        } else {
+            return !bloom_check_add32(bloom, hash, MODE_WRITE);
+        }
     } else {
         return !bloom_check_add_compat(bloom, hash, MODE_WRITE);
     }
