@@ -242,6 +242,7 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
                                                  'Bucket size', 2L, 
                                                  'Expansion rate', 1L, 
                                                  'Max iterations', 20L])
+
         with self.assertResponseError():
             self.cmd('cf.info', 'bf')   
         with self.assertResponseError():
