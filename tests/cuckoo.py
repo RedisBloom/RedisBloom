@@ -243,6 +243,11 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
                                                  'Expansion rate', 1L, 
                                                  'Max iterations', 20L])
 
+        with self.assertResponseError():
+            self.cmd('cf.info', 'bf')   
+        with self.assertResponseError():
+            self.cmd('cf.info') 
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
