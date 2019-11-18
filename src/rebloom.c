@@ -783,7 +783,7 @@ static int CFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **arg
 
 uint64_t BFCapacity(SBChain *bf) {
     uint64_t capacity = 0;
-    for(uint16_t ii = 0; ii < bf->nfilters; ++ii) {
+    for(size_t ii = 0; ii < bf->nfilters; ++ii) {
         capacity += bf->filters[ii].inner.entries; // * sizeof(unsigned char);
     }
     return capacity;
@@ -791,7 +791,7 @@ uint64_t BFCapacity(SBChain *bf) {
 
 uint64_t BFSize(SBChain *bf) {
     uint64_t bytes = 0;
-    for(uint16_t ii = 0; ii < bf->nfilters; ++ii) {
+    for(size_t ii = 0; ii < bf->nfilters; ++ii) {
         bytes += bf->filters[ii].inner.bytes; // * sizeof(unsigned char);
     }
 
