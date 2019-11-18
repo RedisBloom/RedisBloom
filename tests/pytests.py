@@ -215,6 +215,10 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
                                                   'Size', 408L, 
                                                   'Number of filters', 1L, 
                                                   'Number of items inserted', 0L])
+        with self.assertResponseError():
+            self.cmd('bf.info', 'cf')   
+        with self.assertResponseError():
+            self.cmd('bf.info')                                             
 
     def test_no_1_error_rate(self):
         with self.assertResponseError():
