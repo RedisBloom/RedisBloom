@@ -232,6 +232,17 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 EXPANSION')
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 EXPANSION string')
     
+    def test_info(self):
+        self.cmd('CF.RESERVE a 1000')
+        self.assertEqual(self.cmd('CF.INFO a'), ['Size', 1080L, 
+                                                 'Number of buckets', 512L, 
+                                                 'Number of filters', 1L, 
+                                                 'Number of items inserted', 0L, 
+                                                 'Number of items deleted', 0L, 
+                                                 'Bucket size', 2L, 
+                                                 'Expansion rate', 1L, 
+                                                 'Max iterations', 20L])
+
 if __name__ == "__main__":
     import unittest
     unittest.main()

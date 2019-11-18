@@ -189,6 +189,33 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         with self.assertResponseError():
             self.cmd('bf.debug', 'cf')
 
+    def test_debug(self):
+        self.assertOk(self.cmd('bf.reserve', 'bf', '0.01', '10'))
+        for i in range(100):
+            self.cmd('bf.add', 'bf', str(i))
+        self.assertEqual(self.cmd('bf.debug', 'bf'), ['size:99',
+                'bytes:16 bits:128 hashes:7 hashwidth:64 capacity:13 size:13 ratio:0.01',
+                'bytes:64 bits:512 hashes:9 hashwidth:64 capacity:40 size:40 ratio:0.0025',
+                'bytes:256 bits:2048 hashes:12 hashwidth:64 capacity:121 size:46 ratio:0.0003125'])
+
+        self.cmd('del', 'bf')
+        
+        self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '100'))
+        for i in range(4000):
+            self.cmd('bf.add', 'bf', str(i))
+        self.assertEqual(self.cmd('bf.debug', 'bf'), ['size:3990',
+                'bytes:256 bits:2048 hashes:10 hashwidth:64 capacity:142 size:142 ratio:0.001',
+                'bytes:1024 bits:8192 hashes:12 hashwidth:64 capacity:474 size:474 ratio:0.00025',
+                'bytes:4096 bits:32768 hashes:15 hashwidth:64 capacity:1517 size:1517 ratio:3.125e-05',
+                'bytes:16384 bits:131072 hashes:19 hashwidth:64 capacity:4790 size:1857 ratio:1.95313e-06'])
+
+    def test_info(self):
+        self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '100'))
+        self.assertEqual(self.cmd('bf.info bf'), ['Capacity', 142L,
+                                                  'Size', 408L, 
+                                                  'Number of filters', 1L, 
+                                                  'Number of items inserted', 0L])
+
     def test_no_1_error_rate(self):
         with self.assertResponseError():
             self.cmd('bf.reserve cf 1 1000')
