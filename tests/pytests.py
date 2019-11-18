@@ -216,6 +216,10 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
                                                   'Number of filters', 1L, 
                                                   'Number of items inserted', 0L])
 
+    def test_no_1_error_rate(self):
+        with self.assertResponseError():
+            self.cmd('bf.reserve cf 1 1000')
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
