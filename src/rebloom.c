@@ -868,7 +868,7 @@ static int CFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     RedisModule_ReplyWithLongLong(ctx, cf->bucketSize);
     RedisModule_ReplyWithSimpleString(ctx, "Expansion rate");
     RedisModule_ReplyWithLongLong(ctx, cf->expansion);
-    RedisModule_ReplyWithSimpleString(ctx, "Max iteration");
+    RedisModule_ReplyWithSimpleString(ctx, "Max iterations");
     RedisModule_ReplyWithLongLong(ctx, cf->maxIterations);
 
     return REDISMODULE_OK;
@@ -1206,7 +1206,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     CREATE_ROCMD("CF.SCANDUMP", CFScanDump_RedisCommand);
     CREATE_WRCMD("CF.LOADCHUNK", CFLoadChunk_RedisCommand);
 
-    CREATE_ROCMD("CF.DEBUG", CFInfo_RedisCommand);
+    CREATE_ROCMD("CF.INFO", CFInfo_RedisCommand);
+    CREATE_ROCMD("CF.DEBUG", CFDebug_RedisCommand);
     
     CMSModule_onLoad(ctx, argv, argc);
     TopKModule_onLoad(ctx, argv, argc);

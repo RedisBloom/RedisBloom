@@ -209,6 +209,13 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
                 'bytes:4096 bits:32768 hashes:15 hashwidth:64 capacity:1517 size:1517 ratio:3.125e-05',
                 'bytes:16384 bits:131072 hashes:19 hashwidth:64 capacity:4790 size:1857 ratio:1.95313e-06'])
 
+    def test_info(self):
+        self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '100'))
+        self.assertEqual(self.cmd('bf.info bf'), ['Capacity', 142L,
+                                                  'Size', 408L, 
+                                                  'Number of filters', 1L, 
+                                                  'Number of items inserted', 0L])
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
