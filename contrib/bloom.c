@@ -90,11 +90,11 @@ bloom_hashval bloom_calc_hash64(const void *buffer, int len) {
     return found_unset;
 
 static int bloom_check_add32(struct bloom *bloom, bloom_hashval hashval, int mode) {
-    CHECK_ADD_FUNC(uint32_t, bloom->bytes * 8);
+    CHECK_ADD_FUNC(uint32_t, (1 << bloom->n2));
 }
 
 static int bloom_check_add64(struct bloom *bloom, bloom_hashval hashval, int mode) {
-    CHECK_ADD_FUNC(uint64_t, bloom->bytes * 8);
+    CHECK_ADD_FUNC(uint64_t, (1LLU << bloom->n2));
 }
 
 // This function is used for older bloom filters whose bit count was not
