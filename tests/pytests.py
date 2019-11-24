@@ -170,12 +170,12 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         rep = self.cmd('BF.INSERT', 'missingFilter', 'ERROR',
                        '0.001', 'CAPACITY', '50000', 'ITEMS', 'foo')
         self.assertEqual([1], rep)
-        self.assertEqual(['size:1', 'bytes:131072 bits:1048576 hashes:10 hashwidth:64 capacity:72931 size:1 ratio:0.001'],
+        self.assertEqual(['size:1', 'bytes:131072 bits:1048576 hashes:11 hashwidth:64 capacity:66280 size:1 ratio:0.0005'],
                          [x.decode() for x in self.cmd('bf.debug', 'missingFilter')])
 
         rep = self.cmd('BF.INSERT', 'missingFilter', 'ERROR', '0.1', 'ITEMS', 'foo', 'bar', 'baz')
         self.assertEqual([0, 1, 1], rep)
-        self.assertEqual(['size:3', 'bytes:131072 bits:1048576 hashes:10 hashwidth:64 capacity:72931 size:3 ratio:0.001'],
+        self.assertEqual(['size:3', 'bytes:131072 bits:1048576 hashes:11 hashwidth:64 capacity:66280 size:3 ratio:0.0005'],
                          [x.decode() for x in self.cmd('bf.debug', 'missingFilter')])
 
     def test_mem_usage(self):
@@ -193,10 +193,10 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertOk(self.cmd('bf.reserve', 'bf', '0.01', '10'))
         for i in range(100):
             self.cmd('bf.add', 'bf', str(i))
-        self.assertEqual(self.cmd('bf.debug', 'bf'), ['size:99',
-                'bytes:16 bits:128 hashes:7 hashwidth:64 capacity:13 size:13 ratio:0.01',
-                'bytes:64 bits:512 hashes:9 hashwidth:64 capacity:40 size:40 ratio:0.0025',
-                'bytes:256 bits:2048 hashes:12 hashwidth:64 capacity:121 size:46 ratio:0.0003125'])
+        self.assertEqual(self.cmd('bf.debug', 'bf'), ['size:100',
+                'bytes:16 bits:128 hashes:8 hashwidth:64 capacity:11 size:11 ratio:0.005',
+                'bytes:64 bits:512 hashes:9 hashwidth:64 capacity:41 size:41 ratio:0.0025',
+                'bytes:256 bits:2048 hashes:10 hashwidth:64 capacity:147 size:48 ratio:0.00125'])
 
         self.cmd('del', 'bf')
         
@@ -204,14 +204,14 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         for i in range(4000):
             self.cmd('bf.add', 'bf', str(i))
         self.assertEqual(self.cmd('bf.debug', 'bf'), ['size:3990',
-                'bytes:256 bits:2048 hashes:10 hashwidth:64 capacity:142 size:142 ratio:0.001',
+                'bytes:256 bits:2048 hashes:11 hashwidth:64 capacity:129 size:129 ratio:0.0005',
                 'bytes:1024 bits:8192 hashes:12 hashwidth:64 capacity:474 size:474 ratio:0.00025',
-                'bytes:4096 bits:32768 hashes:15 hashwidth:64 capacity:1517 size:1517 ratio:3.125e-05',
-                'bytes:16384 bits:131072 hashes:19 hashwidth:64 capacity:4790 size:1857 ratio:1.95313e-06'])
+                'bytes:4096 bits:32768 hashes:13 hashwidth:64 capacity:1751 size:1751 ratio:0.000125',
+                'bytes:16384 bits:131072 hashes:14 hashwidth:64 capacity:6505 size:1636 ratio:6.25e-05'])
 
     def test_info(self):
         self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '100'))
-        self.assertEqual(self.cmd('bf.info bf'), ['Capacity', 142L,
+        self.assertEqual(self.cmd('bf.info bf'), ['Capacity', 129,
                                                   'Size', 408L, 
                                                   'Number of filters', 1L, 
                                                   'Number of items inserted', 0L])
@@ -224,6 +224,21 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
     def test_no_1_error_rate(self):
         with self.assertResponseError():
             self.cmd('bf.reserve cf 1 1000')
+
+    def test_error_rate(self):
+        repeat = 1024
+        rates = [0.1, 0.01, 0.001, 0.0001]
+        names = ['bf0.1', 'bf0.01', 'bf0.001', 'bf0.0001']
+
+        for i in range(len(rates)):
+            false_positive = 0.0
+            self.cmd('bf.reserve', names[i], rates[i], repeat)
+            for x in range(repeat):
+                self.cmd('bf.add', names[i], x)
+            for x in range(repeat, repeat * 11):
+                false_positive += self.cmd('bf.exists', names[i], x)
+            self.assertGreaterEqual(rates[i], false_positive / (repeat * 10))
+
 
 if __name__ == "__main__":
     import unittest
