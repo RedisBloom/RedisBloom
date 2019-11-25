@@ -143,24 +143,25 @@ typedef struct {
     long long iter;
 } encodedInfo;
 
-/* TODO - check
 TEST_CLASS(encoding)
 
 TEST_F(encoding, testEncodingSimple) {
     SBChain *chain = SB_NewChain(1000, 0.001, 0);
     ASSERT_NE(NULL, chain);
 
-    size_t nColls = 0;
     for (size_t ii = 1; ii < 100000; ++ii) {
         SBChain_Add(chain, &ii, sizeof ii);
-
+    }
+    
+    size_t nColls = 0;
+    for (size_t ii = 1; ii < 100000; ++ii) {
         size_t iiFlipped = ii << 31;
         if (SBChain_Check(chain, &iiFlipped, sizeof iiFlipped) != 0) {
             nColls++;
         }
     }
 
-    ASSERT_EQ(89, nColls);
+    ASSERT_EQ(94, nColls);
 
     // Dump the header
     size_t len = 0;
@@ -216,7 +217,7 @@ TEST_F(encoding, testEncodingSimple) {
     SBChain_Free(chain);
     SBChain_Free(chain2);
     free(encs);
-} */
+}
 
 int main(int argc, char **argv) {
     test__abort_on_fail = 1;
