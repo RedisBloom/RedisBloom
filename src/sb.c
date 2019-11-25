@@ -61,7 +61,7 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
             return 0;
         }
     }
-    
+
     // Determine if we need to add more items?
     SBLink *cur = CUR_FILTER(sb);
     if (cur->size >= cur->inner.entries) {
