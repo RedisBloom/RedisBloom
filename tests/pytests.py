@@ -193,18 +193,18 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertOk(self.cmd('bf.reserve exp1 0.01 4 expansion 1'))
         self.assertOk(self.cmd('bf.reserve exp2 0.01 4 expansion 2'))
         self.assertOk(self.cmd('bf.reserve exp4 0.01 4 expansion 4'))
-        for i in range(1000):
+        for i in range(100):
             self.cmd('bf.add exp1', str(i))
             self.cmd('bf.add exp2', str(i))
             self.cmd('bf.add exp4', str(i))
-        for i in range(1000):
+        for i in range(100):
             self.assertEqual(1, self.cmd('bf.exists exp1', str(i)))
             self.assertEqual(1, self.cmd('bf.exists exp2', str(i)))
             self.assertEqual(1, self.cmd('bf.exists exp4', str(i)))
         
-        self.assertEqual(12, len(self.cmd('bf.debug', 'exp1')))
-        self.assertEqual(7, len(self.cmd('bf.debug', 'exp2')))
-        self.assertEqual(5, len(self.cmd('bf.debug', 'exp4')))
+        self.assertEqual(6, self.cmd('bf.info', 'exp1')[5])
+        self.assertEqual(4, self.cmd('bf.info', 'exp2')[5])
+        self.assertEqual(3, self.cmd('bf.info', 'exp4')[5])
 
         with self.assertResponseError():
             self.cmd('bf.reserve exp4 0.01 4 expansion')

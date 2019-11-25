@@ -148,7 +148,7 @@ typedef struct {
 TEST_CLASS(encoding)
 
 TEST_F(encoding, testEncodingSimple) {
-    SBChain *chain = SB_NewChain(1000, 0.001, 0);
+    SBChain *chain = SB_NewChain(1000, 0.001, 0, 2);
     ASSERT_NE(NULL, chain);
 
     for (size_t ii = 1; ii < 100000; ++ii) {
