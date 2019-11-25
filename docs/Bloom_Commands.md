@@ -303,3 +303,33 @@ O(log N), where N is the number of stacked filters in the data structure.
 ### Returns
 
 `OK` on success, or an error on failure.
+
+```
+BF.INFO {key}
+```
+
+### Description
+
+Return information about `key`
+
+### Parameters
+
+* **key** Name of the key to restore
+
+### Complexity O
+
+O(1)
+
+### Returns
+
+```sql
+127.0.0.1:6379> BF.INFO cf
+1) Capacity
+2) (integer) 1709
+3) Size
+4) (integer) 2200
+5) Number of filters
+6) (integer) 1
+7) Number of items inserted
+8) (integer) 0
+```

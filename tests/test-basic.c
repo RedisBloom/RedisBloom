@@ -56,7 +56,7 @@ TEST_F(basic, sbExpansion) {
     ASSERT_EQ(1, chain->nfilters);
 
     // Insert 6 items
-    for (size_t ii = 0; ii < 6; ++ii) {
+    for (size_t ii = 0; ii < 16; ++ii) {
         ASSERT_EQ(0, SBChain_Check(chain, &ii, sizeof ii));
         ASSERT_NE(0, SBChain_Add(chain, &ii, sizeof ii));
     }
@@ -93,7 +93,7 @@ TEST_F(basic, testIssue7_Overflow) {
     ASSERT_EQ(33, inner->n2);
     ASSERT_EQ(0.000025, inner->error);
     ASSERT_EQ(1073741824, inner->bytes);
-    ASSERT_EQ(389468927, inner->entries);
+    ASSERT_EQ(365557102, inner->entries);
 
     SBChain_Free(chain);
 }
@@ -148,20 +148,22 @@ typedef struct {
 TEST_CLASS(encoding)
 
 TEST_F(encoding, testEncodingSimple) {
-    SBChain *chain = SB_NewChain(1000, 0.00001, 0, BF_DEFAULT_GROWTH);
+    SBChain *chain = SB_NewChain(1000, 0.001, 0);
     ASSERT_NE(NULL, chain);
 
-    size_t nColls = 0;
     for (size_t ii = 1; ii < 100000; ++ii) {
         SBChain_Add(chain, &ii, sizeof ii);
-
+    }
+    
+    size_t nColls = 0;
+    for (size_t ii = 1; ii < 100000; ++ii) {
         size_t iiFlipped = ii << 31;
         if (SBChain_Check(chain, &iiFlipped, sizeof iiFlipped) != 0) {
             nColls++;
         }
     }
 
-    ASSERT_EQ(6, nColls);
+    ASSERT_EQ(94, nColls);
 
     // Dump the header
     size_t len = 0;
