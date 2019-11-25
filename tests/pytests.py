@@ -236,7 +236,8 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertEqual(self.cmd('bf.info bf'), ['Capacity', 129,
                                                   'Size', 408L, 
                                                   'Number of filters', 1L, 
-                                                  'Number of items inserted', 0L])
+                                                  'Number of items inserted', 0L,
+                                                  'Expansion rate', 2L])
 
         with self.assertResponseError():
             self.cmd('bf.info', 'cf')   

@@ -11,14 +11,12 @@ BF.RESERVE {key} {error_rate} {capacity} [EXPANSION expansion]
 ### Description:
 
 Creates an empty Bloom Filter with a given desired error ratio and initial capacity.
-This command is useful if you intend to add many items to a Bloom Filter, 
-otherwise you can just use `BF.ADD` to add items. It will also create a Bloom Filter for
-you if one doesn't already exist.
 
-The initial capacity and error rate will dictate the performance and memory usage
-of the filter. In general, the smaller the error rate (i.e. the lower
-the tolerance for false positives) the greater the space consumption per
-filter entry.
+Though the filter can scale up by creating sub-filters, it will consume more memory
+and CPU time than an equivalent filter that had the right capacity when initialized.
+
+The number of hash functions is -log(error)/ln(2)^2
+The number of bits per item is -log(error)/ln(2)
 
 ### Parameters:
 
@@ -38,8 +36,8 @@ Optional parameters:
 
 * **expansion**: When a new filter is created, its size will be the size of the
 current filter multiplied by `expansion`.
-Default expansion value is 2. New sub-filter size is (2 * expansion) of the
-previous sub-filter.
+Default expansion value is 2. This means each subsequent sub-filter will be
+twice as large as the previous one.
 
 ### Complexity
 
@@ -332,4 +330,6 @@ O(1)
 6) (integer) 1
 7) Number of items inserted
 8) (integer) 0
+9) Expansion rate
+10) (integer) 1
 ```

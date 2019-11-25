@@ -823,7 +823,7 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
 
-    RedisModule_ReplyWithArray(ctx, 4 * 2);
+    RedisModule_ReplyWithArray(ctx, 5 * 2);
     RedisModule_ReplyWithSimpleString(ctx, "Capacity");
     RedisModule_ReplyWithLongLong(ctx, BFCapacity(bf));
     RedisModule_ReplyWithSimpleString(ctx, "Size");
@@ -832,8 +832,8 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     RedisModule_ReplyWithLongLong(ctx, bf->nfilters);
     RedisModule_ReplyWithSimpleString(ctx, "Number of items inserted");
     RedisModule_ReplyWithLongLong(ctx, bf->size);
-//    RedisModule_ReplyWithSimpleString(ctx, "Expansion rate");
-//    RedisModule_ReplyWithLongLong(ctx, bf->expansion);
+    RedisModule_ReplyWithSimpleString(ctx, "Expansion rate");
+    RedisModule_ReplyWithLongLong(ctx, bf->growth);
 
     return REDISMODULE_OK;
 }
