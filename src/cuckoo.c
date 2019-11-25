@@ -233,12 +233,13 @@ static CuckooInsertStatus CuckooFilter_InsertFP(CuckooFilter *filter, const Look
         Filter_KOInsert(filter, &filter->filters[filter->numFilters - 1], params);
     if (status == CuckooInsert_Inserted) {
         filter->numItems++;
-        return status;
-    } else if (status == CuckooInsert_NoSpace) {
-        if (CuckooFilter_Grow(filter) != 0) {
-            return CuckooInsert_NoSpace;    // LCOV_EXCL_LINE memory failure
-        }
+        return CuckooInsert_Inserted;
     }
+
+    if (CuckooFilter_Grow(filter) != 0) {
+        return CuckooInsert_MemAllocFailed;
+    }
+
     // Try to insert the filter again
     return CuckooFilter_InsertFP(filter, params);
 }

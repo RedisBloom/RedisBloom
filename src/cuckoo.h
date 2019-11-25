@@ -52,7 +52,8 @@ typedef struct {
 typedef enum {
     CuckooInsert_Inserted = 1,
     CuckooInsert_Exists = 0,
-    CuckooInsert_NoSpace = -1
+    CuckooInsert_NoSpace = -1,
+    CuckooInsert_MemAllocFailed = -2
 } CuckooInsertStatus;
 
 int CuckooFilter_Init(CuckooFilter *filter,
