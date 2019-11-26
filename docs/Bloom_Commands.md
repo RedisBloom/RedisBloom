@@ -34,10 +34,10 @@ The number of bits per item is -log(error)/ln(2)
 
 Optional parameters:
 
-* **expansion**: When a new filter is created, its size will be the size of the
-current filter multiplied by `expansion`.
-Default expansion value is 2. This means each subsequent sub-filter will be
-twice as large as the previous one.
+* **expansion**: If a new sub-filter is created, its size will be the size of the
+    current filter multiplied by `expansion`.
+    Default expansion value is 2. This means each subsequent sub-filter will be
+    twice as large as the previous one.
 
 ### Complexity
 
@@ -105,7 +105,7 @@ have previously existed.
 ## BF.INSERT
 
 ```
-BF.INSERT {key} [CAPACITY {cap}] [ERROR {error}] [NOCREATE] ITEMS {item...}
+BF.INSERT {key} [CAPACITY {cap}] [ERROR {error}] [EXPANSION expansion] [NOCREATE] ITEMS {item...}
 ```
 
 ### Description
@@ -127,6 +127,10 @@ modify this behavior.
     created and `ERROR` is not specified then the default module-level error
     rate is used. See `BF.RESERVE` for more information on the format of this
     value.
+* **expansion**: If a new sub-filter is created, its size will be the size of the
+    current filter multiplied by `expansion`.
+    Default expansion value is 2. This means each subsequent sub-filter will be
+    twice as large as the previous one.
 * **NOCREATE**: If specified, indicates that the filter should not be created if
     it does not already exist. If the filter does not yet exist, an error is
     returned rather than creating it automatically. This may be used where a strict

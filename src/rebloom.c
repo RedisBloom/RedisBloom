@@ -37,6 +37,7 @@ typedef struct {
     int autocreate;
     // int must_exist;
     int is_multi;
+    long long expansion;
 } BFInsertOptions;
 
 static int getValue(RedisModuleKey *key, RedisModuleType *expType, void **sbout) {
@@ -129,13 +130,14 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     int ex_loc = RMUtil_ArgIndex("EXPANSION", argv, argc);    
     if (ex_loc != -1) {
         if (RedisModule_StringToLongLong(argv[ex_loc + 1], &expansion) != REDISMODULE_OK) {
-            RedisModule_ReplyWithError(ctx, "ERR bad expansion");
-            return REDISMODULE_OK;
+            return RedisModule_ReplyWithError(ctx, "ERR bad expansion");
         }
     }
 
     if (error_rate == 0 || capacity == 0) {
         return RedisModule_ReplyWithError(ctx, "ERR capacity and error must not be 0");
+    } else if (expansion < 1) {
+        return RedisModule_ReplyWithError(ctx, "ERR expansion must be great than 0");
     }
 
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
@@ -238,7 +240,8 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
 static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     BFInsertOptions options = {
-        .capacity = BFDefaultInitCapacity, .error_rate = BFDefaultErrorRate, .autocreate = 1};
+        .capacity = BFDefaultInitCapacity, .error_rate = BFDefaultErrorRate,
+        .autocreate = 1, .expansion = BF_DEFAULT_EXPANSION};
     options.is_multi = isMulti(argv[0]);
 
     if ((options.is_multi && argc < 3) || (!options.is_multi && argc != 3)) {
@@ -246,8 +249,9 @@ static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     }
     return bfInsertCommon(ctx, argv[1], argv + 2, argc - 2, &options);
 }
+
 /**
- * BF.INSERT {filter} [ERROR {rate} CAPACITY {cap}] [NOCREATE] ITEMS {item} {item}
+ * BF.INSERT {filter} [ERROR {rate} CAPACITY {cap} EXPANSION {expansion}] [NOCREATE] ITEMS {item} {item}
  * ..
  * -> (Array) (or error )
  */
@@ -256,7 +260,8 @@ static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     BFInsertOptions options = {.capacity = BFDefaultInitCapacity,
                                .error_rate = BFDefaultErrorRate,
                                .autocreate = 1,
-                               .is_multi = 1};
+                               .is_multi = 1,
+                               .expansion = BF_DEFAULT_EXPANSION};
     int items_index = -1;
 
     // Scan the arguments
@@ -278,9 +283,16 @@ static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
             if (++cur_pos == argc) {
                 return RedisModule_WrongArity(ctx);
             }
-            if (RedisModule_StringToDouble(argv[cur_pos++], &options.error_rate) !=
-                REDISMODULE_OK) {
-                return RedisModule_ReplyWithError(ctx, "Bad error rate");
+            if(tolower(*(argstr + 1)) == 'r') { // error rate
+                if (RedisModule_StringToDouble(argv[cur_pos++], &options.error_rate) !=
+                    REDISMODULE_OK) {
+                    return RedisModule_ReplyWithError(ctx, "Bad error rate");
+                }
+            } else { // expansion
+                if (RedisModule_StringToLongLong(argv[cur_pos++], &options.expansion) !=
+                    REDISMODULE_OK) {
+                    return RedisModule_ReplyWithError(ctx, "Bad expansion");
+                }
             }
             break;
 
@@ -305,6 +317,10 @@ static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     }
     if (items_index < 0 || items_index == argc) {
         return RedisModule_WrongArity(ctx);
+    }
+
+    if (options.error_rate <= 0 || options.error_rate >= 1 || options.capacity < 1 || options.expansion < 1) {
+        return RedisModule_ReplyWithError(ctx, "Bad argument received");
     }
     return bfInsertCommon(ctx, argv[1], argv + items_index, argc - items_index, &options);
 }

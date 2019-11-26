@@ -166,9 +166,13 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
             self.cmd('bf.insert', 'missingFilter', 'ERROR')
         with self.assertResponseError():
             self.cmd('bf.insert', 'missingFilter', 'ERROR', 'big')
+        with self.assertResponseError():
+            self.cmd('bf.insert', 'missingFilter', 'EXPANSION', '0', 'ITEMS', 'foo')
+        with self.assertResponseError():
+            self.cmd('bf.insert', 'missingFilter', 'EXPANSION', 'big')
 
         rep = self.cmd('BF.INSERT', 'missingFilter', 'ERROR',
-                       '0.001', 'CAPACITY', '50000', 'ITEMS', 'foo')
+                       '0.001', 'CAPACITY', '50000', 'EXPANSION', 2, 'ITEMS', 'foo')
         self.assertEqual([1], rep)
         self.assertEqual(['size:1', 'bytes:131072 bits:1048576 hashes:11 hashwidth:64 capacity:66280 size:1 ratio:0.0005'],
                          [x.decode() for x in self.cmd('bf.debug', 'missingFilter')])
@@ -209,7 +213,9 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         with self.assertResponseError():
             self.cmd('bf.reserve exp4 0.01 4 expansion')
         with self.assertResponseError():
-            self.cmd('bf.reserve exp4 0.01 4 expansion str')            
+            self.cmd('bf.reserve exp4 0.01 4 expansion 0')            
+        with self.assertResponseError():
+            self.cmd('bf.reserve exp4 0.01 4 expansion str') 
 
     def test_debug(self):
         self.assertOk(self.cmd('bf.reserve', 'bf', '0.01', '10'))
