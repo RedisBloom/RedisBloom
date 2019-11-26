@@ -139,7 +139,7 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         }
     }
 
-    long long nonScaling = 0;
+    unsigned nonScaling = 0;
     ex_loc = RMUtil_ArgIndex("NONSCALING", argv, argc);    
     if (ex_loc != -1) {
         nonScaling = BLOOM_OPT_NO_SCALING;
