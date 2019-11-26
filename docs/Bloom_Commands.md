@@ -5,20 +5,18 @@
 ### Format:
 
 ```
-BF.RESERVE {key} {error_rate} {capacity}
+BF.RESERVE {key} {error_rate} {capacity} [EXPANSION expansion] 
 ```
 
 ### Description:
 
 Creates an empty Bloom Filter with a given desired error ratio and initial capacity.
-This command is useful if you intend to add many items to a Bloom Filter, 
-otherwise you can just use `BF.ADD` to add items. It will also create a Bloom Filter for
-you if one doesn't already exist.
 
-The initial capacity and error rate will dictate the performance and memory usage
-of the filter. In general, the smaller the error rate (i.e. the lower
-the tolerance for false positives) the greater the space consumption per
-filter entry.
+Though the filter can scale up by creating sub-filters, it will consume more memory
+and CPU time than an equivalent filter that had the right capacity when initialized.
+
+The number of hash functions is -log(error)/ln(2)^2
+The number of bits per item is -log(error)/ln(2)
 
 ### Parameters:
 
@@ -33,6 +31,13 @@ filter entry.
     number. The actual degradation will depend on how far the limit has
     been exceeded. Performance will degrade linearly as the number of entries
     grow exponentially.
+
+Optional parameters:
+
+* **expansion**: If a new sub-filter is created, its size will be the size of the
+    current filter multiplied by `expansion`.
+    Default expansion value is 2. This means each subsequent sub-filter will be
+    twice as large as the previous one.
 
 ### Complexity
 
@@ -100,7 +105,7 @@ have previously existed.
 ## BF.INSERT
 
 ```
-BF.INSERT {key} [CAPACITY {cap}] [ERROR {error}] [NOCREATE] ITEMS {item...}
+BF.INSERT {key} [CAPACITY {cap}] [ERROR {error}] [EXPANSION expansion] [NOCREATE] ITEMS {item...}
 ```
 
 ### Description
@@ -122,6 +127,10 @@ modify this behavior.
     created and `ERROR` is not specified then the default module-level error
     rate is used. See `BF.RESERVE` for more information on the format of this
     value.
+* **expansion**: If a new sub-filter is created, its size will be the size of the
+    current filter multiplied by `expansion`.
+    Default expansion value is 2. This means each subsequent sub-filter will be
+    twice as large as the previous one.
 * **NOCREATE**: If specified, indicates that the filter should not be created if
     it does not already exist. If the filter does not yet exist, an error is
     returned rather than creating it automatically. This may be used where a strict
@@ -325,4 +334,6 @@ O(1)
 6) (integer) 1
 7) Number of items inserted
 8) (integer) 0
+9) Expansion rate
+10) (integer) 1
 ```
