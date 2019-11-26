@@ -65,6 +65,9 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
     // Determine if we need to add more items?
     SBLink *cur = CUR_FILTER(sb);
     if (cur->size >= cur->inner.entries) {
+        if (sb->options & BLOOM_OPT_NO_SCALING) {
+            return -2;
+        }
         double error = cur->inner.error * ERROR_TIGHTENING_RATIO;
         if (SBChain_AddLink(sb, cur->inner.entries * (size_t)sb->growth, error) != 0) {
             return -1;
@@ -96,7 +99,8 @@ SBChain *SB_NewChain(size_t initsize, double error_rate, unsigned options, unsig
     SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
     sb->growth = growth;
     sb->options = options;
-    if (SBChain_AddLink(sb, initsize, error_rate * ERROR_TIGHTENING_RATIO) != 0) {
+    double tightening = (options & BLOOM_OPT_NO_SCALING) ? 1 : ERROR_TIGHTENING_RATIO;
+    if (SBChain_AddLink(sb, initsize, error_rate * tightening) != 0) {
         SBChain_Free(sb);
         sb = NULL;
     }
