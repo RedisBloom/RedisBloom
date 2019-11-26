@@ -21,10 +21,10 @@ TEST_F(basic, sbValidation) {
     ASSERT_EQ(0, chain->size);
     SBChain_Free(chain);
 
-    ASSERT_EQ(NULL, SB_NewChain(0, 0.01, 0, 2));
-    ASSERT_EQ(NULL, SB_NewChain(1, 0, 0, 2));
-    ASSERT_EQ(NULL, SB_NewChain(100, 1.1, 0, 2));
-    ASSERT_EQ(NULL, SB_NewChain(100, -4.4, 0, 2));
+    ASSERT_EQ(NULL, SB_NewChain(0, 0.01, 0, BF_DEFAULT_GROWTH));
+    ASSERT_EQ(NULL, SB_NewChain(1, 0, 0, BF_DEFAULT_GROWTH));
+    ASSERT_EQ(NULL, SB_NewChain(100, 1.1, 0, BF_DEFAULT_GROWTH));
+    ASSERT_EQ(NULL, SB_NewChain(100, -4.4, 0, BF_DEFAULT_GROWTH));
 }
 
 TEST_F(basic, sbBasic) {
@@ -148,7 +148,7 @@ typedef struct {
 TEST_CLASS(encoding)
 
 TEST_F(encoding, testEncodingSimple) {
-    SBChain *chain = SB_NewChain(1000, 0.001, 0, 2);
+    SBChain *chain = SB_NewChain(1000, 0.001, 0, BF_DEFAULT_GROWTH);
     ASSERT_NE(NULL, chain);
 
     for (size_t ii = 1; ii < 100000; ++ii) {
