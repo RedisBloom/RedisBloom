@@ -184,6 +184,25 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
             self.cmd('ping')    
         d2 = self.cmd('cf.debug', 'nums')
         self.assertEqual(d1, d2)
+    
+    def test_compact(self):
+        q = 100
+        self.cmd('CF.RESERVE cf 8 MAXITERATIONS 50')
+
+        for x in xrange(q):
+            self.cmd('cf.add cf', str(x))
+
+        for x in xrange(q):
+            self.assertEqual(1, self.cmd('cf.exists cf', str(x)))
+
+        str1 = self.cmd('cf.debug cf')[49:52]
+        self.assertGreaterEqual(str1, 130)  # In experiments was larger than 130
+        self.assertEqual(self.cmd('cf.compact cf'), 'OK')
+        str2 = self.cmd('cf.debug cf')[49:52]
+        self.assertGreaterEqual(str1, str2) # Expect to see reduction after compaction
+
+        self.assertRaises(ResponseError, self.cmd, 'CF.COMPACT a')
+        self.assertRaises(ResponseError, self.cmd, 'CF.COMPACT a b')
 
     def test_max_expansions(self):
         self.cmd('CF.RESERVE', 'cf', '4')
@@ -194,7 +213,7 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
     def test_bucket_size(self):
         self.cmd('CF.RESERVE a 64 BUCKETSIZE 1')
         self.cmd('CF.RESERVE b 64 BUCKETSIZE 2')
-        self.cmd('CF.RESERVE c 64 BUCKETSIZE 4 MAXITERATIONS 500')
+        self.cmd('CF.RESERVE c 256 BUCKETSIZE 4 MAXITERATIONS 500')
         for i in range(1000):
             self.cmd('CF.ADD a', str(i))
             self.cmd('CF.ADD b', str(i))
@@ -207,7 +226,7 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
 
         self.assertEqual(self.cmd('CF.DEBUG a'), 'bktsize:1 buckets:64 items:1000 deletes:0 filters:18 max_iterations:20 expansion:1')
         self.assertEqual(self.cmd('CF.DEBUG b'), 'bktsize:2 buckets:32 items:1000 deletes:0 filters:17 max_iterations:20 expansion:1')
-        self.assertEqual(self.cmd('CF.DEBUG c'), 'bktsize:4 buckets:16 items:1000 deletes:0 filters:16 max_iterations:500 expansion:1')
+        self.assertEqual(self.cmd('CF.DEBUG c'), 'bktsize:4 buckets:64 items:1000 deletes:0 filters:4 max_iterations:500 expansion:1')
 
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 BUCKETSIZE')
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 BUCKETSIZE string')
