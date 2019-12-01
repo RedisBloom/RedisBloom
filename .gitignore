@@ -4,6 +4,13 @@
 *.dSYM
 *.rdb
 *.pyc
+*.gcov
+*.gcda
+*.gcno
+*.png
+*.html
+*.info
+*.css
 tests/test-basic
 tests/test-perf
 tests/test-cuckoo

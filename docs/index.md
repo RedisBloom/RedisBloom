@@ -1,6 +1,8 @@
 <img src="images/logo.svg" alt="logo" width="200"/>
 
 # RedisBloom - Probabilistic Datatypes Module for Redis
+[![Mailing List](https://img.shields.io/badge/Mailing%20List-RedisBloom-blue)](https://groups.google.com/forum/#!forum/redisbloom)
+[![Gitter](https://badges.gitter.im/RedisLabs/RedisBloom.svg)](https://gitter.im/RedisLabs/RedisBloom?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 RedisBloom module provides four datatypes, a Scalable **Bloom Filter** and **Cuckoo Filter**, a **Count-Mins-Sketch** and a **Top-K**.
 **Bloom and Cuckoo filters** are used to determine (with a given degree of certainty) whether an item is present or absent from a collection. While **Count-Min Sketch** is used to approximate count of items in sub-linear space and **Top-K** maintains a list of K most frequent items.
@@ -33,6 +35,9 @@ Each driver comes with its own documentation in the Readme of the driver repo.
 | redisbloom-py | Python | BSD | [Redis Labs](https://redislabs.com) | [GitHub](https://github.com/RedisBloom/redisbloom-py) |
 | JReBloom | Java | BSD | [Redis Labs](https://redislabs.com) | [GitHub](https://github.com/RedisBloom/JReBloom) |
 | rebloom | JavaScript | MIT | [Albert Team](https://cvitae.now.sh/) | [GitHub](https://github.com/albert-team/rebloom) |
+| phpredis-bloom | PHP | MIT | [Rafa Campoy](https://github.com/averias) | [GitHub](https://github.com/averias/phpredis-bloom) |
+
+
 
 ## References
 ### Webinars
@@ -48,4 +53,4 @@ Each driver comes with its own documentation in the Readme of the driver repo.
 Got questions? Feel free to ask at the [RedisBloom mailing list](https://groups.google.com/forum/#!forum/redisbloom).
 
 ## License
-Redis Source Available License Agreement - see [LICENSE](LICENSE)
+Redis Source Available License Agreement - see [LICENSE](https://raw.githubusercontent.com/RedisBloom/RedisBloom/master/LICENSE)

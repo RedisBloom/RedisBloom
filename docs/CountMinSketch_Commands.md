@@ -133,7 +133,7 @@ Count of one or more items
 Merges several sketches into one sketch. All sketches must have identical width and depth. Weights can be used to multiply certain sketches. Default weight is 1. 
 
 ```sql
-CMS.MERGE dest numKeys src1 [src2 ...] [WEIGHT weight1 ...] 
+CMS.MERGE dest numKeys src1 [src2 ...] [WEIGHTS weight1 ...] 
 ```
 
 ### Parameters:

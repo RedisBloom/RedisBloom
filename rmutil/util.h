@@ -22,6 +22,8 @@
 
 #define RMUtil_RegisterWriteCmd(ctx, cmd, f) __rmutil_register_cmd(ctx, cmd, f, "write")
 
+#define RMUtil_RegisterWriteDenyOOMCmd(ctx, cmd, f) __rmutil_register_cmd(ctx, cmd, f, "write deny-oom")
+
 /* RedisModule utilities. */
 
 /** DEPRECATED: Return the offset of an arg if it exists in the arg list, or 0 if it's not there */

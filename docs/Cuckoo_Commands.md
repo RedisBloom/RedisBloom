@@ -5,7 +5,7 @@
 ### Format:
 
 ```
-CF.RESERVE {key} {capacity}
+CF.RESERVE {key} {capacity} [BUCKETSIZE bucketSize] [MAXITERATIONS maxIterations] [EXPANSION expansion] 
 ```
 
 Create an empty cuckoo filter with an initial capacity of {capacity} items.
@@ -15,12 +15,26 @@ on how full the filter is.
 The filter will auto-expand (at the cost of reduced performance) if the initial
 capacity is exceeded, though the performance degradation is variable depending
 on how far the capacity is exceeded. In general, the false positive rate will
-increase by for every additional {capacity} items beyond initial capacity.
+increase by for every additional {capacity} items beyond initial capacity. The
+filter grows up to 1024 times.
 
 ## Parameters:
 
 * **key**: The key under which the filter is to be found
-* **capacity**: Estimated capacity for the filter.
+* **capacity**: Estimated capacity for the filter. Capacity is rounded to the
+next `2^n` number.
+
+Optional parameters:
+
+* **bucketSize**: Number of items in each bucket. Higher bucket size value
+improves the fill rate but result in a higher error rate and slightly slower
+operation speed.
+* **maxIterations**: Number of attempts to swap buckets before declaring
+filter as full and creating an additional filter. A low value is better for
+speed while a higher number is better for filter fill rate.
+* **expansion**: When a new filter is created, its size will be the size of the
+current filter multiplied by `expansion`. Expansion is rounded to the next
+`2^n` number.
 
 ### Complexity
 
@@ -294,3 +308,42 @@ O(log N)
 ### Returns
 
 `OK` on success, or an error on failure.
+
+
+```
+CF.INFO {key}
+```
+
+### Description
+
+Return information about `key`
+
+### Parameters
+
+* **key** Name of the key to restore
+
+### Complexity O
+
+O(1)
+
+### Returns
+
+```sql
+127.0.0.1:6379> CF.INFO cf
+ 1) Size
+ 2) (integer) 1080
+ 3) Number of buckets
+ 4) (integer) 512
+ 5) Number of filter
+ 6) (integer) 1
+ 7) Number of items inserted
+ 8) (integer) 0
+ 9) Number of items deleted
+10) (integer) 0
+11) Bucket size
+12) (integer) 2
+13) Expansion rate
+14) (integer) 1
+15) Max iteration
+16) (integer) 20
+```

@@ -240,7 +240,7 @@ static void TopKRdbSave(RedisModuleIO *io, void *obj) {
     RedisModule_SaveUnsigned(io, topk->depth);
     RedisModule_SaveDouble(io, topk->decay);
     RedisModule_SaveStringBuffer(io, (const char *)topk->data,
-                                 topk->width * topk->depth * sizeof(Bucket));
+                                 ((size_t)topk->width) * topk->depth * sizeof(Bucket));
     RedisModule_SaveStringBuffer(io, (const char *)topk->heap,
                                  topk->k * sizeof(HeapBucket));
     for(uint32_t i = 0; i < topk->k; ++i) {
@@ -264,7 +264,7 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
   
     size_t dataSize, heapSize, itemSize;
     topk->data = (Bucket *)RedisModule_LoadStringBuffer(io, &dataSize);
-    assert(dataSize == topk->width * topk->depth * sizeof(Bucket));
+    assert(dataSize == ((size_t)topk->width) * topk->depth * sizeof(Bucket));
     topk->heap = (HeapBucket *)RedisModule_LoadStringBuffer(io, &heapSize);
     assert(heapSize == topk->k * sizeof(HeapBucket));
     for(uint32_t i = 0; i < topk->k; ++i) {
@@ -282,7 +282,7 @@ static void TopKFree(void *value) { TopK_Destroy(value); }
 static size_t TopKMemUsage(const void *value) {
     TopK *topk = (TopK *)value;
     return sizeof(TopK) + 
-            topk->width * topk->depth * sizeof(Bucket) + 
+            ((size_t)topk->width) * topk->depth * sizeof(Bucket) +
             topk->k * sizeof(HeapBucket);
 }
 
@@ -299,9 +299,9 @@ int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (TopKType == NULL)
         return REDISMODULE_ERR;
 
-    RMUtil_RegisterWriteCmd(ctx, "topk.reserve", TopK_Create_Cmd);
-    RMUtil_RegisterWriteCmd(ctx, "topk.add", TopK_Add_Cmd);
-    RMUtil_RegisterWriteCmd(ctx, "topk.incrby", TopK_Incrby_Cmd);
+    RMUtil_RegisterWriteDenyOOMCmd(ctx, "topk.reserve", TopK_Create_Cmd);
+    RMUtil_RegisterWriteDenyOOMCmd(ctx, "topk.add", TopK_Add_Cmd);
+    RMUtil_RegisterWriteDenyOOMCmd(ctx, "topk.incrby", TopK_Incrby_Cmd);
     RMUtil_RegisterReadCmd(ctx, "topk.query", TopK_Query_Cmd);
     RMUtil_RegisterWriteCmd(ctx, "topk.count", TopK_Count_Cmd);
     RMUtil_RegisterReadCmd(ctx, "topk.list", TopK_List_Cmd);

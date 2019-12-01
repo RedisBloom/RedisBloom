@@ -4,11 +4,17 @@
 #include "rm_cms.h"
 #include "rm_topk.h"
 #include "version.h"
+#include "rmutil/util.h"
 
 #include <assert.h>
 #include <strings.h> // strncasecmp
 #include <string.h>
 #include <ctype.h>
+
+#define CF_MAX_ITERATIONS 20
+#define CF_DEFAULT_BUCKETSIZE 2
+#define CF_DEFAULT_EXPANSION 1
+#define BF_DEFAULT_EXPANSION 2
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -20,7 +26,7 @@ static RedisModuleType *CFType;
 static double BFDefaultErrorRate = 0.01;
 static size_t BFDefaultInitCapacity = 100;
 static size_t CFDefaultInitCapacity = 1000;
-static size_t CFMaxExpansions = 1024;
+static size_t CFMaxExpansions = 32;
 static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2);
 
 typedef enum { SB_OK = 0, SB_MISSING, SB_EMPTY, SB_MISMATCH } lookupStatus;
@@ -31,10 +37,8 @@ typedef struct {
     int autocreate;
     // int must_exist;
     int is_multi;
+    long long expansion;
 } BFInsertOptions;
-
-static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisModuleString **items,
-                          size_t nitems, const BFInsertOptions *options);
 
 static int getValue(RedisModuleKey *key, RedisModuleType *expType, void **sbout) {
     *sbout = NULL;
@@ -79,17 +83,20 @@ static const char *statusStrerror(int status) {
  * Common function for adding one or more items to a bloom filter.
  * capacity and error rate must not be 0.
  */
-static SBChain *bfCreateChain(RedisModuleKey *key, double error_rate, size_t capacity) {
-    SBChain *sb = SB_NewChain(capacity, error_rate, BLOOM_OPT_FORCE64);
+static SBChain *bfCreateChain(RedisModuleKey *key, double error_rate, size_t capacity, unsigned expansion) {
+    SBChain *sb = SB_NewChain(capacity, error_rate, BLOOM_OPT_FORCE64, expansion);
     if (sb != NULL) {
         RedisModule_ModuleTypeSetValue(key, BFType, sb);
     }
     return sb;
 }
 
-static CuckooFilter *cfCreate(RedisModuleKey *key, size_t capacity) {
+static CuckooFilter *cfCreate(RedisModuleKey *key, size_t capacity,
+                        size_t bucketSize, size_t maxIterations, size_t expansion) {
+    if (capacity < bucketSize * 2) return NULL;
+    
     CuckooFilter *cf = RedisModule_Calloc(1, sizeof(*cf));
-    if (CuckooFilter_Init(cf, capacity) != 0) {
+    if (CuckooFilter_Init(cf, capacity, bucketSize, maxIterations, expansion) != 0) {
         RedisModule_Free(cf); // LCOV_EXCL_LINE
         cf = NULL; // LCOV_EXCL_LINE
     }
@@ -103,11 +110,9 @@ static CuckooFilter *cfCreate(RedisModuleKey *key, size_t capacity) {
  */
 static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    RedisModule_ReplicateVerbatim(ctx);
 
-    if (argc != 4) {
-        RedisModule_WrongArity(ctx);
-        return REDISMODULE_ERR;
+    if (argc != 4 && argc != 6) {
+        return RedisModule_WrongArity(ctx);
     }
 
     double error_rate;
@@ -121,8 +126,18 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         return RedisModule_ReplyWithError(ctx, "ERR bad capacity");
     }
 
+    long long expansion = BF_DEFAULT_EXPANSION;
+    int ex_loc = RMUtil_ArgIndex("EXPANSION", argv, argc);    
+    if (ex_loc != -1) {
+        if (RedisModule_StringToLongLong(argv[ex_loc + 1], &expansion) != REDISMODULE_OK) {
+            return RedisModule_ReplyWithError(ctx, "ERR bad expansion");
+        }
+    }
+
     if (error_rate == 0 || capacity == 0) {
         return RedisModule_ReplyWithError(ctx, "ERR capacity and error must not be 0");
+    } else if (expansion < 1) {
+        return RedisModule_ReplyWithError(ctx, "ERR expansion must be great than 0");
     }
 
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
@@ -132,11 +147,12 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
 
-    if (bfCreateChain(key, error_rate, capacity) == NULL) {
-        RedisModule_ReplyWithSimpleString(ctx, "ERR could not create filter"); // LCOV_EXCL_LINE
+    if (bfCreateChain(key, error_rate, capacity, expansion) == NULL) {
+        RedisModule_ReplyWithError(ctx, "ERR could not create filter"); // LCOV_EXCL_LINE
     } else {
         RedisModule_ReplyWithSimpleString(ctx, "OK");
     }
+    RedisModule_ReplicateVerbatim(ctx);
     return REDISMODULE_OK;
 }
 
@@ -156,8 +172,7 @@ static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     int is_multi = isMulti(argv[0]);
 
     if ((is_multi == 0 && argc != 3) || (is_multi && argc < 3)) {
-        RedisModule_WrongArity(ctx);
-        return REDISMODULE_ERR;
+        return RedisModule_WrongArity(ctx);
     }
 
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
@@ -194,7 +209,7 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
     SBChain *sb;
     int status = bfGetChain(key, &sb);
     if (status == SB_EMPTY && options->autocreate) {
-        sb = bfCreateChain(key, options->error_rate, options->capacity);
+        sb = bfCreateChain(key, options->error_rate, options->capacity, BF_DEFAULT_EXPANSION);
         if (sb == NULL) {
             return RedisModule_ReplyWithError(ctx, "ERR could not create filter"); // LCOV_EXCL_LINE
         }
@@ -212,6 +227,7 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
         int rv = SBChain_Add(sb, s, n);
         RedisModule_ReplyWithLongLong(ctx, !!rv);
     }
+    RedisModule_ReplicateVerbatim(ctx);
     return REDISMODULE_OK;
 }
 
@@ -223,9 +239,9 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
  */
 static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    RedisModule_ReplicateVerbatim(ctx);
     BFInsertOptions options = {
-        .capacity = BFDefaultInitCapacity, .error_rate = BFDefaultErrorRate, .autocreate = 1};
+        .capacity = BFDefaultInitCapacity, .error_rate = BFDefaultErrorRate,
+        .autocreate = 1, .expansion = BF_DEFAULT_EXPANSION};
     options.is_multi = isMulti(argv[0]);
 
     if ((options.is_multi && argc < 3) || (!options.is_multi && argc != 3)) {
@@ -233,18 +249,19 @@ static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     }
     return bfInsertCommon(ctx, argv[1], argv + 2, argc - 2, &options);
 }
+
 /**
- * BF.INSERT {filter} [ERROR {rate} CAPACITY {cap}] [NOCREATE] ITEMS {item} {item}
+ * BF.INSERT {filter} [ERROR {rate} CAPACITY {cap} EXPANSION {expansion}] [NOCREATE] ITEMS {item} {item}
  * ..
  * -> (Array) (or error )
  */
 static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    RedisModule_ReplicateVerbatim(ctx);
     BFInsertOptions options = {.capacity = BFDefaultInitCapacity,
                                .error_rate = BFDefaultErrorRate,
                                .autocreate = 1,
-                               .is_multi = 1};
+                               .is_multi = 1,
+                               .expansion = BF_DEFAULT_EXPANSION};
     int items_index = -1;
 
     // Scan the arguments
@@ -266,9 +283,16 @@ static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
             if (++cur_pos == argc) {
                 return RedisModule_WrongArity(ctx);
             }
-            if (RedisModule_StringToDouble(argv[cur_pos++], &options.error_rate) !=
-                REDISMODULE_OK) {
-                return RedisModule_ReplyWithError(ctx, "Bad error rate");
+            if(tolower(*(argstr + 1)) == 'r') { // error rate
+                if (RedisModule_StringToDouble(argv[cur_pos++], &options.error_rate) !=
+                    REDISMODULE_OK) {
+                    return RedisModule_ReplyWithError(ctx, "Bad error rate");
+                }
+            } else { // expansion
+                if (RedisModule_StringToLongLong(argv[cur_pos++], &options.expansion) !=
+                    REDISMODULE_OK) {
+                    return RedisModule_ReplyWithError(ctx, "Bad expansion");
+                }
             }
             break;
 
@@ -294,6 +318,10 @@ static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     if (items_index < 0 || items_index == argc) {
         return RedisModule_WrongArity(ctx);
     }
+
+    if (options.error_rate <= 0 || options.error_rate >= 1 || options.capacity < 1 || options.expansion < 1) {
+        return RedisModule_ReplyWithError(ctx, "Bad argument received");
+    }
     return bfInsertCommon(ctx, argv[1], argv + items_index, argc - items_index, &options);
 }
 
@@ -301,12 +329,11 @@ static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
  * BF.DEBUG KEY
  * returns some information about the bloom filter.
  */
-static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+static int BFDebug_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
     if (argc != 2) {
-        RedisModule_WrongArity(ctx);
-        return REDISMODULE_ERR;
+        return RedisModule_WrongArity(ctx);
     }
 
     const SBChain *sb = NULL;
@@ -383,7 +410,6 @@ static int BFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
  */
 static int BFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    RedisModule_ReplicateVerbatim(ctx);
 
     if (argc != 4) {
         return RedisModule_WrongArity(ctx);
@@ -419,22 +445,50 @@ static int BFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     if (SBChain_LoadEncodedChunk(sb, iter, buf, bufLen, &errMsg) != 0) {
         return RedisModule_ReplyWithError(ctx, errMsg);
     } else {
+        RedisModule_ReplicateVerbatim(ctx); // Should be replicated?
         return RedisModule_ReplyWithSimpleString(ctx, "OK");
     }
 }
 
-/** CF.RESERVE <KEY> <CAPACITY> */
+/** CF.RESERVE <KEY> <CAPACITY> [BUCKETSIZE] [MAXITERATIONS] [EXPANSION] */
 static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    RedisModule_ReplicateVerbatim(ctx);
     //
-    if (argc != 3) {
+    if (argc != 3 && (argc % 2) == 0) {
         return RedisModule_WrongArity(ctx);
     }
 
     long long capacity;
     if (RedisModule_StringToLongLong(argv[2], &capacity)) {
         return RedisModule_ReplyWithError(ctx, "Bad capacity");
+    }
+
+    long long maxIterations = CF_MAX_ITERATIONS;
+    int mi_loc = RMUtil_ArgIndex("MAXITERATIONS", argv, argc);    
+    if (mi_loc != -1) {
+        if (RedisModule_StringToLongLong(argv[mi_loc + 1], &maxIterations) != REDISMODULE_OK) {
+            return RedisModule_ReplyWithError(ctx, "Couldn't parse MAXITERATIONS");
+        }
+    }
+
+    long long bucketSize = CF_DEFAULT_BUCKETSIZE;
+    int bs_loc = RMUtil_ArgIndex("BUCKETSIZE", argv, argc);    
+    if (bs_loc != -1) {
+        if (RedisModule_StringToLongLong(argv[bs_loc + 1], &bucketSize) != REDISMODULE_OK) {
+            return RedisModule_ReplyWithError(ctx, "Couldn't parse BUCKETSIZE");
+        }
+    }
+
+    long long expansion = CF_DEFAULT_EXPANSION;
+    int ex_loc = RMUtil_ArgIndex("EXPANSION", argv, argc);    
+    if (ex_loc != -1) {
+        if (RedisModule_StringToLongLong(argv[ex_loc + 1], &expansion) != REDISMODULE_OK) {
+            return RedisModule_ReplyWithError(ctx, "Couldn't parse EXPANSION");
+        }
+    }
+
+    if (bucketSize * 2 > capacity) {
+        return RedisModule_ReplyWithError(ctx, "Capacity must be at least (BucketSize * 2)");
     }
 
     CuckooFilter *cf;
@@ -444,10 +498,11 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
 
-    cf = cfCreate(key, capacity);
+    cf = cfCreate(key, capacity, bucketSize, maxIterations, expansion);
     if (cf == NULL) {
         return RedisModule_ReplyWithError(ctx, "Couldn't create Cuckoo Filter"); // LCOV_EXCL_LINE
     } else {
+        RedisModule_ReplicateVerbatim(ctx);
         return RedisModule_ReplyWithSimpleString(ctx, "OK");
     }
 }
@@ -466,7 +521,7 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
     int status = cfGetFilter(key, &cf);
 
     if (status == SB_EMPTY && options->autocreate) {
-        if ((cf = cfCreate(key, options->capacity)) == NULL) {
+        if ((cf = cfCreate(key, options->capacity, CF_DEFAULT_BUCKETSIZE, CF_MAX_ITERATIONS, CF_DEFAULT_EXPANSION)) == NULL) {
             return RedisModule_ReplyWithError(ctx, "Could not create filter"); // LCOV_EXCL_LINE
         }
     } else if (status != SB_OK) {
@@ -495,22 +550,29 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
         } else {
             insStatus = CuckooFilter_Insert(cf, hash);
         }
-        if (insStatus == CuckooInsert_Inserted) {
+        switch (insStatus)
+        {
+        case CuckooInsert_Inserted:
             RedisModule_ReplyWithLongLong(ctx, 1);
-        } else if (insStatus == CuckooInsert_Exists) {
+            break;
+        case CuckooInsert_Exists:
             RedisModule_ReplyWithLongLong(ctx, 0);
-        } else if (insStatus == CuckooInsert_NoSpace) {
+            break;
+        case CuckooInsert_NoSpace:
             if (!options->is_multi) {
                 return RedisModule_ReplyWithError(ctx, "Filter is full");
             } else {
                 RedisModule_ReplyWithLongLong(ctx, -1);
             }
-        } else {
-            // Should never happen
-            RedisModule_ReplyWithLongLong(ctx, -2);
+        case CuckooInsert_MemAllocFailed:
+            RedisModule_ReplyWithError(ctx, "Memory allocation failure");// LCOV_EXCL_LINE
+            break;
+        default:
+            break;
         }
     }
 
+    RedisModule_ReplicateVerbatim(ctx);
     return REDISMODULE_OK;
 }
 
@@ -521,7 +583,6 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
  */
 static int CFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    RedisModule_ReplicateVerbatim(ctx);
     CFInsertOptions options = {.autocreate = 1, .capacity = CFDefaultInitCapacity, .is_multi = 0};
     size_t cmdlen;
     const char *cmdstr = RedisModule_StringPtrLen(argv[0], &cmdlen);
@@ -537,7 +598,6 @@ static int CFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
  */
 static int CFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    RedisModule_ReplicateVerbatim(ctx);
     CFInsertOptions options = {.autocreate = 1, .capacity = CFDefaultInitCapacity, .is_multi = 1};
     size_t cmdlen;
     const char *cmdstr = RedisModule_StringPtrLen(argv[0], &cmdlen);
@@ -592,7 +652,6 @@ static int isCount(RedisModuleString *s) {
  */
 static int CFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    RedisModule_ReplicateVerbatim(ctx);
 
     int is_multi = isMulti(argv[0]);
     int is_count = isCount(argv[0]);
@@ -636,7 +695,6 @@ static int CFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
 
 static int CFDel_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    RedisModule_ReplicateVerbatim(ctx);
 
     if (argc != 3) {
         return RedisModule_WrongArity(ctx);
@@ -649,17 +707,30 @@ static int CFDel_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
         return RedisModule_ReplyWithError(ctx, "Not found");
     }
 
+    RedisModule_ReplicateVerbatim(ctx);
+    
     size_t elemlen;
     const char *elem = RedisModule_StringPtrLen(argv[2], &elemlen);
     CuckooHash hash = CUCKOO_GEN_HASH(elem, elemlen);
     return RedisModule_ReplyWithLongLong(ctx, CuckooFilter_Delete(cf, hash));
 }
 
-static void fillCFHeader(CFHeader *header, const CuckooFilter *cf) {
-    *header = (CFHeader){.numItems = cf->numItems,
-                         .numBuckets = cf->numBuckets,
-                         .numDeletes = cf->numDeletes,
-                         .numFilters = cf->numFilters};
+static int CFCompact_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+
+    if (argc != 2) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
+    CuckooFilter *cf;
+    int status = cfGetFilter(key, &cf);
+    if (status != SB_OK) {
+        return RedisModule_ReplyWithError(ctx, "Cuckoo filter was not found");
+    }
+    CuckooFilter_Compact(cf);
+    RedisModule_ReplicateVerbatim(ctx);
+    return RedisModule_ReplyWithSimpleString(ctx, "OK");
 }
 
 static int CFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
@@ -753,6 +824,65 @@ static int CFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     return RedisModule_ReplyWithSimpleString(ctx, "OK");
 }
 
+uint64_t BFCapacity(SBChain *bf) {
+    uint64_t capacity = 0;
+    for(size_t ii = 0; ii < bf->nfilters; ++ii) {
+        capacity += bf->filters[ii].inner.entries; // * sizeof(unsigned char);
+    }
+    return capacity;
+}
+
+uint64_t BFSize(SBChain *bf) {
+    uint64_t bytes = 0;
+    for(size_t ii = 0; ii < bf->nfilters; ++ii) {
+        bytes += bf->filters[ii].inner.bytes; // * sizeof(unsigned char);
+    }
+
+    return  sizeof(*bf) + 
+            sizeof(*bf->filters) * bf->nfilters +
+            sizeof(struct bloom) * bf->nfilters +
+            bytes;
+}
+
+static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+    if (argc != 2) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    SBChain *bf;
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
+    int status = bfGetChain(key, &bf);
+    if (status != REDISMODULE_OK) {
+        return RedisModule_ReplyWithError(ctx, statusStrerror(status));
+    }
+
+    RedisModule_ReplyWithArray(ctx, 5 * 2);
+    RedisModule_ReplyWithSimpleString(ctx, "Capacity");
+    RedisModule_ReplyWithLongLong(ctx, BFCapacity(bf));
+    RedisModule_ReplyWithSimpleString(ctx, "Size");
+    RedisModule_ReplyWithLongLong(ctx, BFSize(bf));
+    RedisModule_ReplyWithSimpleString(ctx, "Number of filters");
+    RedisModule_ReplyWithLongLong(ctx, bf->nfilters);
+    RedisModule_ReplyWithSimpleString(ctx, "Number of items inserted");
+    RedisModule_ReplyWithLongLong(ctx, bf->size);
+    RedisModule_ReplyWithSimpleString(ctx, "Expansion rate");
+    RedisModule_ReplyWithLongLong(ctx, bf->growth);
+
+    return REDISMODULE_OK;
+}
+
+uint64_t CFSize(CuckooFilter *cf) {
+    uint64_t numBuckets = 0;
+    for(uint16_t ii = 0; ii < cf->numFilters; ++ii) {
+        numBuckets += cf->filters[ii].numBuckets;
+    }
+
+    return  sizeof(*cf) + 
+            sizeof(*cf->filters) * cf->numFilters +
+            numBuckets * cf->bucketSize;
+}
+
 static int CFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     if (argc != 2) {
@@ -766,9 +896,44 @@ static int CFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
 
+    RedisModule_ReplyWithArray(ctx, 8 * 2);
+    RedisModule_ReplyWithSimpleString(ctx, "Size");
+    RedisModule_ReplyWithLongLong(ctx, CFSize(cf));
+    RedisModule_ReplyWithSimpleString(ctx, "Number of buckets");
+    RedisModule_ReplyWithLongLong(ctx, cf->numBuckets);
+    RedisModule_ReplyWithSimpleString(ctx, "Number of filters");
+    RedisModule_ReplyWithLongLong(ctx, cf->numFilters);
+    RedisModule_ReplyWithSimpleString(ctx, "Number of items inserted");
+    RedisModule_ReplyWithLongLong(ctx, cf->numItems);
+    RedisModule_ReplyWithSimpleString(ctx, "Number of items deleted");
+    RedisModule_ReplyWithLongLong(ctx, cf->numDeletes);
+    RedisModule_ReplyWithSimpleString(ctx, "Bucket size");
+    RedisModule_ReplyWithLongLong(ctx, cf->bucketSize);
+    RedisModule_ReplyWithSimpleString(ctx, "Expansion rate");
+    RedisModule_ReplyWithLongLong(ctx, cf->expansion);
+    RedisModule_ReplyWithSimpleString(ctx, "Max iterations");
+    RedisModule_ReplyWithLongLong(ctx, cf->maxIterations);
+
+    return REDISMODULE_OK;
+}
+
+static int CFDebug_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+    if (argc != 2) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    CuckooFilter *cf;
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
+    int status = cfGetFilter(key, &cf);
+    if (status != REDISMODULE_OK) {
+        return RedisModule_ReplyWithError(ctx, statusStrerror(status));
+    }
+
     RedisModuleString *resp = RedisModule_CreateStringPrintf(
-        ctx, "bktsize:%lu buckets:%lu items:%lu deletes:%lu filters:%lu", CUCKOO_BKTSIZE,
-        cf->numBuckets, cf->numItems, cf->numDeletes, cf->numFilters);
+        ctx, "bktsize:%lu buckets:%lu items:%lu deletes:%lu filters:%lu max_iterations:%lu expansion:%lu",
+        cf->bucketSize, cf->numBuckets, cf->numItems, cf->numDeletes, 
+        cf->numFilters, cf->maxIterations, cf->expansion);
     return RedisModule_ReplyWithString(ctx, resp);
 }
 
@@ -777,8 +942,11 @@ static int CFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 /// Datatype Functions                                                       ///
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-#define BF_ENCODING_VERSION 3
 #define BF_MIN_OPTIONS_ENC 2
+#define BF_ENCODING_VERSION 3
+#define BF_MIN_GROWTH_ENC 4
+
+#define CF_MIN_EXPANSION_VERSION 4
 
 static void BFRdbSave(RedisModuleIO *io, void *obj) {
     // Save the setting!
@@ -787,6 +955,7 @@ static void BFRdbSave(RedisModuleIO *io, void *obj) {
     RedisModule_SaveUnsigned(io, sb->size);
     RedisModule_SaveUnsigned(io, sb->nfilters);
     RedisModule_SaveUnsigned(io, sb->options);
+    RedisModule_SaveUnsigned(io, sb->growth);
 
     for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         const SBLink *lb = sb->filters + ii;
@@ -806,7 +975,7 @@ static void BFRdbSave(RedisModuleIO *io, void *obj) {
 }
 
 static void *BFRdbLoad(RedisModuleIO *io, int encver) {
-    if (encver > BF_ENCODING_VERSION) {
+    if (encver > BF_MIN_GROWTH_ENC) {
         return NULL;
     }
 
@@ -817,6 +986,12 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
     if (encver >= BF_MIN_OPTIONS_ENC) {
         sb->options = RedisModule_LoadUnsigned(io);
     }
+    if (encver >= BF_MIN_GROWTH_ENC) {
+        sb->growth = RedisModule_LoadUnsigned(io);
+    } else {
+        sb->growth = 2;
+    }
+    
 
     // Sanity:
     assert(sb->nfilters < 1000);
@@ -884,33 +1059,81 @@ static void CFRdbSave(RedisModuleIO *io, void *obj) {
     RedisModule_SaveUnsigned(io, cf->numFilters);
     RedisModule_SaveUnsigned(io, cf->numBuckets);
     RedisModule_SaveUnsigned(io, cf->numItems);
+    RedisModule_SaveUnsigned(io, cf->numDeletes);
+    RedisModule_SaveUnsigned(io, cf->bucketSize);
+    RedisModule_SaveUnsigned(io, cf->maxIterations);
+    RedisModule_SaveUnsigned(io, cf->expansion);
     for (size_t ii = 0; ii < cf->numFilters; ++ii) {
-        RedisModule_SaveStringBuffer(io, (char *)cf->filters[ii],
-                                     cf->numBuckets * sizeof(*cf->filters[ii]));
+        RedisModule_SaveUnsigned(io, cf->filters[ii].numBuckets);
+        RedisModule_SaveStringBuffer(io, (char *)cf->filters[ii].data,
+                    cf->filters[ii].bucketSize *
+                    cf->filters[ii].numBuckets * 
+                    sizeof(*cf->filters[ii].data));
     }
 }
 
 static void *CFRdbLoad(RedisModuleIO *io, int encver) {
-    if (encver > BF_ENCODING_VERSION) {
+    if (encver > CF_MIN_EXPANSION_VERSION) {
         return NULL;
     }
+/* RDBCF
+    if (encver == BF_ENCODING_VERSION) { // 3
+        globalCuckooHash64Bit = 0;
+     //   RedisModule_Log(io->ctx, "warning", "RedisBloom Cuckoo filter started with 32 bit hashing. \
+                                  This mode will be deprecated in RedisBloom 3.0")
+        printf("\n32 bit mode\n\n");
+    } else {
+        globalCuckooHash64Bit = 1;
+      //  RedisModule_Log(io->ctx, "warning", "RedisBloom Cuckoo filter started with 64 bit hashing")
+        printf("\n64 bit mode\n\n");
+    }*/
 
     CuckooFilter *cf = RedisModule_Calloc(1, sizeof(*cf));
     cf->numFilters = RedisModule_LoadUnsigned(io);
     cf->numBuckets = RedisModule_LoadUnsigned(io);
     cf->numItems = RedisModule_LoadUnsigned(io);
+    if (encver < CF_MIN_EXPANSION_VERSION) {    // CF_ENCODING_VERSION when added
+        cf->numDeletes = 0;                     // Didn't exist earlier. bug fix         
+        cf->bucketSize = CF_DEFAULT_BUCKETSIZE;
+        cf->maxIterations = CF_MAX_ITERATIONS;
+        cf->expansion = CF_DEFAULT_EXPANSION;
+    } else {
+        cf->numDeletes = RedisModule_LoadUnsigned(io);    
+        cf->bucketSize = RedisModule_LoadUnsigned(io);
+        cf->maxIterations = RedisModule_LoadUnsigned(io);
+        cf->expansion = RedisModule_LoadUnsigned(io);
+    }
+
     cf->filters = RedisModule_Calloc(cf->numFilters, sizeof(*cf->filters));
-    for (size_t ii = 0; ii < cf->numFilters; ++ii) {
+    for (size_t ii = 0, exp = 1; ii < cf->numFilters; ++ii, exp *= cf->expansion) {
+        cf->filters[ii].bucketSize = cf->bucketSize;
+
+        if (encver < CF_MIN_EXPANSION_VERSION) {
+            cf->filters[ii].numBuckets = cf->numBuckets;
+        } else {
+            cf->filters[ii].numBuckets = RedisModule_LoadUnsigned(io);
+        }
+        
         size_t lenDummy = 0;
-        cf->filters[ii] = (CuckooBucket *)RedisModule_LoadStringBuffer(io, &lenDummy);
-        assert(cf->filters[ii] != NULL && lenDummy == sizeof(CuckooBucket) * cf->numBuckets);
+        cf->filters[ii].data = (MyCuckooBucket *)RedisModule_LoadStringBuffer(io, &lenDummy);
+        assert(cf->filters[ii].data != NULL && lenDummy == cf->filters[ii].bucketSize *
+                                                           cf->filters[ii].numBuckets * 
+                                                           sizeof(*cf->filters[ii].data));
     }
     return cf;
 }
 
 static size_t CFMemUsage(const void *value) {
     const CuckooFilter *cf = value;
-    return sizeof(*cf) + sizeof(CuckooBucket) * cf->numBuckets * cf->numFilters;
+
+    size_t filtersSize = 0;
+    for (size_t ii = 0; ii < cf->numFilters; ++ii) {
+        filtersSize +=  cf->filters[ii].bucketSize * 
+                        cf->filters[ii].numBuckets * 
+                        sizeof(*cf->filters[ii].data);
+    }
+    
+    return sizeof(*cf) + sizeof(*cf->filters) * cf->numFilters + filtersSize;
 }
 
 static void CFAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *obj) {
@@ -960,37 +1183,37 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     }
 
     if (argc % 2) {
-        BAIL("Invalid number of arguments passed");
+        BAIL("Invalid number of arguments passed", NULL);
     }
 
     for (int ii = 0; ii < argc; ii += 2) {
         if (!rsStrcasecmp(argv[ii], "initial_size")) {
             long long v;
             if (RedisModule_StringToLongLong(argv[ii + 1], &v) == REDISMODULE_ERR) {
-                BAIL("Invalid argument for 'INITIAL_SIZE'");
+                BAIL("Invalid argument for 'INITIAL_SIZE'", NULL); 
             }
             if (v > 0) {
                 BFDefaultInitCapacity = v;
             } else {
-                BAIL("INITIAL_SIZE must be > 0");
+                BAIL("INITIAL_SIZE must be > 0", NULL);
             }
         } else if (!rsStrcasecmp(argv[ii], "error_rate")) {
             double d;
             if (RedisModule_StringToDouble(argv[ii + 1], &d) == REDISMODULE_ERR) {
-                BAIL("Invalid argument for 'ERROR_RATE'");
+                BAIL("Invalid argument for 'ERROR_RATE'", NULL);
             } else if (d <= 0) {
-                BAIL("ERROR_RATE must be > 0");
+                BAIL("ERROR_RATE must be > 0", NULL);
             } else {
                 BFDefaultErrorRate = d;
             }
         } else if (!rsStrcasecmp(argv[ii], "cf_max_expansions")) {
             long long l;
-            if (RedisModule_StringToLongLong(argv[ii + 1], &l) == REDISMODULE_ERR || l == 0) {
-                BAIL("Invalid argument for 'CF_MAX_EXPANSIONS'");
+            if (RedisModule_StringToLongLong(argv[ii + 1], &l) == REDISMODULE_ERR || l <= 0) {
+                BAIL("Invalid argument for 'CF_MAX_EXPANSIONS'", NULL);
             }
             CFMaxExpansions = l;
         } else {
-            BAIL("Unrecognized option");
+            BAIL("Unrecognized option", NULL);
         } 
     } 
 
@@ -1009,9 +1232,11 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     CREATE_WRCMD("BF.INSERT", BFInsert_RedisCommand);
     CREATE_ROCMD("BF.EXISTS", BFCheck_RedisCommand);
     CREATE_ROCMD("BF.MEXISTS", BFCheck_RedisCommand);
+    CREATE_ROCMD("BF.INFO", BFInfo_RedisCommand);
 
     // Bloom - Debug
-    CREATE_ROCMD("BF.DEBUG", BFInfo_RedisCommand);
+    CREATE_ROCMD("BF.DEBUG", BFDebug_RedisCommand);
+    
     // Bloom - AOF
     CREATE_ROCMD("BF.SCANDUMP", BFScanDump_RedisCommand);
     CREATE_WRCMD("BF.LOADCHUNK", BFLoadChunk_RedisCommand);
@@ -1029,21 +1254,14 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     // Technically a write command, but doesn't change memory profile
     CREATE_CMD("CF.DEL", CFDel_RedisCommand, "write fast");
 
+    CREATE_ROCMD("CF.COMPACT", CFCompact_RedisCommand);
     // AOF:
     CREATE_ROCMD("CF.SCANDUMP", CFScanDump_RedisCommand);
     CREATE_WRCMD("CF.LOADCHUNK", CFLoadChunk_RedisCommand);
 
-    CREATE_ROCMD("CF.DEBUG", CFInfo_RedisCommand);
-/*
-    // Count Min Sketch commcms.initbydimands
-    CREATE_WRCMD("CMS.INITBYDIM", CMSInit_RedisCommand);
-    CREATE_WRCMD("CMS.INITBYPROB", CMSInit_RedisCommand);
-    CREATE_WRCMD("CMS.INCRBY", CMSIncrBy_RedisCommand);
-    CREATE_ROCMD("CMS.QUERY", CMSQuery_RedisCommand);
-    CREATE_WRCMD("CMS.MERGE", CMSMerge_RedisCommand);
-    CREATE_ROCMD("CMS.DEBUG", CMSDebug_RedisCommand);
-*/
-
+    CREATE_ROCMD("CF.INFO", CFInfo_RedisCommand);
+    CREATE_ROCMD("CF.DEBUG", CFDebug_RedisCommand);
+    
     CMSModule_onLoad(ctx, argv, argc);
     TopKModule_onLoad(ctx, argv, argc);
 
@@ -1053,7 +1271,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
                                                .aof_rewrite = BFAofRewrite,
                                                .free = BFFree,
                                                .mem_usage = BFMemUsage};
-    BFType = RedisModule_CreateDataType(ctx, "MBbloom--", BF_ENCODING_VERSION, &typeprocs);
+    BFType = RedisModule_CreateDataType(ctx, "MBbloom--", BF_MIN_GROWTH_ENC, &typeprocs);
     if (BFType == NULL) {
         return REDISMODULE_ERR;
     }
@@ -1064,7 +1282,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
                                                  .aof_rewrite = CFAofRewrite,
                                                  .free = CFFree,
                                                  .mem_usage = CFMemUsage};
-    CFType = RedisModule_CreateDataType(ctx, "MBbloomCF", BF_ENCODING_VERSION, &cfTypeProcs);
+    CFType = RedisModule_CreateDataType(ctx, "MBbloomCF", CF_MIN_EXPANSION_VERSION, &cfTypeProcs);
     if (CFType == NULL) {
         return REDISMODULE_ERR;
     }

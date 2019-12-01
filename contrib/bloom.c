@@ -116,7 +116,7 @@ static double calc_bpe(double error) {
 }
 
 int bloom_init(struct bloom *bloom, unsigned entries, double error, unsigned options) {
-    if (entries < 1 || error <= 0 || error > 1.0) {
+    if (entries < 1 || error <= 0 || error >= 1.0) {
         return 1;
     }
 
@@ -130,7 +130,7 @@ int bloom_init(struct bloom *bloom, unsigned entries, double error, unsigned opt
 
     if (options & BLOOM_OPT_ENTS_IS_BITS) {
         // Size is determined by the number of bits
-        if (entries == 0 || entries > 64) {
+        if (/* entries == 0 || */ entries > 64) {
             return 1;
         }
 
