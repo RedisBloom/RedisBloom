@@ -735,6 +735,24 @@ static int CFDel_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     return RedisModule_ReplyWithLongLong(ctx, CuckooFilter_Delete(cf, hash));
 }
 
+static int CFCompact_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+
+    if (argc != 2) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
+    CuckooFilter *cf;
+    int status = cfGetFilter(key, &cf);
+    if (status != SB_OK) {
+        return RedisModule_ReplyWithError(ctx, "Cuckoo filter was not found");
+    }
+    CuckooFilter_Compact(cf);
+    RedisModule_ReplicateVerbatim(ctx);
+    return RedisModule_ReplyWithSimpleString(ctx, "OK");
+}
+
 static int CFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
@@ -1256,6 +1274,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     // Technically a write command, but doesn't change memory profile
     CREATE_CMD("CF.DEL", CFDel_RedisCommand, "write fast");
 
+    CREATE_ROCMD("CF.COMPACT", CFCompact_RedisCommand);
     // AOF:
     CREATE_ROCMD("CF.SCANDUMP", CFScanDump_RedisCommand);
     CREATE_WRCMD("CF.LOADCHUNK", CFLoadChunk_RedisCommand);
