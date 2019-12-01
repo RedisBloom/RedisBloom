@@ -137,7 +137,7 @@ TEST_F(basic, testNoRound) {
     ASSERT_NE(0, SBChain_Check(chain, "d", 1));
     ASSERT_NE(0, SBChain_Check(chain, "f", 1));
 
-    SBChain_Free(chain);
+    SBChain_Free(chain); 
 }
 
 
