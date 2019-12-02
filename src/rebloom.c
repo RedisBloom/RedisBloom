@@ -1246,41 +1246,41 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 #define CREATE_WRCMD(name, tgt) CREATE_CMD(name, tgt, "write deny-oom")
 #define CREATE_ROCMD(name, tgt) CREATE_CMD(name, tgt, "readonly fast")
 
-    CREATE_WRCMD("BF.RESERVE", BFReserve_RedisCommand);
-    CREATE_WRCMD("BF.ADD", BFAdd_RedisCommand);
-    CREATE_WRCMD("BF.MADD", BFAdd_RedisCommand);
-    CREATE_WRCMD("BF.INSERT", BFInsert_RedisCommand);
-    CREATE_ROCMD("BF.EXISTS", BFCheck_RedisCommand);
-    CREATE_ROCMD("BF.MEXISTS", BFCheck_RedisCommand);
-    CREATE_ROCMD("BF.INFO", BFInfo_RedisCommand);
+    CREATE_WRCMD("bf.reserve", BFReserve_RedisCommand);
+    CREATE_WRCMD("bf.add", BFAdd_RedisCommand);
+    CREATE_WRCMD("bf.madd", BFAdd_RedisCommand);
+    CREATE_WRCMD("bf.insert", BFInsert_RedisCommand);
+    CREATE_ROCMD("bf.exists", BFCheck_RedisCommand);
+    CREATE_ROCMD("bf.mexists", BFCheck_RedisCommand);
+    CREATE_ROCMD("bf.info", BFInfo_RedisCommand);
 
     // Bloom - Debug
-    CREATE_ROCMD("BF.DEBUG", BFDebug_RedisCommand);
+    CREATE_ROCMD("bf.debug", BFDebug_RedisCommand);
     
     // Bloom - AOF
-    CREATE_ROCMD("BF.SCANDUMP", BFScanDump_RedisCommand);
-    CREATE_WRCMD("BF.LOADCHUNK", BFLoadChunk_RedisCommand);
+    CREATE_ROCMD("bf.scandump", BFScanDump_RedisCommand);
+    CREATE_WRCMD("bf.loadchunk", BFLoadChunk_RedisCommand);
 
     // Cuckoo Filter commands
-    CREATE_WRCMD("CF.RESERVE", CFReserve_RedisCommand);
-    CREATE_WRCMD("CF.ADD", CFAdd_RedisCommand);
-    CREATE_WRCMD("CF.ADDNX", CFAdd_RedisCommand);
-    CREATE_WRCMD("CF.INSERT", CFInsert_RedisCommand);
-    CREATE_WRCMD("CF.INSERTNX", CFInsert_RedisCommand);
-    CREATE_ROCMD("CF.EXISTS", CFCheck_RedisCommand);
-    CREATE_ROCMD("CF.MEXISTS", CFCheck_RedisCommand);
-    CREATE_ROCMD("CF.COUNT", CFCheck_RedisCommand);
+    CREATE_WRCMD("cf.reserve", CFReserve_RedisCommand);
+    CREATE_WRCMD("cf.add", CFAdd_RedisCommand);
+    CREATE_WRCMD("cf.addnx", CFAdd_RedisCommand);
+    CREATE_WRCMD("cf.insert", CFInsert_RedisCommand);
+    CREATE_WRCMD("cf.insertnx", CFInsert_RedisCommand);
+    CREATE_ROCMD("cf.exists", CFCheck_RedisCommand);
+    CREATE_ROCMD("cf.mexists", CFCheck_RedisCommand);
+    CREATE_ROCMD("cf.count", CFCheck_RedisCommand);
 
     // Technically a write command, but doesn't change memory profile
-    CREATE_CMD("CF.DEL", CFDel_RedisCommand, "write fast");
+    CREATE_CMD("cf.del", CFDel_RedisCommand, "write fast");
 
-    CREATE_ROCMD("CF.COMPACT", CFCompact_RedisCommand);
+    CREATE_ROCMD("cf.compact", CFCompact_RedisCommand);
     // AOF:
-    CREATE_ROCMD("CF.SCANDUMP", CFScanDump_RedisCommand);
-    CREATE_WRCMD("CF.LOADCHUNK", CFLoadChunk_RedisCommand);
+    CREATE_ROCMD("cf.scandump", CFScanDump_RedisCommand);
+    CREATE_WRCMD("cf.loadchunk", CFLoadChunk_RedisCommand);
 
-    CREATE_ROCMD("CF.INFO", CFInfo_RedisCommand);
-    CREATE_ROCMD("CF.DEBUG", CFDebug_RedisCommand);
+    CREATE_ROCMD("cf.info", CFInfo_RedisCommand);
+    CREATE_ROCMD("cf.debug", CFDebug_RedisCommand);
     
     CMSModule_onLoad(ctx, argv, argc);
     TopKModule_onLoad(ctx, argv, argc);
