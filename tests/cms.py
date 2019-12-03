@@ -11,13 +11,13 @@ if sys.version >= '3':
 class CMSTest(ModuleTestCase('../redisbloom.so')):
     def test_simple(self):
         self.assertOk(self.cmd('cms.initbydim', 'cms1', '20', '5'))
-        self.assertOk(self.cmd('cms.incrby', 'cms1', 'a', '5'))
-        self.assertEqual([5L], self.cmd('cms.query', 'cms1', 'a'))
+        self.assertEqual([5], self.cmd('cms.incrby', 'cms1', 'a', '5'))
+        self.assertEqual([5], self.cmd('cms.query', 'cms1', 'a'))
         self.assertEqual(['width', 20, 'depth', 5, 'count', 5], 
                          self.cmd('cms.info', 'cms1'))
 
         self.assertOk(self.cmd('cms.initbyprob', 'cms2', '0.001', '0.01'))
-        self.assertOk(self.cmd('cms.incrby', 'cms2', 'a', '5'))
+        self.assertEqual([5], self.cmd('cms.incrby', 'cms2', 'a', '5'))
         self.assertEqual([5L], self.cmd('cms.query', 'cms2', 'a'))
         self.assertEqual(['width', 2000, 'depth', 7, 'count', 5], 
                          self.cmd('cms.info', 'cms2'))
@@ -83,11 +83,11 @@ class CMSTest(ModuleTestCase('../redisbloom.so')):
 
         c = self.client
         self.cmd('cms.initbydim', 'test', '1000', '5') 
-        self.assertOk(self.cmd('cms.incrby', 'test', 'foo', '1'))
+        self.assertEqual([1], self.cmd('cms.incrby', 'test', 'foo', '1'))
         self.assertEqual([1], self.cmd('cms.query', 'test', 'foo'))
         self.assertEqual([0], self.cmd('cms.query', 'test', 'bar'))
 
-        self.assertOk(self.cmd('cms.incrby', 'test', 'foo', '1', 'bar', '1'))
+        self.assertEqual([2, 1], self.cmd('cms.incrby', 'test', 'foo', '1', 'bar', '1'))
         for _ in c.retry_with_rdb_reload():
             self.assertEqual([2], self.cmd('cms.query', 'test', 'foo'))
             self.assertEqual([1], self.cmd('cms.query', 'test', 'bar'))
