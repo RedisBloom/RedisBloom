@@ -39,7 +39,7 @@ void CMS_Destroy(CMSketch *cms);
 
 /*  Increases item count in value.
     Value must be a non negative number */
-void CMS_IncrBy(CMSketch *cms, const char *item, size_t strlen, size_t value);
+size_t CMS_IncrBy(CMSketch *cms, const char *item, size_t strlen, size_t value);
 
 /* Returns an estimate counter for item */
 size_t CMS_Query(CMSketch *cms, const char *item, size_t strlen);

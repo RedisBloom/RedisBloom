@@ -65,8 +65,8 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
     // Determine if we need to add more items?
     SBLink *cur = CUR_FILTER(sb);
     if (cur->size >= cur->inner.entries) {
-        double error = cur->inner.error * pow(ERROR_TIGHTENING_RATIO, sb->nfilters + 1);
-        if (SBChain_AddLink(sb, cur->inner.entries * 2, error) != 0) {
+        double error = cur->inner.error * ERROR_TIGHTENING_RATIO;
+        if (SBChain_AddLink(sb, cur->inner.entries * (size_t)sb->growth, error) != 0) {
             return -1;
         }
         cur = CUR_FILTER(sb);
@@ -89,13 +89,14 @@ int SBChain_Check(const SBChain *sb, const void *data, size_t len) {
     return 0;
 }
 
-SBChain *SB_NewChain(size_t initsize, double error_rate, unsigned options) {
-    if (initsize == 0 || error_rate == 0) {
+SBChain *SB_NewChain(size_t initsize, double error_rate, unsigned options, unsigned growth) {
+    if (initsize == 0 || error_rate == 0 || error_rate >= 1) {
         return NULL;
     }
     SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
+    sb->growth = growth;
     sb->options = options;
-    if (SBChain_AddLink(sb, initsize, error_rate) != 0) {
+    if (SBChain_AddLink(sb, initsize, error_rate * ERROR_TIGHTENING_RATIO) != 0) {
         SBChain_Free(sb);
         sb = NULL;
     }
@@ -128,6 +129,7 @@ typedef struct __attribute__((packed)) {
     uint64_t size;
     uint32_t nfilters;
     uint32_t options;
+    uint32_t growth;
     dumpedChainLink links[0];
 } dumpedChainHeader;
 
@@ -185,6 +187,7 @@ char *SBChain_GetEncodedHeader(const SBChain *sb, size_t *hdrlen) {
     hdr->size = sb->size;
     hdr->nfilters = sb->nfilters;
     hdr->options = sb->options;
+    hdr->growth = sb->growth;
 
     for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         dumpedChainLink *dstlink = &hdr->links[ii];
@@ -216,6 +219,7 @@ SBChain *SB_NewChainFromHeader(const char *buf, size_t bufLen, const char **errm
     sb->nfilters = header->nfilters;
     sb->options = header->options;
     sb->size = header->size;
+    sb->growth = sb->growth;
 
     for (size_t ii = 0; ii < header->nfilters; ++ii) {
         SBLink *dstlink = sb->filters + ii;

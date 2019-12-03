@@ -173,16 +173,20 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
             self.cmd('bf.insert', 'missingFilter', 'ERROR')
         with self.assertResponseError():
             self.cmd('bf.insert', 'missingFilter', 'ERROR', 'big')
+        with self.assertResponseError():
+            self.cmd('bf.insert', 'missingFilter', 'EXPANSION', '0', 'ITEMS', 'foo')
+        with self.assertResponseError():
+            self.cmd('bf.insert', 'missingFilter', 'EXPANSION', 'big')
 
         rep = self.cmd('BF.INSERT', 'missingFilter', 'ERROR',
-                       '0.001', 'CAPACITY', '50000', 'ITEMS', 'foo')
+                       '0.001', 'CAPACITY', '50000', 'EXPANSION', 2, 'ITEMS', 'foo')
         self.assertEqual([1], rep)
-        self.assertEqual(['size:1', 'bytes:131072 bits:1048576 hashes:10 hashwidth:64 capacity:72931 size:1 ratio:0.001'],
+        self.assertEqual(['size:1', 'bytes:131072 bits:1048576 hashes:11 hashwidth:64 capacity:66280 size:1 ratio:0.0005'],
                          [x.decode() for x in self.cmd('bf.debug', 'missingFilter')])
 
         rep = self.cmd('BF.INSERT', 'missingFilter', 'ERROR', '0.1', 'ITEMS', 'foo', 'bar', 'baz')
         self.assertEqual([0, 1, 1], rep)
-        self.assertEqual(['size:3', 'bytes:131072 bits:1048576 hashes:10 hashwidth:64 capacity:72931 size:3 ratio:0.001'],
+        self.assertEqual(['size:3', 'bytes:131072 bits:1048576 hashes:11 hashwidth:64 capacity:66280 size:3 ratio:0.0005'],
                          [x.decode() for x in self.cmd('bf.debug', 'missingFilter')])
 
     def test_mem_usage(self):
@@ -195,6 +199,81 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
             self.cmd('bf.debug', 'bf', 'noexist')
         with self.assertResponseError():
             self.cmd('bf.debug', 'cf')
+
+    def test_expansion(self):
+        self.assertOk(self.cmd('bf.reserve exp1 0.01 4 expansion 1'))
+        self.assertOk(self.cmd('bf.reserve exp2 0.01 4 expansion 2'))
+        self.assertOk(self.cmd('bf.reserve exp4 0.01 4 expansion 4'))
+        for i in range(100):
+            self.cmd('bf.add exp1', str(i))
+            self.cmd('bf.add exp2', str(i))
+            self.cmd('bf.add exp4', str(i))
+        for i in range(100):
+            self.assertEqual(1, self.cmd('bf.exists exp1', str(i)))
+            self.assertEqual(1, self.cmd('bf.exists exp2', str(i)))
+            self.assertEqual(1, self.cmd('bf.exists exp4', str(i)))
+        
+        self.assertEqual(6, self.cmd('bf.info', 'exp1')[5])
+        self.assertEqual(4, self.cmd('bf.info', 'exp2')[5])
+        self.assertEqual(3, self.cmd('bf.info', 'exp4')[5])
+
+        with self.assertResponseError():
+            self.cmd('bf.reserve exp4 0.01 4 expansion')
+        with self.assertResponseError():
+            self.cmd('bf.reserve exp4 0.01 4 expansion 0')            
+        with self.assertResponseError():
+            self.cmd('bf.reserve exp4 0.01 4 expansion str') 
+
+    def test_debug(self):
+        self.assertOk(self.cmd('bf.reserve', 'bf', '0.01', '10'))
+        for i in range(100):
+            self.cmd('bf.add', 'bf', str(i))
+        self.assertEqual(self.cmd('bf.debug', 'bf'), ['size:100',
+                'bytes:16 bits:128 hashes:8 hashwidth:64 capacity:11 size:11 ratio:0.005',
+                'bytes:64 bits:512 hashes:9 hashwidth:64 capacity:41 size:41 ratio:0.0025',
+                'bytes:256 bits:2048 hashes:10 hashwidth:64 capacity:147 size:48 ratio:0.00125'])
+
+        self.cmd('del', 'bf')
+        
+        self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '100'))
+        for i in range(4000):
+            self.cmd('bf.add', 'bf', str(i))
+        self.assertEqual(self.cmd('bf.debug', 'bf'), ['size:3990',
+                'bytes:256 bits:2048 hashes:11 hashwidth:64 capacity:129 size:129 ratio:0.0005',
+                'bytes:1024 bits:8192 hashes:12 hashwidth:64 capacity:474 size:474 ratio:0.00025',
+                'bytes:4096 bits:32768 hashes:13 hashwidth:64 capacity:1751 size:1751 ratio:0.000125',
+                'bytes:16384 bits:131072 hashes:14 hashwidth:64 capacity:6505 size:1636 ratio:6.25e-05'])
+
+    def test_info(self):
+        self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '100'))
+        self.assertEqual(self.cmd('bf.info bf'), ['Capacity', 129,
+                                                  'Size', 408L, 
+                                                  'Number of filters', 1L, 
+                                                  'Number of items inserted', 0L,
+                                                  'Expansion rate', 2L])
+
+        with self.assertResponseError():
+            self.cmd('bf.info', 'cf')   
+        with self.assertResponseError():
+            self.cmd('bf.info')                                             
+
+    def test_no_1_error_rate(self):
+        with self.assertResponseError():
+            self.cmd('bf.reserve cf 1 1000')
+
+    def test_error_rate(self):
+        repeat = 1024
+        rates = [0.1, 0.01, 0.001, 0.0001]
+        names = ['bf0.1', 'bf0.01', 'bf0.001', 'bf0.0001']
+
+        for i in range(len(rates)):
+            false_positive = 0.0
+            self.cmd('bf.reserve', names[i], rates[i], repeat)
+            for x in range(repeat):
+                self.cmd('bf.add', names[i], x)
+            for x in range(repeat, repeat * 11):
+                false_positive += self.cmd('bf.exists', names[i], x)
+            self.assertGreaterEqual(rates[i], false_positive / (repeat * 10))
 
 if __name__ == "__main__":
     import unittest
