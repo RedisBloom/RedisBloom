@@ -1,0 +1,8 @@
+2.0.0   Added Count-Min Sketch sub-module
+        Added Top-K sub-module
+
+2.0.2   Fixed replication
+
+2.0.3   Fixed hash function break
+
+2.0.X   Change return value of CMS.INCRBY to current count instead of "OK".
