@@ -255,7 +255,7 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
 
     def test_no_1_error_rate(self):
         with self.assertResponseError():
-            self.cmd('bf.reserve cf 1 1000')
+            self.cmd('bf.reserve bf 1 1000')
 
     def test_error_rate(self):
         repeat = 1024
@@ -270,6 +270,18 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
             for x in range(repeat, repeat * 11):
                 false_positive += self.cmd('bf.exists', names[i], x)
             self.assertGreaterEqual(rates[i], false_positive / (repeat * 10))
+
+    def test_no_scaling(self):
+        capacity = 3
+        self.assertOk(self.cmd('bf.reserve bf 0.01', capacity, 'nonscaling'))
+        for i in range(capacity):
+            self.assertEqual(1, self.cmd('bf.add bf', i))
+        with self.assertResponseError():
+            self.cmd('bf.add bf extra')
+
+        self.assertOk(self.cmd('bf.reserve bfnonscale 0.001 1000 nonscaling'))
+        self.assertOk(self.cmd('bf.reserve bfscale 0.001 1000'))
+        self.assertGreaterEqual(self.cmd('bf.info bfnonscale')[3], self.cmd('bf.info bfscale')[3])
 
 if __name__ == "__main__":
     import unittest
