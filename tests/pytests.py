@@ -281,7 +281,7 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
 
         self.assertOk(self.cmd('bf.reserve bfnonscale 0.001 1000 nonscaling'))
         self.assertOk(self.cmd('bf.reserve bfscale 0.001 1000'))
-        self.assertGreaterEqual(self.cmd('bf.info bfnonscale')[3], self.cmd('bf.info bfscale')[3])
+        self.assertLess(self.cmd('bf.info bfnonscale')[3], self.cmd('bf.info bfscale')[3])
 
 if __name__ == "__main__":
     import unittest
