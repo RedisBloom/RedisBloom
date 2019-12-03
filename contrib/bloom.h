@@ -72,6 +72,9 @@ struct bloom {
 // Always force 64 bit hashing, even if too small
 #define BLOOM_OPT_FORCE64 4
 
+// Disable auto-scaling. Saves memory
+#define BLOOM_OPT_NO_SCALING 8
+
 int bloom_init(struct bloom *bloom, unsigned entries, double error, unsigned options);
 
 /** ***************************************************************************
