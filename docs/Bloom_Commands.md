@@ -11,14 +11,15 @@ BF.RESERVE {key} {error_rate} {capacity} [EXPANSION expansion] [NONSCALING]
 ### Description:
 
 Creates an empty Bloom Filter for the initial capacity requested with an upper
-bound `error_rate`. By default, the filter auto-scale when capacity is reached.
+bound `error_rate`. By default, the filter will auto-scale when `capacity` is
+reached.
 
 Though the filter can scale up by creating sub-filters, it is recommended to
 reserve enough capacity since maintaining and querying sub-filters requires
 more memory and CPU time than an equivalent filter that had the right capacity
-when initialized.
+on creation time.
 
-The number of hash functions is -log(error)/ln(2)^2. 
+The number of hash functions is -log(error)/ln(2)^2.
 The number of bits per item is -log(error)/ln(2) ≈ 1.44.
 
 * **1%**    error rate requires 7  hash functions and 10.08 bits per item.
@@ -43,12 +44,12 @@ Optional parameters:
 * **NONSCALING**: Prevents the filter from creating additional sub-filters if
     initial capacity is reached. Non-scaling filters requires slightly less
     memory than their scaling counterparts.
-* **expansion**: When capacity is reached, an additional sub-filter is created.
-    The new sub-filter size is that of the latest sub-filter multiplied by
-    `expansion`. If number of elements to be stored in the filter is unknown,
-    `expansion` of 2 or more is recommended to reduce the number of sub-filters,
-    else, `expansion` of 1 is recommended to reduce memory consumption.  
-    Default expansion value is 2. 
+* **expansion**: When `capacity` is reached, an additional sub-filter is
+    created. The size of the new sub-filter is the size of the last sub-filter
+    multiplied by `expansion`. If the number of elements to be stored in the
+    filter is unknown, `expansion` of 2 or more is recommended to reduce the
+    number of sub-filters, else, `expansion` of 1 is recommended to reduce
+    memory consumption. Default expansion value is 2.
 
 ### Complexity
 
@@ -152,12 +153,12 @@ Optional parameters:
 * **NONSCALING**: Prevents the filter from creating additional sub-filters if
     initial capacity is reached. Non-scaling filters requires slightly less
     memory than their scaling counterparts.
-* **expansion**: When capacity is reached, an additional sub-filter is created.
-    The new sub-filter size is that of the latest sub-filter multiplied by
-    `expansion`. If number of elements to be stored in the filter is unknown,
-    `expansion` of 2 or more is recommended to reduce the number of sub-filters,
-    else, `expansion` of 1 is recommended to reduce memory consumption.  
-    Default expansion value is 2. 
+* **expansion**: When `capacity` is reached, an additional sub-filter is
+    created. The size of the new sub-filter is the size of the last sub-filter
+    multiplied by `expansion`. If the number of elements to be stored in the
+    filter is unknown, `expansion` of 2 or more is recommended to reduce the
+    number of sub-filters, else, `expansion` of 1 is recommended to reduce
+    memory consumption. Default expansion value is 2.
 
 ### Examples
 
