@@ -5,7 +5,7 @@
 ### Format:
 
 ```
-BF.RESERVE {key} {error_rate} {capacity} [EXPANSION expansion] 
+BF.RESERVE {key} {error_rate} {capacity} [EXPANSION expansion] [NONSCALING]
 ```
 
 ### Description:
@@ -38,6 +38,9 @@ Optional parameters:
     current filter multiplied by `expansion`.
     Default expansion value is 2. This means each subsequent sub-filter will be
     twice as large as the previous one.
+* **NONSCALING**: Prevents the filter from creating additional sub-filters if
+    initial capacity is reached. Non-scaling filters requires slightly less
+    memory than their scaling counterparts.
 
 ### Complexity
 
@@ -105,7 +108,8 @@ have previously existed.
 ## BF.INSERT
 
 ```
-BF.INSERT {key} [CAPACITY {cap}] [ERROR {error}] [EXPANSION expansion] [NOCREATE] ITEMS {item...}
+BF.INSERT {key} [CAPACITY {cap}] [ERROR {error}] [EXPANSION expansion] [NOCREATE]
+[NONSCALING] ITEMS {item...}
 ```
 
 ### Description
@@ -136,6 +140,9 @@ modify this behavior.
     returned rather than creating it automatically. This may be used where a strict
     separation between filter creation and filter addition is desired. It is an
     error to specify `NOCREATE` together with either `CAPACITY` or `ERROR`.
+* **NONSCALING**: Prevents the filter from creating additional sub-filters if
+    initial capacity is reached. Non-scaling filters requires slightly less
+    memory than their scaling counterparts.
 * **ITEMS**: Indicates the beginning of the items to be added to the filter. This
     parameter must be specified.
 
@@ -305,6 +312,10 @@ O(log N), where N is the number of stacked filters in the data structure.
 ### Returns
 
 `OK` on success, or an error on failure.
+
+## BF.INFO
+
+### Format
 
 ```
 BF.INFO {key}
