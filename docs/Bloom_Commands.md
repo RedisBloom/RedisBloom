@@ -10,13 +10,21 @@ BF.RESERVE {key} {error_rate} {capacity} [EXPANSION expansion] [NONSCALING]
 
 ### Description:
 
-Creates an empty Bloom Filter with a given desired error ratio and initial capacity.
+Creates an empty Bloom Filter for the initial capacity requested with an upper
+bound `error_rate`. By default, the filter auto-scale when capacity is reached.
 
-Though the filter can scale up by creating sub-filters, it will consume more memory
-and CPU time than an equivalent filter that had the right capacity when initialized.
+Though the filter can scale up by creating sub-filters, it is recommended to
+reserve enough capacity since maintaining and querying sub-filters requires
+more memory and CPU time than an equivalent filter that had the right capacity
+when initialized.
 
-The number of hash functions is -log(error)/ln(2)^2
-The number of bits per item is -log(error)/ln(2)
+The number of hash functions is -log(error)/ln(2)^2. 
+The number of bits per item is -log(error)/ln(2) ≈ 1.44.
+
+* **1%**    error rate requires 7  hash functions and 10.08 bits per item.
+* **0.1%**  error rate requires 10 hash functions and 14.4  bits per item.
+* **0.01%** error rate requires 14 hash functions and 20.16 bits per item.
+
 
 ### Parameters:
 
@@ -24,9 +32,7 @@ The number of bits per item is -log(error)/ln(2)
 * **error_rate**: The desired probability for false positives. This should
     be a decimal value between 0 and 1. For example, for a desired false
     positive rate of 0.1% (1 in 1000), error_rate should be set to 0.001.
-    The closer this number is to zero, the greater the memory consumption per
-    item and the more CPU usage per operation.
-* **capacity**: The number of entries you intend to add to the filter.
+* **capacity**: The number of entries intended to be added to the filter.
     Performance will begin to degrade after adding more items than this
     number. The actual degradation will depend on how far the limit has
     been exceeded. Performance will degrade linearly as the number of entries
@@ -34,13 +40,15 @@ The number of bits per item is -log(error)/ln(2)
 
 Optional parameters:
 
-* **expansion**: If a new sub-filter is created, its size will be the size of the
-    current filter multiplied by `expansion`.
-    Default expansion value is 2. This means each subsequent sub-filter will be
-    twice as large as the previous one.
 * **NONSCALING**: Prevents the filter from creating additional sub-filters if
     initial capacity is reached. Non-scaling filters requires slightly less
     memory than their scaling counterparts.
+* **expansion**: When capacity is reached, an additional sub-filter is created.
+    The new sub-filter size is that of the latest sub-filter multiplied by
+    `expansion`. If number of elements to be stored in the filter is unknown,
+    `expansion` of 2 or more is recommended to reduce the number of sub-filters,
+    else, `expansion` of 1 is recommended to reduce memory consumption.  
+    Default expansion value is 2. 
 
 ### Complexity
 
@@ -108,7 +116,7 @@ have previously existed.
 ## BF.INSERT
 
 ```
-BF.INSERT {key} [CAPACITY {cap}] [ERROR {error}] [EXPANSION expansion] [NOCREATE] 
+BF.INSERT {key} [CAPACITY {cap}] [ERROR {error}] [EXPANSION {expansion}] [NOCREATE] 
 [NONSCALING] ITEMS {item...}
 ```
 
@@ -121,30 +129,35 @@ modify this behavior.
 ### Parameters
 
 * **key**: The name of the filter
-* **CAPACITY**: If specified, should be followed by the desired capacity for the
-    filter to be created. This parameter is ignored if the filter already exists.
-    If the filter is automatically created and this parameter is absent, then the
-    default capacity (specified at the module-level) is used. See `BF.RESERVE`
-    for more information on the impacts of this value.
-* **ERROR**: If specified, should be followed by the the error ratio of the newly
-    created filter if it does not yet exist. If the filter is automatically
-    created and `ERROR` is not specified then the default module-level error
-    rate is used. See `BF.RESERVE` for more information on the format of this
-    value.
-* **expansion**: If a new sub-filter is created, its size will be the size of the
-    current filter multiplied by `expansion`.
-    Default expansion value is 2. This means each subsequent sub-filter will be
-    twice as large as the previous one.
+* **ITEMS**: Indicates the beginning of the items to be added to the filter. This
+    parameter must be specified.
+
+Optional parameters:
+
 * **NOCREATE**: If specified, indicates that the filter should not be created if
     it does not already exist. If the filter does not yet exist, an error is
     returned rather than creating it automatically. This may be used where a strict
     separation between filter creation and filter addition is desired. It is an
     error to specify `NOCREATE` together with either `CAPACITY` or `ERROR`.
+* **capacity**: If specified, should be followed by the desired `capacity` for the
+    filter to be created. This parameter is ignored if the filter already exists.
+    If the filter is automatically created and this parameter is absent, then the
+    default `capacity` (specified at the module-level) is used. See `BF.RESERVE`
+    for more information on the impacts of this value.
+* **error**: If specified, should be followed by the the `error` ratio of the newly
+    created filter if it does not yet exist. If the filter is automatically
+    created and `error` is not specified then the default module-level error
+    rate is used. See `BF.RESERVE` for more information on the format of this
+    value.
 * **NONSCALING**: Prevents the filter from creating additional sub-filters if
     initial capacity is reached. Non-scaling filters requires slightly less
     memory than their scaling counterparts.
-* **ITEMS**: Indicates the beginning of the items to be added to the filter. This
-    parameter must be specified.
+* **expansion**: When capacity is reached, an additional sub-filter is created.
+    The new sub-filter size is that of the latest sub-filter multiplied by
+    `expansion`. If number of elements to be stored in the filter is unknown,
+    `expansion` of 2 or more is recommended to reduce the number of sub-filters,
+    else, `expansion` of 1 is recommended to reduce memory consumption.  
+    Default expansion value is 2. 
 
 ### Examples
 
