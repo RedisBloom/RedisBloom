@@ -116,7 +116,7 @@ have previously existed.
 ## BF.INSERT
 
 ```
-BF.INSERT {key} [CAPACITY {cap}] [ERROR {error}] [EXPANSION {expansion}] [NOCREATE] 
+BF.INSERT {key} [CAPACITY {cap}] [ERROR {error}] [EXPANSION {expansion}] [NOCREATE]
 [NONSCALING] ITEMS {item...}
 ```
 
@@ -325,6 +325,10 @@ O(log N), where N is the number of stacked filters in the data structure.
 ### Returns
 
 `OK` on success, or an error on failure.
+
+## BF.INFO
+
+### Format
 
 ```
 BF.INFO {key}

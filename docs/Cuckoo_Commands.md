@@ -5,7 +5,7 @@
 ### Format:
 
 ```
-CF.RESERVE {key} {capacity} [BUCKETSIZE bucketSize] [MAXITERATIONS maxIterations] [EXPANSION expansion] 
+CF.RESERVE {key} {capacity} [BUCKETSIZE bucketSize] [MAXITERATIONS maxIterations] [EXPANSION expansion]
 ```
 
 Create a Cuckoo Filter as `key` with an initial amount of `capacity` for items.
@@ -328,6 +328,10 @@ O(log N)
 
 `OK` on success, or an error on failure.
 
+
+## CF.INFO
+
+### Format
 
 ```
 CF.INFO {key}
