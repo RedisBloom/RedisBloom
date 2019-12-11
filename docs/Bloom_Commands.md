@@ -1,5 +1,9 @@
 # RedisBloom Bloom Filter Command Documentation
 
+Based on [Space/Time Trade-offs in Hash Coding with Allowable Errors](
+    http://www.dragonwins.com/domains/getteched/bbc/literature/Bloom70.pdf) paper
+    by Burton H. Bloom.
+
 ## BF.RESERVE
 
 ### Format:

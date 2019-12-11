@@ -1,5 +1,9 @@
 # RedisBloom Cuckoo Filter Documentation
 
+Based on [Cuckoo Filter: Practically Better Than Bloom](
+    https://www.eecs.harvard.edu/~michaelm/postscripts/cuckoo-conext2014.pdf) paper by 
+    Bin Fan, David G. Andersen and Michael Kaminsky.
+
 ## CF.RESERVE
 
 ### Format:
@@ -67,7 +71,8 @@ Adds an item to the cuckoo filter, creating the filter if it does not exist.
 
 Cuckoo filters can contain the same item multiple times, and consider each insert
 to be separate. You can use `CF.ADDNX` to only add the item if it does not yet
-exist.
+exist. Keep in mind that deleting an element inserted using `CF.ADDNX` may
+introduce false-negative errors.
 
 ### Parameters
 
@@ -76,7 +81,9 @@ exist.
 
 ### Complexity
 
-O(log N)
+O(sub-filters + maxIterations). Adding items usually requires 2 memory accesses.
+Yet, as the filter fills up, both locations for an item might be full. The filter
+will attempt to `Cuckoo` swap items up to `maxIterations` times.
 
 ### Returns
 
@@ -108,7 +115,9 @@ item exists.
 
 ### Complexity
 
-O(log N)
+O(sub-filters + maxIterations). Adding items usually requires 2 memory accesses.
+Yet, as the filter fills up, both locations for an item might be full. The filter
+will attempt to `Cuckoo` swap items up to `maxIterations` times.
 
 ### Returns
 
@@ -152,7 +161,9 @@ the cost of more verbosity.
 
 ### Complexity
 
-O(log N)
+O(sub-filters + maxIterations). Adding items usually requires 2 memory accesses.
+Yet, as the filter fills up, both locations for an item might be full. The filter
+will attempt to `Cuckoo` swap items up to `maxIterations` times.
 
 ### Returns
 
@@ -181,7 +192,7 @@ Check if an item exists in a Cuckoo Filter
 
 ### Complexity
 
-O(log N)
+O(sub-filters), Both alternative locations will be checked on all `sub-filters`.
 
 ### Returns
 
@@ -211,7 +222,7 @@ present.
 
 ### Complexity
 
-O(log N)
+O(sub-filters), Both alternative locations will be checked on all `sub-filters`.
 
 ### Returns
 
@@ -238,7 +249,7 @@ that function is more efficient for that purpose.
 
 ### Complexity
 
-O(log N)
+O(sub-filters), Both alternative locations will be checked on all `sub-filters`.
 
 ### Returns
 
