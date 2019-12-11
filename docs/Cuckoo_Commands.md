@@ -9,32 +9,35 @@ Based on [Cuckoo Filter: Practically Better Than Bloom](
 ### Format:
 
 ```
-CF.RESERVE {key} {capacity} [BUCKETSIZE bucketSize] [MAXITERATIONS maxIterations] [EXPANSION expansion] 
+CF.RESERVE {key} {capacity} [BUCKETSIZE bucketSize] [MAXITERATIONS maxIterations] [EXPANSION expansion]
 ```
 
 Create a Cuckoo Filter as `key` with an initial amount of `capacity` for items.
 Because of how Cuckoo Filters work, the filter is likely to declare itself full
-before `capacity` is reach and therefore fill rate will likely never reach 100%.
-The fill rate can be improved by using larger `bucketSize` at the cost of
-additional error rate.
+before `capacity` is reached and therefore fill rate will likely never reach
+100%. The fill rate can be improved by using a larger `bucketSize` at the cost
+of a higher error rate.
+
 The minimal false positive error rate is 2/255 ≈ 0.78% when bucket size of 1 is
 used. Larger buckets increase the error rate linearly (ex. bucket size of 3
 will yield 2.35% error rate) but improve the filter's fill-rate.
 
 The filter will auto-expand and generate a sub-filter at the cost of reduced
-performance and increased error rate, when the filter declares itself full. 
+performance and increased error rate, when the filter declares itself full.
 Like bucket size, additional sub-filters grow the error linearly.
-The new sub-filter size is that of the latest sub-filter multiplied by
-`expansion`. Default value is 1.
+The size of the new sub-filter is the size of the last sub-filter multiplied by
+`expansion`. The default value is 1.
+
 `maxIterations` dictates the number of attempts to find a slot for the incoming
 fingerprint. Once the filter gets full, high `maxIterations` value will slow
-down insertions. Default value is 20. 
+down insertions. The default value is 20.
+
 Unused capacity in prior sub-filters is automatically utilized when possible.
 The filter can grows up to 32 times.
 
 ## Parameters:
 
-* **key**: The key under which the filter is to be found
+* **key**: The key under which the filter is to be found.
 * **capacity**: Estimated capacity for the filter. Capacity is rounded to the
 next `2^n` number. The filter will likely not fill up to 100% of it's capacity.
 Make sure to reserve extra capacity if you want to avoid expansions.
@@ -46,7 +49,7 @@ improves the fill rate but result in a higher error rate and slightly slower
 operation speed.
 * **maxIterations**: Number of attempts to swap items between buckets before
 declaring filter as full and creating an additional filter. A low value is
-better for speed while a higher number is better for filter fill rate.
+better for performance while a higher number is better for filter fill rate.
 * **expansion**: When a new filter is created, its size will be the size of the
 current filter multiplied by `expansion`. Expansion is rounded to the next
 `2^n` number.
@@ -91,11 +94,10 @@ will attempt to `Cuckoo` swap items up to `maxIterations` times.
 
 
 ## CF.ADDNX
-Note: You should not use CF.ADDNX unless you absolutely certain of it.
-This command is equivalent to a CHECK+ADD command. It does not insert an element
-into the filter if its fingerprint already exists and therefore better utilizes
-capacity. However, if you delete elements it might introduce **false negative**
-error rate!
+
+Note: `CF.ADDNX` is an advanced command that might have implications if used
+incorrectly.
+
 ```
 CF.ADDNX {key} {item}
 ```
@@ -104,6 +106,11 @@ CF.ADDNX {key} {item}
 
 Adds an item to a cuckoo filter if the item did not exist previously.
 See documentation on `CF.ADD` for more information on this command.
+
+This command is equivalent to a `CF.CHECK` + `CF.ADD` command. It does not
+insert an element into the filter if its fingerprint already exists and
+therefore better utilizes the available capacity. However, if you delete
+elements it might introduce **false negative** error rate!
 
 Note that this command is slower than `CF.ADD` as it first checks whether the
 item exists.
@@ -127,20 +134,23 @@ will attempt to `Cuckoo` swap items up to `maxIterations` times.
 ## CF.INSERT
 
 ## CF.INSERTNX
-Note: You should not use CF.INSERTNX unless you absolutely certain of it.
-This command is equivalent to a CHECK+ADD command. It does not insert an element
-into the filter if its fingerprint already exists and therefore better utilizes
-capacity. However, if you delete elements it might introduce **false negative**
-error rate!
+
+Note: `CF.INSERTNX` is an advanced command that might have implications if used
+incorrectly.
+
 ```
 CF.INSERT {key} [CAPACITY {cap}] [NOCREATE] ITEMS {item ...}
 CF.INSERTNX {key} [CAPACITY {cap}] [NOCREATE] ITEMS {item ...}
 ```
 
 ### Description
-
 Adds one or more items to a cuckoo filter, allowing the filter to be created
 with a custom capacity if it does not yet exist.
+
+This command is equivalent to a `CF.CHECK` + `CF.ADD` command. It does not
+insert an element into the filter if its fingerprint already exists and
+therefore better utilizes the available capacity. However, if you delete
+elements it might introduce **false negative** error rate!
 
 These commands offers more flexibility over the `ADD` and `ADDNX` commands, at
 the cost of more verbosity.
@@ -339,6 +349,10 @@ O(log N)
 
 `OK` on success, or an error on failure.
 
+
+## CF.INFO
+
+### Format
 
 ```
 CF.INFO {key}
