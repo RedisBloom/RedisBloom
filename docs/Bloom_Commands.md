@@ -77,7 +77,7 @@ Adds an item to the Bloom Filter, creating the filter if it does not yet exist.
 
 ### Complexity
 
-O(log N), where N is the number of stacked filters in the data structure.
+O(hash), the number of `hash` functions used for the latest sub-filter.
 
 ### Returns
 
@@ -105,7 +105,7 @@ multiple values.
 
 ### Complexity
 
-O(log N), where N is the number of stacked filters in the data structure.
+O(hash), the number of `hash` functions used for the latest sub-filter.
 
 ### Returns
 
@@ -122,9 +122,9 @@ BF.INSERT {key} [CAPACITY {cap}] [ERROR {error}] [EXPANSION {expansion}] [NOCREA
 
 ### Description
 
-This command will add one or more items to the bloom filter, by default creating
-it if it does not yet exist. There are several arguments which may be used to
-modify this behavior.
+BF.INSERT is a sugarcoated combination of BF.RESERVE and BF.ADD. It will create a
+new filter if `key` does not exist using the relevant arguments (see BF.RESERVE).
+Next, all `ITEMS` are inserted.
 
 ### Parameters
 
@@ -181,7 +181,7 @@ BF.INSERT filter NOCREATE ITEMS foo bar
 
 ### Complexity
 
-O(log N), where N is the number of stacked filters in the data structure.
+O(hash), the number of `hash` functions used for the latest sub-filter.
 
 ### Returns
 
@@ -208,7 +208,11 @@ Determines whether an item may exist in the Bloom Filter or not.
 
 ### Complexity
 
-O(log N), where N is the number of stacked filters in the data structure.
+O(hash * sub-filters), the number of `hash` functions multiplied by the number
+of `sub-filters`.
+On average, a sub-filter returns FALSE after 2 bits are tested. Therefore the
+average complexity for a FALSE reply is `2 * sub-filters` while for a TRUE
+reply, the complexity is `2 * 1/2 * sub-filters + hash`.
 
 ### Returns
 
@@ -234,7 +238,11 @@ Determines if one or more items may exist in the filter or not.
 
 ### Complexity
 
-O(log N), where N is the number of stacked filters in the data structure.
+O(hash * sub-filters), the number of `hash` functions multiplied by the number
+of `sub-filters`.
+On average, a sub-filter returns FALSE after 2 bits are tested. Therefore the
+average complexity for a FALSE reply is `2 * sub-filters` while for a TRUE
+reply, the complexity is `2 * 1/2 * sub-filters + hash`.
 
 ### Returns
 
