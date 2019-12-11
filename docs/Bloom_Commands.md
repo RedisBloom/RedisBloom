@@ -47,7 +47,8 @@ Optional parameters:
 
 * **NONSCALING**: Prevents the filter from creating additional sub-filters if
     initial capacity is reached. Non-scaling filters requires slightly less
-    memory than their scaling counterparts.
+    memory than their scaling counterparts. The filter will return an error
+    once `capacity` is reached.
 * **expansion**: When `capacity` is reached, an additional sub-filter is
     created. The size of the new sub-filter is the size of the last sub-filter
     multiplied by `expansion`. If the number of elements to be stored in the
@@ -156,7 +157,8 @@ Optional parameters:
     value.
 * **NONSCALING**: Prevents the filter from creating additional sub-filters if
     initial capacity is reached. Non-scaling filters requires slightly less
-    memory than their scaling counterparts.
+    memory than their scaling counterparts. The filter will return an error
+    once `capacity` is reached.
 * **expansion**: When `capacity` is reached, an additional sub-filter is
     created. The size of the new sub-filter is the size of the last sub-filter
     multiplied by `expansion`. If the number of elements to be stored in the
