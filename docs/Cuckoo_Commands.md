@@ -9,27 +9,29 @@ Based on [Cuckoo Filter: Practically Better Than Bloom](
 ### Format:
 
 ```
-CF.RESERVE {key} {capacity} [BUCKETSIZE bucketSize] [MAXITERATIONS maxIterations] [EXPANSION expansion]
+CF.RESERVE {key} {capacity} [BUCKETSIZE bucketSize] [MAXITERATIONS maxIterations]
+[EXPANSION expansion]
 ```
 
-Create a Cuckoo Filter as `key` with an initial amount of `capacity` for items.
-Cuckoo Filters are designed so that the filter declares itself as full
-before `capacity` is reached. As a result the fill rate never reaches
-100%. If you want to achieve a higher fill rate, you can use a larger `bucketSize`
-at the cost of a higher error rate.
+Create a Cuckoo Filter as `key` with a single sub-filter for the initial amount
+of `capacity` for items. Because of how Cuckoo Filters work, the filter is
+likely to declare itself full before `capacity` is reached and therefore fill
+rate will likely never reach 100%. The fill rate can be improved by using a
+larger `bucketSize` at the cost of a higher error rate.
+When the filter self-declare itself `full`, it will auto-expand by generating
+additional sub-filters at the cost of reduced performance and increased error
+rate. The new sub-filter is created with size of the previous sub-filter
+multiplied by `expansion`.
+Like bucket size, additional sub-filters grow the error linearly.
+The size of the new sub-filter is the size of the last sub-filter multiplied by
+`expansion`. The default value is 1.
 
 The minimal false positive error rate is 2/255 ≈ 0.78% when bucket size of 1 is
 used. Larger buckets increase the error rate linearly (for example, a bucket size
 of 3 yields a 2.35% error rate) but improve the fill rate of the filter.
 
-When the filter declares itself full, it auto-expands and generates a sub-filter
-at the cost of reduced performance and increased error rate.
-Like bucket size, additional sub-filters grow the error linearly.
-The size of the new sub-filter is the size of the last sub-filter multiplied by
-`expansion`. The default value is 1.
-
-`maxIterations` determines the number of attempts to find a slot for the incoming
-fingerprint. When the filter gets full, a high `maxIterations` value slows
+`maxIterations` dictates the number of attempts to find a slot for the incoming
+fingerprint. Once the filter gets full, high `maxIterations` value will slow
 down insertions. The default value is 20.
 
 Unused capacity in prior sub-filters is automatically used when possible.

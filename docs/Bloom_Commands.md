@@ -14,14 +14,17 @@ BF.RESERVE {key} {error_rate} {capacity} [EXPANSION expansion] [NONSCALING]
 
 ### Description:
 
-Creates an empty Bloom Filter for the initial capacity requested with an upper
-bound `error_rate`. By default, the filter auto-scales when `capacity` is
-reached.
+Creates an empty Bloom Filter with a single sub-filter for the initial capacity
+requested and with an upper bound `error_rate`. By default, the filter 
+auto-scales by creating additional sub-filters when `capacity` is reached. The
+new sub-filter is created with size of the previous sub-filter multiplied by 
+`expansion`.
 
-Though the filter can scale up by creating sub-filters, we recommend that you
-reserve enough capacity because maintaining and querying sub-filters requires
-more memory and CPU time than an equivalent filter that had the right capacity
-at creation time.
+Though the filter can scale up by creating sub-filters, it is recommended to
+reserve the estimated required `capacity` since maintaining and querying
+sub-filters requires additional memory (each sub-filter uses an extra bits and 
+hash function) and consume  further CPU time than an equivalent filter that had
+the right capacity at creation time.
 
 The number of hash functions is -log(error)/ln(2)^2.
 The number of bits per item is -log(error)/ln(2) ≈ 1.44.
