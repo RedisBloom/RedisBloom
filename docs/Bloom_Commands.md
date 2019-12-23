@@ -1,7 +1,7 @@
 # RedisBloom Bloom Filter Command Documentation
 
 Based on [Space/Time Trade-offs in Hash Coding with Allowable Errors](
-    http://www.dragonwins.com/domains/getteched/bbc/literature/Bloom70.pdf) paper
+    http://www.dragonwins.com/domains/getteched/bbc/literature/Bloom70.pdf)
     by Burton H. Bloom.
 
 ## BF.RESERVE
@@ -41,10 +41,10 @@ The number of bits per item is -log(error)/ln(2) ≈ 1.44.
     a decimal value between 0 and 1. For example, for a desired false
     positive rate of 0.1% (1 in 1000), error_rate should be set to 0.001.
 * **capacity**: The number of entries intended to be added to the filter.
-    Performance begins to degrade after adding more items than this
-    number. The actual degradation depends on how far the limit has
-    been exceeded. Performance degrades linearly as the number of entries
-    grows exponentially.
+    If your filter allows scaling, performance will begin to degrade after
+    adding more items than this number. The actual degradation depends on
+    how far the limit has been exceeded. Performance degrades linearly with
+    the number of `sub-filters`.
 
 Optional parameters:
 
@@ -86,7 +86,7 @@ Adds an item to the Bloom Filter, creating the filter if it does not yet exist.
 
 ### Complexity
 
-O(hash), the number of `hash` functions used for the latest sub-filter.
+O(k), where k is the number of `hash` functions used by the last sub-filter.
 
 ### Returns
 
@@ -114,7 +114,8 @@ multiple values.
 
 ### Complexity
 
-O(hash), the number of `hash` functions used for the latest sub-filter.
+O(k * n), where k is the number of `hash` functions used by the last sub-filter
+and m the number of items that are added.
 
 ### Returns
 
@@ -193,7 +194,8 @@ BF.INSERT filter NOCREATE ITEMS foo bar
 
 ### Complexity
 
-O(hash), the number of `hash` functions used for the latest sub-filter.
+O(k * n), where k is the number of `hash` functions used by the last sub-filter
+and m the number of items that are added.
 
 ### Returns
 
@@ -220,11 +222,11 @@ Determines whether an item may exist in the Bloom Filter or not.
 
 ### Complexity
 
-O(hash * sub-filters), the number of `hash` functions multiplied by the number
-of `sub-filters`.
+O(k * n), where k is the number of `hash` functions and n is the number of
+`sub-filters`.
 On average, a sub-filter returns FALSE after 2 bits are tested. Therefore the
-average complexity for a FALSE reply is `2 * sub-filters`. For a TRUE
-reply the complexity is `2 * 1/2 * sub-filters + hash`.
+average complexity for a FALSE reply is `O(2 * n)`. For a TRUE
+reply the complexity is `O((2 * 1/2 * n) + k)`.
 
 ### Returns
 
@@ -250,16 +252,16 @@ Determines if one or more items may exist in the filter or not.
 
 ### Complexity
 
-O(hash * sub-filters), the number of `hash` functions multiplied by the number
-of `sub-filters`.
+O(m * k * n), where m is the number of added elements, k is the number of `hash`
+functions and n is the number of `sub-filters`.
 On average, a sub-filter returns FALSE after 2 bits are tested. Therefore the
-average complexity for a FALSE reply is `2 * sub-filters`. For a TRUE
-reply, the complexity is `2 * 1/2 * sub-filters + hash`.
+average complexity for a FALSE reply is `O(m * 2 * n)`. For a TRUE
+reply, the complexity is `O(m * ((2 * 1/2 * n ) + k))`.
 
 ### Returns
 
 An array of boolean values (actually integers). A true value means the
-corresponding item may exist in the filter, and a false value means it does not 
+corresponding item may exist in the filter, and a false value means it does not
 exist in the filter.
 
 
@@ -306,7 +308,7 @@ for chunk in chunks:
 
 ### Complexity
 
-O(log N), where N is the number of stacked filters in the data structure.
+O(log n), where n is the number of stacked filters in the data structure.
 
 ### Returns
 
@@ -339,9 +341,9 @@ the bloom filter is not be changed between invocations.
 * **iter**: Iterator value associated with `data` (returned by `SCANDUMP`)
 * **data**: Current data chunk (returned by `SCANDUMP`)
 
-### Complexity O
+### Complexity
 
-O(log N), where N is the number of stacked filters in the data structure.
+O(log n), where n is the number of stacked filters in the data structure.
 
 ### Returns
 
