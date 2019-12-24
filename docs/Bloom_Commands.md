@@ -15,14 +15,14 @@ BF.RESERVE {key} {error_rate} {capacity} [EXPANSION expansion] [NONSCALING]
 ### Description:
 
 Creates an empty Bloom Filter with a single sub-filter for the initial capacity
-requested and with an upper bound `error_rate`. By default, the filter 
+requested and with an upper bound `error_rate`. By default, the filter
 auto-scales by creating additional sub-filters when `capacity` is reached. The
-new sub-filter is created with size of the previous sub-filter multiplied by 
+new sub-filter is created with size of the previous sub-filter multiplied by
 `expansion`.
 
 Though the filter can scale up by creating sub-filters, it is recommended to
 reserve the estimated required `capacity` since maintaining and querying
-sub-filters requires additional memory (each sub-filter uses an extra bits and 
+sub-filters requires additional memory (each sub-filter uses an extra bits and
 hash function) and consume  further CPU time than an equivalent filter that had
 the right capacity at creation time.
 
@@ -308,7 +308,7 @@ for chunk in chunks:
 
 ### Complexity
 
-O(log n), where n is the number of stacked filters in the data structure.
+O(n), where n is the capacity.
 
 ### Returns
 
@@ -343,7 +343,7 @@ the bloom filter is not be changed between invocations.
 
 ### Complexity
 
-O(log n), where n is the number of stacked filters in the data structure.
+O(n), where n is the capacity.
 
 ### Returns
 

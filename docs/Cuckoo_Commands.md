@@ -1,7 +1,7 @@
 # RedisBloom Cuckoo Filter Documentation
 
 Based on [Cuckoo Filter: Practically Better Than Bloom](
-    https://www.eecs.harvard.edu/~michaelm/postscripts/cuckoo-conext2014.pdf) paper by 
+    https://www.eecs.harvard.edu/~michaelm/postscripts/cuckoo-conext2014.pdf) by
     Bin Fan, David G. Andersen and Michael Kaminsky.
 
 ## CF.RESERVE
@@ -22,7 +22,7 @@ When the filter self-declare itself `full`, it will auto-expand by generating
 additional sub-filters at the cost of reduced performance and increased error
 rate. The new sub-filter is created with size of the previous sub-filter
 multiplied by `expansion`.
-Like bucket size, additional sub-filters grow the error linearly.
+Like bucket size, additional sub-filters grow the error rate linearly.
 The size of the new sub-filter is the size of the last sub-filter multiplied by
 `expansion`. The default value is 1.
 
@@ -48,7 +48,7 @@ Optional parameters:
 
 * **bucketSize**: Number of items in each bucket. A higher bucket size value
 improves the fill rate but also causes a higher error rate and slightly slower
-operation speed.
+performance.
 * **maxIterations**: Number of attempts to swap items between buckets before
 declaring filter as full and creating an additional filter. A low value is
 better for performance and a higher number is better for filter fill rate.
@@ -86,7 +86,8 @@ cause false-negative errors.
 
 ### Complexity
 
-O(sub-filters + maxIterations). Adding items usually requires 2 memory accesses.
+O(n + i), where n is the number of `sub-filters` and i is `maxIterations`.
+Adding items requires up to 2 memory accesses per `sub-filter`.
 But as the filter fills up, both locations for an item might be full. The filter
 attempts to `Cuckoo` swap items up to `maxIterations` times.
 
@@ -124,7 +125,8 @@ item exists.
 
 ### Complexity
 
-O(sub-filters + maxIterations). Adding items usually requires 2 memory accesses.
+O(n + i), where n is the number of `sub-filters` and i is `maxIterations`.
+Adding items requires up to 2 memory accesses per `sub-filter`.
 But as the filter fills up, both locations for an item might be full. The filter
 attempts to `Cuckoo` swap items up to `maxIterations` times.
 
@@ -174,7 +176,8 @@ the cost of more verbosity.
 
 ### Complexity
 
-O(sub-filters + maxIterations). Adding items usually requires 2 memory accesses.
+O(n + i), where n is the number of `sub-filters` and i is `maxIterations`.
+Adding items requires up to 2 memory accesses per `sub-filter`.
 But as the filter fills up, both locations for an item might be full. The filter
 attempts to `Cuckoo` swap items up to `maxIterations` times.
 
@@ -205,7 +208,8 @@ Check if an item exists in a Cuckoo Filter
 
 ### Complexity
 
-O(sub-filters), Both alternative locations are checked on all `sub-filters`.
+O(n), where n is the number of `sub-filters`. Both alternative locations are
+checked on all `sub-filters`.
 
 ### Returns
 
@@ -235,7 +239,8 @@ present.
 
 ### Complexity
 
-O(sub-filters), Both alternative locations are checked on all `sub-filters`.
+O(n), where n is the number of `sub-filters`. Both alternative locations are
+checked on all `sub-filters`.
 
 ### Returns
 
@@ -262,7 +267,8 @@ it is more efficient for that purpose.
 
 ### Complexity
 
-O(sub-filters), Both alternative locations will be checked on all `sub-filters`.
+O(n), where n is the number of `sub-filters`. Both alternative locations are
+checked on all `sub-filters`.
 
 ### Returns
 
@@ -311,7 +317,7 @@ for chunk in chunks:
 
 ### Complexity
 
-O(log N)
+O(n), where n is the capacity.
 
 ### Returns
 
@@ -346,7 +352,7 @@ the cuckoo filter is not be modified between invocations.
 
 ### Complexity O
 
-O(log N)
+O(n), where n is the capacity.
 
 ### Returns
 
