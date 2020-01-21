@@ -136,13 +136,13 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
 
     long long expansion = BF_DEFAULT_EXPANSION;
     ex_loc = RMUtil_ArgIndex("EXPANSION", argv, argc);
-    if (ex_loc != -1 && nonScaling == BLOOM_OPT_NO_SCALING) {
-        return RedisModule_ReplyWithError(ctx, "Nonscaling filter cannot expand");
-    }
     if (ex_loc + 1 == argc) {
         return RedisModule_ReplyWithError(ctx, "ERR no expansion");
     }  
     if (ex_loc != -1) {
+        if (nonScaling == BLOOM_OPT_NO_SCALING) {
+            return RedisModule_ReplyWithError(ctx, "Nonscaling filters cannot expand");
+        }
         if (RedisModule_StringToLongLong(argv[ex_loc + 1], &expansion) != REDISMODULE_OK) {
             return RedisModule_ReplyWithError(ctx, "ERR bad expansion");
         }
