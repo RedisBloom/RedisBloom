@@ -1,10 +1,11 @@
-all: test test-cuckoo test-perf
+all: test test-cuckoo test-perf cover-murmur
 
 PYTHON:=python
 
-test: test-basic test-cuckoo
+test: test-basic test-cuckoo cover-murmur
 	./test-basic
 	./test-cuckoo
+	./cover-murmur
 	$(PYTHON) pytests.py
 	$(PYTHON) cuckoo.py
 	$(PYTHON) cms.py
@@ -23,10 +24,13 @@ test-basic: test-basic.o $(DEPS)
 test-cuckoo: test-cuckoo.o $(DEPS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
+cover-murmur: cover-murmur.o $(DEPS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
 test-perf: test-perf.o $(DEPS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-build-test: test-basic test-perf test-cuckoo
+build-test: test-basic test-perf test-cuckoo cover-murmur
 
 clean:
 	$(RM) test-basic *.o *.rdb *.pyc
