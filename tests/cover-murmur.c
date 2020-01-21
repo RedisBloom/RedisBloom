@@ -1,6 +1,6 @@
 #include "murmurhash2.h"
 
-void main() {
+int main() {
     uint64_t arr[2] = { 1, 2 };
 
     (void)MurmurHash64A_Bloom(arr, 6, 0);
