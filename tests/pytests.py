@@ -282,6 +282,8 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
             self.assertEqual(1, self.cmd('bf.add bf', i))
         with self.assertResponseError():
             self.cmd('bf.add bf extra')
+        with self.assertResponseError():
+            self.cmd('bf.reserve bf_mix 0.01 1000 nonscaling expansion 2')
 
         self.assertOk(self.cmd('bf.reserve bfnonscale 0.001 1000 nonscaling'))
         self.assertOk(self.cmd('bf.reserve bfscale 0.001 1000'))

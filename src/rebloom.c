@@ -128,21 +128,24 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         return RedisModule_ReplyWithError(ctx, "ERR bad capacity");
     }
 
+    unsigned nonScaling = 0;
+    int ex_loc = RMUtil_ArgIndex("NONSCALING", argv, argc);    
+    if (ex_loc != -1) {
+        nonScaling = BLOOM_OPT_NO_SCALING;
+    }
+
     long long expansion = BF_DEFAULT_EXPANSION;
-    int ex_loc = RMUtil_ArgIndex("EXPANSION", argv, argc);
+    ex_loc = RMUtil_ArgIndex("EXPANSION", argv, argc);
     if (ex_loc + 1 == argc) {
         return RedisModule_ReplyWithError(ctx, "ERR no expansion");
     }  
     if (ex_loc != -1) {
+        if (nonScaling == BLOOM_OPT_NO_SCALING) {
+            return RedisModule_ReplyWithError(ctx, "Nonscaling filters cannot expand");
+        }
         if (RedisModule_StringToLongLong(argv[ex_loc + 1], &expansion) != REDISMODULE_OK) {
             return RedisModule_ReplyWithError(ctx, "ERR bad expansion");
         }
-    }
-
-    unsigned nonScaling = 0;
-    ex_loc = RMUtil_ArgIndex("NONSCALING", argv, argc);    
-    if (ex_loc != -1) {
-        nonScaling = BLOOM_OPT_NO_SCALING;
     }
 
     if (error_rate == 0 || capacity == 0) {
