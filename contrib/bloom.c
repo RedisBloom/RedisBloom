@@ -115,7 +115,7 @@ static double calc_bpe(double error) {
     return bpe;
 }
 
-int bloom_init(struct bloom *bloom, unsigned entries, double error, unsigned options) {
+int bloom_init(struct bloom *bloom, uint64_t entries, double error, unsigned options) {
     if (entries < 1 || error <= 0 || error >= 1.0) {
         return 1;
     }
