@@ -24,14 +24,14 @@ struct bloom {
     uint32_t hashes;
     uint8_t force64;
     uint8_t n2;
-    uint32_t entries;
+    uint64_t entries;
 
     double error;
     double bpe;
 
     unsigned char *bf;
-    size_t bytes;
-    uint32_t bits;
+    uint64_t bytes;
+    uint64_t bits;
 };
 
 /** ***************************************************************************
@@ -75,13 +75,13 @@ struct bloom {
 // Disable auto-scaling. Saves memory
 #define BLOOM_OPT_NO_SCALING 8
 
-int bloom_init(struct bloom *bloom, unsigned entries, double error, unsigned options);
+int bloom_init(struct bloom *bloom, uint64_t entries, double error, unsigned options);
 
 /** ***************************************************************************
  * Deprecated, use bloom_init()
  *
  */
-int bloom_init_size(struct bloom *bloom, int entries, double error, unsigned int cache_size);
+int bloom_init_size(struct bloom *bloom, uint64_t entries, double error, unsigned int cache_size);
 
 typedef struct {
     uint64_t a;

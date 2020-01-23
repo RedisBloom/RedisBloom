@@ -6,6 +6,10 @@ import sys
 if sys.version >= '3':
     xrange = range
 
+def ConvertInfo(lst): 
+    res_dct = {lst[i]: lst[i + 1] for i in range(0, len(lst), 2)} 
+    return res_dct 
+
 class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
     def test_custom_filter(self):
         # Can we create a client?
@@ -282,6 +286,14 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertOk(self.cmd('bf.reserve bfnonscale 0.001 1000 nonscaling'))
         self.assertOk(self.cmd('bf.reserve bfscale 0.001 1000'))
         self.assertLess(self.cmd('bf.info bfnonscale')[3], self.cmd('bf.info bfscale')[3])
+
+    def test_issue178(self):
+        capacity = 300 * 1000 * 1000
+        error_rate = 0.000001
+        self.assertOk(self.cmd('bf.reserve bf', error_rate, capacity))
+        info = ConvertInfo(self.cmd('bf.info bf'))
+        self.assertEqual(info["Capacity"], 300000000)
+        self.assertEqual(info["Size"],    1132420284)
 
 if __name__ == "__main__":
     import unittest
