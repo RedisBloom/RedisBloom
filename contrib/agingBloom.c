@@ -320,7 +320,7 @@ void APBF_insert(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
   }
 #else
   for(uint32_t i = 0; i < apbf->numHash; ++i) {
-    uint64_t hash = MurmurHash64A(item, itemlen, apbf->slices[i].hashIndex);
+    uint64_t hash = MurmurHash64A_Bloom(item, itemlen, apbf->slices[i].hashIndex);
     SetBitOn(apbf->slices[i].data, hash % apbf->slices[i].size);
     ++apbf->slices[i].count;
   }
@@ -384,7 +384,7 @@ bool APBF_query(ageBloom_t *apbf, const char *item, uint32_t itemlen/*, uint *ag
 #ifdef TWOHASH
       hash = hashArray[hashIdx] = getHash(twoHash, hashIdx);
 #else
-      hash = hashArray[hashIdx] = MurmurHash64A(item, itemlen, hashIdx);
+      hash = hashArray[hashIdx] = MurmurHash64A_Bloom(item, itemlen, hashIdx);
 #endif
     }
 
