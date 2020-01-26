@@ -81,7 +81,7 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertRaises(ResponseError, self.cmd, 'bf.reserve', 'foo')
 
     def test_oom(self):
-        self.assertRaises(ResponseError, self.cmd, 'bf.reserve', 'test', 0.01, 4294967296)
+        self.assertRaises(ResponseError, self.cmd, 'bf.reserve', 'test', 0.01, 4294967296 * 4294967296)
     
     def test_rdb_reload(self):
         self.assertEqual(1, self.cmd('bf.add', 'test', 'foo'))
