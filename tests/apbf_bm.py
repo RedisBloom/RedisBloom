@@ -6,7 +6,7 @@ def detect(list_a, list_b):
 
 def insert(series, from_n, to_n):
     for i in range(from_n, to_n):
-        redis_pipe.execute_command('apbf.insert', series, i)
+        redis_pipe.execute_command('apbf.add', series, i)
     redis_pipe.execute()
 
 def query(series, pos_from, pos_to, neg_to):

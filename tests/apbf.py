@@ -12,7 +12,7 @@ class APBFTest(ModuleTestCase('../redisbloom.so')):
         items_list = ['AGE', 'PARTITIONED', 'BLOOM', 'FILTER']
         self.assertOk(self.cmd('apbf.reserve apbf 2 1000'))
         for i in range(len(items_list)):
-            self.assertEqual('OK', self.cmd('apbf.insert apbf', items_list[i]))
+            self.assertEqual('OK', self.cmd('apbf.add apbf', items_list[i]))
         for i in range(len(items_list)):
             self.assertEqual([1L], self.cmd('apbf.exists apbf', items_list[i]))
         self.assertEqual([0L], self.cmd('apbf.exists apbf bloom'))
@@ -22,7 +22,7 @@ class APBFTest(ModuleTestCase('../redisbloom.so')):
         self.cmd('flushall')
         self.assertOk(self.cmd('apbf.reserve apbf 2', tests))
         for i in range(tests * 2):
-            self.assertEqual('OK', self.cmd('apbf.insert apbf', i))
+            self.assertEqual('OK', self.cmd('apbf.add apbf', i))
         resp = []
         for i in range(int(tests * 1.1), tests * 2):
             resp.append(self.cmd('apbf.exists apbf', i))
@@ -48,7 +48,7 @@ class APBFTest(ModuleTestCase('../redisbloom.so')):
         self.cmd('flushall')
         self.assertOk(self.cmd('apbf.reserve apbf 2', tests))
         for i in range(tests * 3):
-            self.assertEqual('OK', self.cmd('apbf.insert apbf', i))
+            self.assertEqual('OK', self.cmd('apbf.add apbf', i))
         for i in range(int(tests * 2.1), tests * 3):
             self.assertEqual(1, self.cmd('apbf.exists apbf', i)[0])
 
