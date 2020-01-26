@@ -219,7 +219,7 @@ int APBFModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
     RMUtil_RegisterWriteDenyOOMCmd(ctx, "apbf.reserve", rmAPBF_Create);
     RMUtil_RegisterWriteDenyOOMCmd(ctx, "apbf.insert", rmAPBF_Insert);
-    RMUtil_RegisterReadCmd(ctx, "apbf.query", rmAPBF_Query);
+    RMUtil_RegisterReadCmd(ctx, "apbf.exists", rmAPBF_Query);
     RMUtil_RegisterReadCmd(ctx, "apbf.info", rmAPBF_Info);
 
     return REDISMODULE_OK;
