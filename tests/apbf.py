@@ -57,6 +57,22 @@ class APBFTest(ModuleTestCase('../redisbloom.so')):
         for i in range(int(tests * 2.1), tests * 3):
             self.assertEqual(1, self.cmd('apbf.exists apbf', i)[0])
 
+    def test_args(self):
+        self.assertRaises(ResponseError, self.cmd, 'apbf.reserve apbf')
+        self.assertRaises(ResponseError, self.cmd, 'apbf.add apbf')
+        self.assertRaises(ResponseError, self.cmd, 'apbf.exists apbf')
+        self.assertRaises(ResponseError, self.cmd, 'apbf.info')
+
+        # other key type
+        self.cmd('set foo bar')
+        self.assertRaises(ResponseError, self.cmd, 'apbf.reserve foo 3 1000')
+        self.assertRaises(ResponseError, self.cmd, 'apbf.add foo bar')
+        self.assertRaises(ResponseError, self.cmd, 'apbf.exists foo bar')
+        
+        # key does not exist
+        self.assertRaises(ResponseError, self.cmd, 'apbf.add bar foo')
+        self.assertRaises(ResponseError, self.cmd, 'apbf.exists bar foo')
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
