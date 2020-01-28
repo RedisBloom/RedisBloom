@@ -39,8 +39,11 @@ static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     if ((RedisModule_StringToLongLong(argv[2], error) != REDISMODULE_OK) || *error < 1 || *error > 5) {
         INNER_ERROR("APBF: invalid error");
     }
-    if ((RedisModule_StringToLongLong(argv[3], capacity) != REDISMODULE_OK) || *capacity < 32) {
-        INNER_ERROR("APBF: invalid capacity or less than 32");
+    // A minimum capacity of 64 ensures that assert (capacity > l) will hold
+    // for all (k,l) configurations, since max l is 63.
+    // It is possible to allow smaller capacity by finner testing against actual l
+    if ((RedisModule_StringToLongLong(argv[3], capacity) != REDISMODULE_OK) || *capacity < 64) {
+        INNER_ERROR("APBF: invalid capacity or less than 64");
     }
 
     return REDISMODULE_OK;
