@@ -278,6 +278,7 @@ ageBloom_t* APBF_createHighLevelAPI(int error, uint64_t capacity, int8_t level) 
   default: break;
   }
 
+  assert(capacity > l); // To avoid a mod 0 on the shift code
   uint64_t sliceSize = (capacity * k) / (l * log(2));
 
   ageBloom_t* bf = APBF_createLowLevelAPI(k, l, ceil(sliceSize));
