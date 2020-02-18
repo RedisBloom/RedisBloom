@@ -44,8 +44,8 @@ Each driver comes with its own documentation in the Readme of the driver repo.
 1. [Probabilistic Data Structures - The most useful thing in Redis you probably aren't use](https://youtu.be/dq-0xagF7v8?t=102)
 
 ### Past blog posts
-1. [ReBloom Quick Start Tutorial](https://docs.redislabs.com/latest/rs/getting-started/creating-database/rebloom/)
-1. [Developing with Bloom Filters](https://docs.redislabs.com/latest/rs/developing/modules/bloom-filters/)
+1. [ReBloom Quick Start Tutorial](https://docs.redislabs.com/latest/modules/redisbloom/redisbloom-quickstart/)
+1. [Developing with Bloom Filters](https://docs.redislabs.com/latest/modules/redisbloom/)
 1. [ReBloom – Bloom Filter Datatype for Redis + Benchmark](https://redislabs.com/blog/rebloom-bloom-filter-datatype-redis/)
 1. [Meet Top-K: an Awesome Probabilistic Addition to RedisBloom](https://redislabs.com/blog/meet-top-k-awesome-probabilistic-addition-redisbloom/)
 
