@@ -123,8 +123,7 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     }
 
     long long capacity;
-    if (RedisModule_StringToLongLong(argv[3], &capacity) != REDISMODULE_OK ||
-        capacity >= UINT32_MAX) {
+    if (RedisModule_StringToLongLong(argv[3], &capacity) != REDISMODULE_OK) {
         return RedisModule_ReplyWithError(ctx, "ERR bad capacity");
     }
 
