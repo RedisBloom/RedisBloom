@@ -14,6 +14,7 @@
 #include <stdlib.h>     // calloc
 #include <string.h>     // memset
 #include <unistd.h>     // write
+#include <time.h>       // time
 
 #include "hash.h"
 #include "agingBloom.h"
@@ -139,15 +140,16 @@ static void APBF_shiftSlice(ageBloom_t *apbf) {
  * New size equal ((fill-rate / EFR) * (latest->size + retiring_slices->size) / n).
  */
 
-static void retireSlices(ageBloom_t *apbf) {
+// TODO: Changed this function
+static void retireSlices(ageBloom_t *apbf, timestamp_t ts) {
   assert (apbf);
 
   //uint32_t numHash = apbf->numHash;
   blmSlice *slices = apbf->slices;
-  timestamp_t ts = 0; //system time
+
   // try retiring slices older than timestamp. Must leave optimal minimal number.
   for(int32_t i = apbf->numSlices - 1; i > apbf->optimalSlices - 1; --i) {
-    if (slices[i].timestamp < ts) {
+    if (slices[i].timestamp < ts - apbf->time) {
       destroySlice(&slices[i]);
       continue;
     }
@@ -164,7 +166,6 @@ static uint64_t predictSize(ageBloom_t *apbf) {
 static void APBF_addTimeframe(ageBloom_t *apbf, uint64_t size) {
   assert (apbf);
 
-  timestamp_t ts = 0; // TODO: just a placeholder
   uint32_t numHash = apbf->numHash;
   blmSlice *slices = apbf->slices;
   
@@ -329,12 +330,38 @@ void APBF_insert(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
   ++apbf->inserts;
 }
 
+// TODO: Changed this function
 // Used for time based APBF
 void APBF_insertTime(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
   assert(apbf);
   assert(item);
 
-  blmSlice *oldSlice = &apbf->slices[apbf->numHash - 1];
+  timestamp_t ts = (uint64_t) time(NULL); //system time
+  uint64_t time = apbf->time;
+  uint32_t numHash = apbf->numHash;
+  uint32_t numSlices = apbf->numSlices;
+  blmSlice *slices = apbf->slices;
+
+  if (apbf->nextShift == 0) { // shift is needed
+      retireSlices(apbf, ts);
+      if (slices[numSlices - 1].timestamp > ts - time) {
+          uint64_t size = predictSize(apbf); // TODO: Complete this function
+          APBF_addTimeframe(apbf, size);
+      }
+      else {
+          APBF_shiftSlice(apbf);
+      }
+      //updateShiftCounter(apbf); // Update nextShift counter // TODO: Create this function
+  }
+
+  APBF_insert(apbf, item, itemlen);
+  //apbf->nextShift--; // Put this in insert function???
+
+  if (--apbf->nextShift == 0) {
+      slices[numHash - 1].timestamp = ts; // save timestamp of last insertion
+  }
+
+  /*blmSlice *oldSlice = &apbf->slices[apbf->numHash - 1];
 
   if (apbf->inserts % apbf->assessFreq == 0 &&
       oldSlice->count >= oldSlice->size * log(2)) {
@@ -343,7 +370,7 @@ void APBF_insertTime(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
     APBF_addTimeframe(apbf, size);
   }
 
-  APBF_insert(apbf, item, itemlen);
+  APBF_insert(apbf, item, itemlen);*/
 }
 
 // Used for count based APBF
