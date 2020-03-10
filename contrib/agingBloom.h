@@ -55,12 +55,12 @@ struct ageBloom_s {
   double errorRate;         // Required error rate
   uint64_t capacity;        // Capacity required by user
   uint64_t inserts;         // Items already inserted
-  uint64_t time;            // Time span required by user
 
   // Time based variables
   uint32_t numSlices;       // Current number of slices
   uint32_t assessFreq;      // Frequency of assessment
-  uint64_t nextShift;       // Counter for next shift
+  uint32_t updates;         // Updates until next shift
+  uint32_t updatesIndex;    // Index of the slice with the minimum updates
 
   blmSlice *slices;
 };
