@@ -22,6 +22,17 @@ jobs:
             - '*.so'
             - ramp.yml
             - build
+<<<<<<< HEAD
+=======
+      - run:
+          name: Coverage
+          command: >-
+            apt-get update &&
+            apt-get install -y lcov curl &&
+            make coverage &&
+            bash <(curl -s https://codecov.io/bash)
+
+>>>>>>> b6dd23c... Merge pull request #185 from RedisBloom/versioned-docs
   package_branch:
     docker:
       - image: 'redislabsmodules/rmbuilder:latest'
@@ -86,20 +97,31 @@ jobs:
           command: >-
             aws s3 cp /workspace/build/ s3://redismodules/$PACKAGE_NAME/ --acl
             public-read --recursive --exclude "*" --include "*.zip"
- 
-  deploy_docs:
-    docker:
-      - image: 'redislabsmodules/rmbuilder:latest'
-    steps:
-      - checkout
-      - run:
-          name: Build Docs
-          command: mkdocs build
-      - run:
-          name: Deploy Docs to S3
-          command: >-
-            aws s3 cp site s3://oss.redislabs.com/$WEBSITE_FOLDER/ --acl
-            public-read --recursive 
+
+
+
+deploy_docs:
+  docker:
+    - image: 'python:buster'
+  steps:
+    - run:
+        name: Setup executor
+        command: |
+          apt-get -qq update
+          apt-get -q install -y git openssh-client curl ca-certificates make tar gzip wget
+          cd ..; curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"; unzip awscliv2.zip;./aws/install
+    - checkout
+    - run:
+        name: Instal dependencies
+        command: pip install -r docs/requirements.txt
+    - run:
+        name: Build docs
+        command: mkdocs build
+    - run:
+        name: Deploy Docs to S3
+        command: |
+          aws s3 cp site s3://oss.redislabs.com/$WEBSITE_FOLDER/ --acl public-read --recursive
+
 workflows:
   version: 2
   build_and_package:
@@ -131,8 +153,10 @@ workflows:
               only: '/^v[0-9].*/'
           requires:
             - package_release
+# TODO: deploy_docs should run only when 'docs/' or 'mkdocs.yml' change
       - deploy_docs:
           filters:
             branches:
-              only: master
-            
+              only:
+                - master
+                - /^[0-9]+\.[0-9]+$/
