@@ -93,30 +93,27 @@ jobs:
           command: >-
             aws s3 cp /workspace/build/ s3://redismodules/$PACKAGE_NAME/ --acl
             public-read --recursive --exclude "*" --include "*.zip"
-
-
-
-deploy_docs:
-  docker:
-    - image: 'python:buster'
-  steps:
-    - run:
-        name: Setup executor
-        command: |
-          apt-get -qq update
-          apt-get -q install -y git openssh-client curl ca-certificates make tar gzip wget
-          cd ..; curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"; unzip awscliv2.zip;./aws/install
-    - checkout
-    - run:
-        name: Instal dependencies
-        command: pip install -r docs/requirements.txt
-    - run:
-        name: Build docs
-        command: mkdocs build
-    - run:
-        name: Deploy Docs to S3
-        command: |
-          aws s3 cp site s3://oss.redislabs.com/$WEBSITE_FOLDER/ --acl public-read --recursive
+  deploy_docs:
+    docker:
+      - image: 'python:buster'
+    steps:
+      - run:
+          name: Setup executor
+          command: |
+            apt-get -qq update
+            apt-get -q install -y git openssh-client curl ca-certificates make tar gzip wget
+            cd ..; curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"; unzip awscliv2.zip;./aws/install
+      - checkout
+      - run:
+          name: Instal dependencies
+          command: pip install -r docs/requirements.txt
+      - run:
+          name: Build docs
+          command: mkdocs build
+      - run:
+          name: Deploy Docs to S3
+          command: |
+            aws s3 cp site s3://oss.redislabs.com/$WEBSITE_FOLDER/ --acl public-read --recursive
 
 workflows:
   version: 2
