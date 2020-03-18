@@ -6,7 +6,7 @@ repo_name: RedisLabsModules/RedisBloom
 google_analytics:
   - 'UA-92003007-1'
   - 'auto'
-  
+
 use_directory_urls: true
 
 theme:
@@ -22,15 +22,15 @@ theme:
     code: 'Roboto Mono'
   feature:
     tabs: false
-  
+
 markdown_extensions:
   - admonition
   - codehilite:
       guess_lang: False
   - toc:
       permalink: True
- 
-pages:
+
+nav:
     - 'ReBloom': 'index.md'
     - 'Quick Start': 'Quick_Start.md'
     - 'Bloom Commands': 'Bloom_Commands.md'
@@ -38,3 +38,7 @@ pages:
     - 'Java API': 'Java_Client.md'
     - 'Contributor agreement': 'contrib.md'
 
+plugins:
+  - search
+  - versions-menu:
+      include-regex: '([0-9]+).([0-9]+)'
