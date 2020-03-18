@@ -1,13 +1,39 @@
 site_name: ReBloom Documentation
-repo_url: https://github.com/RedisLabsModules/rebloom
+repo_url: https://github.com/RedisBloom/RedisBloom
 theme: material
 
+google_analytics:
+  - 'UA-92003007-1'
+  - 'auto'
+
+use_directory_urls: true
+
+theme:
+  name: 'material'
+  language: 'en'
+  palette:
+    primary: 'indigo'
+    accent: 'red'
+  font:
+    text: 'Roboto'
+    code: 'Roboto Mono'
+  feature:
+    tabs: false
+
 markdown_extensions:
-  - codehilite
-  - toc(permalink=true)
- 
-pages:
-    - 'ReBloom': 'index.md'
-    - 'Quick Start': 'Quick_Start.md'
-    - 'Commands': 'Commands.md'
-    - 'Java API': 'Java_Client.md' 
+  - admonition
+  - codehilite:
+      guess_lang: False
+  - toc:
+      permalink: True
+
+nav:
+  - 'ReBloom': 'index.md'
+  - 'Quick Start': 'Quick_Start.md'
+  - 'Commands': 'Commands.md'
+  - 'Java API': 'Java_Client.md'
+
+plugins:
+  - search
+  - versions-menu:
+      include-regex: '([0-9]+).([0-9]+)'
