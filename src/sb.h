@@ -31,7 +31,7 @@ typedef struct SBChain {
  *
  * Free with SBChain_Free when done.
  */
-SBChain *SB_NewChain(size_t initsize, double error_rate, unsigned options, unsigned growth);
+SBChain *SB_NewChain(uint64_t initsize, double error_rate, unsigned options, unsigned growth);
 
 /**
  * Create a new chain from a 'template'. This template will copy an existing
