@@ -113,6 +113,26 @@ static void APBF_shiftSlice(ageBloom_t *apbf) {
   memset(data, 0, slices[0].size / BYTE);
 }
 
+static void APBF_shiftTimeSlice(ageBloom_t *apbf, uint64_t size) {
+    assert (apbf);
+
+    uint32_t numHash = apbf->numHash;
+    uint32_t numSlices = apbf->numSlices;
+    blmSlice *slices = apbf->slices;
+
+    char *data = slices[numSlices - 1].data;
+    for(int32_t i = numSlices - 1; i > 0; --i) { // done numFilter - 1 times
+        memcpy(&slices[i], &slices[i - 1], sizeof(blmSlice));
+    }
+
+    slices[0].count = 0;
+    slices[0].hashIndex = (apbf->slices[1].hashIndex - 1 + numHash) % numHash;
+    slices[0].data = data;
+    memset(data, 0, slices[0].size / BYTE);
+    slices[0].data = (char *) realloc(slices[0].data, sizeof(uint64_t) * size);
+    slices[0].size = size;
+}
+
 
 /*****************************************************************************/
 /*********                          Oracle                          **********/
@@ -386,12 +406,12 @@ void APBF_insertTime(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
   if (apbf->updates == slices[apbf->updatesIndex].count) { // shift is needed
       ts = (uint64_t) time(NULL); //system time
       retireSlices(apbf, ts);
+      uint64_t size = predictSize(apbf, ts);
       if (slices[apbf->numSlices - 1].timestamp > ts - apbf->assessFreq) {
-          uint64_t size = predictSize(apbf, ts);
           APBF_addTimeframe(apbf, size, ts);
       }
       else {
-          APBF_shiftSlice(apbf);
+          APBF_shiftTimeSlice(apbf, size);
       }
       updateShiftCounter(apbf);
   }
