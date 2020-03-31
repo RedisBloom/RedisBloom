@@ -170,16 +170,18 @@ static void retireSlices(ageBloom_t *apbf, timestamp_t ts) {
   for(int32_t i = numSlices - 1; i > apbf->optimalSlices - 1; --i) {
     if (slices[i].timestamp < ts - apbf->assessFreq) {
       destroySlice(&slices[i]);
+      --apbf->numSlices;
       continue;
     }
     break;
   }
 
+  // TODO: Should slices memory space be reallocated after retiring slices?
   // reallocate slices memory space
-  if (i < numSlices - 1) { // if at least one slice was retired
+  /*if (i < numSlices - 1) { // if at least one slice was retired
       apbf->numSlices = ++i;
       slices = (blmSlice *) realloc(slices, sizeof(*slices) * (i));
-  }
+  }*/
 }
 
 // Calculates the new slice's size
@@ -198,6 +200,7 @@ static uint64_t predictSize(ageBloom_t *apbf, timestamp_t ts) {
   return ceil(size);
 }
 
+// TODO: How to add a new slice without losing the data of the last one?
 // Adds an additional time frame and set it to size
 static void APBF_addTimeframe(ageBloom_t *apbf, uint64_t size, timestamp_t ts) {
   assert (apbf);
@@ -205,6 +208,7 @@ static void APBF_addTimeframe(ageBloom_t *apbf, uint64_t size, timestamp_t ts) {
   uint32_t numHash = apbf->numHash;
   blmSlice *slices = apbf->slices;
   
+  // TODO: Check if realloc is correct
   slices = (blmSlice *) realloc(slices, sizeof(*slices) * (++apbf->numSlices));
   for(int32_t i = apbf->numSlices - 1; i > 0; --i) { // done numFilter - 1 times
     memcpy(&slices[i], &slices[i - 1], sizeof(blmSlice));
@@ -404,7 +408,7 @@ void APBF_insertTime(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
   blmSlice *slices = apbf->slices;
 
   if (apbf->updates == slices[apbf->updatesIndex].count) { // shift is needed
-      ts = (uint64_t) time(NULL); //system time
+      ts = (timestamp_t) time(NULL); //system time
       retireSlices(apbf, ts);
       uint64_t size = predictSize(apbf, ts);
       if (slices[apbf->numSlices - 1].timestamp > ts - apbf->assessFreq) {
@@ -420,7 +424,7 @@ void APBF_insertTime(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
 
   if (apbf->updates == apbf->slices[apbf->updatesIndex].count) {
       if (ts == 0) {
-          ts = (uint64_t) time(NULL);
+          ts = (timestamp_t) time(NULL);
       }
       // TODO: Only save timestamp on slice k-1 or on all slices ([0, k-1]) ?
       slices[apbf->numHash - 1].timestamp = ts; // save timestamp of last insertion
