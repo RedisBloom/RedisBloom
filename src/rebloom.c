@@ -120,11 +120,15 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     double error_rate;
     if (RedisModule_StringToDouble(argv[2], &error_rate) != REDISMODULE_OK) {
         return RedisModule_ReplyWithError(ctx, "ERR bad error rate");
+    } else if (error_rate >= 1 || error_rate <= 0) {
+        return RedisModule_ReplyWithError(ctx, "ERR (0 < error rate range < 1) ");
     }
 
     long long capacity;
     if (RedisModule_StringToLongLong(argv[3], &capacity) != REDISMODULE_OK) {
         return RedisModule_ReplyWithError(ctx, "ERR bad capacity");
+    } else if (capacity <= 0) {
+        return RedisModule_ReplyWithError(ctx, "ERR (1 <= capacity)");
     }
 
     unsigned nonScaling = 0;
@@ -145,12 +149,6 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         if (RedisModule_StringToLongLong(argv[ex_loc + 1], &expansion) != REDISMODULE_OK) {
             return RedisModule_ReplyWithError(ctx, "ERR bad expansion");
         }
-    }
-
-    if (error_rate == 0 || capacity == 0) {
-        return RedisModule_ReplyWithError(ctx, "ERR capacity and error must not be 0");
-    } else if (expansion < 1) {
-        return RedisModule_ReplyWithError(ctx, "ERR expansion must be great than 0");
     }
 
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
