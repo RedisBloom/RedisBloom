@@ -31,7 +31,7 @@ jobs:
 
   package_branch:
     docker:
-      - image: 'redislabsmodules/rmbuilder:latest'
+      - image: 'redislabsmodules/rmbuilder:6.0-rc3-x64-buster'
     steps:
       - attach_workspace:
           at: /workspace
@@ -49,7 +49,7 @@ jobs:
           path: /workspace/build
   package_release:
     docker:
-      - image: 'redislabsmodules/rmbuilder:latest'
+      - image: 'redislabsmodules/rmbuilder:6.0-rc3-x64-buster'
     steps:
       - attach_workspace:
           at: /workspace
@@ -73,7 +73,7 @@ jobs:
           path: /workspace/build
   deploy_branch:
     docker:
-      - image: 'redislabsmodules/rmbuilder:latest'
+      - image: 'redislabsmodules/rmbuilder:6.0-rc3-x64-buster'
     steps:
       - attach_workspace:
           at: /workspace
@@ -84,7 +84,7 @@ jobs:
             public-read --recursive --exclude "*" --include "*.zip"
   deploy_release:
     docker:
-      - image: 'redislabsmodules/rmbuilder:latest'
+      - image: 'redislabsmodules/rmbuilder:6.0-rc3-x64-buster'
     steps:
       - attach_workspace:
           at: /workspace
