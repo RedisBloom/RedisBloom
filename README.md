@@ -2,7 +2,7 @@
 [![CircleCI](https://circleci.com/gh/RedisBloom/RedisBloom.svg?style=svg)](https://circleci.com/gh/RedisBloom/RedisBloom)
 [![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/redislabs/rebloom.svg)](https://hub.docker.com/r/redislabs/rebloom/builds/)
 [![codecov](https://codecov.io/gh/RedisBloom/RedisBloom/branch/master/graph/badge.svg)](https://codecov.io/gh/RedisBloom/RedisBloom)
-[![Mailing List](https://img.shields.io/badge/Mailing%20List-RedisBloom-blue)](https://groups.google.com/forum/#!forum/redisbloom)
+[![Forum](https://img.shields.io/badge/Forum-RedisBloom-blue)](https://forum.redislabs.com/c/modules/redisbloom)
 [![Gitter](https://badges.gitter.im/RedisLabs/RedisBloom.svg)](https://gitter.im/RedisLabs/RedisBloom?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 # RedisBloom - Bloom Filter Module for Redis
@@ -64,7 +64,7 @@ $ redis-server --loadmodule /path/to/redisbloom.so
 Documentation and full command reference at [redisbloom.io](http://redisbloom.io).
 
 ## Mailing List / Forum
-Got questions? Feel free to ask at the [RedisBloom mailing list](https://groups.google.com/forum/#!forum/redisbloom).
+Got questions? Feel free to ask at the [RedisBloom mailing list](https://forum.redislabs.com/c/modules/redisbloom).
 
 ## License
 Redis Source Available License Agreement - see [LICENSE](LICENSE)
