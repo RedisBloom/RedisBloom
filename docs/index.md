@@ -41,7 +41,7 @@ Each driver comes with its own documentation in the Readme of the driver repo.
 
 ## References
 ### Webinars
-1. [Probabilistic Data Structures - The most useful thing in Redis you probably aren't use](https://youtu.be/dq-0xagF7v8?t=102)
+1. [Probabilistic Data Structures - The most useful thing in Redis you probably aren't using](https://youtu.be/dq-0xagF7v8?t=102)
 
 ### Past blog posts
 1. [ReBloom Quick Start Tutorial](https://docs.redislabs.com/latest/modules/redisbloom/redisbloom-quickstart/)
