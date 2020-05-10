@@ -9,7 +9,7 @@ RUN set -ex;\
     make test;
 
 # Package the runner
-FROM redis:6.0-rc3
+FROM redis:6.0.1
 ENV LIBDIR /usr/lib/redis/modules
 WORKDIR /data
 RUN set -ex;\
