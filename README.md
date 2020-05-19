@@ -5,10 +5,10 @@
 [![Forum](https://img.shields.io/badge/Forum-RedisBloom-blue)](https://forum.redislabs.com/c/modules/redisbloom)
 [![Gitter](https://badges.gitter.im/RedisLabs/RedisBloom.svg)](https://gitter.im/RedisLabs/RedisBloom?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-# RedisBloom - Bloom Filter Module for Redis
+# RedisBloom: A Redis Module for Probabilistic Data Structures
 
-RedisBloom module provides four datatypes, a Scalable **Bloom Filter** and **Cuckoo Filter**, a **Count-Min-Sketch** and a **Top-K**.
-**Bloom and Cuckoo filters** are used to determine (with a given degree of certainty) whether an item is present or absent from a collection. While **Count-Min Sketch** is used to approximate count of items in sub-linear space and **Top-K** maintains a list of K most frequent items.
+The RedisBloom module provides four probabilistic data types: a scalable **Bloom Filter**, a **Cuckoo Filter**, a **Count-Min-Sketch**, and a **Top-K**.
+**Bloom and Cuckoo filters** are used to determine (with a given degree of certainty) whether an item is present in a collection. A **Count-Min Sketch** is used to approximately count items in sub-linear space. A **Top-K** maintains a list of the _K_ most frequent items.
 
 ## Quick Start Guide
 1. [Launch RedisBloom with Docker](#launch-redisbloom-with-docker)
@@ -29,24 +29,21 @@ docker exec -it redis-redisbloom bash
 # 127.0.0.1:6379> 
 ```
 
-Start a new bloom filter by adding a new item
+Create a new bloom filter by adding a new item:
 ```
 # 127.0.0.1:6379> BF.ADD newFilter foo
 (integer) 1
 ``` 
 
- Checking if an item exists in the filter
+ Check to see if an item exists in the filter:
 ```
 # 127.0.0.1:6379> BF.EXISTS newFilter foo
 (integer) 1
 ```
 
 ## Building and Loading RedisBloom
-In order to use this module, build it using `make` and load it into Redis.
+To use RedisBloom, build the module's shared library using `make`. Then pass the location of the shared library to the   `loadmodule` directive when starting Redis:
 
-### Loading
-
-**Invoking redis with the module loaded**
 ```
 $ redis-server --loadmodule /path/to/redisbloom.so
 ```
