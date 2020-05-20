@@ -65,7 +65,8 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
             ('foo', '0.001', 'blah'),
             ('foo', '0', '0'),
             ('foo', '0', '100'),
-            ('foo', 'blah', '1000')
+            ('foo', 'blah', '1000'),
+            ('foo', '7.7', '1000')
         ):
             self.assertRaises(ResponseError, self.cmd, 'bf.reserve', *args)
 
