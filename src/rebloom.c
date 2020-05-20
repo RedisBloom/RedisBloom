@@ -128,7 +128,7 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     if (RedisModule_StringToLongLong(argv[3], &capacity) != REDISMODULE_OK) {
         return RedisModule_ReplyWithError(ctx, "ERR bad capacity");
     } else if (capacity <= 0) {
-        return RedisModule_ReplyWithError(ctx, "ERR (capacity <= 0)");
+        return RedisModule_ReplyWithError(ctx, "ERR (capacity should be larger than 0)");
     }
 
     unsigned nonScaling = 0;
