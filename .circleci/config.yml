@@ -25,6 +25,13 @@ jobs:
       - run:
           name: Test
           command: make test
+      - run:
+          name: Coverage
+          command: >-
+            apt-get update &&
+            apt-get install -y lcov curl &&
+            make coverage &&
+            bash <(curl -s https://codecov.io/bash)
       - early_return_for_forked_pull_requests
       - run:
           name: Persist Artifacts
@@ -36,13 +43,6 @@ jobs:
             - '*.so'
             - ramp.yml
             - build
-      - run:
-          name: Coverage
-          command: >-
-            apt-get update &&
-            apt-get install -y lcov curl &&
-            make coverage &&
-            bash <(curl -s https://codecov.io/bash)
 
   package_branch:
     docker:
