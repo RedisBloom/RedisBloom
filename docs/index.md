@@ -1,7 +1,7 @@
 <img src="images/logo.svg" alt="logo" width="200"/>
 
 # RedisBloom - Probabilistic Datatypes Module for Redis
-[![Mailing List](https://img.shields.io/badge/Mailing%20List-RedisBloom-blue)](https://groups.google.com/forum/#!forum/redisbloom)
+[![Forum](https://img.shields.io/badge/Forum-RedisBloom-blue)](https://forum.redislabs.com/c/modules/redisbloom)
 [![Gitter](https://badges.gitter.im/RedisLabs/RedisBloom.svg)](https://gitter.im/RedisLabs/RedisBloom?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 RedisBloom module provides four datatypes, a Scalable **Bloom Filter** and **Cuckoo Filter**, a **Count-Mins-Sketch** and a **Top-K**.
@@ -41,7 +41,7 @@ Each driver comes with its own documentation in the Readme of the driver repo.
 
 ## References
 ### Webinars
-1. [Probabilistic Data Structures - The most useful thing in Redis you probably aren't use](https://youtu.be/dq-0xagF7v8?t=102)
+1. [Probabilistic Data Structures - The most useful thing in Redis you probably aren't using](https://youtu.be/dq-0xagF7v8?t=102)
 
 ### Past blog posts
 1. [ReBloom Quick Start Tutorial](https://docs.redislabs.com/latest/modules/redisbloom/redisbloom-quickstart/)
@@ -50,7 +50,7 @@ Each driver comes with its own documentation in the Readme of the driver repo.
 1. [Meet Top-K: an Awesome Probabilistic Addition to RedisBloom](https://redislabs.com/blog/meet-top-k-awesome-probabilistic-addition-redisbloom/)
 
 ## Mailing List / Forum
-Got questions? Feel free to ask at the [RedisBloom mailing list](https://groups.google.com/forum/#!forum/redisbloom).
+Got questions? Feel free to ask at the [RedisBloom forum](https://forum.redislabs.com/c/modules/redisbloom).
 
 ## License
 Redis Source Available License Agreement - see [LICENSE](https://raw.githubusercontent.com/RedisBloom/RedisBloom/master/LICENSE)
