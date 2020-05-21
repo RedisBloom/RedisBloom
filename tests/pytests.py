@@ -95,17 +95,22 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
     
     def test_dump_and_load(self):
         # Store a filter
-        self.cmd('bf.reserve', 'myBloom', '0.0001', '1000')
-
+        quantity = 1000
+        error_rate = 0.001
+        self.cmd('bf.reserve', 'myBloom', error_rate, quantity *1024 * 8)
         # test is probabilistic and might fail. It is OK to change variables if 
         # certain to not break anything
-        def do_verify():
-            for x in xrange(1000):
-                self.cmd('bf.add', 'myBloom', x)
+        def do_verify(add):
+            false_positives = 0.0
+            for x in xrange(quantity):
+                if add:
+                    self.cmd('bf.add', 'myBloom', x)
                 rv = self.cmd('bf.exists', 'myBloom', x)
                 self.assertTrue(rv)
                 rv = self.cmd('bf.exists', 'myBloom', 'nonexist_{}'.format(x))
-                self.assertFalse(rv, x)
+                if rv == 1:
+                    false_positives += 1
+            self.assertLessEqual(false_positives/quantity, error_rate)
 
         with self.assertResponseError():
             self.cmd('bf.scandump', 'myBloom') 
@@ -118,7 +123,7 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         with self.assertResponseError():
             self.cmd('bf.loadchunk', 'myBloom', 'str', 'data')            
 
-        do_verify()
+        do_verify(add=True)
         cmds = []
         cur = self.cmd('bf.scandump', 'myBloom', 0)
         first = cur[0]
@@ -131,6 +136,7 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
                 break
             else:
                 cmds.append(cur)
+                print("Scaning chunk... (P={}. Len={})".format(cur[0], len(cur[1])))
 
         prev_info = self.cmd('bf.debug', 'myBloom')
         # Remove the filter
@@ -138,11 +144,12 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
 
         # Now, load all the commands:
         for cmd in cmds:
+            print("Loading chunk... (P={}. Len={})".format(cmd[0], len(cmd[1])))
             self.cmd('bf.loadchunk', 'myBloom', *cmd)
 
         cur_info = self.cmd('bf.debug', 'myBloom')
         self.assertEqual(prev_info, cur_info)
-        do_verify()
+        do_verify(add=False)
 
         # Try a bigger one
         self.cmd('del', 'myBloom')
