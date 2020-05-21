@@ -76,10 +76,10 @@ jobs:
             python -m RAMP.ramp pack -m /workspace/ramp.yml -o /workspace/build/$PACKAGE_NAME.{os}-{architecture}.{semantic_version}.zip /workspace/$MODULE_ARTIFACT
       - run:
           name: Package
-          command: >-
-            python -m RAMP.ramp pack -m /workspace/ramp.yml -o
-            /workspace/build/$PACKAGE_NAME.{os}-{architecture}.latest.zip
-            /workspace/$MODULE_ARTIFACT
+          command: |
+            export LC_ALL=C.UTF-8
+            export LANG=C.UTF-8
+            python -m RAMP.ramp pack -m /workspace/ramp.yml -o /workspace/build/$PACKAGE_NAME.{os}-{architecture}.latest.zip /workspace/$MODULE_ARTIFACT
       - persist_to_workspace:
           root: /workspace
           paths:
