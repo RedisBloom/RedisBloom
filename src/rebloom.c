@@ -120,35 +120,35 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     double error_rate;
     if (RedisModule_StringToDouble(argv[2], &error_rate) != REDISMODULE_OK) {
         return RedisModule_ReplyWithError(ctx, "ERR bad error rate");
+    } else if (error_rate >= 1 || error_rate <= 0) {
+        return RedisModule_ReplyWithError(ctx, "ERR (0 < error rate range < 1) ");
     }
 
     long long capacity;
-    if (RedisModule_StringToLongLong(argv[3], &capacity) != REDISMODULE_OK ||
-        capacity >= UINT32_MAX) {
+    if (RedisModule_StringToLongLong(argv[3], &capacity) != REDISMODULE_OK) {
         return RedisModule_ReplyWithError(ctx, "ERR bad capacity");
-    }
-
-    long long expansion = BF_DEFAULT_EXPANSION;
-    int ex_loc = RMUtil_ArgIndex("EXPANSION", argv, argc);
-    if (ex_loc + 1 == argc) {
-        return RedisModule_ReplyWithError(ctx, "ERR no expansion");
-    }  
-    if (ex_loc != -1) {
-        if (RedisModule_StringToLongLong(argv[ex_loc + 1], &expansion) != REDISMODULE_OK) {
-            return RedisModule_ReplyWithError(ctx, "ERR bad expansion");
-        }
+    } else if (capacity <= 0) {
+        return RedisModule_ReplyWithError(ctx, "ERR (capacity should be larger than 0)");
     }
 
     unsigned nonScaling = 0;
-    ex_loc = RMUtil_ArgIndex("NONSCALING", argv, argc);    
+    int ex_loc = RMUtil_ArgIndex("NONSCALING", argv, argc);    
     if (ex_loc != -1) {
         nonScaling = BLOOM_OPT_NO_SCALING;
     }
 
-    if (error_rate == 0 || capacity == 0) {
-        return RedisModule_ReplyWithError(ctx, "ERR capacity and error must not be 0");
-    } else if (expansion < 1) {
-        return RedisModule_ReplyWithError(ctx, "ERR expansion must be great than 0");
+    long long expansion = BF_DEFAULT_EXPANSION;
+    ex_loc = RMUtil_ArgIndex("EXPANSION", argv, argc);
+    if (ex_loc + 1 == argc) {
+        return RedisModule_ReplyWithError(ctx, "ERR no expansion");
+    }  
+    if (ex_loc != -1) {
+        if (nonScaling == BLOOM_OPT_NO_SCALING) {
+            return RedisModule_ReplyWithError(ctx, "Nonscaling filters cannot expand");
+        }
+        if (RedisModule_StringToLongLong(argv[ex_loc + 1], &expansion) != REDISMODULE_OK) {
+            return RedisModule_ReplyWithError(ctx, "ERR bad expansion");
+        }
     }
 
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);

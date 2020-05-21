@@ -2,17 +2,22 @@
 [![CircleCI](https://circleci.com/gh/RedisBloom/RedisBloom.svg?style=svg)](https://circleci.com/gh/RedisBloom/RedisBloom)
 [![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/redislabs/rebloom.svg)](https://hub.docker.com/r/redislabs/rebloom/builds/)
 [![codecov](https://codecov.io/gh/RedisBloom/RedisBloom/branch/master/graph/badge.svg)](https://codecov.io/gh/RedisBloom/RedisBloom)
-[![Mailing List](https://img.shields.io/badge/Mailing%20List-RedisBloom-blue)](https://groups.google.com/forum/#!forum/redisbloom)
+[![Forum](https://img.shields.io/badge/Forum-RedisBloom-blue)](https://forum.redislabs.com/c/modules/redisbloom)
 [![Gitter](https://badges.gitter.im/RedisLabs/RedisBloom.svg)](https://gitter.im/RedisLabs/RedisBloom?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-# RedisBloom - Bloom Filter Module for Redis
+# RedisBloom: Probabilistic Data Structures for Redis
 
-RedisBloom module provides four datatypes, a Scalable **Bloom Filter** and **Cuckoo Filter**, a **Count-Min-Sketch** and a **Top-K**.
-**Bloom and Cuckoo filters** are used to determine (with a given degree of certainty) whether an item is present or absent from a collection. While **Count-Min Sketch** is used to approximate count of items in sub-linear space and **Top-K** maintains a list of K most frequent items.
+The RedisBloom module provides four data structures: a scalable **Bloom filter**,  a **cuckoo filter**, a **count-min sketch**, and a **top-k**. These data structures trade perfect accuracy for extreme memory efficiency, so they're especially useful for big data and streaming applications.
+
+**Bloom and cuckoo filters** are used to determine, with a high degree of certainty, whether an element is a member of a set.
+
+A **count-min sketch** is generally used to determine the frequency of events in a stream. You can query the count-min sketch get an estimate of the frequency of any given event.
+
+A **top-k** maintains a list of _k_ most frequently seen items.
 
 ## Quick Start Guide
 1. [Launch RedisBloom with Docker](#launch-redisbloom-with-docker)
-1. [Use RedisBloom with redis-cli](#use-redisbloom-with-redis-cli)
+1. [Use RedisBloom with `redis-cli`](#use-redisbloom-with-redis-cli)
 
 Note: You can also [build and load the module](#building-and-loading-redisbloom) yourself.
 
@@ -26,27 +31,34 @@ docker run -p 6379:6379 --name redis-redisbloom redislabs/rebloom:latest
 docker exec -it redis-redisbloom bash
 
 # redis-cli
-# 127.0.0.1:6379> 
+# 127.0.0.1:6379>
 ```
 
-Start a new bloom filter by adding a new item
+Create a new bloom filter by adding a new item:
 ```
 # 127.0.0.1:6379> BF.ADD newFilter foo
 (integer) 1
-``` 
+```
 
- Checking if an item exists in the filter
+Find out whether an item exists in the filter:
 ```
 # 127.0.0.1:6379> BF.EXISTS newFilter foo
 (integer) 1
 ```
 
+In this case, `1` means that the `foo` is most likely in the set represented by `newFilter`. But recall that false positives are possible with Bloom filters.
+
+```
+# 127.0.0.1:6379> BF.EXISTS newFilter bar
+(integer) 0
+```
+
+A value `0` means that `bar` is definitely not in the set. Bloom filters do not allow for false negatives.
+
 ## Building and Loading RedisBloom
-In order to use this module, build it using `make` and load it into Redis.
+To use RedisBloom, first build its shared library by running `make`. If the build is successful, you'll have a shared library called `redisbloom.so`.
 
-### Loading
-
-**Invoking redis with the module loaded**
+To load the library, pass its path to the `loadmodule` directive when starting `redis-server`:
 ```
 $ redis-server --loadmodule /path/to/redisbloom.so
 ```
@@ -64,7 +76,7 @@ $ redis-server --loadmodule /path/to/redisbloom.so
 Documentation and full command reference at [redisbloom.io](http://redisbloom.io).
 
 ## Mailing List / Forum
-Got questions? Feel free to ask at the [RedisBloom mailing list](https://groups.google.com/forum/#!forum/redisbloom).
+Got questions? Feel free to ask at the [RedisBloom mailing list](https://forum.redislabs.com/c/modules/redisbloom).
 
 ## License
-Redis Source Available License Agreement - see [LICENSE](LICENSE)
+RedisBloom is licensed under the [Redis Source Available License Agreement](LICENSE)

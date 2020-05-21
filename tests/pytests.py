@@ -65,7 +65,8 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
             ('foo', '0.001', 'blah'),
             ('foo', '0', '0'),
             ('foo', '0', '100'),
-            ('foo', 'blah', '1000')
+            ('foo', 'blah', '1000'),
+            ('foo', '7.7', '1000')
         ):
             self.assertRaises(ResponseError, self.cmd, 'bf.reserve', *args)
 
@@ -81,7 +82,7 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertRaises(ResponseError, self.cmd, 'bf.reserve', 'foo')
 
     def test_oom(self):
-        self.assertRaises(ResponseError, self.cmd, 'bf.reserve', 'test', 0.01, 4294967296)
+        self.assertRaises(ResponseError, self.cmd, 'bf.reserve', 'test', 0.01, 4294967296 * 4294967296)
     
     def test_rdb_reload(self):
         self.assertEqual(1, self.cmd('bf.add', 'test', 'foo'))
@@ -289,6 +290,8 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
             self.assertEqual(1, self.cmd('bf.add bf', i))
         with self.assertResponseError():
             self.cmd('bf.add bf extra')
+        with self.assertResponseError():
+            self.cmd('bf.reserve bf_mix 0.01 1000 nonscaling expansion 2')
 
         self.assertOk(self.cmd('bf.reserve bfnonscale 0.001 1000 nonscaling'))
         self.assertOk(self.cmd('bf.reserve bfscale 0.001 1000'))

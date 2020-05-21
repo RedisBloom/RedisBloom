@@ -1,8 +1,22 @@
-version: 2
+version: 2.1
+commands:
+  early_return_for_forked_pull_requests:
+    description: >-
+      If this build is from a fork, stop executing the current job and return success.
+      This is useful to avoid steps that will fail due to missing credentials.
+    steps:
+      - run:
+          name: Early return if this build is from a forked PR
+          command: |
+            if [ -n "$CIRCLE_PR_NUMBER" ]; then
+              echo "Nothing to do for forked PRs, so marking this step successful"
+              circleci step halt
+            fi
+
 jobs:
   build:
     docker:
-      - image: 'redislabsmodules/rmbuilder:latest'
+      - image: 'redisfab/rmbuilder:6.0.1-x64-bionic'
     steps:
       - checkout
       - run:
@@ -11,6 +25,14 @@ jobs:
       - run:
           name: Test
           command: make test
+      - run:
+          name: Coverage
+          command: >-
+            apt-get update &&
+            apt-get install -y lcov curl &&
+            make coverage &&
+            bash <(curl -s https://codecov.io/bash)
+      - early_return_for_forked_pull_requests
       - run:
           name: Persist Artifacts
           command: >-
@@ -21,17 +43,10 @@ jobs:
             - '*.so'
             - ramp.yml
             - build
-      - run:
-          name: Coverage
-          command: >- 
-            apt-get update &&
-            apt-get install -y lcov curl &&
-            make coverage &&
-            bash <(curl -s https://codecov.io/bash)
 
   package_branch:
     docker:
-      - image: 'redislabsmodules/rmbuilder:latest'
+      - image: 'redisfab/rmbuilder:6.0.1-x64-bionic'
     steps:
       - attach_workspace:
           at: /workspace
@@ -49,7 +64,7 @@ jobs:
           path: /workspace/build
   package_release:
     docker:
-      - image: 'redislabsmodules/rmbuilder:latest'
+      - image: 'redisfab/rmbuilder:6.0.1-x64-bionic'
     steps:
       - attach_workspace:
           at: /workspace
@@ -73,7 +88,7 @@ jobs:
           path: /workspace/build
   deploy_branch:
     docker:
-      - image: 'redislabsmodules/rmbuilder:latest'
+      - image: 'redisfab/rmbuilder:6.0.1-x64-bionic'
     steps:
       - attach_workspace:
           at: /workspace
@@ -84,7 +99,7 @@ jobs:
             public-read --recursive --exclude "*" --include "*.zip"
   deploy_release:
     docker:
-      - image: 'redislabsmodules/rmbuilder:latest'
+      - image: 'redisfab/rmbuilder:6.0.1-x64-bionic'
     steps:
       - attach_workspace:
           at: /workspace
@@ -93,20 +108,28 @@ jobs:
           command: >-
             aws s3 cp /workspace/build/ s3://redismodules/$PACKAGE_NAME/ --acl
             public-read --recursive --exclude "*" --include "*.zip"
- 
   deploy_docs:
     docker:
-      - image: 'redislabsmodules/rmbuilder:latest'
+      - image: 'python:buster'
     steps:
+      - run:
+          name: Setup executor
+          command: |
+            apt-get -qq update
+            apt-get -q install -y git openssh-client curl ca-certificates make tar gzip wget
+            cd ..; curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"; unzip awscliv2.zip;./aws/install
       - checkout
       - run:
-          name: Build Docs
+          name: Instal dependencies
+          command: pip install -r docs/requirements.txt
+      - run:
+          name: Build docs
           command: mkdocs build
       - run:
           name: Deploy Docs to S3
-          command: >-
-            aws s3 cp site s3://oss.redislabs.com/$WEBSITE_FOLDER/ --acl
-            public-read --recursive 
+          command: |
+            aws s3 cp site s3://oss.redislabs.com/$WEBSITE_FOLDER/ --acl public-read --recursive
+
 workflows:
   version: 2
   build_and_package:
@@ -138,8 +161,10 @@ workflows:
               only: '/^v[0-9].*/'
           requires:
             - package_release
+# TODO: deploy_docs should run only when 'docs/' or 'mkdocs.yml' change
       - deploy_docs:
           filters:
             branches:
-              only: master
-            
+              only:
+                - master
+                - /^[0-9]+\.[0-9]+$/
