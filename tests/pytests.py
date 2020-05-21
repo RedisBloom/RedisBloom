@@ -102,7 +102,7 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         def do_verify(add):
             false_positives = 0.0
             for x in xrange(quantity):
-                if add is True:
+                if add:
                     self.cmd('bf.add', 'myBloom', x)
                 rv = self.cmd('bf.exists', 'myBloom', x)
                 self.assertTrue(rv)
