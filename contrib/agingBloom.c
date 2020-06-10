@@ -77,9 +77,9 @@ static uint64_t ceil64(uint64_t n) {
 static blmSlice createSlice(uint64_t size, uint32_t hashIndex,
                             timestamp_t timestamp) {
     blmSlice slice = {.size = size,
-                      .count = 0,
-                      .hashIndex = hashIndex,
-                      .timestamp = timestamp };
+            .count = 0,
+            .hashIndex = hashIndex,
+            .timestamp = timestamp };
     slice.data = (char *)calloc(ceil64(size), sizeof(uint64_t));
     return slice;
 }
@@ -394,12 +394,12 @@ void APBF_insert(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
 
 #ifdef TWOHASH
     TwoHash_t twoHash;
-  getTwoHash(&twoHash, item, itemlen);
-  for(uint32_t i = 0; i < apbf->numHash; ++i) {
-    uint64_t hash = getHash(twoHash, apbf->slices[i].hashIndex);
-    SetBitOn(apbf->slices[i].data, hash % apbf->slices[i].size);
-    ++apbf->slices[i].count;
-  }
+    getTwoHash(&twoHash, item, itemlen);
+    for(uint32_t i = 0; i < apbf->numHash; ++i) {
+        uint64_t hash = getHash(twoHash, apbf->slices[i].hashIndex);
+        SetBitOn(apbf->slices[i].data, hash % apbf->slices[i].size);
+        ++apbf->slices[i].count;
+    }
 #else
     for(uint32_t i = 0; i < apbf->numHash; ++i) {
         uint64_t hash = MurmurHash64A_Bloom(item, itemlen, apbf->slices[i].hashIndex);
@@ -466,10 +466,10 @@ bool APBF_query(ageBloom_t *apbf, const char *item, uint32_t itemlen/*, uint *ag
     uint64_t hash;
     uint32_t done = 0;
     uint32_t carry = 0;
-    int32_t cursor = apbf->batches;
+    int32_t cursor = apbf->numSlices - apbf->numHash;
 #ifdef TWOHASH
     TwoHash_t twoHash;
-  getTwoHash(&twoHash, item, itemlen);
+    getTwoHash(&twoHash, item, itemlen);
 #endif
 
     while (cursor >= 0) {
