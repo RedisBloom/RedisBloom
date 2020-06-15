@@ -45,3 +45,4 @@ plugins:
   - search
   - versions-menu:
       include-regex: '([0-9]+).([0-9]+)'
+
