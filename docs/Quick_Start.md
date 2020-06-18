@@ -6,13 +6,20 @@
 docker run -p 6379:6379 --name redis-redisbloom redislabs/rebloom:latest
 ```
 
-## Building and running
+## Download
+
+A pre-compiled version can be downloaded from [RedisLabs download center](https://redislabs.com/download-center/modules/).
+
+## Building
 
 ```sh
 git clone https://github.com/RedisBloom/RedisBloom.git
 cd redisbloom
 make
+```
+## running
 
+```
 # Assuming you have a redis build from the unstable branch:
 /path/to/redis-server --loadmodule ./redisbloom.so
 ```
