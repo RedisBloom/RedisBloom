@@ -192,9 +192,9 @@ static uint64_t predictSize(ageBloom_t *apbf, timestamp_t ts) {
     assert(apbf);
 
     uint32_t numHash = apbf->numHash;
-    blmSlice * slices = apbf->slices;
+
     // last time between shifts
-    timestamp_t tbs = ts - slices[numHash].timestamp;
+    timestamp_t tbs = ts - apbf->slices[numHash].timestamp;
     // generation size
     double genSize = (apbf->updates * apbf->assessFreq * 1.0) / (tbs * 1.0 * apbf->batches);
     // new slice's size
@@ -367,10 +367,8 @@ ageBloom_t *APBF_createTimeAPI(int error, uint64_t capacity, int8_t level, times
     ageBloom_t *apbf = APBF_createHighLevelAPI(error, capacity, level);
     assert(apbf);
     uint32_t numHash = apbf->numHash;
-    blmSlice *slices = apbf->slices;
     apbf->assessFreq = frequency;
-    timestamp_t timestamp = (timestamp_t) time(NULL);
-    slices[numHash].timestamp = timestamp;
+    apbf->slices[numHash].timestamp = (timestamp_t) time(NULL);
     updateShiftCounter(apbf);
     return apbf;
 }
@@ -416,13 +414,14 @@ void APBF_insertTime(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
     assert(item);
 
     timestamp_t ts = 0;
-    blmSlice *slices = apbf->slices;
 
-    if (apbf->maxUpdates == slices[apbf->updatesIndex].count) { // shift is needed
+    if (apbf->maxUpdates == apbf->slices[apbf->updatesIndex].count) { // shift is needed
         ts = (uint64_t) time(NULL); //system time
         retireSlices(apbf, ts);
         uint64_t size = predictSize(apbf, ts);
+
         uint32_t numSlices = apbf->numSlices;
+        blmSlice *slices = apbf->slices;
         if (slices[numSlices - 1].timestamp > ts - apbf->assessFreq && slices[numSlices - 1].count) {
             APBF_addTimeframe(apbf, size, ts);
         }
@@ -439,7 +438,7 @@ void APBF_insertTime(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
             ts = (uint64_t) time(NULL);
         }
         // TODO: Only save timestamp on slice k-1 or on all slices ([0, k-1]) ?
-        slices[apbf->numHash - 1].timestamp = ts; // save timestamp of last insertion
+        apbf->slices[apbf->numHash - 1].timestamp = ts; // save timestamp of last insertion
     }
 }
 
