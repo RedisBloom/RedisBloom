@@ -6,10 +6,10 @@
 #include "cms.h"
 #include "contrib/murmurhash2.h"
 
-#define max(a,b) \
+#define min(a,b) \
     ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
-       _a > _b ? _a : _b; })
+       _a < _b ? _a : _b; })
 
 #define BIT64 64
 #define CMS_HASH(item, itemlen, i) MurmurHash2(item, itemlen, i)
@@ -49,15 +49,15 @@ size_t CMS_IncrBy(CMSketch *cms, const char *item, size_t itemlen, size_t value)
     assert(cms);
     assert(item);
 
-    size_t maxCount = 0;
+    size_t minCount = (size_t)-1;
 
     for (size_t i = 0; i < cms->depth; ++i) {
         uint32_t hash = CMS_HASH(item, itemlen, i);
         cms->array[(hash % cms->width) + (i * cms->width)] += value;
-        maxCount = max(maxCount, cms->array[(hash % cms->width) + (i * cms->width)]);
+        minCount = min(minCount, cms->array[(hash % cms->width) + (i * cms->width)]);
     }
     cms->counter += value;
-    return maxCount;
+    return minCount;
 }
 
 size_t CMS_Query(CMSketch *cms, const char *item, size_t itemlen) {
