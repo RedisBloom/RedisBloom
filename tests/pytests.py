@@ -297,6 +297,13 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertOk(self.cmd('bf.reserve bfscale 0.001 1000'))
         self.assertLess(self.cmd('bf.info bfnonscale')[3], self.cmd('bf.info bfscale')[3])
 
+    def test_nonscaling_err(self):
+        capacity = 3
+        self.assertEqual(self.cmd('BF.INSERT nonscaling_err CAPACITY 3 NONSCALING ITEMS a b c'), [1L,1L,1L])
+        # clients hangs
+        self.cmd('BF.INSERT nonscaling_err ITEMS a b c d d')
+
+
     def test_issue178(self):
         capacity = 300 * 1000 * 1000
         error_rate = 0.000001
