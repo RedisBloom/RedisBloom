@@ -64,17 +64,13 @@ size_t CMS_Query(CMSketch *cms, const char *item, size_t itemlen) {
     assert(cms);
     assert(item);
 
-    size_t temp = 0, res = (size_t)-1;
+    size_t minCount = (size_t)-1;
 
     for (size_t i = 0; i < cms->depth; ++i) {
         uint32_t hash = CMS_HASH(item, itemlen, i);
-        temp = cms->array[(hash % cms->width) + (i * cms->width)];
-        if (temp < res) {
-            res = temp;
-        }
+        minCount = min(minCount, cms->array[(hash % cms->width) + (i * cms->width)]);
     }
-
-    return res;
+    return minCount;
 }
 
 void CMS_Merge(CMSketch *dest, size_t quantity, const CMSketch **src, const long long *weights) {
