@@ -299,9 +299,10 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
 
     def test_nonscaling_err(self):
         capacity = 3
-        self.assertEqual(self.cmd('BF.INSERT nonscaling_err CAPACITY 3 NONSCALING ITEMS a b c'), [1L,1L,1L])
-        # clients hangs
-        self.cmd('BF.INSERT nonscaling_err ITEMS a b c d d')
+        self.assertEqual([1L,1L,1L],self.cmd('BF.INSERT nonscaling_err CAPACITY 3 NONSCALING ITEMS a b c'))
+        resp = self.cmd('BF.INSERT nonscaling_err ITEMS a b c d d')
+        self.assertEqual([0L, 0L, 0L,],resp[:3])
+        self.assertEqual('non scaling filter is full',str(resp[3]))
 
 
     def test_issue178(self):

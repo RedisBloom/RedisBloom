@@ -239,7 +239,7 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
         const char *s = RedisModule_StringPtrLen(items[ii], &n);
         int rv = SBChain_Add(sb, s, n);
         if (rv == -2) { // decide if to make into an error
-            RedisModule_ReplyWithError(ctx, "Non scaling filter is full");
+            RedisModule_ReplyWithError(ctx, "ERR non scaling filter is full");
             result = REDISMODULE_ERR;
         } else {
             RedisModule_ReplyWithLongLong(ctx, !!rv);
