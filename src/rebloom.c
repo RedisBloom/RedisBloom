@@ -219,7 +219,7 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keystr, REDISMODULE_READ | REDISMODULE_WRITE);
     SBChain *sb;
     const int status = bfGetChain(key, &sb);
-    int result = REDISMODULE_OK;
+    
     if (status == SB_EMPTY && options->autocreate) {
         sb = bfCreateChain(key, options->error_rate, options->capacity, options->expansion, options->nonScaling);
         if (sb == NULL) {
@@ -234,13 +234,13 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
     }
 
     size_t array_len = 0;
-    for (size_t ii = 0; ii < nitems && result == REDISMODULE_OK; ++ii) {
+    int rv = 0;
+    for (size_t ii = 0; ii < nitems && rv != -2; ++ii) {
         size_t n;
         const char *s = RedisModule_StringPtrLen(items[ii], &n);
-        int rv = SBChain_Add(sb, s, n);
+        rv = SBChain_Add(sb, s, n);
         if (rv == -2) { // decide if to make into an error
             RedisModule_ReplyWithError(ctx, "ERR non scaling filter is full");
-            result = REDISMODULE_ERR;
         } else {
             RedisModule_ReplyWithLongLong(ctx, !!rv);
         }
@@ -251,7 +251,7 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
         RedisModule_ReplySetArrayLength(ctx, array_len);
     }
     RedisModule_ReplicateVerbatim(ctx);
-    return result;
+    return REDISMODULE_OK;
 }
 
 /**
