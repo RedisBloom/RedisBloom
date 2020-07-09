@@ -289,6 +289,14 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertOk(self.cmd('bf.reserve bfscale 0.001 1000'))
         self.assertLess(self.cmd('bf.info bfnonscale')[3], self.cmd('bf.info bfscale')[3])
 
+    def test_nonscaling_err(self):
+        capacity = 3
+        self.assertEqual([1L,1L,1L],self.cmd('BF.INSERT nonscaling_err CAPACITY 3 NONSCALING ITEMS a b c'))
+        resp = self.cmd('BF.INSERT nonscaling_err ITEMS a b c d d')
+        self.assertEqual([0L, 0L, 0L,],resp[:3])
+        self.assertEqual('non scaling filter is full',str(resp[3]))
+
+
     def test_issue178(self):
         capacity = 300 * 1000 * 1000
         error_rate = 0.000001
