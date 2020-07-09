@@ -960,7 +960,7 @@ static int CFDebug_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     }
 
     RedisModuleString *resp = RedisModule_CreateStringPrintf(
-        ctx, "bktsize:%lu buckets:%lu items:%lu deletes:%lu filters:%lu max_iterations:%lu expansion:%lu",
+        ctx, "bktsize:%u buckets:%lu items:%lu deletes:%lu filters:%u max_iterations:%u expansion:%u",
         cf->bucketSize, cf->numBuckets, cf->numItems, cf->numDeletes, 
         cf->numFilters, cf->maxIterations, cf->expansion);
     return RedisModule_ReplyWithString(ctx, resp);
