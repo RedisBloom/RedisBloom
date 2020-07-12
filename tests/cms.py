@@ -166,6 +166,14 @@ class CMSTest(ModuleTestCase('../redisbloom.so')):
 #        print(self.cmd('cms.info', 'B'))
 #        print(self.cmd('cms.info', 'C'))
 
+    def test_smallset(self):
+        self.assertOk(self.cmd('cms.initbydim', 'cms1', '2', '2'))
+        self.assertEqual([10, 42], self.cmd('cms.incrby', 'cms1', 'foo', '10', 'bar', '42'))
+        self.assertEqual([10, 42], self.cmd('cms.query', 'cms1', 'foo', 'bar'))
+        self.assertEqual(['width', 2, 'depth', 2, 'count', 52], 
+                         self.cmd('cms.info', 'cms1'))
+        self.assertEqual([10, 42], self.cmd('cms.incrby', 'cms1', 'foo', '0', 'bar', '0'))
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
