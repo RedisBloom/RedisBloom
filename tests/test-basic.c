@@ -63,7 +63,8 @@ TEST_F(basic, sbExpansion) {
     ASSERT_GT(chain->nfilters, 1);
     SBChain_Free(chain);
 }
-
+/*
+// Disabled due to issue 178
 TEST_F(basic, testIssue6_Overflow) {
     SBChain *chain = SB_NewChain(1000000000000, 0.00001, 0, BF_DEFAULT_GROWTH);
     if (chain != NULL) {
@@ -74,7 +75,7 @@ TEST_F(basic, testIssue6_Overflow) {
 
     chain = SB_NewChain(4294967296, 0.00001, 0, BF_DEFAULT_GROWTH);
     ASSERT_EQ(NULL, chain);
-}
+} */
 
 TEST_F(basic, testIssue7_Overflow) {
     // Try with a bit count of 33:
@@ -113,6 +114,33 @@ TEST_F(basic, testIssue9) {
 
     SBChain_Free(chain);
 }
+
+TEST_F(basic, testNoRound) {
+    SBChain *chain = SB_NewChain(100, 0.01, BLOOM_OPT_FORCE64 | BLOOM_OPT_NOROUND, 2);
+    if (chain == NULL) {
+        ASSERT_EQ(ENOMEM, errno);
+        return;
+    }
+    ASSERT_EQ(100, chain->filters[0].inner.entries);
+    ASSERT_NE(0, SBChain_Add(chain, "asdf", 4));
+    ASSERT_NE(0, SBChain_Add(chain, "a", 1));
+    ASSERT_NE(0, SBChain_Add(chain, "s", 1));
+    ASSERT_NE(0, SBChain_Add(chain, "d", 1));
+    ASSERT_NE(0, SBChain_Add(chain, "f", 1));
+    ASSERT_EQ(0, SBChain_Add(chain, "asdf", 4));
+    ASSERT_EQ(0, SBChain_Add(chain, "a", 1));
+    ASSERT_EQ(0, SBChain_Add(chain, "s", 1));
+    ASSERT_EQ(0, SBChain_Add(chain, "d", 1));
+    ASSERT_EQ(0, SBChain_Add(chain, "f", 1));
+    ASSERT_NE(0, SBChain_Check(chain, "asdf", 4));
+    ASSERT_NE(0, SBChain_Check(chain, "a", 1));
+    ASSERT_NE(0, SBChain_Check(chain, "s", 1));
+    ASSERT_NE(0, SBChain_Check(chain, "d", 1));
+    ASSERT_NE(0, SBChain_Check(chain, "f", 1));
+
+    SBChain_Free(chain); 
+}
+
 
 /**
  *      self.cmd('bf.reserve', 'myBloom', '0.0001', '100')

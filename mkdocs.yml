@@ -6,6 +6,9 @@ repo_name: RedisBloom/RedisBloom
 google_analytics:
   - 'UA-92003007-1'
   - 'auto'
+  
+extra_javascript:
+  - gtm.js
 
 use_directory_urls: true
 
@@ -23,6 +26,17 @@ theme:
   feature:
     tabs: false
 
+nav:
+  - 'RedisBloom': 'index.md'
+  - 'Quick Start': 'Quick_Start.md'
+  - 'Configuration': 'Configuration.md'
+  - Command References:
+    - 'Bloom Filter': 'Bloom_Commands.md'
+    - 'Cuckoo Filter': 'Cuckoo_Commands.md'
+    - 'Count-Min-Sketch': 'CountMinSketch_Commands.md'
+    - 'Top-K': 'TopK_Commands.md'
+  - 'Contributor agreement': 'contrib.md'
+
 markdown_extensions:
   - admonition
   - codehilite:
@@ -30,13 +44,8 @@ markdown_extensions:
   - toc:
       permalink: True
 
-pages:
-    - 'RedisBloom': 'index.md'
-    - 'Quick Start': 'Quick_Start.md'
-    - 'Configuration': 'Configuration.md'  
-    - Command References:
-      - 'Bloom Filter': 'Bloom_Commands.md'
-      - 'Cuckoo Filter': 'Cuckoo_Commands.md'
-      - 'Count-Min-Sketch': 'CountMinSketch_Commands.md'
-      - 'Top-K': 'TopK_Commands.md'
-    - 'Contributor agreement': 'contrib.md'
+plugins:
+  - search
+  - versions-menu:
+      include-regex: '([0-9]+).([0-9]+)'
+

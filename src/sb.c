@@ -13,7 +13,7 @@
 #define ERROR_TIGHTENING_RATIO 0.5
 #define CUR_FILTER(sb) ((sb)->filters + ((sb)->nfilters - 1))
 
-static int SBChain_AddLink(SBChain *chain, size_t size, double error_rate) {
+static int SBChain_AddLink(SBChain *chain, uint64_t size, double error_rate) {
     if (!chain->filters) {
         chain->filters = RedisModule_Calloc(1, sizeof(*chain->filters));
     } else {
@@ -65,6 +65,9 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
     // Determine if we need to add more items?
     SBLink *cur = CUR_FILTER(sb);
     if (cur->size >= cur->inner.entries) {
+        if (sb->options & BLOOM_OPT_NO_SCALING) {
+            return -2;
+        }
         double error = cur->inner.error * ERROR_TIGHTENING_RATIO;
         if (SBChain_AddLink(sb, cur->inner.entries * (size_t)sb->growth, error) != 0) {
             return -1;
@@ -89,14 +92,15 @@ int SBChain_Check(const SBChain *sb, const void *data, size_t len) {
     return 0;
 }
 
-SBChain *SB_NewChain(size_t initsize, double error_rate, unsigned options, unsigned growth) {
+SBChain *SB_NewChain(uint64_t initsize, double error_rate, unsigned options, unsigned growth) {
     if (initsize == 0 || error_rate == 0 || error_rate >= 1) {
         return NULL;
     }
     SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
     sb->growth = growth;
     sb->options = options;
-    if (SBChain_AddLink(sb, initsize, error_rate * ERROR_TIGHTENING_RATIO) != 0) {
+    double tightening = (options & BLOOM_OPT_NO_SCALING) ? 1 : ERROR_TIGHTENING_RATIO;
+    if (SBChain_AddLink(sb, initsize, error_rate * tightening) != 0) {
         SBChain_Free(sb);
         sb = NULL;
     }
@@ -110,7 +114,7 @@ typedef struct __attribute__((packed)) {
     double error;
     double bpe;
     uint32_t hashes;
-    uint32_t entries;
+    uint64_t entries;
     uint8_t n2;
 } dumpedChainLink;
 

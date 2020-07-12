@@ -115,7 +115,7 @@ static double calc_bpe(double error) {
     return bpe;
 }
 
-int bloom_init(struct bloom *bloom, unsigned entries, double error, unsigned options) {
+int bloom_init(struct bloom *bloom, uint64_t entries, double error, unsigned options) {
     if (entries < 1 || error <= 0 || error >= 1.0) {
         return 1;
     }
@@ -166,6 +166,7 @@ int bloom_init(struct bloom *bloom, unsigned entries, double error, unsigned opt
     } else {
         bloom->bytes = bits / 8;
     }
+    bloom->bits = bloom->bytes * 8;
 
     bloom->force64 = (options & BLOOM_OPT_FORCE64);
     bloom->hashes = (int)ceil(0.693147180559945 * bloom->bpe); // ln(2)
@@ -178,10 +179,12 @@ int bloom_init(struct bloom *bloom, unsigned entries, double error, unsigned opt
 }
 
 int bloom_check_h(const struct bloom *bloom, bloom_hashval hash) {
-    if (bloom->force64 || bloom->n2 > 31) {
-        return bloom_check_add64((void *)bloom, hash, MODE_READ);
-    } else if (bloom->n2 > 0) {
-        return bloom_check_add32((void *)bloom, hash, MODE_READ);
+    if (bloom->n2 > 0) {
+        if (bloom->force64 || bloom->n2 > 31) {
+            return bloom_check_add64((void *)bloom, hash, MODE_READ);
+        } else {
+            return bloom_check_add32((void *)bloom, hash, MODE_READ);
+        }
     } else {
         return bloom_check_add_compat((void *)bloom, hash, MODE_READ);
     }
@@ -192,10 +195,12 @@ int bloom_check(const struct bloom *bloom, const void *buffer, int len) {
 }
 
 int bloom_add_h(struct bloom *bloom, bloom_hashval hash) {
-    if (bloom->force64 || bloom->n2 > 31) {
-        return !bloom_check_add64(bloom, hash, MODE_WRITE);
-    } else if (bloom->n2) {
-        return !bloom_check_add32(bloom, hash, MODE_WRITE);
+    if (bloom->n2 > 0) {
+        if (bloom->force64 || bloom->n2 > 31) {
+            return !bloom_check_add64(bloom, hash, MODE_WRITE);
+        } else {
+            return !bloom_check_add32(bloom, hash, MODE_WRITE);
+        }
     } else {
         return !bloom_check_add_compat(bloom, hash, MODE_WRITE);
     }
