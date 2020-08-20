@@ -59,9 +59,9 @@ struct ageBloom_s {
     // Time based variables
     uint32_t numSlices;       // Current number of slices
     uint32_t assessFreq;      // Frequency of assessment
-    uint32_t maxUpdates;      // Maximum updates the slice[updatesIndex] can have
-    uint32_t updates;         // Updates until next shift
-    uint32_t updatesIndex;    // Index of the slice with the minimum updates
+    uint32_t maxUpdates;      // Maximum updates the slice can have until it becomes full
+    uint32_t updates;         // Updates until next shift (maxUpdates - count)
+    uint32_t updatesIndex;    // Slice index
 
     blmSlice *slices;
 };
