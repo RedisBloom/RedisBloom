@@ -53,6 +53,8 @@ See each driver's README for details and documentation.
 1. [RedisBloom Quick Start Tutorial](https://docs.redislabs.com/latest/modules/redisbloom/redisbloom-quickstart/)
 1. [Developing with Bloom Filters](https://docs.redislabs.com/latest/modules/redisbloom/)
 1. [RedisBloom on Redis Enterprise](https://redislabs.com/redis-enterprise/redis-bloom/)
+1. [Probably and No: Redis, RedisBloom, and Bloom Filters](https://redislabs.com/blog/redis-redisbloom-bloom-filters/)
+1. [RedisBloom – Bloom Filter Datatype for Redis](https://redislabs.com/blog/rebloom-bloom-filter-datatype-redis/)
 
 ## Mailing List / Forum
 Got questions? Feel free to ask at the [RedisBloom forum](https://forum.redislabs.com/c/modules/redisbloom).
