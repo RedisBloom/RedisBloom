@@ -204,24 +204,7 @@ static uint64_t predictSize(ageBloom_t *apbf) {
 }
 */
 
-/* OPTION 3
-static uint64_t predictSize(ageBloom_t *apbf) {
-    assert(apbf);
-
-    uint32_t numHash = apbf->numHash;
-    blmSlice *slices = apbf->slices;
-
-    timestamp_t tbs = slices[numHash - 1].timestamp - slices[numHash].timestamp;
-    tbs = (tbs > 0) ? tbs : 1;
-
-    double_t genSize = (double_t) (apbf->updates * apbf->assessFreq) / (tbs * apbf->batches);
-    double_t size = (double_t) (ceil(genSize) * numHash) / log(2);
-
-    return ceil(size);
-}
-*/
-
-// Generates new size of slice 0.
+/* OPTION 2
 static uint64_t predictSize(ageBloom_t *apbf) {
     assert(apbf);
 
@@ -240,6 +223,58 @@ static uint64_t predictSize(ageBloom_t *apbf) {
     }
 
     double_t size = (sumfr / efr) * sumSize / (numSlices - optimalSlices + 1);
+
+    return ceil(size);
+}
+ */
+
+/* OPTION 3
+static uint64_t predictSize(ageBloom_t *apbf) {
+    assert(apbf);
+
+    uint32_t numHash = apbf->numHash;
+    blmSlice *slices = apbf->slices;
+
+    double_t tbs = slices[numHash - 1].timestamp - slices[numHash].timestamp;
+    tbs = (tbs > 0) ? tbs : 0.1;
+
+    double_t genSize = (double_t) (apbf->updates * apbf->assessFreq) / (tbs * apbf->batches);
+    double_t size = (double_t) (ceil(genSize) * numHash) / log(2);
+
+    return ceil(size);
+}
+*/
+
+// Generates new size of slice 0.
+static uint64_t predictSize(ageBloom_t *apbf) {
+    assert(apbf);
+
+    uint32_t numHash = apbf->numHash;
+    uint32_t updatesIndex = apbf->updatesIndex;
+    uint32_t optimalSlices = apbf->optimalSlices;
+    uint32_t numSlices = apbf->numSlices;
+    blmSlice *slices = apbf->slices;
+    double_t size;
+
+    double_t tbs = slices[numHash - 1].timestamp - slices[numHash].timestamp;
+    double_t targetTime = (double_t) apbf->assessFreq / apbf->batches;
+
+    if (tbs < targetTime) {
+        double_t efr = (double_t) (updatesIndex + 1) / (2 * numHash);
+        double_t sumfr = (double_t) slices[updatesIndex].count / slices[updatesIndex].size;
+        uint64_t sumSize = slices[updatesIndex].size;
+
+        for (int32_t i = optimalSlices; i < numSlices; ++i) {
+            sumfr += (double_t) slices[i].count / slices[i].size;
+            sumSize += slices[i].size;
+        }
+        size = (sumfr / efr) * sumSize / (numSlices - optimalSlices + 1);
+    }
+    else {
+        size = slices[0].size;
+    }
+    // Size must be larger than/equal to numHash * 2 for the slice to allow at least one insertion
+    size = (size < numHash * 2) ? numHash * 2 : size;
 
     return ceil(size);
 }
@@ -401,8 +436,8 @@ ageBloom_t *APBF_createTimeAPI(int error, uint64_t capacity, int8_t level, times
     ageBloom_t *apbf = APBF_createHighLevelAPI(error, capacity, level);
     assert(apbf);
     apbf->assessFreq = frequency;
-    apbf->slices[apbf->numHash].timestamp = (timestamp_t) time(NULL);
     updateShiftTrigger(apbf);
+    apbf->slices[apbf->numHash].timestamp = (timestamp_t) time(NULL);
     return apbf;
 }
 
