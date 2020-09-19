@@ -28,13 +28,15 @@
 #include <time.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <math.h>
 
 #define CHECK_ALL 0
 
+//#define SLEEP 0.1
 #define TWOHASH
 
 typedef struct ageBloom_s ageBloom_t;
-typedef uint64_t timestamp_t;
+typedef double_t timestamp_t;
 typedef ageBloom_t ageBloom; // back support
 
 typedef struct {
