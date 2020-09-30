@@ -32,7 +32,9 @@
 
 #define CHECK_ALL 0
 
-//#define SLEEP 0.1
+//#define SLEEP 0.1     // Used only when static time is wanted between insertions
+                        // instead of real time. (defined in seconds)
+
 #define TWOHASH
 
 typedef struct ageBloom_s ageBloom_t;
@@ -61,8 +63,8 @@ struct ageBloom_s {
     // Time based variables
     uint32_t numSlices;       // Current number of slices
     uint32_t assessFreq;      // Frequency of assessment
-    uint32_t maxUpdates;      // Maximum updates the slice can have until it becomes full
-    uint32_t updates;         // Updates until next shift (maxUpdates - count)
+    uint32_t maxUpdates;      // Maximum updates the slice can store until it becomes full
+    uint32_t updates;         // Updates the slice can still store until next shift (maxUpdates - count)
     uint32_t updatesIndex;    // Slice index
 
     blmSlice *slices;

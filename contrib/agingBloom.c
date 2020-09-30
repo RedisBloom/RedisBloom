@@ -14,7 +14,7 @@
 #include <stdlib.h>     // calloc
 #include <string.h>     // memset
 #include <unistd.h>     // write
-#include <sys/time.h>
+#include <sys/time.h>   // gettimeofday
 
 #include "hash.h"
 #include "agingBloom.h"
@@ -22,8 +22,8 @@
 #define _64BITS 64
 #define BYTE 8
 
-struct timeval start, end;
-timestamp_t ts;
+struct timeval start, end;  // Used to record time between insertions.
+timestamp_t ts;             // Timestamp in seconds.
 
 /******************* Static functions ***************/
 static void SetBitOn(char *array, uint64_t loc) {
@@ -116,6 +116,7 @@ static void APBF_shiftSlice(ageBloom_t *apbf) {
     memset(data, 0, slices[0].size / BYTE);
 }
 
+// Used for time based APBF
 // Retires last slice, moves all slices down the slices array
 // and inserts a new slice at location 0 with specified size.
 static void APBF_shiftTimeSlice(ageBloom_t *apbf, uint64_t size) {
@@ -146,29 +147,7 @@ static void APBF_shiftTimeSlice(ageBloom_t *apbf, uint64_t size) {
 /*********                          Oracle                          **********/
 /*****************************************************************************/
 
-/*
- * Slices shift can be triggered by time/callback
- * or an assessment can be made periodically where the fill-rate at slice
- * `k - 1` checked and if fill-rate is > 50%, a shift is triggered.
- *
- * Steps:
- *  * Calculate size of new slice. This is where the magic happens.
- *  * Create a slice with the required size.
- *  * Check if timestamp is expired on slices at end of array and retire
- *    accordingly.
- *
- * Oracle Option 1
- * Get fill-rate on latest slice.
- * Calculate expected-fill-rate (EFR).
- * New size equal ((fill-rate / EFR) * latest->size).
- *
- * Oracle Option 2
- * Calculate EFR.
- * Get fill-rate on latest slice + slices to be retired (will help with seasonality).
- * New size equal ((fill-rate / EFR) * (latest->size + retiring_slices->size) / n).
- */
-
-// Retires slices that have expired (older than timestamp)
+// Retires slices that have expired (older than timestamp).
 static void retireSlices(ageBloom_t *apbf) {
     assert (apbf);
 
@@ -183,8 +162,9 @@ static void retireSlices(ageBloom_t *apbf) {
         }
         break;
     }
-    // reallocate slices' memory space
-    if (i < apbf->numSlices - 1) { // if at least one slice was retired
+
+    // if at least one slice was retired, realloc slices' memory space.
+    if (i < apbf->numSlices - 1) {
         apbf->numSlices = ++i;
         slices = (blmSlice *) realloc(slices, sizeof(blmSlice) * i);
         assert(slices);
@@ -192,7 +172,7 @@ static void retireSlices(ageBloom_t *apbf) {
     }
 }
 
-// Generates new size of slice 0
+// Calculates the new size of slice 0.
 static uint64_t predictSize(ageBloom_t *apbf) {
     assert(apbf);
 
@@ -203,35 +183,37 @@ static uint64_t predictSize(ageBloom_t *apbf) {
     double_t targetTime = (double_t) apbf->assessFreq / apbf->batches; // target time between shifts
 
     double_t efr = (double_t) 1 / (2 * numHash); // expected fill ratio of slice 0
-    double_t generation = (double_t) (apbf->updates * targetTime) / tbs;
+    double_t generation = (double_t) (apbf->updates * targetTime) / tbs; // target updates to make between shifts
     double_t size = - ((ceil(generation) + 1) / log(1 - efr));
 
-    // Size must be larger than/equal to numHash * 2 for the slice to allow at least one insertion
+    // Size must be larger than/equal to numHash * 2 for the slice to allow at least one insertion.
     size = (size < numHash * 2) ? numHash * 2 : size;
 
     return ceil(size);
 }
 
-// Adds an additional time frame and sets it to size
+// Adds an additional time frame with specified size.
 static void APBF_addTimeframe(ageBloom_t *apbf, uint64_t size) {
     assert (apbf);
 
     uint32_t numHash = apbf->numHash;
     blmSlice *slices = apbf->slices;
 
+    // realloc slices' memory space
     slices = (blmSlice *) realloc(slices, sizeof(blmSlice) * (++apbf->numSlices));
     assert(slices);
+
     for(int32_t i = apbf->numSlices - 1; i > 0; --i) { // done numFilter - 1 times
         memcpy(&slices[i], &slices[i - 1], sizeof(blmSlice));
     }
 
     uint32_t hashIndex = (slices[1].hashIndex - 1 + numHash) % numHash;
-    slices[0] = createSlice(size, hashIndex, 0);
+    slices[0] = createSlice(size, hashIndex, 0); // creates the new slice at location 0
 
     apbf->slices = slices;
 }
 
-// Generates the number of updates allowed until the next shift
+// Calculates how many updates are allowed until the next shift.
 static void updateShiftTrigger(ageBloom_t *apbf) {
     assert(apbf);
 
@@ -240,7 +222,9 @@ static void updateShiftTrigger(ageBloom_t *apbf) {
     uint32_t maxUpdates = 0, updates = UINT32_MAX, updatesIndex = 0;
 
     for (int32_t i = 0; i < numHash; ++i) {
+        // Maximum updates the slice can store until it becomes full
         uint32_t maxUpdatesSlice = floor(log(1 - ((i + 1.0) / (2 * numHash))) / log(1 - (1.0 / slices[i].size)));
+        // Updates the slice can still store
         uint32_t updatesSlice = maxUpdatesSlice - slices[i].count;
 
         if (updatesSlice < updates) {
@@ -255,7 +239,7 @@ static void updateShiftTrigger(ageBloom_t *apbf) {
     apbf->updatesIndex = updatesIndex;
 }
 
-// Increments time
+// Increments time.
 static void updateTimestamp() {
     gettimeofday(&end, NULL);
     uint32_t seconds = end.tv_sec - start.tv_sec;
@@ -374,6 +358,7 @@ ageBloom_t* APBF_createHighLevelAPI(int error, uint64_t capacity, int8_t level) 
     return bf;
 }
 
+// Used for time based APBF
 ageBloom_t *APBF_createTimeAPI(int error, uint64_t capacity, int8_t level, timestamp_t frequency) {
     ageBloom_t *apbf = APBF_createHighLevelAPI(error, capacity, level);
     assert(apbf);
@@ -430,19 +415,22 @@ void APBF_insertTime(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
     updateTimestamp();
 #endif
 
-    // Checking whether it is time to shift a timeframe.
+    // Checking whether it is time to shift a time frame.
     if (apbf->slices[apbf->updatesIndex].count == apbf->maxUpdates) {
         retireSlices(apbf);
         uint64_t size = predictSize(apbf);
 
         uint32_t numSlices = apbf->numSlices;
         blmSlice *slices = apbf->slices;
+
+        // Checking whether a new time frame is needed (if last slice isn't older than timestamp).
         if (slices[numSlices - 1].timestamp >= ts - apbf->assessFreq && slices[numSlices - 1].count) {
             APBF_addTimeframe(apbf, size);
         }
         else {
             APBF_shiftTimeSlice(apbf, size);
         }
+
         updateShiftTrigger(apbf);
     }
     APBF_insert(apbf, item, itemlen);
@@ -451,6 +439,7 @@ void APBF_insertTime(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
     ts += SLEEP;
 #endif
 
+    // Checking whether next update will trigger a shift.
     if (apbf->slices[apbf->updatesIndex].count == apbf->maxUpdates) {
         apbf->slices[apbf->numHash - 1].timestamp = ts; // save timestamp of last insertion
     }
