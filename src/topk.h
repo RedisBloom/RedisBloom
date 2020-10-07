@@ -1,8 +1,14 @@
 /*
-* Copyright 2019 Redis Labs Ltd. and Contributors
-*
-* This file is available under the Redis Labs Source Available License Agreement
-*/
+ * Copyright 2019 Redis Labs Ltd. and Contributors
+ *
+ * This file is available under the Redis Labs Source Available License Agreement
+ * 
+ * This Top-K Data Type is based on Heavy Keeper algorithm. The paper can be found
+ * at https://www.usenix.org/system/files/conference/atc18/atc18-gong.pdf
+ * 
+ * Implementation by Ariel Shtul
+ */
+
 #ifndef RM_TOPK_H
 #define RM_TOPK_H
 
