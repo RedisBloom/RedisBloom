@@ -6,6 +6,10 @@ import sys
 if sys.version >= '3':
     xrange = range
 
+def ConvertInfo(lst): 
+    res_dct = {lst[i]: lst[i + 1] for i in range(0, len(lst), 2)} 
+    return res_dct 
+
 class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
     def test_custom_filter(self):
         # Can we create a client?
@@ -61,7 +65,8 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
             ('foo', '0.001', 'blah'),
             ('foo', '0', '0'),
             ('foo', '0', '100'),
-            ('foo', 'blah', '1000')
+            ('foo', 'blah', '1000'),
+            ('foo', '7.7', '1000')
         ):
             self.assertRaises(ResponseError, self.cmd, 'bf.reserve', *args)
 
@@ -77,7 +82,7 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertRaises(ResponseError, self.cmd, 'bf.reserve', 'foo')
 
     def test_oom(self):
-        self.assertRaises(ResponseError, self.cmd, 'bf.reserve', 'test', 0.01, 4294967296)
+        self.assertRaises(ResponseError, self.cmd, 'bf.reserve', 'test', 0.01, 4294967296 * 4294967296)
     
     def test_rdb_reload(self):
         self.assertEqual(1, self.cmd('bf.add', 'test', 'foo'))
@@ -90,17 +95,22 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
     
     def test_dump_and_load(self):
         # Store a filter
-        self.cmd('bf.reserve', 'myBloom', '0.0001', '1000')
-
+        quantity = 1000
+        error_rate = 0.001
+        self.cmd('bf.reserve', 'myBloom', error_rate, quantity *1024 * 8)
         # test is probabilistic and might fail. It is OK to change variables if 
         # certain to not break anything
-        def do_verify():
-            for x in xrange(1000):
-                self.cmd('bf.add', 'myBloom', x)
+        def do_verify(add):
+            false_positives = 0.0
+            for x in xrange(quantity):
+                if add:
+                    self.cmd('bf.add', 'myBloom', x)
                 rv = self.cmd('bf.exists', 'myBloom', x)
                 self.assertTrue(rv)
                 rv = self.cmd('bf.exists', 'myBloom', 'nonexist_{}'.format(x))
-                self.assertFalse(rv, x)
+                if rv == 1:
+                    false_positives += 1
+            self.assertLessEqual(false_positives/quantity, error_rate)
 
         with self.assertResponseError():
             self.cmd('bf.scandump', 'myBloom') 
@@ -113,7 +123,7 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         with self.assertResponseError():
             self.cmd('bf.loadchunk', 'myBloom', 'str', 'data')            
 
-        do_verify()
+        do_verify(add=True)
         cmds = []
         cur = self.cmd('bf.scandump', 'myBloom', 0)
         first = cur[0]
@@ -126,6 +136,7 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
                 break
             else:
                 cmds.append(cur)
+                print("Scaning chunk... (P={}. Len={})".format(cur[0], len(cur[1])))
 
         prev_info = self.cmd('bf.debug', 'myBloom')
         # Remove the filter
@@ -133,11 +144,12 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
 
         # Now, load all the commands:
         for cmd in cmds:
+            print("Loading chunk... (P={}. Len={})".format(cmd[0], len(cmd[1])))
             self.cmd('bf.loadchunk', 'myBloom', *cmd)
 
         cur_info = self.cmd('bf.debug', 'myBloom')
         self.assertEqual(prev_info, cur_info)
-        do_verify()
+        do_verify(add=False)
 
         # Try a bigger one
         self.cmd('del', 'myBloom')
@@ -278,10 +290,28 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
             self.assertEqual(1, self.cmd('bf.add bf', i))
         with self.assertResponseError():
             self.cmd('bf.add bf extra')
+        with self.assertResponseError():
+            self.cmd('bf.reserve bf_mix 0.01 1000 nonscaling expansion 2')
 
         self.assertOk(self.cmd('bf.reserve bfnonscale 0.001 1000 nonscaling'))
         self.assertOk(self.cmd('bf.reserve bfscale 0.001 1000'))
         self.assertLess(self.cmd('bf.info bfnonscale')[3], self.cmd('bf.info bfscale')[3])
+
+    def test_nonscaling_err(self):
+        capacity = 3
+        self.assertEqual([1L,1L,1L],self.cmd('BF.INSERT nonscaling_err CAPACITY 3 NONSCALING ITEMS a b c'))
+        resp = self.cmd('BF.INSERT nonscaling_err ITEMS a b c d d')
+        self.assertEqual([0L, 0L, 0L,],resp[:3])
+        self.assertEqual('non scaling filter is full',str(resp[3]))
+
+
+    def test_issue178(self):
+        capacity = 300 * 1000 * 1000
+        error_rate = 0.000001
+        self.assertOk(self.cmd('bf.reserve bf', error_rate, capacity))
+        info = ConvertInfo(self.cmd('bf.info bf'))
+        self.assertEqual(info["Capacity"], 300000000)
+        self.assertEqual(info["Size"],    1132420284)
 
 if __name__ == "__main__":
     import unittest

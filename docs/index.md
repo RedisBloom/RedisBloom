@@ -1,13 +1,18 @@
 <img src="images/logo.svg" alt="logo" width="200"/>
 
-# RedisBloom - Probabilistic Datatypes Module for Redis
-[![Mailing List](https://img.shields.io/badge/Mailing%20List-RedisBloom-blue)](https://groups.google.com/forum/#!forum/redisbloom)
+# RedisBloom: Probabilistic Data Structures for Redis
+[![Forum](https://img.shields.io/badge/Forum-RedisBloom-blue)](https://forum.redislabs.com/c/modules/redisbloom)
 [![Gitter](https://badges.gitter.im/RedisLabs/RedisBloom.svg)](https://gitter.im/RedisLabs/RedisBloom?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-RedisBloom module provides four datatypes, a Scalable **Bloom Filter** and **Cuckoo Filter**, a **Count-Mins-Sketch** and a **Top-K**.
-**Bloom and Cuckoo filters** are used to determine (with a given degree of certainty) whether an item is present or absent from a collection. While **Count-Min Sketch** is used to approximate count of items in sub-linear space and **Top-K** maintains a list of K most frequent items.
+The RedisBloom module provides four data structures: a scalable **Bloom filter**,  a **cuckoo filter**, a **count-min sketch**, and a **top-k**. These data structures trade perfect accuracy for extreme memory efficiency, so they're especially useful for big data and streaming applications.
 
-## Quick Start Guide
+**Bloom and cuckoo filters** are used to determine, with a high degree of certainty, whether an element is a member of a set.
+
+A **count-min sketch** is generally used to determine the frequency of events in a stream. You can query the count-min sketch get an estimate of the frequency of any given event.
+
+A **top-k** maintains a list of _k_ most frequently seen items.
+
+## Quick start guide
 1. [Quick Start](Quick_Start.md)
 1. [Command references](#command-references)
 1. [Client libraries](#client-libraries)
@@ -23,34 +28,36 @@ Detailed command references for each data structure:
 * [Top-K](TopK_Commands.md)
 
 ## Bloom vs. Cuckoo
-Bloom Filters typically exhibit better performance and scalability when inserting
-items (so if you're often adding items to your dataset then Bloom may be ideal),
-whereas Cuckoo Filters are quicker on check operations and also allow deletions.
+Bloom filters typically exhibit better performance and scalability when inserting
+items (so if you're often adding items to your dataset, then a Bloom filter may be ideal).
+Cuckoo filters are quicker on check operations and also allow deletions.
 
 ## Client libraries
-Each driver comes with its own documentation in the Readme of the driver repo.
+See each driver's README for details and documentation.
 
 | Project | Language | License | Author | URL |
 | ------- | -------- | ------- | ------ | --- |
 | redisbloom-py | Python | BSD | [Redis Labs](https://redislabs.com) | [GitHub](https://github.com/RedisBloom/redisbloom-py) |
 | JReBloom | Java | BSD | [Redis Labs](https://redislabs.com) | [GitHub](https://github.com/RedisBloom/JReBloom) |
+| redisbloom-go | Golang | BSD | [Redis Labs](https://redislabs.com) | [GitHub](https://github.com/RedisBloom/redisbloom-go) |
 | rebloom | JavaScript | MIT | [Albert Team](https://cvitae.now.sh/) | [GitHub](https://github.com/albert-team/rebloom) |
 | phpredis-bloom | PHP | MIT | [Rafa Campoy](https://github.com/averias) | [GitHub](https://github.com/averias/phpredis-bloom) |
-
+| phpRebloom | PHP | MIT | [Alessandro Balasco](https://github.com/palicao) | [GitHub](https://github.com/palicao/phpRebloom) |
 
 
 ## References
 ### Webinars
-1. [Probabilistic Data Structures - The most useful thing in Redis you probably aren't use](https://youtu.be/dq-0xagF7v8?t=102)
+1. [Probabilistic Data Structures - The most useful thing in Redis you probably aren't using](https://youtu.be/dq-0xagF7v8?t=102)
 
-### Past blog posts
-1. [ReBloom Quick Start Tutorial](https://docs.redislabs.com/latest/rs/getting-started/creating-database/rebloom/)
-1. [Developing with Bloom Filters](https://docs.redislabs.com/latest/rs/developing/modules/bloom-filters/)
-1. [ReBloom – Bloom Filter Datatype for Redis + Benchmark](https://redislabs.com/blog/rebloom-bloom-filter-datatype-redis/)
-1. [Meet Top-K: an Awesome Probabilistic Addition to RedisBloom](https://redislabs.com/blog/meet-top-k-awesome-probabilistic-addition-redisbloom/)
+### Blog posts
+1. [RedisBloom Quick Start Tutorial](https://docs.redislabs.com/latest/modules/redisbloom/redisbloom-quickstart/)
+1. [Developing with Bloom Filters](https://docs.redislabs.com/latest/modules/redisbloom/)
+1. [RedisBloom on Redis Enterprise](https://redislabs.com/redis-enterprise/redis-bloom/)
+1. [Probably and No: Redis, RedisBloom, and Bloom Filters](https://redislabs.com/blog/redis-redisbloom-bloom-filters/)
+1. [RedisBloom – Bloom Filter Datatype for Redis](https://redislabs.com/blog/rebloom-bloom-filter-datatype-redis/)
 
 ## Mailing List / Forum
-Got questions? Feel free to ask at the [RedisBloom mailing list](https://groups.google.com/forum/#!forum/redisbloom).
+Got questions? Feel free to ask at the [RedisBloom forum](https://forum.redislabs.com/c/modules/redisbloom).
 
 ## License
-Redis Source Available License Agreement - see [LICENSE](https://raw.githubusercontent.com/RedisBloom/RedisBloom/master/LICENSE)
+RedisBloom is licensed under the [Redis Source Available License Agreement](LICENSE)

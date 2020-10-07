@@ -120,35 +120,35 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     double error_rate;
     if (RedisModule_StringToDouble(argv[2], &error_rate) != REDISMODULE_OK) {
         return RedisModule_ReplyWithError(ctx, "ERR bad error rate");
+    } else if (error_rate >= 1 || error_rate <= 0) {
+        return RedisModule_ReplyWithError(ctx, "ERR (0 < error rate range < 1) ");
     }
 
     long long capacity;
-    if (RedisModule_StringToLongLong(argv[3], &capacity) != REDISMODULE_OK ||
-        capacity >= UINT32_MAX) {
+    if (RedisModule_StringToLongLong(argv[3], &capacity) != REDISMODULE_OK) {
         return RedisModule_ReplyWithError(ctx, "ERR bad capacity");
-    }
-
-    long long expansion = BF_DEFAULT_EXPANSION;
-    int ex_loc = RMUtil_ArgIndex("EXPANSION", argv, argc);
-    if (ex_loc + 1 == argc) {
-        return RedisModule_ReplyWithError(ctx, "ERR no expansion");
-    }  
-    if (ex_loc != -1) {
-        if (RedisModule_StringToLongLong(argv[ex_loc + 1], &expansion) != REDISMODULE_OK) {
-            return RedisModule_ReplyWithError(ctx, "ERR bad expansion");
-        }
+    } else if (capacity <= 0) {
+        return RedisModule_ReplyWithError(ctx, "ERR (capacity should be larger than 0)");
     }
 
     unsigned nonScaling = 0;
-    ex_loc = RMUtil_ArgIndex("NONSCALING", argv, argc);    
+    int ex_loc = RMUtil_ArgIndex("NONSCALING", argv, argc);    
     if (ex_loc != -1) {
         nonScaling = BLOOM_OPT_NO_SCALING;
     }
 
-    if (error_rate == 0 || capacity == 0) {
-        return RedisModule_ReplyWithError(ctx, "ERR capacity and error must not be 0");
-    } else if (expansion < 1) {
-        return RedisModule_ReplyWithError(ctx, "ERR expansion must be great than 0");
+    long long expansion = BF_DEFAULT_EXPANSION;
+    ex_loc = RMUtil_ArgIndex("EXPANSION", argv, argc);
+    if (ex_loc + 1 == argc) {
+        return RedisModule_ReplyWithError(ctx, "ERR no expansion");
+    }  
+    if (ex_loc != -1) {
+        if (nonScaling == BLOOM_OPT_NO_SCALING) {
+            return RedisModule_ReplyWithError(ctx, "Nonscaling filters cannot expand");
+        }
+        if (RedisModule_StringToLongLong(argv[ex_loc + 1], &expansion) != REDISMODULE_OK) {
+            return RedisModule_ReplyWithError(ctx, "ERR bad expansion");
+        }
     }
 
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
@@ -218,7 +218,8 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
                           size_t nitems, const BFInsertOptions *options) {
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keystr, REDISMODULE_READ | REDISMODULE_WRITE);
     SBChain *sb;
-    int status = bfGetChain(key, &sb);
+    const int status = bfGetChain(key, &sb);
+    
     if (status == SB_EMPTY && options->autocreate) {
         sb = bfCreateChain(key, options->error_rate, options->capacity, options->expansion, options->nonScaling);
         if (sb == NULL) {
@@ -229,17 +230,25 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
     }
 
     if (options->is_multi) {
-        RedisModule_ReplyWithArray(ctx, nitems);
+        RedisModule_ReplyWithArray(ctx,  REDISMODULE_POSTPONED_ARRAY_LEN);
     }
 
-    for (size_t ii = 0; ii < nitems; ++ii) {
+    size_t array_len = 0;
+    int rv = 0;
+    for (size_t ii = 0; ii < nitems && rv != -2; ++ii) {
         size_t n;
         const char *s = RedisModule_StringPtrLen(items[ii], &n);
-        int rv = SBChain_Add(sb, s, n);
+        rv = SBChain_Add(sb, s, n);
         if (rv == -2) { // decide if to make into an error
-            return RedisModule_ReplyWithError(ctx, "Non scaling filter is full");
+            RedisModule_ReplyWithError(ctx, "ERR non scaling filter is full");
+        } else {
+            RedisModule_ReplyWithLongLong(ctx, !!rv);
         }
-        RedisModule_ReplyWithLongLong(ctx, !!rv);
+        array_len++;
+    }
+
+    if (options->is_multi) {
+        RedisModule_ReplySetArrayLength(ctx, array_len);
     }
     RedisModule_ReplicateVerbatim(ctx);
     return REDISMODULE_OK;
@@ -384,7 +393,7 @@ static int BFDebug_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     return REDISMODULE_OK;
 }
 
-#define MAX_SCANDUMP_SIZE 10485760 // 10MB
+#define MAX_SCANDUMP_SIZE 535822336 // 511MB
 
 /**
  * BF.SCANDUMP <KEY> <ITER>
@@ -951,7 +960,7 @@ static int CFDebug_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     }
 
     RedisModuleString *resp = RedisModule_CreateStringPrintf(
-        ctx, "bktsize:%lu buckets:%lu items:%lu deletes:%lu filters:%lu max_iterations:%lu expansion:%lu",
+        ctx, "bktsize:%u buckets:%lu items:%lu deletes:%lu filters:%u max_iterations:%u expansion:%u",
         cf->bucketSize, cf->numBuckets, cf->numItems, cf->numDeletes, 
         cf->numFilters, cf->maxIterations, cf->expansion);
     return RedisModule_ReplyWithString(ctx, resp);

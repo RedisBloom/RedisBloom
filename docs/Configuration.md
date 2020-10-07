@@ -9,19 +9,19 @@ In general, passing configuration options is done by appending arguments after t
 In redis.conf:
 
 ```
-loadmodule redisearch.so OPT1 OPT2
+loadmodule redisbloom.so OPT1 OPT2
 ```
 
 From redis-cli:
 
 ```
-127.0.0.6379> MODULE load redisearch.so OPT1 OPT2
+127.0.0.6379> MODULE load redisbloom.so OPT1 OPT2
 ```
 
 From command line:
 
 ```
-$ redis-server --loadmodule ./redisearch.so OPT1 OPT2
+$ redis-server --loadmodule ./redisbloom.so OPT1 OPT2
 ```
 
 ## Error rate and Initial Size

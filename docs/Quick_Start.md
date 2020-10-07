@@ -1,18 +1,31 @@
 
 # Quick Start Guide for RedisBloom
 
+## Redis Cloud
+
+RedisBloom is available on all Redis Cloud managed services.  Redis Cloud Essentials offers a completely free managed databbases up to 30MB.
+
+[Get started here](https://redislabs.com/try-free/)
+
 ## Launch RedisBloom with Docker
 ```
 docker run -p 6379:6379 --name redis-redisbloom redislabs/rebloom:latest
 ```
 
-## Building and running
+## Download
+
+A pre-compiled version can be downloaded from [RedisLabs download center](https://redislabs.com/download-center/modules/).
+
+## Building
 
 ```sh
 git clone https://github.com/RedisBloom/RedisBloom.git
 cd redisbloom
 make
+```
+## running
 
+```
 # Assuming you have a redis build from the unstable branch:
 /path/to/redis-server --loadmodule ./redisbloom.so
 ```
