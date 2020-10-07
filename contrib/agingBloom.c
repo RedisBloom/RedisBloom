@@ -107,9 +107,8 @@ static void APBF_shiftSlice(ageBloom_t *apbf) {
     blmSlice *slices = apbf->slices;
 
     char *data = slices[numSlices - 1].data;
-    for(int32_t i = numSlices - 1; i > 0; --i) { // done numFilter - 1 times
-        memcpy(&slices[i], &slices[i - 1], sizeof(blmSlice));
-    }
+
+    memmove(slices + 1, slices, sizeof(blmSlice) * (numSlices - 1));
 
     slices[0].hashIndex = (apbf->slices[1].hashIndex - 1 + numHash) % numHash;
     slices[0].data = data;
@@ -128,12 +127,10 @@ static void APBF_shiftTimeSlice(ageBloom_t *apbf, uint64_t size) {
 
     char *data = slices[numSlices - 1].data;
     memset(data, 0, slices[numSlices - 1].size / BYTE);
-    data = (char *) realloc(data, sizeof(uint64_t) * ceil64(size)); // realloc to new size
+    data = (char *)realloc(data, sizeof(uint64_t) * ceil64(size)); // realloc to new size
     assert(data);
 
-    for(int32_t i = numSlices - 1; i > 0; --i) { // done numFilter - 1 times
-        memcpy(&slices[i], &slices[i - 1], sizeof(blmSlice));
-    }
+    memmove(slices + 1, slices, sizeof(blmSlice) * (numSlices - 1));
 
     slices[0].count = 0;
     slices[0].timestamp = 0;
@@ -166,7 +163,7 @@ static void retireSlices(ageBloom_t *apbf) {
     // if at least one slice was retired, realloc slices' memory space.
     if (i < apbf->numSlices - 1) {
         apbf->numSlices = ++i;
-        slices = (blmSlice *) realloc(slices, sizeof(blmSlice) * i);
+        slices = (blmSlice *)realloc(slices, sizeof(blmSlice) * i);
         assert(slices);
         apbf->slices = slices;
     }
@@ -200,12 +197,10 @@ static void APBF_addTimeframe(ageBloom_t *apbf, uint64_t size) {
     blmSlice *slices = apbf->slices;
 
     // realloc slices' memory space
-    slices = (blmSlice *) realloc(slices, sizeof(blmSlice) * (++apbf->numSlices));
+    slices = (blmSlice *)realloc(slices, sizeof(blmSlice) * (++apbf->numSlices));
     assert(slices);
 
-    for(int32_t i = apbf->numSlices - 1; i > 0; --i) { // done numFilter - 1 times
-        memcpy(&slices[i], &slices[i - 1], sizeof(blmSlice));
-    }
+    memmove(slices + 1, slices, sizeof(blmSlice) * (apbf->numSlices - 1));
 
     uint32_t hashIndex = (slices[1].hashIndex - 1 + numHash) % numHash;
     slices[0] = createSlice(size, hashIndex, 0); // creates the new slice at location 0
@@ -398,10 +393,10 @@ void APBF_insert(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
     }
 #else
     for(uint32_t i = 0; i < apbf->numHash; ++i) {
-    uint64_t hash = MurmurHash64A_Bloom(item, itemlen, apbf->slices[i].hashIndex);
-    SetBitOn(apbf->slices[i].data, hash % apbf->slices[i].size);
-    ++apbf->slices[i].count;
-  }
+        uint64_t hash = MurmurHash64A_Bloom(item, itemlen, apbf->slices[i].hashIndex);
+        SetBitOn(apbf->slices[i].data, hash % apbf->slices[i].size);
+        ++apbf->slices[i].count;
+    }
 #endif
     ++apbf->inserts;
 }
@@ -426,8 +421,7 @@ void APBF_insertTime(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
         // Checking whether a new time frame is needed (if last slice isn't older than timestamp).
         if (slices[numSlices - 1].timestamp >= ts - apbf->assessFreq && slices[numSlices - 1].count) {
             APBF_addTimeframe(apbf, size);
-        }
-        else {
+        } else {
             APBF_shiftTimeSlice(apbf, size);
         }
 

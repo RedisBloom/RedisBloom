@@ -38,7 +38,7 @@ class APBFTest(ModuleTestCase('../redisbloom.so')):
     def test_info(self):
         self.cmd('flushall')
         self.assertOk(self.cmd('apbf.reserve apbf 2 1000'))
-        results = ['Size', 4787L, 'Capacity', 1000L, 'Error rate', 2L, 
+        results = ['Size', 4803L, 'Capacity', 1000L, 'Error rate', 2L, 
                    'Inserts count', 0L, 'Hash functions count', 11L,
                    'Periods count', 46L, 'Slices count', 57L]
         self.assertEqual(results, self.cmd('apbf.info apbf'))
