@@ -66,7 +66,7 @@ static int CuckooFilter_Grow(CuckooFilter *filter) {
     size_t growth = pow(filter->expansion, filter->numFilters);
     currentFilter->bucketSize = filter->bucketSize;
     currentFilter->numBuckets = filter->numBuckets * growth;
-    currentFilter->data = CUCKOO_CALLOC(currentFilter->numBuckets * filter->bucketSize,
+    currentFilter->data = CUCKOO_CALLOC((size_t)currentFilter->numBuckets * filter->bucketSize,
                                         sizeof(CuckooBucket));
     if (!currentFilter->data) {
         return -1;          // LCOV_EXCL_LINE memory failure
