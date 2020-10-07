@@ -63,6 +63,11 @@ build-test: $(MODULE_SO)
 perf:
 	$(MAKE) -C tests perf
 
+lint:
+	clang-format -style=file -Werror -n $(SRCDIR)/*
+
+format:
+	clang-format -style=file -i $(SRCDIR)/*
 
 package: $(MODULE_SO)
 	mkdir -p $(ROOT)/build

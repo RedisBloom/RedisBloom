@@ -14,6 +14,16 @@ commands:
             fi
 
 jobs:
+  lint:
+    docker:
+      - image: redislabsmodules/llvm-toolset:latest
+    steps:
+      - checkout
+      - run:
+          name: lint
+          command: |
+            make lint
+
   build:
     docker:
       - image: 'redisfab/rmbuilder:6.0.1-x64-bionic'
@@ -113,10 +123,13 @@ workflows:
   version: 2
   build_and_package:
     jobs:
+      - lint 
       - build:
           filters:
             tags:
               only: /.*/
+          requires:
+            - lint
       - package_branch:
           requires:
             - build
