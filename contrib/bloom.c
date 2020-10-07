@@ -135,7 +135,7 @@ int bloom_init(struct bloom *bloom, uint64_t entries, double error, unsigned opt
 
         bloom->n2 = entries;
         bits = 1LLU << bloom->n2;
-        entries = bloom->entries = bits / bloom->bpe;
+        bloom->entries = bits / bloom->bpe;
 
     } else if (options & BLOOM_OPT_NOROUND) {
         // Don't perform any rounding. Conserve memory instead
