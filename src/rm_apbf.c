@@ -8,10 +8,9 @@
 #include "contrib/agingBloom.h"
 #include "rm_apbf.h"
 
-#define INNER_ERROR(x)                      \
-    RedisModule_ReplyWithError(ctx, x);     \
+#define INNER_ERROR(x)                                                                             \
+    RedisModule_ReplyWithError(ctx, x);                                                            \
     return REDISMODULE_ERR;
-
 
 #define APBF_CALLOC(count, size) RedisModule_Calloc(count, size)
 #define APBF_FREE(ptr) RedisModule_Free(ptr)
@@ -21,7 +20,8 @@ RedisModuleType *APBFTimeType;
 
 size_t APBFMemUsage(const void *value);
 
-static int GetAPBFKey(RedisModuleCtx *ctx, RedisModuleString *keyName, ageBloom_t **apbf, int mode) {
+static int GetAPBFKey(RedisModuleCtx *ctx, RedisModuleString *keyName, ageBloom_t **apbf,
+                      int mode) {
     // All using this function should call RedisModule_AutoMemory to prevent memory leak
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, mode);
     if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
@@ -36,7 +36,8 @@ static int GetAPBFKey(RedisModuleCtx *ctx, RedisModuleString *keyName, ageBloom_
 static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
                            long long *error, long long *capacity) {
 
-    if ((RedisModule_StringToLongLong(argv[2], error) != REDISMODULE_OK) || *error < 1 || *error > 5) {
+    if ((RedisModule_StringToLongLong(argv[2], error) != REDISMODULE_OK) || *error < 1 ||
+        *error > 5) {
         INNER_ERROR("APBF: invalid error");
     }
     // A minimum capacity of 64 ensures that assert (capacity > l) will hold
@@ -174,18 +175,18 @@ void *APBFRdbLoad(RedisModuleIO *io, int encver) {
         return NULL;
     }
 
-    ageBloom_t *apbf    = APBF_CALLOC(1, sizeof(ageBloom_t));
-    apbf->numHash       = RedisModule_LoadUnsigned(io);
-    apbf->batches       = RedisModule_LoadUnsigned(io);
+    ageBloom_t *apbf = APBF_CALLOC(1, sizeof(ageBloom_t));
+    apbf->numHash = RedisModule_LoadUnsigned(io);
+    apbf->batches = RedisModule_LoadUnsigned(io);
     apbf->optimalSlices = RedisModule_LoadUnsigned(io);
-    apbf->errorRate     = RedisModule_LoadDouble(io);
-    apbf->capacity      = RedisModule_LoadUnsigned(io);
-    apbf->inserts       = RedisModule_LoadUnsigned(io);
-    apbf->numSlices     = RedisModule_LoadUnsigned(io);
-    apbf->assessFreq    = RedisModule_LoadUnsigned(io);
+    apbf->errorRate = RedisModule_LoadDouble(io);
+    apbf->capacity = RedisModule_LoadUnsigned(io);
+    apbf->inserts = RedisModule_LoadUnsigned(io);
+    apbf->numSlices = RedisModule_LoadUnsigned(io);
+    apbf->assessFreq = RedisModule_LoadUnsigned(io);
 
-    size_t length       = apbf->numSlices * sizeof(blmSlice);
-    apbf->slices        = (blmSlice *)RedisModule_LoadStringBuffer(io, &length);
+    size_t length = apbf->numSlices * sizeof(blmSlice);
+    apbf->slices = (blmSlice *)RedisModule_LoadStringBuffer(io, &length);
 
     for (int i = 0; i < apbf->numSlices; ++i) {
         apbf->slices[i].data = RedisModule_LoadStringBuffer(io, NULL);

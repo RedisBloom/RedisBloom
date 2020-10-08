@@ -9,4 +9,4 @@
 
 int APBFModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
 
-#endif //APBF_MODULE_H
+#endif // APBF_MODULE_H
