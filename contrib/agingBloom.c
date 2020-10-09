@@ -92,6 +92,10 @@ static void destroySlice(blmSlice *slice) {
     slice->data = NULL;
 }
 
+static uint64_t slice_capacity(blmSlice *slice) {
+    return log(2) * slice->size;
+}
+
 /*****************************************************************************/
 /*********                      Help functions                      **********/
 /*****************************************************************************/
@@ -143,6 +147,49 @@ static void APBF_shiftTimeSlice(ageBloom_t *apbf, uint64_t size) {
 /*****************************************************************************/
 /*********                          Oracle                          **********/
 /*****************************************************************************/
+
+// Calculates the new size for slice 0; to be invoked after a shift, before addding a new slice 0.
+// Does it calculating how many insertions can be done at most, given current slices from 1 to k-1
+// until (if ever) the new slice 0 becomes the new limit, and adds it to the product
+// of the new generation target times the remaining shifts.
+static uint64_t new_slice_size(ageBloom_t *apbf, uint64_t new_generation) {
+    blmSlice *slices = apbf->slices;
+    uint32_t i = apbf->numHash;
+    uint64_t count = 0;
+    while (i > 1) {
+        uint64_t min_generation = INT64_MAX;
+        uint32_t j_min = i;
+        for (uint32_t j = i - 1; j > 0; --j) {
+            uint64_t generation = (slice_capacity(&slices[j]) - slices[j].count - count) / (i - j);
+            if (generation <= min_generation) {  // <= keeps the smallest j in case of draw
+                min_generation = generation;
+                j_min = j;
+            }
+        }
+        if (new_generation <= min_generation) {
+            break;
+        }
+        count += min_generation * (i - j_min);
+        i = j_min;
+    }
+    return count + i * new_generation;
+}
+
+// Calculates how many updates are allowed until the next shift.
+// To be invoked after a shift, after adding new slice 0.
+static uint64_t next_generation_size(ageBloom_t *apbf) {
+    assert(apbf);
+    blmSlice *slices = apbf->slices;
+    uint32_t k = apbf->numHash;
+    uint64_t min_generation = INT64_MAX;
+    for (uint32_t j = k - 1; j > 0; --j) {
+        uint64_t generation = (slice_capacity(&slices[j]) - slices[j].count) / (k - j);
+        if (generation < min_generation) {  // <= keeps the smallest j in case of draw
+            min_generation = generation;
+        }
+    }
+    return  min_generation;
+}
 
 // Retires slices that have expired (older than timestamp).
 static void retireSlices(ageBloom_t *apbf) {
