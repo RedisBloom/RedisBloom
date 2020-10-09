@@ -172,7 +172,7 @@ static uint64_t new_slice_size(ageBloom_t *apbf, uint64_t new_generation) {
         count += min_generation * (i - j_min);
         i = j_min;
     }
-    return count + i * new_generation;
+    return (count + i * new_generation) / log(2);
 }
 
 // Calculates how many updates are allowed until the next shift.
