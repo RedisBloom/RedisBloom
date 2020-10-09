@@ -176,15 +176,14 @@ static uint64_t new_slice_size(ageBloom_t *apbf, uint64_t new_generation) {
 }
 
 // Calculates how many updates are allowed until the next shift.
-// To be invoked after a shift, after adding new slice 0.
+// To be invoked after a shift, after adding the new slice 0.
 static uint64_t next_generation_size(ageBloom_t *apbf) {
-    assert(apbf);
     blmSlice *slices = apbf->slices;
     uint32_t k = apbf->numHash;
     uint64_t min_generation = INT64_MAX;
-    for (uint32_t j = k - 1; j > 0; --j) {
-        uint64_t generation = (slice_capacity(&slices[j]) - slices[j].count) / (k - j);
-        if (generation < min_generation) {  // <= keeps the smallest j in case of draw
+    for (uint32_t i = 0; i < k; ++i) {
+        uint64_t generation = (slice_capacity(&slices[i]) - slices[i].count) / (k - i);
+        if (generation < min_generation) {
             min_generation = generation;
         }
     }
