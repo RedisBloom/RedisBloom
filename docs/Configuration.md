@@ -24,7 +24,7 @@ From command line:
 $ redis-server --loadmodule ./redisbloom.so OPT1 OPT2
 ```
 
-## Error rate and Initial Size
+## Error rate and Initial Size for Bloom Filter
 You can adjust the default error ratio and the initial filter size (for bloom filters)
 using the `ERROR_RATE` and `INITIAL_SIZE` options respectively when loading the
 module, e.g.
@@ -34,3 +34,5 @@ $ redis-server --loadmodule /path/to/redisbloom.so INITIAL_SIZE 400 ERROR_RATE 0
 ```
 
 The default error rate is `0.01` and the default initial capacity is `100`.
+
+For Cuckoo filter, the default capacity is 1000.
