@@ -25,7 +25,7 @@ static RedisModuleType *BFType;
 static RedisModuleType *CFType;
 static double BFDefaultErrorRate = 0.01;
 static size_t BFDefaultInitCapacity = 100;
-static size_t CFDefaultInitCapacity = 1000;
+static size_t CFDefaultInitCapacity = 1024;
 static size_t CFMaxExpansions = 32;
 static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2);
 
