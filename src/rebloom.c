@@ -898,7 +898,8 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     RedisModule_ReplyWithSimpleString(ctx, "Number of items inserted");
     RedisModule_ReplyWithLongLong(ctx, bf->size);
     RedisModule_ReplyWithSimpleString(ctx, "Expansion rate");
-    RedisModule_ReplyWithLongLong(ctx, bf->growth);
+    bf->options &BLOOM_OPT_NO_SCALING ? RedisModule_ReplyWithNull(ctx)
+                                      : RedisModule_ReplyWithLongLong(ctx, bf->growth);
 
     return REDISMODULE_OK;
 }
