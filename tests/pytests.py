@@ -303,7 +303,10 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         resp = self.cmd('BF.INSERT nonscaling_err ITEMS a b c d d')
         self.assertEqual([0L, 0L, 0L,],resp[:3])
         self.assertEqual('non scaling filter is full',str(resp[3]))
-
+        info_actual = self.cmd('BF.INFO nonscaling_err')
+        info_expected = ['Capacity', 3L, 'Size', 156L, 'Number of filters', 1L,
+         'Number of items inserted', 3L, 'Expansion rate', None]
+        self.assertEqual(info_actual, info_expected)
 
     def test_issue178(self):
         capacity = 300 * 1000 * 1000
