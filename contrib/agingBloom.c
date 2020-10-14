@@ -8,12 +8,12 @@
  * Link: https://arxiv.org/pdf/2001.03147.pdf
  */
 
-#include <math.h>       // log, ceil, floor
-#include <stdio.h>      // printf
-#include <assert.h>     // assert
-#include <stdlib.h>     // calloc
-#include <string.h>     // memset
-#include <unistd.h>     // write
+#include <math.h>   // log, ceil
+#include <stdio.h>  // printf
+#include <assert.h> // assert
+#include <stdlib.h> // calloc
+#include <string.h> // memset
+#include <unistd.h> // write
 
 #include "hash.h"
 #include "agingBloom.h"
@@ -49,8 +49,7 @@ static bool CheckSetBitOn(char *array, uint64_t loc) {
 static uint64_t CountBitOn(uint64_t barr) {
     //  Consider using LUT though can do 8 bit each call
     uint64_t result = 0;
-    while(barr)
-    {
+    while (barr) {
         barr &= (barr - 1);
         ++result;
     }
@@ -60,26 +59,18 @@ static uint64_t CountBitOn(uint64_t barr) {
 static double CalcBitPerItem(double error) {
     assert(error > 0 && error < 1);
 
-    return -log(error) / pow(log(2),2);
+    return -log(error) / pow(log(2), 2);
 }
 
-static uint64_t max(uint64_t a, uint64_t b) {
-    return a > b ? a : b;
-}
+static uint64_t max(uint64_t a, uint64_t b) { return a > b ? a : b; }
 
-static uint64_t ceil64(uint64_t n) {
-    return ceil(n / (double)_64BITS);
-}
+static uint64_t ceil64(uint64_t n) { return ceil(n / (double)_64BITS); }
 
 /*****************************************************************************/
 /*********                    blmSlice functions                    **********/
 /*****************************************************************************/
-static blmSlice createSlice(uint64_t size, uint32_t hashIndex,
-                            timestamp_t timestamp) {
-    blmSlice slice = {.size = size,
-            .count = 0,
-            .hashIndex = hashIndex,
-            .timestamp = timestamp };
+static blmSlice createSlice(uint64_t size, uint32_t hashIndex, timestamp_t timestamp) {
+    blmSlice slice = {.size = size, .count = 0, .hashIndex = hashIndex, .timestamp = timestamp};
     slice.data = (char *)calloc(ceil64(size), sizeof(uint64_t));
     return slice;
 }
@@ -277,9 +268,11 @@ static void updateTimestamp(ageBloom_t *apbf) {
 /*********                      APBF functions                      **********/
 /*****************************************************************************/
 
-ageBloom_t* APBF_createLowLevelAPI(uint32_t numHash, uint32_t timeframes, uint64_t sliceSize) {
+ageBloom_t *APBF_createLowLevelAPI(uint32_t numHash, uint32_t timeframes, uint64_t sliceSize) {
     ageBloom_t *apbf = (ageBloom_t *)calloc(1, sizeof(ageBloom_t));
-    if(apbf == NULL) { return NULL; }
+    if (apbf == NULL) {
+        return NULL;
+    }
 
     apbf->numHash = numHash;
     apbf->batches = timeframes;
@@ -291,13 +284,13 @@ ageBloom_t* APBF_createLowLevelAPI(uint32_t numHash, uint32_t timeframes, uint64
         return NULL;
     }
 
-    for(uint32_t i = 0; i < apbf->numSlices; ++i) {
+    for (uint32_t i = 0; i < apbf->numSlices; ++i) {
         apbf->slices[i].size = sliceSize;
         apbf->slices[i].hashIndex = i % numHash;
         apbf->slices[i].data = (char *)calloc(ceil64(sliceSize), sizeof(uint64_t));
 
         if (apbf->slices[i].data == NULL) {
-            while(i > 0) {
+            while (i > 0) {
                 free(apbf->slices[--i].data);
             }
             free(apbf->slices);
@@ -309,75 +302,167 @@ ageBloom_t* APBF_createLowLevelAPI(uint32_t numHash, uint32_t timeframes, uint64
     return apbf;
 }
 
-ageBloom_t* APBF_createHighLevelAPI(int error, uint64_t capacity, int8_t level) {
+ageBloom_t *APBF_createHighLevelAPI(int error, uint64_t capacity, int8_t level) {
     uint64_t k = 0;
     uint64_t l = 0;
 
     // `error` is is form of 10^(-error). ex. error = 1 -> 0.1, error = 3 -> 0.001
     // These values are precalculated and appear in the paper.
     // They optimize the number of slides for a given number of hash functions.
-    switch (error)
-    {
+    switch (error) {
+    case 1:
+        switch (level) {
+        case 0:
+            k = 4;
+            l = 3;
+            break;
         case 1:
-            switch (level) {
-                case 0: k = 4; l = 3; break;
-                case 1: k = 5; l = 7; break;
-                case 2: k = 6; l = 14; break;
-                case 3: k = 7; l = 28; break;
-                case 4: k = 8; l = 56; break;
-                default: break;
-            }
+            k = 5;
+            l = 7;
             break;
         case 2:
-            switch (level) {
-                case 0: k = 7; l = 5; break;
-                case 1: k = 8; l = 8; break;
-                case 2: k = 9; l = 14; break;
-                case 3: k = 10; l = 25; break;
-                case 4: k = 11; l = 46; break;
-                case 5: k = 12; l = 88; break;
-                default: break;
-            }
+            k = 6;
+            l = 14;
             break;
         case 3:
-            switch (level) {
-                case 0: k = 10; l = 7; break;
-                case 1: k = 11; l = 9; break;
-                case 2: k = 12; l = 14; break;
-                case 3: k = 13; l = 23; break;
-                case 4: k = 14; l = 40; break;
-                case 5: k = 15; l = 74; break;
-                default: break;
-            }
+            k = 7;
+            l = 28;
             break;
         case 4:
-            switch (level) {
-                case 0: k = 14; l = 11; break;
-                case 1: k = 15; l = 15; break;
-                case 2: k = 16; l = 22; break;
-                case 3: k = 17; l = 36; break;
-                case 4: k = 18; l = 63; break;
-                case 5: k = 19; l = 117; break;
-                default: break;
-            }
+            k = 8;
+            l = 56;
+            break;
+        default:
+            break;
+        }
+        break;
+    case 2:
+        switch (level) {
+        case 0:
+            k = 7;
+            l = 5;
+            break;
+        case 1:
+            k = 8;
+            l = 8;
+            break;
+        case 2:
+            k = 9;
+            l = 14;
+            break;
+        case 3:
+            k = 10;
+            l = 25;
+            break;
+        case 4:
+            k = 11;
+            l = 46;
             break;
         case 5:
-            switch (level) {
-                case 0: k = 17; l = 13; break;
-                case 1: k = 18; l = 16; break;
-                case 2: k = 19; l = 22; break;
-                case 3: k = 20; l = 33; break;
-                case 4: k = 21; l = 54; break;
-                case 5: k = 22; l = 95; break;
-                default: break;
-            }
-        default: break;
+            k = 12;
+            l = 88;
+            break;
+        default:
+            break;
+        }
+        break;
+    case 3:
+        switch (level) {
+        case 0:
+            k = 10;
+            l = 7;
+            break;
+        case 1:
+            k = 11;
+            l = 9;
+            break;
+        case 2:
+            k = 12;
+            l = 14;
+            break;
+        case 3:
+            k = 13;
+            l = 23;
+            break;
+        case 4:
+            k = 14;
+            l = 40;
+            break;
+        case 5:
+            k = 15;
+            l = 74;
+            break;
+        default:
+            break;
+        }
+        break;
+    case 4:
+        switch (level) {
+        case 0:
+            k = 14;
+            l = 11;
+            break;
+        case 1:
+            k = 15;
+            l = 15;
+            break;
+        case 2:
+            k = 16;
+            l = 22;
+            break;
+        case 3:
+            k = 17;
+            l = 36;
+            break;
+        case 4:
+            k = 18;
+            l = 63;
+            break;
+        case 5:
+            k = 19;
+            l = 117;
+            break;
+        default:
+            break;
+        }
+        break;
+    case 5:
+        switch (level) {
+        case 0:
+            k = 17;
+            l = 13;
+            break;
+        case 1:
+            k = 18;
+            l = 16;
+            break;
+        case 2:
+            k = 19;
+            l = 22;
+            break;
+        case 3:
+            k = 20;
+            l = 33;
+            break;
+        case 4:
+            k = 21;
+            l = 54;
+            break;
+        case 5:
+            k = 22;
+            l = 95;
+            break;
+        default:
+            break;
+        }
+    default:
+        break;
     }
 
     assert(capacity > l); // To avoid a mod 0 on the shift code
     double_t sliceSize = (double_t) (capacity * k) / (l * log(2));
 
-    ageBloom_t* bf = APBF_createLowLevelAPI(k, l, ceil(sliceSize));
+    ageBloom_t *bf = APBF_createLowLevelAPI(k, l, ceil(sliceSize));
     bf->capacity = capacity;
     bf->errorRate = error;
     return bf;
@@ -399,7 +484,7 @@ ageBloom_t *APBF_createTimeAPI(int error, uint64_t capacity, int8_t level, times
 void APBF_destroy(ageBloom_t *apbf) {
     assert(apbf);
 
-    for(uint32_t i = 0; i < apbf->numSlices; ++i) {
+    for (uint32_t i = 0; i < apbf->numSlices; ++i) {
         free(apbf->slices[i].data);
     }
 
@@ -416,13 +501,13 @@ void APBF_insert(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
 #ifdef TWOHASH
     TwoHash_t twoHash;
     getTwoHash(&twoHash, item, itemlen);
-    for(uint32_t i = 0; i < apbf->numHash; ++i) {
+    for (uint32_t i = 0; i < apbf->numHash; ++i) {
         uint64_t hash = getHash(twoHash, apbf->slices[i].hashIndex);
         SetBitOn(apbf->slices[i].data, hash % apbf->slices[i].size);
         ++apbf->slices[i].count;
     }
 #else
-    for(uint32_t i = 0; i < apbf->numHash; ++i) {
+    for (uint32_t i = 0; i < apbf->numHash; ++i) {
         uint64_t hash = MurmurHash64A_Bloom(item, itemlen, apbf->slices[i].hashIndex);
         SetBitOn(apbf->slices[i].data, hash % apbf->slices[i].size);
         ++apbf->slices[i].count;
@@ -473,7 +558,7 @@ void APBF_insertCount(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
 // Query algorithm is described in the paper.
 // It optimizes the process by checking only locations with a potential of `k`
 // continuos on bits which will yield a positive result.
-bool APBF_query(ageBloom_t *apbf, const char *item, uint32_t itemlen/*, uint *age */) {
+bool APBF_query(ageBloom_t *apbf, const char *item, uint32_t itemlen /*, uint *age */) {
     assert(apbf);
     assert(item);
 

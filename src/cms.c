@@ -6,10 +6,12 @@
 #include "cms.h"
 #include "contrib/murmurhash2.h"
 
-#define max(a,b) \
-    ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-       _a > _b ? _a : _b; })
+#define min(a, b)                                                                                  \
+    ({                                                                                             \
+        __typeof__(a) _a = (a);                                                                    \
+        __typeof__(b) _b = (b);                                                                    \
+        _a < _b ? _a : _b;                                                                         \
+    })
 
 #define BIT64 64
 #define CMS_HASH(item, itemlen, i) MurmurHash2(item, itemlen, i)
@@ -31,7 +33,7 @@ CMSketch *NewCMSketch(size_t width, size_t depth) {
 void CMS_DimFromProb(double error, double delta, size_t *width, size_t *depth) {
     assert(error > 0 && error < 1);
     assert(delta > 0 && delta < 1);
- 
+
     *width = ceil(2 / error);
     *depth = ceil(log10f(delta) / log10f(0.5));
 }
@@ -49,32 +51,28 @@ size_t CMS_IncrBy(CMSketch *cms, const char *item, size_t itemlen, size_t value)
     assert(cms);
     assert(item);
 
-    size_t maxCount = 0;
+    size_t minCount = (size_t)-1;
 
     for (size_t i = 0; i < cms->depth; ++i) {
         uint32_t hash = CMS_HASH(item, itemlen, i);
         cms->array[(hash % cms->width) + (i * cms->width)] += value;
-        maxCount = max(maxCount, cms->array[(hash % cms->width) + (i * cms->width)]);
+        minCount = min(minCount, cms->array[(hash % cms->width) + (i * cms->width)]);
     }
     cms->counter += value;
-    return maxCount;
+    return minCount;
 }
 
 size_t CMS_Query(CMSketch *cms, const char *item, size_t itemlen) {
     assert(cms);
     assert(item);
 
-    size_t temp = 0, res = (size_t)-1;
+    size_t minCount = (size_t)-1;
 
     for (size_t i = 0; i < cms->depth; ++i) {
         uint32_t hash = CMS_HASH(item, itemlen, i);
-        temp = cms->array[(hash % cms->width) + (i * cms->width)];
-        if (temp < res) {
-            res = temp;
-        }
+        minCount = min(minCount, cms->array[(hash % cms->width) + (i * cms->width)]);
     }
-
-    return res;
+    return minCount;
 }
 
 void CMS_Merge(CMSketch *dest, size_t quantity, const CMSketch **src, const long long *weights) {
@@ -107,7 +105,6 @@ void CMS_MergeParams(mergeParams params) {
     CMS_Merge(params.dest, params.numKeys, (const CMSketch **)params.cmsArray,
               (const long long *)params.weights);
 }
-
 
 /************ used for debugging *******************
 void CMS_Print(const CMSketch *cms) {

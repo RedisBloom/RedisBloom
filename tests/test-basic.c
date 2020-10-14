@@ -63,7 +63,8 @@ TEST_F(basic, sbExpansion) {
     ASSERT_GT(chain->nfilters, 1);
     SBChain_Free(chain);
 }
-
+/*
+// Disabled due to issue 178
 TEST_F(basic, testIssue6_Overflow) {
     SBChain *chain = SB_NewChain(1000000000000, 0.00001, 0, BF_DEFAULT_GROWTH);
     if (chain != NULL) {
@@ -74,7 +75,7 @@ TEST_F(basic, testIssue6_Overflow) {
 
     chain = SB_NewChain(4294967296, 0.00001, 0, BF_DEFAULT_GROWTH);
     ASSERT_EQ(NULL, chain);
-}
+} */
 
 TEST_F(basic, testIssue7_Overflow) {
     // Try with a bit count of 33:

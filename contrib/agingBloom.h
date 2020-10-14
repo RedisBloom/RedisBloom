@@ -82,7 +82,7 @@ struct ageBloom_s {
  */
 ageBloom_t* APBF_createLowLevelAPI(uint32_t numHash, uint32_t timeframes, uint64_t sliceSize);
 ageBloom_t* APBF_createHighLevelAPI(int error, uint64_t capacity, int8_t level);
-ageBloom_t* APBF_createTimeAPI(int error, __uint64_t capacity, __int8_t level, timestamp_t frequency);
+ageBloom_t* APBF_createTimeAPI(int error, __uint64_t capacity, __int8_t level, timestamp_t timeSpan);
 
 /*
  *  Free all resources allocated to `apbf`.
@@ -100,7 +100,7 @@ void APBF_insertCount(ageBloom_t *apbf, const char *item, uint32_t itemlen);
  *  Check if an item exists in the filter.
  *  `timeframes` will limit the frames to check. CHECK_ALL will check all available timeframes.
  */
-bool APBF_query(ageBloom_t *apbf, const char *item, uint32_t itemlen/*, uint32_t timeframes*/);
+bool APBF_query(ageBloom_t *apbf, const char *item, uint32_t itemlen /*, uint32_t timeframes*/);
 
 /*
  *  Print bit representation of the filter with basic metrics.
@@ -119,7 +119,6 @@ uint64_t APBF_size(ageBloom_t *apbf);
 uint64_t APBF_totalSize(ageBloom_t *apbf);
 uint64_t APBF_filterCap(ageBloom_t *apbf);
 
-
-#endif  //  __H_FLEX_BLOOM__
+#endif //  __H_FLEX_BLOOM__
 
 //  Checking first the center one since it is crucial.
