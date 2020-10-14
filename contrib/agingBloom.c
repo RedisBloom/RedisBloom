@@ -14,7 +14,6 @@
 #include <stdlib.h>     // calloc
 #include <string.h>     // memset
 #include <unistd.h>     // write
-#include <sys/time.h>   // gettimeofday
 
 #include "hash.h"
 #include "agingBloom.h"
@@ -22,8 +21,6 @@
 #define _64BITS 64
 #define BYTE 8
 
-struct timeval start, end;  // Used to record time between insertions.
-timestamp_t ts;             // Timestamp in seconds.
 
 /******************* Static functions ***************/
 static void SetBitOn(char *array, uint64_t loc) {
@@ -92,7 +89,7 @@ static void destroySlice(blmSlice *slice) {
     slice->data = NULL;
 }
 
-static uint64_t slice_capacity(blmSlice *slice) {
+static uint64_t sliceCapacity(blmSlice *slice) {
     return log(2) * slice->size;
 }
 
@@ -119,87 +116,44 @@ static void APBF_shiftSlice(ageBloom_t *apbf) {
     memset(data, 0, slices[0].size / BYTE);
 }
 
-// Used for time based APBF
-// Retires last slice, moves all slices down the slices array
-// and inserts a new slice at location 0 with specified size.
-static void APBF_shiftTimeSlice(ageBloom_t *apbf, uint64_t size) {
+// Used for time based APBF.
+// Retires last slice (if it's older than timestamp) and moves all slices down
+// the slices array. Doesn't insert a new slice at location 0.
+static void APBF_shiftTimeSlice(ageBloom_t *apbf) {
     assert (apbf);
 
-    uint32_t numHash = apbf->numHash;
     uint32_t numSlices = apbf->numSlices;
     blmSlice *slices = apbf->slices;
 
-    char *data = slices[numSlices - 1].data;
-    memset(data, 0, slices[numSlices - 1].size / BYTE);
-    data = (char *)realloc(data, sizeof(uint64_t) * ceil64(size)); // realloc to new size
-    assert(data);
+    // Checking whether a new time frame will be needed (if last slice isn't older than timestamp).
+    if ((slices[numSlices - 1].timestamp >= apbf->currTime - apbf->timeSpan) && slices[numSlices - 1].count) {
+        // realloc slices' memory space
+        numSlices = ++apbf->numSlices;
+        slices = (blmSlice *)realloc(slices, sizeof(blmSlice) * numSlices);
+        assert(slices);
+        apbf->slices = slices;
+    }
+    else {
+        destroySlice(&slices[numSlices - 1]);
+    }
 
     memmove(slices + 1, slices, sizeof(blmSlice) * (numSlices - 1));
-
-    slices[0].count = 0;
-    slices[0].timestamp = 0;
-    slices[0].hashIndex = (apbf->slices[1].hashIndex - 1 + numHash) % numHash;
-    slices[0].data = data;
-    slices[0].size = size;
 }
-
 
 /*****************************************************************************/
 /*********                          Oracle                          **********/
 /*****************************************************************************/
-
-// Calculates the new size for slice 0; to be invoked after a shift, before addding a new slice 0.
-// Does it calculating how many insertions can be done at most, given current slices from 1 to k-1
-// until (if ever) the new slice 0 becomes the new limit, and adds it to the product
-// of the new generation target times the remaining shifts.
-static uint64_t new_slice_size(ageBloom_t *apbf, uint64_t new_generation) {
-    blmSlice *slices = apbf->slices;
-    uint32_t i = apbf->numHash;
-    uint64_t count = 0;
-    while (i > 1) {
-        uint64_t min_generation = INT64_MAX;
-        uint32_t j_min = i;
-        for (uint32_t j = i - 1; j > 0; --j) {
-            uint64_t generation = (slice_capacity(&slices[j]) - slices[j].count - count) / (i - j);
-            if (generation <= min_generation) {  // <= keeps the smallest j in case of draw
-                min_generation = generation;
-                j_min = j;
-            }
-        }
-        if (new_generation <= min_generation) {
-            break;
-        }
-        count += min_generation * (i - j_min);
-        i = j_min;
-    }
-    return (count + i * new_generation) / log(2);
-}
-
-// Calculates how many updates are allowed until the next shift.
-// To be invoked after a shift, after adding the new slice 0.
-static uint64_t next_generation_size(ageBloom_t *apbf) {
-    blmSlice *slices = apbf->slices;
-    uint32_t k = apbf->numHash;
-    uint64_t min_generation = INT64_MAX;
-    for (uint32_t i = 0; i < k; ++i) {
-        uint64_t generation = (slice_capacity(&slices[i]) - slices[i].count) / (k - i);
-        if (generation < min_generation) {
-            min_generation = generation;
-        }
-    }
-    return  min_generation;
-}
 
 // Retires slices that have expired (older than timestamp).
 static void retireSlices(ageBloom_t *apbf) {
     assert (apbf);
 
     blmSlice *slices = apbf->slices;
-    int32_t i;
+    uint32_t i;
 
     // try retiring slices older than timestamp. Must leave optimal minimal number.
     for(i = apbf->numSlices - 1; i > apbf->optimalSlices - 1; --i) {
-        if (slices[i].timestamp < ts - apbf->assessFreq) {
+        if (slices[i].timestamp < apbf->currTime - apbf->timeSpan) {
             destroySlice(&slices[i]);
             continue;
         }
@@ -215,78 +169,108 @@ static void retireSlices(ageBloom_t *apbf) {
     }
 }
 
-// Calculates the new size of slice 0.
-static uint64_t predictSize(ageBloom_t *apbf) {
-    assert(apbf);
-
-    uint32_t numHash = apbf->numHash;
-    blmSlice *slices = apbf->slices;
-
-    double_t tbs = slices[numHash - 1].timestamp - slices[numHash].timestamp; // time since last shift
-    double_t targetTime = (double_t) apbf->assessFreq / apbf->batches; // target time between shifts
-
-    double_t efr = (double_t) 1 / (2 * numHash); // expected fill ratio of slice 0
-    double_t generation = (double_t) (apbf->updates * targetTime) / tbs; // target updates to make between shifts
-    double_t size = - ((ceil(generation) + 1) / log(1 - efr));
-
-    // Size must be larger than/equal to numHash * 2 for the slice to allow at least one insertion.
-    size = (size < numHash * 2) ? numHash * 2 : size;
-
-    return ceil(size);
-}
-
-// Adds an additional time frame with specified size.
+// Adds a new slice at location 0 with specified size.
 static void APBF_addTimeframe(ageBloom_t *apbf, uint64_t size) {
     assert (apbf);
 
     uint32_t numHash = apbf->numHash;
     blmSlice *slices = apbf->slices;
 
-    // realloc slices' memory space
-    slices = (blmSlice *)realloc(slices, sizeof(blmSlice) * (++apbf->numSlices));
-    assert(slices);
-
-    memmove(slices + 1, slices, sizeof(blmSlice) * (apbf->numSlices - 1));
-
     uint32_t hashIndex = (slices[1].hashIndex - 1 + numHash) % numHash;
-    slices[0] = createSlice(size, hashIndex, 0); // creates the new slice at location 0
-
-    apbf->slices = slices;
+    slices[0] = createSlice(size, hashIndex, 0);
 }
 
 // Calculates how many updates are allowed until the next shift.
-static void updateShiftTrigger(ageBloom_t *apbf) {
+// To be invoked after a shift, after adding the new slice 0.
+static void nextGenerationSize(ageBloom_t *apbf) {
+    assert(apbf);
+
+    blmSlice *slices = apbf->slices;
+    uint32_t numHash = apbf->numHash;
+    uint64_t minGeneration = INT64_MAX;
+
+    for (uint32_t i = 0; i < numHash; ++i) {
+        uint64_t generation = ceil( (double_t) (sliceCapacity(&slices[i]) - slices[i].count) / (numHash - i));
+
+        if (generation < minGeneration) {
+            minGeneration = generation;
+        }
+    }
+
+    apbf->counter = apbf->genSize = minGeneration;
+}
+
+// Calculates the target generation size, i.e., how many updates
+// we should aim to make between shifts.
+static uint64_t targetGenerationSize(ageBloom_t *apbf) {
     assert(apbf);
 
     uint32_t numHash = apbf->numHash;
     blmSlice *slices = apbf->slices;
-    uint32_t maxUpdates = 0, updates = UINT32_MAX, updatesIndex = 0;
 
-    for (int32_t i = 0; i < numHash; ++i) {
-        // Maximum updates the slice can store until it becomes full
-        uint32_t maxUpdatesSlice = floor(log(1 - ((i + 1.0) / (2 * numHash))) / log(1 - (1.0 / slices[i].size)));
-        // Updates the slice can still store
-        uint32_t updatesSlice = maxUpdatesSlice - slices[i].count;
+    uint64_t tbs = slices[numHash - 1].timestamp - slices[numHash].timestamp; // time since last shift
+    double_t targetTime = (double_t) apbf->timeSpan / apbf->batches; // target time between shifts
 
-        if (updatesSlice < updates) {
-            maxUpdates = maxUpdatesSlice;
-            updates = updatesSlice;
-            updatesIndex = i;
-        }
-    }
+    uint64_t generation = ceil((apbf->genSize * targetTime) / tbs);
 
-    apbf->maxUpdates = maxUpdates;
-    apbf->updates = updates;
-    apbf->updatesIndex = updatesIndex;
+    return generation + 1;
 }
 
-// Increments time.
-static void updateTimestamp() {
+// Calculates the new size for slice 0; to be invoked after a shift, before addding a new slice 0.
+// Does it calculating how many insertions can be done at most, given current slices from 1 to k-1
+// until (if ever) the new slice 0 becomes the new limit, and adds it to the product
+// of the new target generation times the remaining shifts.
+static uint64_t predictSize(ageBloom_t *apbf, uint64_t targetGeneration) {
+    assert(apbf);
+
+    blmSlice *slices = apbf->slices;
+    uint32_t numHash;
+    uint32_t i = numHash = apbf->numHash;
+    uint64_t count = 0;
+
+    while (i > 1) {
+        uint64_t minGeneration = INT64_MAX;
+        uint32_t j_min = i;
+
+        for (uint32_t j = i - 1; j > 0; --j) {
+            uint64_t generation = ceil((double_t) (sliceCapacity(&slices[j]) - slices[j].count - count) / (i - j));
+
+            if (generation <= minGeneration) {  // <= keeps the smallest j in case of draw
+                minGeneration = generation;
+                j_min = j;
+            }
+        }
+
+        if (targetGeneration <= minGeneration) {
+            break;
+        }
+
+        count += minGeneration * (i - j_min);
+        i = j_min;
+    }
+
+    uint64_t capacity = count + i * targetGeneration;
+    uint64_t size = ceil(capacity / log(2));
+
+    // Size must be larger than/equal to numHash * 2 for the slice to allow at least one insertion.
+    size = (size < numHash * 2) ? numHash * 2 : size;
+
+    return size;
+}
+
+// Increments time and records the timestamp of the last insertion.
+static void updateTimestamp(ageBloom_t *apbf) {
+    assert(apbf);
+
+    timeval start = apbf->lastTimestamp;
+    timeval end;
+
     gettimeofday(&end, NULL);
     uint32_t seconds = end.tv_sec - start.tv_sec;
     uint64_t micros = seconds * 1000000 + end.tv_usec - start.tv_usec;
-    ts += (double_t) micros / 1000000;
-    start = end;
+
+    apbf->currTime += micros;
+    apbf->lastTimestamp = end;
 }
 
 /*****************************************************************************/
@@ -391,7 +375,7 @@ ageBloom_t* APBF_createHighLevelAPI(int error, uint64_t capacity, int8_t level) 
     }
 
     assert(capacity > l); // To avoid a mod 0 on the shift code
-    uint64_t sliceSize = (capacity * k) / (l * log(2));
+    double_t sliceSize = (double_t) (capacity * k) / (l * log(2));
 
     ageBloom_t* bf = APBF_createLowLevelAPI(k, l, ceil(sliceSize));
     bf->capacity = capacity;
@@ -399,15 +383,15 @@ ageBloom_t* APBF_createHighLevelAPI(int error, uint64_t capacity, int8_t level) 
     return bf;
 }
 
-// Used for time based APBF
-ageBloom_t *APBF_createTimeAPI(int error, uint64_t capacity, int8_t level, timestamp_t frequency) {
+// Used for time based APBF.
+ageBloom_t *APBF_createTimeAPI(int error, uint64_t capacity, int8_t level, timestamp_t timeSpan) {
     ageBloom_t *apbf = APBF_createHighLevelAPI(error, capacity, level);
     assert(apbf);
-    ts = apbf->assessFreq = frequency;
-    apbf->slices[apbf->numHash].timestamp = ts;
-    updateShiftTrigger(apbf);
+    // convert timeSpan from seconds to microseconds
+    apbf->slices[apbf->numHash].timestamp = apbf->currTime = apbf->timeSpan = timeSpan * 1000000;
+    nextGenerationSize(apbf);
 #ifndef SLEEP
-    gettimeofday(&start, NULL);
+    gettimeofday(&apbf->lastTimestamp, NULL);
 #endif
     return apbf;
 }
@@ -447,41 +431,32 @@ void APBF_insert(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
     ++apbf->inserts;
 }
 
-// Used for time based APBF
+// Used for time based APBF.
 void APBF_insertTime(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
     assert(apbf);
     assert(item);
 
-#ifndef SLEEP
-    updateTimestamp();
-#endif
-
     // Checking whether it is time to shift a time frame.
-    if (apbf->slices[apbf->updatesIndex].count == apbf->maxUpdates) {
+    if (apbf->counter == 0) {
         retireSlices(apbf);
-        uint64_t size = predictSize(apbf);
-
-        uint32_t numSlices = apbf->numSlices;
-        blmSlice *slices = apbf->slices;
-
-        // Checking whether a new time frame is needed (if last slice isn't older than timestamp).
-        if (slices[numSlices - 1].timestamp >= ts - apbf->assessFreq && slices[numSlices - 1].count) {
-            APBF_addTimeframe(apbf, size);
-        } else {
-            APBF_shiftTimeSlice(apbf, size);
-        }
-
-        updateShiftTrigger(apbf);
+        uint64_t targetGenSize = targetGenerationSize(apbf);
+        APBF_shiftTimeSlice(apbf);
+        uint64_t size = predictSize(apbf, targetGenSize);
+        APBF_addTimeframe(apbf, size);
+        nextGenerationSize(apbf);
     }
     APBF_insert(apbf, item, itemlen);
+    --apbf->counter;
 
-#ifdef SLEEP
-    ts += SLEEP;
+#ifndef SLEEP
+    updateTimestamp(apbf);
+#else
+    apbf->currTime += SLEEP;
 #endif
 
-    // Checking whether next update will trigger a shift.
-    if (apbf->slices[apbf->updatesIndex].count == apbf->maxUpdates) {
-        apbf->slices[apbf->numHash - 1].timestamp = ts; // save timestamp of last insertion
+    // Checking whether next insertion will trigger a shift.
+    if (apbf->counter == 0) {
+        apbf->slices[apbf->numHash - 1].timestamp = apbf->currTime; // save timestamp of last insertion
     }
 }
 

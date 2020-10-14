@@ -28,17 +28,18 @@
 #include <time.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <math.h>
+#include <sys/time.h>
 
 #define CHECK_ALL 0
 
-//#define SLEEP 0.1     // Used only when static time is wanted between insertions
-                        // instead of real time. (defined in seconds)
+//#define SLEEP 100000     // Used only when static time is wanted between insertions
+                           // instead of real time. (defined in microseconds)
 
 #define TWOHASH
 
 typedef struct ageBloom_s ageBloom_t;
-typedef double_t timestamp_t;
+typedef uint64_t timestamp_t;
+typedef struct timeval timeval;
 typedef ageBloom_t ageBloom; // back support
 
 typedef struct {
@@ -58,14 +59,15 @@ struct ageBloom_s {
     // High level variables
     double errorRate;         // Required error rate
     uint64_t capacity;        // Capacity required by user
-    uint64_t inserts;         // Items already inserted
+    uint64_t inserts;         // Number of items already inserted
 
     // Time based variables
     uint32_t numSlices;       // Current number of slices
-    uint32_t assessFreq;      // Frequency of assessment
-    uint32_t maxUpdates;      // Maximum updates the slice can store until it becomes full
-    uint32_t updates;         // Updates the slice can still store until next shift (maxUpdates - count)
-    uint32_t updatesIndex;    // Slice index
+    uint64_t timeSpan;        // Time span required by user
+    uint64_t genSize;         // g - Generation size
+    uint64_t counter;         // Used to know when to shift. A shift is made when counter = 0.
+    timeval lastTimestamp;    // Timestamp of the last insertion
+    timestamp_t currTime;     // Current time in microseconds
 
     blmSlice *slices;
 };
