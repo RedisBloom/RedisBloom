@@ -3,14 +3,14 @@ all: test test-cuckoo test-perf
 PYTHON:=python
 
 test: test-basic test-cuckoo
-	./test-basic
-	./test-cuckoo
-	$(PYTHON) pytests.py
-	$(PYTHON) cuckoo.py
-	$(PYTHON) cms.py
-	$(PYTHON) topk.py
+	#./test-basic
+	#./test-cuckoo
+	#$(PYTHON) pytests.py
+	#$(PYTHON) cuckoo.py
+	#$(PYTHON) cms.py
+	#$(PYTHON) topk.py
 	$(PYTHON) apbf.py
-	$(PYTHON) init_test.py
+	#$(PYTHON) init_test.py
 
 perf: test-perf
 	time ./test-perf

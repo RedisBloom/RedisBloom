@@ -91,7 +91,7 @@ static uint64_t sliceCapacity(blmSlice *slice) {
 // Shifting slices is done by retiring the last slice, moving all slices down
 // the slices array and inserting a new slice at location 0.
 // hashIndex for the new slice is calculated slice at location 1.
-static void APBF_shiftSlice(ageBloom_t *apbf) {
+static void APBF_shiftSliceCount(ageBloom_t *apbf) {
     assert (apbf);
 
     uint32_t numHash = apbf->numHash;
@@ -516,6 +516,16 @@ void APBF_insert(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
     ++apbf->inserts;
 }
 
+void APBF_slideTime(ageBloom_t *apbf) {
+        retireSlices(apbf);
+        uint64_t targetGenSize = targetGenerationSize(apbf);
+        APBF_shiftTimeSlice(apbf);
+        uint64_t size = predictSize(apbf, targetGenSize);
+        APBF_addTimeframe(apbf, size);
+        nextGenerationSize(apbf);
+        updateTimestamp(apbf);
+}
+
 // Used for time based APBF.
 void APBF_insertTime(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
     assert(apbf);
@@ -523,12 +533,7 @@ void APBF_insertTime(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
 
     // Checking whether it is time to shift a time frame.
     if (apbf->counter == 0) {
-        retireSlices(apbf);
-        uint64_t targetGenSize = targetGenerationSize(apbf);
-        APBF_shiftTimeSlice(apbf);
-        uint64_t size = predictSize(apbf, targetGenSize);
-        APBF_addTimeframe(apbf, size);
-        nextGenerationSize(apbf);
+        APBF_slideTime(apbf);
     }
     APBF_insert(apbf, item, itemlen);
     --apbf->counter;
@@ -550,7 +555,7 @@ void APBF_insertCount(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
     // TODO: in future which slice size?
     // Checking whether it is time to shift a timeframe.
     if ((apbf->inserts + 1) % (uint64_t)(apbf->slices[0].size * log(2) / apbf->numHash) == 0) {
-        APBF_shiftSlice(apbf);
+        APBF_shiftSliceCount(apbf);
     }
     APBF_insert(apbf, item, itemlen);
 }

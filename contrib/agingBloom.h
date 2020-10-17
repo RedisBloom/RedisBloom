@@ -52,8 +52,8 @@ typedef struct {
 
 struct ageBloom_s {
     // Low level variables
-    uint32_t numHash;         // k_a - Number of Hash functions used
-    uint32_t batches;         // l   - Number of batches to store
+    uint16_t numHash;         // k_a - Number of Hash functions used
+    uint16_t batches;         // l   - Number of batches to store
     uint32_t optimalSlices;   // k+l - Optimal number of slices
 
     // High level variables
@@ -68,7 +68,7 @@ struct ageBloom_s {
     uint64_t counter;         // Used to know when to shift. A shift is made when counter = 0.
     timeval lastTimestamp;    // Timestamp of the last insertion
     timestamp_t currTime;     // Current time in microseconds
-
+    timestamp_t lastSlide;    // Time when last slide happened
     blmSlice *slices;
 };
 
@@ -118,6 +118,11 @@ uint32_t APBF_getHashNum(ageBloom_t *apbf);
 uint64_t APBF_size(ageBloom_t *apbf);
 uint64_t APBF_totalSize(ageBloom_t *apbf);
 uint64_t APBF_filterCap(ageBloom_t *apbf);
+
+/*
+ * Slides
+ */
+void APBF_slideTime(ageBloom_t *apbf);
 
 #endif //  __H_FLEX_BLOOM__
 
