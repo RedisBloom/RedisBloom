@@ -167,8 +167,8 @@ the cost of more verbosity.
     new filter, if this filter does not exist yet. If the filter already
     exists, then this parameter is ignored. If the filter does not exist yet
     and this parameter is *not* specified, then the filter is created with the
-    module-level default capacity. See `CF.RESERVE` for more information on
-    cuckoo filter capacities.
+    module-level default capacity which is 1024. See `CF.RESERVE` for more
+    information on cuckoo filter capacities.
 * **NOCREATE**: If specified, prevents automatic filter creation if the filter
     does not exist. Instead, an error is returned if the filter does not
     already exist. This option is mutually exclusive with `CAPACITY`.
