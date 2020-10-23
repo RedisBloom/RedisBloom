@@ -244,6 +244,26 @@ int CMSKetch_Info(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     return REDISMODULE_OK;
 }
 
+int CMSKetch_Delete(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+    if (argc != 2)
+        return RedisModule_WrongArity(ctx);
+
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_WRITE);
+
+    if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
+        INNER_ERROR("CMS: key does not exist");
+    } else if (RedisModule_ModuleTypeGetType(key) != CMSketchType) {
+        return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+    }
+
+    RedisModule_DeleteKey(key);
+    RedisModule_ReplicateVerbatim(ctx);
+    RedisModule_ReplyWithSimpleString(ctx, "OK");
+
+    return REDISMODULE_OK;
+}
+
 void CMSRdbSave(RedisModuleIO *io, void *obj) {
     CMSketch *cms = obj;
     RedisModule_SaveUnsigned(io, cms->width);
@@ -294,6 +314,7 @@ int CMSModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RMUtil_RegisterReadCmd(ctx, "cms.query", CMSketch_Query);
     RMUtil_RegisterWriteDenyOOMCmd(ctx, "cms.merge", CMSketch_Merge);
     RMUtil_RegisterReadCmd(ctx, "cms.info", CMSKetch_Info);
+    RMUtil_RegisterWriteCmd(ctx, "cms.delete", CMSKetch_Delete);
 
     return REDISMODULE_OK;
 }
