@@ -36,7 +36,7 @@ jobs:
           name: install dependencies
           command: |
             make setup
-            sudo apt install libmpfr-dev libsqlite3-dev ninja-build -y
+            apt install libmpfr-dev libsqlite3-dev ninja-build -y
       - run:
           name: run fbinfer
           command: |
