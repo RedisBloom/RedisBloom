@@ -1,0 +1,3 @@
+[submodule "opt/readies"]
+	path = opt/readies
+	url = https://github.com/RedisLabsModules/readies.git

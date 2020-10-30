@@ -57,7 +57,15 @@ In this case, `1` means that the `foo` is most likely in the set represented by 
 A value `0` means that `bar` is definitely not in the set. Bloom filters do not allow for false negatives.
 
 ## Building and Loading RedisBloom
-To use RedisBloom, first build its shared library by running `make`. If the build is successful, you'll have a shared library called `redisbloom.so`.
+
+To build RedisBloom, ensure you have the proper submodules, and afterwards run `make` in the project's directory.
+
+```
+git submodule update --init --recursive
+make
+```
+
+If the build is successful, you'll have a shared library called `redisbloom.so`.
 
 To load the library, pass its path to the `loadmodule` directive when starting `redis-server`:
 ```
