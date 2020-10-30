@@ -73,8 +73,9 @@ setup:
 
 static-analysis:
 	$(MAKE) clean
-	$(INFER) --fail-on-issue  --skip-analysis-in-path ".*rmutil.*" run -- $(MAKE)
-
+	$(INFER) --fail-on-issue --bufferoverrun --biabduction --skip-analysis-in-path ".*rmutil.*" run -- $(MAKE)
+	# in the future add --bufferoverrun 
+	
 format:
 	clang-format -style=file -i $(SRCDIR)/*
 

@@ -34,7 +34,9 @@ jobs:
           command: git submodule update --init --recursive
       - run:
           name: install dependencies
-          command: make setup
+          command: |
+            make setup
+            sudo apt install libmpfr-dev libsqlite3-dev ninja-build -y
       - run:
           name: run fbinfer
           command: |
