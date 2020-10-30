@@ -26,7 +26,7 @@ jobs:
 
   static-analysis-infer:
     docker:
-      - image: redislabsmodules/llvm-toolset:latest
+      - image: redisfab/rmbuilder:6.0.1-x64-bionic
     steps:
       - checkout
       - run:
