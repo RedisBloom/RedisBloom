@@ -26,17 +26,12 @@ jobs:
 
   static-analysis-infer:
     docker:
-      - image: redisfab/rmbuilder:6.0.1-x64-bionic
+      - image: redisbench/infer-linux64:1.0.0
     steps:
       - checkout
       - run:
           name: Submodule checkout
           command: git submodule update --init --recursive
-      - run:
-          name: install dependencies
-          command: |
-            make setup
-            apt install libmpfr-dev libsqlite3-dev ninja-build -y
       - run:
           name: run fbinfer
           command: |

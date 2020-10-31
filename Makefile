@@ -1,5 +1,8 @@
 CC?=gcc
 INFER?=./deps/infer
+INFER_DOCKER?=redisbench/infer-linux64:1.0.0
+# in the future add --bufferoverrun to infer args
+INFER_ARGS?= --fail-on-issue --biabduction --skip-analysis-in-path ".*rmutil.*"
 
 DEBUGFLAGS = -g -ggdb -O2
 ifeq ($(DEBUG), 1)
@@ -71,10 +74,13 @@ lint:
 setup:
 	./opt/build/get-fbinfer.sh
 
+static-analysis-docker:
+	$(MAKE) clean
+	docker run -v $(ROOT)/:/RedisBloom/ $(INFER_DOCKER) bash -c "cd RedisBloom && CC=clang infer $(INFER_ARGS) run -- make"
+
 static-analysis:
 	$(MAKE) clean
-	$(INFER) --fail-on-issue --bufferoverrun --biabduction --skip-analysis-in-path ".*rmutil.*" run -- $(MAKE)
-	# in the future add --bufferoverrun 
+	$(INFER) $(INFER_ARGS) run -- $(MAKE)
 	
 format:
 	clang-format -style=file -i $(SRCDIR)/*
