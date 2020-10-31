@@ -1,8 +1,6 @@
 CC?=gcc
 INFER?=./deps/infer
 INFER_DOCKER?=redisbench/infer-linux64:1.0.0
-# in the future add --bufferoverrun to infer args
-INFER_ARGS?=--fail-on-issue --biabduction --skip-analysis-in-path ".*rmutil.*"
 
 DEBUGFLAGS = -g -ggdb -O2
 ifeq ($(DEBUG), 1)
@@ -11,6 +9,8 @@ endif
 
 # find the OS
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
+username := $(shell sh -c 'id -u')
+usergroup := $(shell sh -c 'id -g')
 CPPFLAGS =  -Wall -Wno-unused-function $(DEBUGFLAGS) -fPIC -std=gnu99 -D_GNU_SOURCE
 # CC:=$(shell sh -c 'type $(CC) >/dev/null 2>/dev/null && echo $(CC) || echo gcc')
 
@@ -76,11 +76,11 @@ setup:
 
 static-analysis-docker:
 	$(MAKE) clean
-	docker run -v $(ROOT)/:/RedisBloom/ $(INFER_DOCKER) bash -c "cd RedisBloom && CC=clang infer run $(INFER_ARGS) -- make"
+	docker run -v $(ROOT)/:/RedisBloom/ --user "$(username):$(usergroup)" $(INFER_DOCKER) bash -c "cd RedisBloom && CC=clang infer run --fail-on-issue --biabduction --skip-analysis-in-path ".*rmutil.*"  -- make"
 
 static-analysis:
 	$(MAKE) clean
-	$(INFER) run $(INFER_ARGS) -- $(MAKE)
+	$(INFER) run --fail-on-issue --biabduction --skip-analysis-in-path ".*rmutil.*" -- $(MAKE)
 	
 format:
 	clang-format -style=file -i $(SRCDIR)/*
@@ -93,6 +93,7 @@ clean:
 	$(RM) $(MODULE_OBJ) $(MODULE_SO) $(DEPS)
 	$(RM) -f print_version
 	$(RM) -rf build
+	$(RM) -rf infer-out
 	$(RM) -rf tmp
 	find . -name '*.gcov' -delete
 	find . -name '*.gcda' -delete
