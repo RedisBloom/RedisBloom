@@ -35,7 +35,7 @@ jobs:
       - run:
           name: run fbinfer
           command: |
-            make static-analysis
+            CC=clang INFER=infer make static-analysis
 
   build:
     docker:
