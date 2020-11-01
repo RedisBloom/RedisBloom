@@ -188,7 +188,8 @@ const char *SBChain_GetEncodedChunk(const SBChain *sb, long long *curIter, size_
 char *SBChain_GetEncodedHeader(const SBChain *sb, size_t *hdrlen) {
     *hdrlen = sizeof(dumpedChainHeader) + (sizeof(dumpedChainLink) * sb->nfilters);
     dumpedChainHeader *hdr = malloc(*hdrlen);
-    if (!hdr) return NULL;
+    if (!hdr)
+        return NULL;
     hdr->size = sb->size;
     hdr->nfilters = sb->nfilters;
     hdr->options = sb->options;
