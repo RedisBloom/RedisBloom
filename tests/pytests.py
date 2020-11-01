@@ -196,7 +196,7 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
 
     def test_mem_usage(self):
         self.assertOk(self.cmd('bf.reserve', 'bf', '0.05', '1000'))
-        self.assertEqual(1084, self.cmd('MEMORY USAGE', 'bf'))
+        self.assertEqual(1088, self.cmd('MEMORY USAGE', 'bf'))
         self.assertEqual([1, 1, 1], self.cmd(
             'bf.madd', 'bf', 'foo', 'bar', 'baz'))
         self.assertEqual(1084, self.cmd('MEMORY USAGE', 'bf'))
