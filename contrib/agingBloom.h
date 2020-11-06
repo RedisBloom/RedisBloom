@@ -32,9 +32,6 @@
 
 #define CHECK_ALL 0
 
-//#define SLEEP 100000     // Used only when static time is wanted between insertions
-                           // instead of real time. (defined in microseconds)
-
 #define TWOHASH
 
 typedef struct ageBloom_s ageBloom_t;
@@ -66,9 +63,10 @@ struct ageBloom_s {
     uint64_t timeSpan;        // Time span required by user
     uint64_t genSize;         // g - Generation size
     uint64_t counter;         // Used to know when to shift. A shift is made when counter = 0.
-    timeval lastTimestamp;    // Timestamp of the last insertion
-    timestamp_t currTime;     // Current time in microseconds
+    timeval lastTimestamp;    // Timestamp of the last operation (insert/query)
+    timestamp_t currTime;     // Current time in milliseconds
     timestamp_t lastSlide;    // Time when last slide happened
+    
     blmSlice *slices;
 };
 
@@ -80,9 +78,9 @@ struct ageBloom_s {
  *  Number of `timeframes` is at minimum :    (hashFunctions * 2)
  *  `errorRate` can be used for maintainance when switching a timeframe.
  */
-ageBloom_t* APBF_createLowLevelAPI(uint32_t numHash, uint32_t timeframes, uint64_t sliceSize);
+ageBloom_t* APBF_createLowLevelAPI(uint16_t numHash, uint16_t timeframes, uint64_t sliceSize);
 ageBloom_t* APBF_createHighLevelAPI(int error, uint64_t capacity, int8_t level);
-ageBloom_t* APBF_createTimeAPI(int error, __uint64_t capacity, __int8_t level, timestamp_t timeSpan);
+ageBloom_t* APBF_createTimeAPI(int error, uint64_t capacity, int8_t level, timestamp_t timeSpan);
 
 /*
  *  Free all resources allocated to `apbf`.

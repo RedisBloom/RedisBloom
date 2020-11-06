@@ -94,7 +94,7 @@ static uint64_t sliceCapacity(blmSlice *slice) {
 static void APBF_shiftSliceCount(ageBloom_t *apbf) {
     assert (apbf);
 
-    uint32_t numHash = apbf->numHash;
+    uint16_t numHash = apbf->numHash;
     uint32_t numSlices = apbf->numSlices;
     blmSlice *slices = apbf->slices;
 
@@ -164,7 +164,7 @@ static void retireSlices(ageBloom_t *apbf) {
 static void APBF_addTimeframe(ageBloom_t *apbf, uint64_t size) {
     assert (apbf);
 
-    uint32_t numHash = apbf->numHash;
+    uint16_t numHash = apbf->numHash;
     blmSlice *slices = apbf->slices;
 
     uint32_t hashIndex = (slices[1].hashIndex - 1 + numHash) % numHash;
@@ -177,11 +177,11 @@ static void nextGenerationSize(ageBloom_t *apbf) {
     assert(apbf);
 
     blmSlice *slices = apbf->slices;
-    uint32_t numHash = apbf->numHash;
+    uint16_t numHash = apbf->numHash;
     uint64_t minGeneration = INT64_MAX;
 
-    for (uint32_t i = 0; i < numHash; ++i) {
-        uint64_t generation = ceil( (double_t) (sliceCapacity(&slices[i]) - slices[i].count) / (numHash - i));
+    for (uint16_t i = 0; i < numHash; ++i) {
+        uint64_t generation = ceil((double_t) (sliceCapacity(&slices[i]) - slices[i].count) / (numHash - i));
 
         if (generation < minGeneration) {
             minGeneration = generation;
@@ -196,7 +196,7 @@ static void nextGenerationSize(ageBloom_t *apbf) {
 static uint64_t targetGenerationSize(ageBloom_t *apbf) {
     assert(apbf);
 
-    uint32_t numHash = apbf->numHash;
+    uint16_t numHash = apbf->numHash;
     blmSlice *slices = apbf->slices;
 
     uint64_t tbs = slices[numHash - 1].timestamp - slices[numHash].timestamp; // time since last shift
@@ -215,8 +215,8 @@ static uint64_t predictSize(ageBloom_t *apbf, uint64_t targetGeneration) {
     assert(apbf);
 
     blmSlice *slices = apbf->slices;
-    uint32_t numHash;
-    uint32_t i = numHash = apbf->numHash;
+    uint16_t numHash;
+    uint16_t i = numHash = apbf->numHash;
     uint64_t count = 0;
 
     while (i > 1) {
@@ -259,8 +259,9 @@ static void updateTimestamp(ageBloom_t *apbf) {
     gettimeofday(&end, NULL);
     uint32_t seconds = end.tv_sec - start.tv_sec;
     uint64_t micros = seconds * 1000000 + end.tv_usec - start.tv_usec;
+    uint64_t millis = micros / 1000;
 
-    apbf->currTime += micros;
+    apbf->currTime += millis;
     apbf->lastTimestamp = end;
 }
 
@@ -268,7 +269,7 @@ static void updateTimestamp(ageBloom_t *apbf) {
 /*********                      APBF functions                      **********/
 /*****************************************************************************/
 
-ageBloom_t *APBF_createLowLevelAPI(uint32_t numHash, uint32_t timeframes, uint64_t sliceSize) {
+ageBloom_t *APBF_createLowLevelAPI(uint16_t numHash, uint16_t timeframes, uint64_t sliceSize) {
     ageBloom_t *apbf = (ageBloom_t *)calloc(1, sizeof(ageBloom_t));
     if (apbf == NULL) {
         return NULL;
@@ -462,22 +463,21 @@ ageBloom_t *APBF_createHighLevelAPI(int error, uint64_t capacity, int8_t level) 
     assert(capacity > l); // To avoid a mod 0 on the shift code
     double_t sliceSize = (double_t) (capacity * k) / (l * log(2));
 
-    ageBloom_t *bf = APBF_createLowLevelAPI(k, l, ceil(sliceSize));
-    bf->capacity = capacity;
-    bf->errorRate = error;
-    return bf;
+    ageBloom_t *apbf = APBF_createLowLevelAPI(k, l, ceil(sliceSize));
+    apbf->capacity = capacity;
+    apbf->errorRate = error;
+
+    return apbf;
 }
 
 // Used for time based APBF.
 ageBloom_t *APBF_createTimeAPI(int error, uint64_t capacity, int8_t level, timestamp_t timeSpan) {
     ageBloom_t *apbf = APBF_createHighLevelAPI(error, capacity, level);
     assert(apbf);
-    // convert timeSpan from seconds to microseconds
-    apbf->slices[apbf->numHash].timestamp = apbf->currTime = apbf->timeSpan = timeSpan * 1000000;
+    // convert timeSpan from seconds to milliseconds
+    apbf->slices[apbf->numHash].timestamp = apbf->currTime = apbf->timeSpan = timeSpan * 1000;
     nextGenerationSize(apbf);
-#ifndef SLEEP
     gettimeofday(&apbf->lastTimestamp, NULL);
-#endif
     return apbf;
 }
 
@@ -501,13 +501,13 @@ void APBF_insert(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
 #ifdef TWOHASH
     TwoHash_t twoHash;
     getTwoHash(&twoHash, item, itemlen);
-    for (uint32_t i = 0; i < apbf->numHash; ++i) {
+    for (uint16_t i = 0; i < apbf->numHash; ++i) {
         uint64_t hash = getHash(twoHash, apbf->slices[i].hashIndex);
         SetBitOn(apbf->slices[i].data, hash % apbf->slices[i].size);
         ++apbf->slices[i].count;
     }
 #else
-    for (uint32_t i = 0; i < apbf->numHash; ++i) {
+    for (uint16_t i = 0; i < apbf->numHash; ++i) {
         uint64_t hash = MurmurHash64A_Bloom(item, itemlen, apbf->slices[i].hashIndex);
         SetBitOn(apbf->slices[i].data, hash % apbf->slices[i].size);
         ++apbf->slices[i].count;
@@ -517,13 +517,13 @@ void APBF_insert(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
 }
 
 void APBF_slideTime(ageBloom_t *apbf) {
-        retireSlices(apbf);
-        uint64_t targetGenSize = targetGenerationSize(apbf);
-        APBF_shiftTimeSlice(apbf);
-        uint64_t size = predictSize(apbf, targetGenSize);
-        APBF_addTimeframe(apbf, size);
-        nextGenerationSize(apbf);
-        updateTimestamp(apbf);
+    updateTimestamp(apbf);
+    uint64_t targetGenSize = targetGenerationSize(apbf);
+    retireSlices(apbf);
+    APBF_shiftTimeSlice(apbf);
+    uint64_t size = predictSize(apbf, targetGenSize);
+    APBF_addTimeframe(apbf, size);
+    nextGenerationSize(apbf);
 }
 
 // Used for time based APBF.
@@ -538,14 +538,9 @@ void APBF_insertTime(ageBloom_t *apbf, const char *item, uint32_t itemlen) {
     APBF_insert(apbf, item, itemlen);
     --apbf->counter;
 
-#ifndef SLEEP
-    updateTimestamp(apbf);
-#else
-    apbf->currTime += SLEEP;
-#endif
-
     // Checking whether next insertion will trigger a shift.
     if (apbf->counter == 0) {
+        updateTimestamp(apbf);
         apbf->slices[apbf->numHash - 1].timestamp = apbf->currTime; // save timestamp of last insertion
     }
 }
@@ -574,13 +569,16 @@ bool APBF_query(ageBloom_t *apbf, const char *item, uint32_t itemlen /*, uint *a
     uint32_t done = 0;
     uint32_t carry = 0;
     int32_t cursor = apbf->numSlices - apbf->numHash;
+    blmSlice *slices = apbf->slices;
 #ifdef TWOHASH
     TwoHash_t twoHash;
     getTwoHash(&twoHash, item, itemlen);
 #endif
 
+    updateTimestamp(apbf);
+
     while (cursor >= 0) {
-        uint32_t hashIdx = apbf->slices[cursor].hashIndex;
+        uint32_t hashIdx = slices[cursor].hashIndex;
 
         // Calculated hash values are saved into `hashArray` for reuse
         if (hashArray[hashIdx] != 0) {
@@ -593,7 +591,13 @@ bool APBF_query(ageBloom_t *apbf, const char *item, uint32_t itemlen /*, uint *a
 #endif
         }
 
-        if (CheckBitOn(apbf->slices[cursor].data, hash % apbf->slices[cursor].size)) {
+        // Checking whether a slice has expired (older than timestamp). If so, it's not used for query testing.
+        bool doCheck = true;
+        if (slices[cursor].timestamp && (slices[cursor].timestamp < apbf->currTime - apbf->timeSpan)) {
+            doCheck = false;
+        }
+
+        if (doCheck && CheckBitOn(slices[cursor].data, hash % slices[cursor].size)) {
             done++;
             if (done + carry == apbf->numHash) {
                 return true;
