@@ -14,8 +14,8 @@ Note - all counts in this data structure are probabilistic and are likely to be 
 
 Initializes a TopK with specified parameters.
 
-```sql
-TOPK.RESERVE key topk [width depth decay]
+```
+TOPK.RESERVE {key} {topk} [{width} {depth} {decay}]
 ```
 
 ### Parameters
@@ -25,8 +25,8 @@ TOPK.RESERVE key topk [width depth decay]
 
 Optional parameters
 * **width**: Number of counters kept in each array. (Default 8)
-* **Depth**: Number of arrays. (Default 7)
-* **Decay**: The probability of reducing a counter in an occupied bucket. It is raised to power of it's counter (decay ^ bucket[i].counter). Therefore, as the counter gets higher, the chance of a reduction is being reduced. (Default 0.9)
+* **depth**: Number of arrays. (Default 7)
+* **decay**: The probability of reducing a counter in an occupied bucket. It is raised to power of it's counter (decay ^ bucket[i].counter). Therefore, as the counter gets higher, the chance of a reduction is being reduced. (Default 0.9)
 
 ### Complexity
 
@@ -38,7 +38,7 @@ OK on success, error otherwise
 
 #### Example
 
-```sql
+```
 TOPK.RESERVE test 50 2000 7 0.925
 ```
 
@@ -51,8 +51,8 @@ Multiple items can be added at once.
 If an item enters the Top-K list, the item which is expelled is returned.
 This allows dynamic heavy-hitter detection of items being entered or expelled from Top-K list. 
 
-```sql
-TOPK.ADD key item [item ...]
+```
+TOPK.ADD {key} {item ...}
 ```
 
 ### Parameters
@@ -70,7 +70,7 @@ O(k + depth)
 
 #### Example
 
-```sql
+```
 TOPK.ADD test foo bar 42
 1) (nil)
 2) baz
@@ -85,8 +85,8 @@ Increase the score of an item in the data structure by increment.
 Multiple items' score can be increased at once.
 If an item enters the Top-K list, the item which is expelled is returned.
 
-```sql
-TOPK.INCRBY key item increment [item increment ...]
+```
+TOPK.INCRBY {key} {item} {increment} [{item} {increment} ...]
 ```
 
 ### Parameters
@@ -105,7 +105,7 @@ O(k + (increment * depth))
 
 #### Example
 
-```sql
+```
 TOPK.INCRBY test foo 3 bar 2 42 30
 1) (nil)
 2) (nil)
@@ -119,8 +119,8 @@ TOPK.INCRBY test foo 3 bar 2 42 30
 Checks whether an item is one of Top-K items.
 Multiple items can be checked at once.
 
-```sql
-TOPK.QUERY key item [item ...]
+```
+TOPK.QUERY {key} {item ...}
 ```
 
 ### Parameters
@@ -138,7 +138,7 @@ For each item requested, return 1 if item is in Top-K, otherwise 0.
 
 #### Example
 
-```sql
+```
 TOPK.QUERY test 42 nonexist
 1) (integer) 1
 2) (integer) 0
@@ -151,8 +151,8 @@ TOPK.QUERY test 42 nonexist
 Returns count for an item. Please note this number will never be higher than the real count and likely to be lower.
 Multiple items can be added at once.
 
-```sql
-TOPK.COUNT key item [item ...]
+```
+TOPK.COUNT {key} {item ...}
 ```
 
 ### Parameters
@@ -170,7 +170,7 @@ For each item requested, count for item.
 
 #### Example
 
-```sql
+```
 TOPK.COUNT test foo 42 nonexist
 1) (integer) 3
 2) (integer) 1
@@ -183,8 +183,8 @@ TOPK.COUNT test foo 42 nonexist
 
 Return full list of items in Top K list.
 
-```sql
-TOPK.LIST key
+```
+TOPK.LIST {key}
 ```
 
 ### Parameters
@@ -201,7 +201,7 @@ k (or less) items in Top K list.
 
 #### Example
 
-```sql
+```
 TOPK.LIST test
 1) foo
 2) 42
@@ -214,8 +214,8 @@ TOPK.LIST test
 
 Returns number of required items (k), width, depth and decay values.
 
-```sql
-TOPK.INFO key
+```
+TOPK.INFO {key}
 ```
 
 ### Parameters
@@ -232,7 +232,7 @@ Information.
 
 #### Example
 
-```sql
+```
 TOPK.INFO test
 1) k
 2) (integer) 50
