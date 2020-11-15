@@ -24,11 +24,27 @@ jobs:
           command: |
             make lint
 
+  static-analysis-infer:
+    docker:
+      - image: redisbench/infer-linux64:1.0.0
+    steps:
+      - checkout
+      - run:
+          name: Submodule checkout
+          command: git submodule update --init --recursive
+      - run:
+          name: run fbinfer
+          command: |
+            CC=clang INFER=infer make static-analysis
+
   build:
     docker:
       - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
     steps:
       - checkout
+      - run:
+          name: Submodule checkout
+          command: git submodule update --init --recursive
       - run:
           name: Build
           command: make -j 8
@@ -124,6 +140,7 @@ workflows:
   build_and_package:
     jobs:
       - lint 
+      - static-analysis-infer
       - build:
           filters:
             tags:

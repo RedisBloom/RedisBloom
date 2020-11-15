@@ -187,9 +187,7 @@ const char *SBChain_GetEncodedChunk(const SBChain *sb, long long *curIter, size_
 
 char *SBChain_GetEncodedHeader(const SBChain *sb, size_t *hdrlen) {
     *hdrlen = sizeof(dumpedChainHeader) + (sizeof(dumpedChainLink) * sb->nfilters);
-    dumpedChainHeader *hdr = malloc(*hdrlen);
-    if (!hdr)
-        return NULL;
+    dumpedChainHeader *hdr = RedisModule_Calloc(1, *hdrlen);
     hdr->size = sb->size;
     hdr->nfilters = sb->nfilters;
     hdr->options = sb->options;
@@ -206,7 +204,7 @@ char *SBChain_GetEncodedHeader(const SBChain *sb, size_t *hdrlen) {
     return (char *)hdr;
 }
 
-void SB_FreeEncodedHeader(char *s) { free(s); }
+void SB_FreeEncodedHeader(char *s) { RedisModule_Free(s); }
 
 SBChain *SB_NewChainFromHeader(const char *buf, size_t bufLen, const char **errmsg) {
     const dumpedChainHeader *header = (const void *)buf;
