@@ -39,7 +39,7 @@ jobs:
 
   build:
     docker:
-      - image: 'redisfab/rmbuilder:6.0.1-x64-bionic'
+      - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
     steps:
       - checkout
       - run:
@@ -72,7 +72,7 @@ jobs:
 
   package_branch:
     docker:
-      - image: 'redisfab/rmbuilder:6.0.1-x64-bionic'
+      - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
     steps:
       - attach_workspace:
           at: /workspace
@@ -90,7 +90,7 @@ jobs:
           path: /workspace/build
   package_release:
     docker:
-      - image: 'redisfab/rmbuilder:6.0.1-x64-bionic'
+      - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
     steps:
       - attach_workspace:
           at: /workspace
@@ -114,7 +114,7 @@ jobs:
           path: /workspace/build
   deploy_branch:
     docker:
-      - image: 'redisfab/rmbuilder:6.0.1-x64-bionic'
+      - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
     steps:
       - attach_workspace:
           at: /workspace
@@ -125,7 +125,7 @@ jobs:
             public-read --recursive --exclude "*" --include "*.zip"
   deploy_release:
     docker:
-      - image: 'redisfab/rmbuilder:6.0.1-x64-bionic'
+      - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
     steps:
       - attach_workspace:
           at: /workspace
