@@ -53,8 +53,8 @@ RMUtilInfo *RMUtil_GetRedisInfo(RedisModuleCtx *ctx) {
   }
 
   int cap = 100;  // rough estimate of info lines
-  RMUtilInfo *info = malloc(sizeof(RMUtilInfo));
-  info->entries = calloc(cap, sizeof(RMUtilInfoEntry));
+  RMUtilInfo *info = RedisModule_Calloc(1, sizeof(RMUtilInfo));
+  info->entries = RedisModule_Calloc(cap, sizeof(RMUtilInfoEntry));
 
   int i = 0;
   size_t sz;
@@ -70,12 +70,12 @@ RMUtilInfo *RMUtil_GetRedisInfo(RedisModuleCtx *ctx) {
     }
 
     char *key = strsep(&line, ":");
-    info->entries[i].key = strdup(key);
-    info->entries[i].val = strdup(line);
+    info->entries[i].key = RedisModule_Strdup(key);
+    info->entries[i].val = RedisModule_Strdup(line);
     i++;
     if (i >= cap) {
       cap *= 2;
-      info->entries = realloc(info->entries, cap * sizeof(RMUtilInfoEntry));
+      info->entries = RedisModule_Realloc(info->entries, cap * sizeof(RMUtilInfoEntry));
     }
   }
   info->numEntries = i;
@@ -84,11 +84,11 @@ RMUtilInfo *RMUtil_GetRedisInfo(RedisModuleCtx *ctx) {
 }
 void RMUtilRedisInfo_Free(RMUtilInfo *info) {
   for (int i = 0; i < info->numEntries; i++) {
-    free(info->entries[i].key);
-    free(info->entries[i].val);
+    RedisModule_Free(info->entries[i].key);
+    RedisModule_Free(info->entries[i].val);
   }
-  free(info->entries);
-  free(info);
+  RedisModule_Free(info->entries);
+  RedisModule_Free(info);
 }
 
 int RMUtilInfo_GetInt(RMUtilInfo *info, const char *key, long long *val) {
