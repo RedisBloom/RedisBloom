@@ -161,8 +161,8 @@ int bloom_init(struct bloom *bloom, uint64_t entries, double error, unsigned opt
         bloom->entries += itemDiff;
     }
 
-    if (bits % 8) {
-        bloom->bytes = (bits / 8) + 1;
+    if (bits % 64) {
+        bloom->bytes = ((bits / 64) + 1) * 8;
     } else {
         bloom->bytes = bits / 8;
     }
