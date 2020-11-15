@@ -9,7 +9,7 @@ Based on [Space/Time Trade-offs in Hash Coding with Allowable Errors](
 ### Format:
 
 ```
-BF.RESERVE {key} {error_rate} {capacity} [EXPANSION expansion] [NONSCALING]
+BF.RESERVE {key} {error_rate} {capacity} [EXPANSION {expansion}] [NONSCALING]
 ```
 
 ### Description:
@@ -26,8 +26,8 @@ sub-filters requires additional memory (each sub-filter uses an extra bits and
 hash function) and consume  further CPU time than an equivalent filter that had
 the right capacity at creation time.
 
-The number of hash functions is -log(error)/ln(2)^2.
-The number of bits per item is -log(error)/ln(2) ≈ 1.44.
+The number of hash functions is `-log(error)/ln(2)^2`.
+The number of bits per item is `-log(error)/ln(2)` ≈ 1.44.
 
 * **1%**    error rate requires 7  hash functions and 10.08 bits per item.
 * **0.1%**  error rate requires 10 hash functions and 14.4  bits per item.
@@ -52,7 +52,7 @@ Optional parameters:
     initial capacity is reached. Non-scaling filters requires slightly less
     memory than their scaling counterparts. The filter returns an error
     when `capacity` is reached.
-* **expansion**: When `capacity` is reached, an additional sub-filter is
+* **EXPANSION**: When `capacity` is reached, an additional sub-filter is
     created. The size of the new sub-filter is the size of the last sub-filter
     multiplied by `expansion`. If the number of elements to be stored in the
     filter is unknown, we recommend that you use an `expansion` of 2 or more
@@ -98,7 +98,7 @@ O(k), where k is the number of `hash` functions used by the last sub-filter.
 ### Format
 
 ```
-BF.MADD {key} {item} [item...]
+BF.MADD {key} {item ...}
 ```
 
 ### Description
@@ -110,7 +110,7 @@ multiple values.
 ### Parameters
 
 * **key**: The name of the filter
-* **items**: One or more items to add
+* **item**: One or more items to add
 
 ### Complexity
 
@@ -127,7 +127,7 @@ have previously existed.
 
 ```
 BF.INSERT {key} [CAPACITY {cap}] [ERROR {error}] [EXPANSION {expansion}] [NOCREATE]
-[NONSCALING] ITEMS {item...}
+[NONSCALING] ITEMS {item ...}
 ```
 
 ### Description
@@ -139,8 +139,7 @@ Next, all `ITEMS` are inserted.
 ### Parameters
 
 * **key**: The name of the filter
-* **ITEMS**: Indicates the beginning of the items to be added to the filter. This
-    parameter must be specified.
+* **item**: One or more items to add. The `ITEMS` keyword must precede the list of items to add.
 
 Optional parameters:
 
@@ -238,7 +237,7 @@ reply the complexity is `O((2 * 1/2 * n) + k)`.
 ### Format
 
 ```
-BF.MEXISTS {key} {item} [item...]
+BF.MEXISTS {key} {item ...}
 ```
 
 ### Description
