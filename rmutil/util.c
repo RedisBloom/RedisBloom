@@ -54,6 +54,7 @@ RMUtilInfo *RMUtil_GetRedisInfo(RedisModuleCtx *ctx) {
 
   int cap = 100;  // rough estimate of info lines
   RMUtilInfo *info = malloc(sizeof(RMUtilInfo));
+  if (!info) return NULL;
   info->entries = calloc(cap, sizeof(RMUtilInfoEntry));
 
   int i = 0;

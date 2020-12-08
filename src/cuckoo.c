@@ -181,8 +181,8 @@ uint64_t CuckooFilter_Count(const CuckooFilter *filter, CuckooHash hash) {
 int CuckooFilter_Delete(CuckooFilter *filter, CuckooHash hash) {
     LookupParams params;
     getLookupParams(hash, &params);
-    for (uint16_t ii = 0; ii < filter->numFilters; ++ii) {
-        if (Filter_Delete(&filter->filters[ii], &params)) {
+    for (uint16_t ii = filter->numFilters; ii > 0; --ii) {
+        if (Filter_Delete(&filter->filters[ii - 1], &params)) {
             filter->numItems--;
             filter->numDeletes++;
             if (filter->numFilters > 1 && filter->numDeletes > (double)filter->numItems * 0.10) {
@@ -340,13 +340,15 @@ static int relocateSlot(CuckooFilter *cf, CuckooBucket bucket, uint16_t filterIx
  * Attempt to strip a single filter moving it down a slot
  */
 static uint64_t CuckooFilter_CompactSingle(CuckooFilter *cf, uint16_t filterIx) {
-    MyCuckooBucket *filter = cf->filters[filterIx].data;
+    SubCF *currentFilter = &cf->filters[filterIx];
+    MyCuckooBucket *filter = currentFilter->data;
     int dirty = 0;
     uint64_t numRelocs = 0;
 
-    for (uint64_t bucketIx = 0; bucketIx < cf->numBuckets; ++bucketIx) {
-        for (uint16_t slotIx = 0; slotIx < cf->bucketSize; ++slotIx) {
-            int status = relocateSlot(cf, &filter[bucketIx * cf->bucketSize], filterIx, bucketIx, slotIx);
+    for (uint64_t bucketIx = 0; bucketIx < currentFilter->numBuckets; ++bucketIx) {
+        for (uint16_t slotIx = 0; slotIx < currentFilter->bucketSize; ++slotIx) {
+            int status = relocateSlot(cf, &filter[bucketIx * currentFilter->bucketSize], filterIx,
+                                      bucketIx, slotIx);
             if (status == RELOC_FAIL) {
                 dirty = 1;
             } else if (status == RELOC_OK) {
