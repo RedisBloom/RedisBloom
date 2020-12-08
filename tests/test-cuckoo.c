@@ -177,6 +177,17 @@ TEST_F(cuckoo, testBulkDel) {
     CuckooFilter_Free(&ck);
 }
 
+TEST_F(cuckoo, testBulkDelwithExpansion) {
+    CuckooFilter ck;
+    CuckooFilter_Init(&ck, NUM_BULK / 8, DEFAULT_BUCKETSIZE, 500, 2);
+    doFill(&ck);
+    for (size_t ii = 0; ii < NUM_BULK; ++ii) {
+        ASSERT_EQ(1, CuckooFilter_Delete(&ck, CUCKOO_GEN_HASH(&ii, sizeof ii)));
+    }
+    ASSERT_EQ(0, ck.numItems);
+    CuckooFilter_Free(&ck);
+}
+
 TEST_F(cuckoo, testBucketSize) {
     CuckooFilter ck;
     CuckooFilter_Init(&ck, NUM_BULK / 10, 1, 50, 1);
