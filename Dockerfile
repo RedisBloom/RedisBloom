@@ -1,4 +1,4 @@
-FROM redis:latest as builder
+FROM redisfab/redis:6.0-latest-x64-bionic as builder
 
 # Build the source
 ADD . /
@@ -9,7 +9,7 @@ RUN set -ex;\
     make test;
 
 # Package the runner
-FROM redis:latest
+FROM redisfab/redis:6.0-latest-x64-bionic
 ENV LIBDIR /usr/lib/redis/modules
 WORKDIR /data
 RUN set -ex;\
