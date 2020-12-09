@@ -1059,7 +1059,7 @@ static void BFAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value
     SBChain *sb = value;
     size_t len;
     char *hdr = SBChain_GetEncodedHeader(sb, &len);
-    RedisModule_EmitAOF(aof, "BF.LOADCHUNK", "slb", key, 0, hdr, len);
+    RedisModule_EmitAOF(aof, "BF.LOADCHUNK", "slb", key, 1, hdr, len);
     SB_FreeEncodedHeader(hdr);
 
     long long iter = SB_CHUNKITER_INIT;
