@@ -1,4 +1,4 @@
-FROM redisfab/redis:6.0-latest-x64-bionic as builder
+FROM redisfab/rmbuilder:6.0.9-x64-bionic as builder
 
 # Build the source
 ADD . /
