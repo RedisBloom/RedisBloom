@@ -1,4 +1,4 @@
-FROM redislabsmodules/rmbuilder:latest as builder
+FROM redisfab/rmbuilder:6.0.9-x64-bionic as builder
 
 # Build the source
 ADD . /
