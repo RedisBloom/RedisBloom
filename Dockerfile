@@ -1,4 +1,4 @@
-FROM redislabsmodules/rmbuilder:latest as builder
+FROM redis:latest as builder
 
 # Build the source
 ADD . /
