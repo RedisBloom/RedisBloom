@@ -10,7 +10,7 @@
 
 #define CUCKOO_BKTSIZE 2
 #define CUCKOO_NULLFP 0
-//extern int globalCuckooHash64Bit;
+// extern int globalCuckooHash64Bit;
 
 typedef uint8_t CuckooFingerprint;
 typedef uint64_t CuckooHash;
@@ -23,7 +23,6 @@ typedef struct {
     MyCuckooBucket *data;
 } SubCF;
 
-
 typedef struct {
     uint64_t numBuckets;
     uint64_t numItems;
@@ -35,7 +34,7 @@ typedef struct {
     SubCF *filters;
 } CuckooFilter;
 
-#define CUCKOO_GEN_HASH(s, n)  MurmurHash64A_Bloom(s, n, 0)
+#define CUCKOO_GEN_HASH(s, n) MurmurHash64A_Bloom(s, n, 0)
 
 /*
 #define CUCKOO_GEN_HASH(s, n)                       \
@@ -56,8 +55,7 @@ typedef enum {
     CuckooInsert_MemAllocFailed = -2
 } CuckooInsertStatus;
 
-int CuckooFilter_Init(CuckooFilter *filter,
-                      uint64_t capacity, uint16_t bucketSize, 
+int CuckooFilter_Init(CuckooFilter *filter, uint64_t capacity, uint16_t bucketSize,
                       uint16_t maxIterations, uint16_t expansion);
 void CuckooFilter_Free(CuckooFilter *filter);
 CuckooInsertStatus CuckooFilter_InsertUnique(CuckooFilter *filter, CuckooHash hash);

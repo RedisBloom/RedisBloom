@@ -6,10 +6,12 @@
 #include "cms.h"
 #include "contrib/murmurhash2.h"
 
-#define min(a,b) \
-    ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-       _a < _b ? _a : _b; })
+#define min(a, b)                                                                                  \
+    ({                                                                                             \
+        __typeof__(a) _a = (a);                                                                    \
+        __typeof__(b) _b = (b);                                                                    \
+        _a < _b ? _a : _b;                                                                         \
+    })
 
 #define BIT64 64
 #define CMS_HASH(item, itemlen, i) MurmurHash2(item, itemlen, i)
@@ -31,7 +33,7 @@ CMSketch *NewCMSketch(size_t width, size_t depth) {
 void CMS_DimFromProb(double error, double delta, size_t *width, size_t *depth) {
     assert(error > 0 && error < 1);
     assert(delta > 0 && delta < 1);
- 
+
     *width = ceil(2 / error);
     *depth = ceil(log10f(delta) / log10f(0.5));
 }
@@ -103,7 +105,6 @@ void CMS_MergeParams(mergeParams params) {
     CMS_Merge(params.dest, params.numKeys, (const CMSketch **)params.cmsArray,
               (const long long *)params.weights);
 }
-
 
 /************ used for debugging *******************
 void CMS_Print(const CMSketch *cms) {

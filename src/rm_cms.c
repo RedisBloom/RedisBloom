@@ -50,8 +50,8 @@ static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
             overEst >= 1) {
             INNER_ERROR("CMS: invalid overestimation value");
         }
-        if ((RedisModule_StringToDouble(argv[3], &prob) != REDISMODULE_OK) ||
-            prob <= 0 || prob >= 1) {
+        if ((RedisModule_StringToDouble(argv[3], &prob) != REDISMODULE_OK) || prob <= 0 ||
+            prob >= 1) {
             INNER_ERROR("CMS: invalid prob value");
         }
         CMS_DimFromProb(overEst, prob, (size_t *)width, (size_t *)depth);

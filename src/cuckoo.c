@@ -11,13 +11,11 @@
 #define CUCKOO_FREE free
 #endif
 
-//int globalCuckooHash64Bit;
+// int globalCuckooHash64Bit;
 
 static int CuckooFilter_Grow(CuckooFilter *filter);
 
-static int isPower2(uint64_t num) {
-    return (num & (num - 1)) == 0 && num != 0;
-}
+static int isPower2(uint64_t num) { return (num & (num - 1)) == 0 && num != 0; }
 
 static uint64_t getNextN2(uint64_t n) {
     n--;
@@ -31,19 +29,20 @@ static uint64_t getNextN2(uint64_t n) {
     return n;
 }
 
-int CuckooFilter_Init(CuckooFilter *filter, uint64_t capacity, uint16_t bucketSize, uint16_t maxIterations, uint16_t expansion) {
+int CuckooFilter_Init(CuckooFilter *filter, uint64_t capacity, uint16_t bucketSize,
+                      uint16_t maxIterations, uint16_t expansion) {
     memset(filter, 0, sizeof(*filter));
     filter->expansion = getNextN2(expansion);
     filter->bucketSize = bucketSize;
     filter->maxIterations = maxIterations;
     filter->numBuckets = getNextN2(capacity / bucketSize);
     if (filter->numBuckets == 0) {
-        filter->numBuckets = 1; 
+        filter->numBuckets = 1;
     }
-    assert(isPower2(filter->numBuckets));   
+    assert(isPower2(filter->numBuckets));
 
     if (CuckooFilter_Grow(filter) != 0) {
-        return -1;          // LCOV_EXCL_LINE memory failure
+        return -1; // LCOV_EXCL_LINE memory failure
     }
     return 0;
 }
@@ -56,20 +55,20 @@ void CuckooFilter_Free(CuckooFilter *filter) {
 }
 
 static int CuckooFilter_Grow(CuckooFilter *filter) {
-    SubCF *filtersArray = CUCKOO_REALLOC(filter->filters,
-                           sizeof(*filtersArray) * (filter->numFilters + 1));
+    SubCF *filtersArray =
+        CUCKOO_REALLOC(filter->filters, sizeof(*filtersArray) * (filter->numFilters + 1));
 
     if (!filtersArray) {
-        return -1;          // LCOV_EXCL_LINE memory failure
+        return -1; // LCOV_EXCL_LINE memory failure
     }
     SubCF *currentFilter = filtersArray + filter->numFilters;
     size_t growth = pow(filter->expansion, filter->numFilters);
     currentFilter->bucketSize = filter->bucketSize;
     currentFilter->numBuckets = filter->numBuckets * growth;
-    currentFilter->data = CUCKOO_CALLOC(currentFilter->numBuckets * filter->bucketSize,
-                                        sizeof(CuckooBucket));
+    currentFilter->data =
+        CUCKOO_CALLOC((size_t)currentFilter->numBuckets * filter->bucketSize, sizeof(CuckooBucket));
     if (!currentFilter->data) {
-        return -1;          // LCOV_EXCL_LINE memory failure
+        return -1; // LCOV_EXCL_LINE memory failure
     }
 
     filter->numFilters++;
@@ -215,7 +214,7 @@ static uint8_t *Filter_FindAvailable(SubCF *filter, const LookupParams *params) 
     return NULL;
 }
 
-static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter, 
+static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter,
                                           const LookupParams *params);
 
 static CuckooInsertStatus CuckooFilter_InsertFP(CuckooFilter *filter, const LookupParams *params) {
@@ -265,7 +264,7 @@ static void swapFPs(uint8_t *a, uint8_t *b) {
     *b = temp;
 }
 
-static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter, 
+static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter,
                                           const LookupParams *params) {
     uint16_t maxIterations = filter->maxIterations;
     uint32_t numBuckets = curFilter->numBuckets;
@@ -273,7 +272,7 @@ static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter
     CuckooFingerprint fp = params->fp;
 
     uint16_t counter = 0;
-    uint32_t victimIx =  0;
+    uint32_t victimIx = 0;
     uint32_t ii = params->h1 % numBuckets;
 
     while (counter++ < maxIterations) {
@@ -313,7 +312,7 @@ static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter
  */
 static int relocateSlot(CuckooFilter *cf, CuckooBucket bucket, uint16_t filterIx, uint64_t bucketIx,
                         uint16_t slotIx) {
-    LookupParams params = { 0 };
+    LookupParams params = {0};
     if ((params.fp = bucket[slotIx]) == CUCKOO_NULLFP) {
         // Nothing in this slot.
         return RELOC_EMPTY;
