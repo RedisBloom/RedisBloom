@@ -1,4 +1,5 @@
 version: 2.1
+
 commands:
   early_return_for_forked_pull_requests:
     description: >-
@@ -12,6 +13,16 @@ commands:
               echo "Nothing to do for forked PRs, so marking this step successful"
               circleci step halt
             fi
+
+  setup-automation:
+    steps:
+      - run:
+          name: Setup automation
+          command: |
+            (mkdir -p deps; cd deps; git clone https://github.com/RedisLabsModules/readies.git)
+            PIP=1 ./deps/readies/bin/getpy2
+            python2 -m pip install -r ./deps/readies/paella/requirements.txt
+
 
 jobs:
   lint:
@@ -45,24 +56,28 @@ jobs:
       - run:
           name: Submodule checkout
           command: git submodule update --init --recursive
+      - setup-automation
       - run:
           name: Build
-          command: make -j 8
+          command: make -j `nproc`
       - run:
           name: Test
           command: make test
       - run:
           name: Coverage
-          command: >-
-            apt-get update &&
-            apt-get install -y lcov curl &&
-            make coverage &&
+          command: |
+            apt-get update -qq
+            apt-get install -y lcov curl
+            make coverage
             bash <(curl -s https://codecov.io/bash)
       - early_return_for_forked_pull_requests
       - run:
           name: Persist Artifacts
-          command: >-
-            mkdir -p /workspace/build && cp $MODULE_ARTIFACT /workspace/ && cp ramp.yml /workspace
+          command: |
+            mkdir -p /workspace/build
+            cp $MODULE_ARTIFACT /workspace/
+            cp ramp.yml /workspace
+
       - persist_to_workspace:
           root: /workspace
           paths:
@@ -135,6 +150,62 @@ jobs:
             aws s3 cp /workspace/build/ s3://redismodules/$PACKAGE_NAME/ --acl
             public-read --recursive --exclude "*" --include "*.zip"
 
+  release_automation:
+    docker:
+      - image: redisfab/rmbuilder:6.0.9-x64-buster
+    steps:
+      - checkout
+      - setup-automation
+      - run:
+          name: Run QA Automation
+          command: MODULE_VERSION=$CIRCLE_TAG VERBOSE=1 TEST=release ./tests/qa/run
+
+  nightly_automation:
+    docker:
+      - image: redisfab/rmbuilder:6.0.9-x64-buster
+    steps:
+      - checkout
+      - setup-automation
+      - run:
+          name: Run QA Automation
+          command: MODULE_VERSION=$CIRCLE_BRANCH VERBOSE=1 TEST=nightly QUICK=1 ./tests/qa/run
+
+
+on-any-branch: &on-any-branch
+  filters:
+    branches:
+      only: /.*/
+    tags:
+      only: /.*/
+
+never: &never
+  filters:
+    branches:
+      ignore: /.*/
+    tags:
+      ignore: /.*/
+
+on-master: &on-master
+  filters:
+    branches:
+      only: master
+
+on-version-tags: &on-version-tags
+  filters:
+    branches:
+      ignore: /.*/
+    tags:
+      only: /^v[0-9].*/
+
+on-master-and-version-tags: &on-master-and-version-tags
+  filters:
+    branches:
+      only:
+        - master
+    tags:
+      only: /^v[0-9].*/
+
+
 workflows:
   version: 2
   build_and_package:
@@ -142,31 +213,32 @@ workflows:
       - lint 
       - static-analysis-infer
       - build:
-          filters:
-            tags:
-              only: /.*/
+          <<: *on-any-branch
           requires:
             - lint
       - package_branch:
+          <<: *on-master
           requires:
             - build
-          filters:
-            branches:
-              only: master
       - package_release:
+          <<: *on-version-tags
           requires:
             - build
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: '/^v[0-9].*/'
       - deploy_branch:
           requires:
             - package_branch
+      - release_automation:
+          requires:
+            - deploy_branch
       - deploy_release:
-          filters:
-            tags:
-              only: '/^v[0-9].*/'
+          <<: *on-version-tags
           requires:
             - package_release
+
+  nightly:
+    triggers:
+      - schedule:
+          cron: "07 20 * * *"
+          <<: *on-master
+    jobs:
+      - nightly_automation
