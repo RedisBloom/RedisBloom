@@ -187,9 +187,7 @@ const char *SBChain_GetEncodedChunk(const SBChain *sb, long long *curIter, size_
 
 char *SBChain_GetEncodedHeader(const SBChain *sb, size_t *hdrlen) {
     *hdrlen = sizeof(dumpedChainHeader) + (sizeof(dumpedChainLink) * sb->nfilters);
-    dumpedChainHeader *hdr = malloc(*hdrlen);
-    if (!hdr)
-        return NULL;
+    dumpedChainHeader *hdr = RedisModule_Calloc(1, *hdrlen);
     hdr->size = sb->size;
     hdr->nfilters = sb->nfilters;
     hdr->options = sb->options;
@@ -206,18 +204,18 @@ char *SBChain_GetEncodedHeader(const SBChain *sb, size_t *hdrlen) {
     return (char *)hdr;
 }
 
-void SB_FreeEncodedHeader(char *s) { free(s); }
+void SB_FreeEncodedHeader(char *s) { RedisModule_Free(s); }
 
 SBChain *SB_NewChainFromHeader(const char *buf, size_t bufLen, const char **errmsg) {
     const dumpedChainHeader *header = (const void *)buf;
     if (bufLen < sizeof(dumpedChainHeader)) {
         *errmsg = "ERR received bad data"; // LCOV_EXCL_LINE
-        return NULL; // LCOV_EXCL_LINE
+        return NULL;                       // LCOV_EXCL_LINE
     }
 
     if (bufLen != sizeof(*header) + (sizeof(header->links[0]) * header->nfilters)) {
         *errmsg = "ERR received bad data"; // LCOV_EXCL_LINE
-        return NULL; // LCOV_EXCL_LINE
+        return NULL;                       // LCOV_EXCL_LINE
     }
 
     SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
@@ -251,12 +249,12 @@ int SBChain_LoadEncodedChunk(SBChain *sb, long long iter, const char *buf, size_
     SBLink *link = getLinkPos(sb, iter, &offset);
     if (!link) {
         *errmsg = "ERR invalid offset - no link found"; // LCOV_EXCL_LINE
-        return -1; // LCOV_EXCL_LINE
+        return -1;                                      // LCOV_EXCL_LINE
     }
 
     if (bufLen > link->inner.bytes - offset) {
         *errmsg = "ERR invalid chunk - Too big for current filter"; // LCOV_EXCL_LINE
-        return -1; // LCOV_EXCL_LINE
+        return -1;                                                  // LCOV_EXCL_LINE
     }
 
     // printf("Copying to %p. Offset=%lu, Len=%lu\n", link, offset, bufLen);

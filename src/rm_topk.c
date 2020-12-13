@@ -30,29 +30,34 @@ static int GetTopKKey(RedisModuleCtx *ctx, RedisModuleString *keyName, TopK **to
     return REDISMODULE_OK;
 }
 
-static int createTopK(RedisModuleCtx *ctx, RedisModuleString **argv, TopK **topk) {
+static int createTopK(RedisModuleCtx *ctx, RedisModuleString **argv, int argc, TopK **topk) {
     long long k, width, depth;
     double decay;
     if ((RedisModule_StringToLongLong(argv[2], &k) != REDISMODULE_OK) || k < 1) {
         INNER_ERROR("TopK: invalid k");
     }
-    if ((RedisModule_StringToLongLong(argv[3], &width) != REDISMODULE_OK) || width < 1) {
-        INNER_ERROR("TopK: invalid width");
+    if (argc == 6) {
+        if ((RedisModule_StringToLongLong(argv[3], &width) != REDISMODULE_OK) || width < 1) {
+            INNER_ERROR("TopK: invalid width");
+        }
+        if ((RedisModule_StringToLongLong(argv[4], &depth) != REDISMODULE_OK) || depth < 1) {
+            INNER_ERROR("TopK: invalid depth");
+        }
+        if ((RedisModule_StringToDouble(argv[5], &decay) != REDISMODULE_OK) ||
+            (decay <= 0 || decay > 1)) {
+            INNER_ERROR("TopK: invalid decay value. must be '<= 1' & '> 0'");
+        }
+    } else {
+        width = 8;
+        depth = 7;
+        decay = 0.9;
     }
-    if ((RedisModule_StringToLongLong(argv[4], &depth) != REDISMODULE_OK) || depth < 1) {
-        INNER_ERROR("TopK: invalid depth");
-    }    
-    if ((RedisModule_StringToDouble(argv[5], &decay) != REDISMODULE_OK) ||
-                                    (decay <= 0 || decay > 1)) {
-        INNER_ERROR("TopK: invalid decay value. must be '<= 1' & '> 0'");
-    }
-
     *topk = TopK_Create(k, width, depth, decay);
     return REDISMODULE_OK;
 }
 
 static int TopK_Create_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    if (argc != 6) {
+    if (argc != 3 && argc != 6) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -63,7 +68,7 @@ static int TopK_Create_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     }
 
     TopK *topk = NULL;
-    if (createTopK(ctx, argv, &topk) != REDISMODULE_OK)
+    if (createTopK(ctx, argv, argc, &topk) != REDISMODULE_OK)
         goto final;
 
     if (RedisModule_ModuleTypeSetValue(key, TopKType, topk) == REDISMODULE_ERR) {
@@ -72,7 +77,7 @@ static int TopK_Create_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
     RedisModule_ReplicateVerbatim(ctx);
     RedisModule_ReplyWithSimpleString(ctx, "OK");
-final:    
+final:
     RedisModule_CloseKey(key);
     return REDISMODULE_OK;
 }
@@ -81,21 +86,20 @@ static int TopK_Add_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 
     if (argc < 3)
         return RedisModule_WrongArity(ctx);
-        
+
     TopK *topk;
-    if (GetTopKKey(ctx, argv[1], &topk,  REDISMODULE_READ | REDISMODULE_WRITE) != 
-                            REDISMODULE_OK) {
+    if (GetTopKKey(ctx, argv[1], &topk, REDISMODULE_READ | REDISMODULE_WRITE) != REDISMODULE_OK) {
         return REDISMODULE_OK;
     }
 
     int itemCount = argc - 2;
     RedisModule_ReplyWithArray(ctx, itemCount);
 
-    for(int i = 0; i < itemCount; ++i) {
+    for (int i = 0; i < itemCount; ++i) {
         size_t itemlen;
         const char *item = RedisModule_StringPtrLen(argv[i + 2], &itemlen);
         char *expelledItem = TopK_Add(topk, item, itemlen, 1);
-  
+
         if (expelledItem == NULL) {
             RedisModule_ReplyWithNull(ctx);
         } else {
@@ -111,26 +115,26 @@ static int TopK_Incrby_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
     if (argc < 4 || (argc % 2) == 1)
         return RedisModule_WrongArity(ctx);
-        
+
     TopK *topk;
-    if (GetTopKKey(ctx, argv[1], &topk,  REDISMODULE_READ | REDISMODULE_WRITE) != 
-                            REDISMODULE_OK) {
+    if (GetTopKKey(ctx, argv[1], &topk, REDISMODULE_READ | REDISMODULE_WRITE) != REDISMODULE_OK) {
         return REDISMODULE_OK;
     }
 
     int itemCount = (argc - 2) / 2;
     RedisModule_ReplyWithArray(ctx, itemCount);
 
-    for(int i = 0; i < itemCount; ++i) {
+    for (int i = 0; i < itemCount; ++i) {
         size_t itemlen;
         const char *item = RedisModule_StringPtrLen(argv[2 + i * 2], &itemlen);
         long long increment;
         if (RedisModule_StringToLongLong(argv[2 + i * 2 + 1], &increment) || increment < 0) {
-            RedisModule_ReplyWithError(ctx, "TopK: increment must be an integer greater or equal to 0");
+            RedisModule_ReplyWithError(ctx,
+                                       "TopK: increment must be an integer greater or equal to 0");
             goto final;
         }
         char *expelledItem = TopK_Add(topk, item, itemlen, (uint32_t)increment);
-  
+
         if (expelledItem == NULL) {
             RedisModule_ReplyWithNull(ctx);
         } else {
@@ -138,16 +142,15 @@ static int TopK_Incrby_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
             TOPK_FREE(expelledItem);
         }
     }
-final:    
-    RedisModule_ReplicateVerbatim(ctx);    
+final:
+    RedisModule_ReplicateVerbatim(ctx);
     return REDISMODULE_OK;
 }
 
 static int TopK_Query_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    
     if (argc < 3)
         return RedisModule_WrongArity(ctx);
-    
+
     TopK *topk;
     if (GetTopKKey(ctx, argv[1], &topk, REDISMODULE_READ) != REDISMODULE_OK)
         return REDISMODULE_ERR;
@@ -155,19 +158,19 @@ static int TopK_Query_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
     size_t itemlen;
     long long res;
     RedisModule_ReplyWithArray(ctx, argc - 2);
-    for(int i = 2; i < argc; ++i) {
+    for (int i = 2; i < argc; ++i) {
         const char *item = RedisModule_StringPtrLen(argv[i], &itemlen);
         res = TopK_Query(topk, item, itemlen);
         RedisModule_ReplyWithLongLong(ctx, res);
     }
-    
+
     return REDISMODULE_OK;
 }
 
 static int TopK_Count_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (argc < 3)
         return RedisModule_WrongArity(ctx);
-    
+
     TopK *topk;
     if (GetTopKKey(ctx, argv[1], &topk, REDISMODULE_READ) != REDISMODULE_OK)
         return REDISMODULE_ERR;
@@ -175,7 +178,7 @@ static int TopK_Count_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
     size_t itemlen;
     long long res;
     RedisModule_ReplyWithArray(ctx, argc - 2);
-    for(int i = 2; i < argc; ++i) {
+    for (int i = 2; i < argc; ++i) {
         const char *item = RedisModule_StringPtrLen(argv[i], &itemlen);
         res = TopK_Count(topk, item, itemlen);
         RedisModule_ReplyWithLongLong(ctx, res);
@@ -196,10 +199,10 @@ static int TopK_List_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     char **heapList = TOPK_CALLOC(k, (sizeof(char *)));
     TopK_List(topk, heapList);
     RedisModule_ReplyWithArray(ctx, k);
-    for(int i = 0; i < k; ++i) {
+    for (int i = 0; i < k; ++i) {
         if (heapList[i] != NULL) {
             RedisModule_ReplyWithSimpleString(ctx, heapList[i]);
-        } else  {
+        } else {
             RedisModule_ReplyWithNull(ctx);
         }
     }
@@ -241,9 +244,8 @@ static void TopKRdbSave(RedisModuleIO *io, void *obj) {
     RedisModule_SaveDouble(io, topk->decay);
     RedisModule_SaveStringBuffer(io, (const char *)topk->data,
                                  ((size_t)topk->width) * topk->depth * sizeof(Bucket));
-    RedisModule_SaveStringBuffer(io, (const char *)topk->heap,
-                                 topk->k * sizeof(HeapBucket));
-    for(uint32_t i = 0; i < topk->k; ++i) {
+    RedisModule_SaveStringBuffer(io, (const char *)topk->heap, topk->k * sizeof(HeapBucket));
+    for (uint32_t i = 0; i < topk->k; ++i) {
         if (topk->heap[i].item != NULL) {
             RedisModule_SaveStringBuffer(io, topk->heap[i].item, strlen(topk->heap[i].item) + 1);
         } else {
@@ -261,13 +263,13 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
     topk->width = RedisModule_LoadUnsigned(io);
     topk->depth = RedisModule_LoadUnsigned(io);
     topk->decay = RedisModule_LoadDouble(io);
-  
+
     size_t dataSize, heapSize, itemSize;
     topk->data = (Bucket *)RedisModule_LoadStringBuffer(io, &dataSize);
     assert(dataSize == ((size_t)topk->width) * topk->depth * sizeof(Bucket));
     topk->heap = (HeapBucket *)RedisModule_LoadStringBuffer(io, &heapSize);
     assert(heapSize == topk->k * sizeof(HeapBucket));
-    for(uint32_t i = 0; i < topk->k; ++i) {
+    for (uint32_t i = 0; i < topk->k; ++i) {
         topk->heap[i].item = RedisModule_LoadStringBuffer(io, &itemSize);
         if (itemSize == 1) {
             topk->heap[i].item = NULL;
@@ -281,9 +283,8 @@ static void TopKFree(void *value) { TopK_Destroy(value); }
 
 static size_t TopKMemUsage(const void *value) {
     TopK *topk = (TopK *)value;
-    return sizeof(TopK) + 
-            ((size_t)topk->width) * topk->depth * sizeof(Bucket) +
-            topk->k * sizeof(HeapBucket);
+    return sizeof(TopK) + ((size_t)topk->width) * topk->depth * sizeof(Bucket) +
+           topk->k * sizeof(HeapBucket);
 }
 
 int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {

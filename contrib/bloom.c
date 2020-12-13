@@ -125,7 +125,6 @@ int bloom_init(struct bloom *bloom, uint64_t entries, double error, unsigned opt
     bloom->entries = entries;
     bloom->bpe = calc_bpe(error);
 
-    double dentries = (double)entries;
     uint64_t bits;
 
     if (options & BLOOM_OPT_ENTS_IS_BITS) {
@@ -136,15 +135,15 @@ int bloom_init(struct bloom *bloom, uint64_t entries, double error, unsigned opt
 
         bloom->n2 = entries;
         bits = 1LLU << bloom->n2;
-        dentries = entries = bloom->entries = bits / bloom->bpe;
+        bloom->entries = bits / bloom->bpe;
 
     } else if (options & BLOOM_OPT_NOROUND) {
         // Don't perform any rounding. Conserve memory instead
-        bits = bloom->bits = (uint64_t)(dentries * bloom->bpe);
+        bits = bloom->bits = (uint64_t)(entries * bloom->bpe);
         bloom->n2 = 0;
 
     } else {
-        double bn2 = logb(dentries * bloom->bpe);
+        double bn2 = logb(entries * bloom->bpe);
         if (bn2 > 63 || bn2 == INFINITY) {
             return 1;
         }
@@ -154,7 +153,7 @@ int bloom_init(struct bloom *bloom, uint64_t entries, double error, unsigned opt
         // Determine the number of extra bits available for more items. We rounded
         // up the number of bits to the next-highest power of two. This means we
         // might have up to 2x the bits available to us.
-        size_t bitDiff = bits - (dentries * bloom->bpe);
+        size_t bitDiff = bits - (entries * bloom->bpe);
         // The number of additional items we can store is the extra number of bits
         // divided by bits-per-element
         size_t itemDiff = bitDiff / bloom->bpe;
