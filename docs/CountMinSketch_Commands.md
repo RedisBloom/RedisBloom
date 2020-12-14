@@ -98,7 +98,7 @@ CMS.INCRBY test foo 10 bar 42
 
 ### CMS.QUERY
 
-Returns count for item. Multiple items can be queried with one call. 
+Returns the count for one or more items in a sketch.
 
 ```
 CMS.QUERY {key} {item ...}
@@ -107,8 +107,7 @@ CMS.QUERY {key} {item ...}
 ### Parameters:
 
 * **key**: The name of the sketch.
-* **item**: The item which counter to be increased.
-* **increment**: Counter to be increased by this integer.
+* **item**: One or more items for which to return the count.
 
 ### Complexity
 
