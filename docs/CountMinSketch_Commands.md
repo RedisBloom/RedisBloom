@@ -13,7 +13,7 @@ CMS.INITBYDIM {key} {width} {depth}
 ### Parameters:
 
 * **key**: The name of the sketch.
-* **width**: Number of counter in each array. Reduces the error size.
+* **width**: Number of counters in each array. Reduces the error size.
 * **depth**: Number of counter-arrays. Reduces the probability for an
     error of a certain size (percentage of total count).
     
