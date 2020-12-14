@@ -77,8 +77,8 @@ CMS.INCRBY {key} {item} {increment} [{item} {increment} ...]
 ### Parameters:
 
 * **key**: The name of the sketch.
-* **item**: The item which counter to be increased.
-* **increment**: Counter to be increased by this integer.
+* **item**: The item which counter is to be increased.
+* **increment**: Amount by which the item counter is to be increased.
 
 ### Complexity
 
