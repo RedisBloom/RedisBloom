@@ -33,7 +33,7 @@ CMS.INITBYDIM test 2000 5
 
 ### CMS.INITBYPROB
 
-Initializes a Count-Min Sketch to accommodate requested capacity.
+Initializes a Count-Min Sketch to accommodate requested tolerances.
 
 ```
 CMS.INITBYPROB {key} {error} {probability}
