@@ -56,9 +56,9 @@ class APBFTest(ModuleTestCase('../redisbloom.so')):
         self.assertEqual(1, positive / tests)
 
         # test empty after time expiry
-        time.sleep(.5)
+        time.sleep(1.5)
         for i in range(tests):
-            self.assertEqual([1L], self.cmd('apbft.exists apbf', str(i)))
+            self.assertEqual([0L], self.cmd('apbft.exists apbf', str(i)))
     
         for i in range (100):
             self.assertEqual('OK', self.cmd('apbft.add apbf', i))

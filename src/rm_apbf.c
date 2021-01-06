@@ -16,7 +16,7 @@
 #define APBF_FREE(ptr) RedisModule_Free(ptr)
 
 #define APBF_COUNT 1
-#define APBF_TIME  2
+#define APBF_TIME 2
 
 #define APBF_DEFAULT_TIME_SIZE 1000
 
@@ -32,13 +32,13 @@ RedisModuleType *APBFTimeType;
 
 size_t APBFMemUsage(const void *value);
 
-static int GetAPBFKey(RedisModuleCtx *ctx, RedisModuleString *keyName, ageBloom_t **apbf,
-                      int *type, int mode) {
+static int GetAPBFKey(RedisModuleCtx *ctx, RedisModuleString *keyName, ageBloom_t **apbf, int *type,
+                      int mode) {
     // All using this function should call RedisModule_AutoMemory to prevent memory leak
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, mode);
     if (key == NULL || RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_MODULE) {
         INNER_ERROR("APBF: key does not exist");
-    } 
+    }
     if (RedisModule_ModuleTypeGetType(key) == APBFCountType) {
         *type = APBF_COUNT;
     } else if (RedisModule_ModuleTypeGetType(key) == APBFTimeType) {
@@ -69,13 +69,13 @@ static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         if ((RedisModule_StringToLongLong(argv[4], timeSpan) != REDISMODULE_OK) || *capacity < 1) {
             INNER_ERROR("APBF: invalid time span");
         }
-    }  
+    }
     /*
     // A minimum capacity of 64 ensures that assert (capacity > l) will hold
     // for all (k,l) configurations, since max l is 63.
     // It is possible to allow smaller capacity by finner testing against actual l
-    if ((RedisModule_StringToLongLong(argv[2], level) != REDISMODULE_OK) || *level < 1 || *level > 5) {
-        INNER_ERROR("APBF: invalid level. Range is 1 to 5");
+    if ((RedisModule_StringToLongLong(argv[2], level) != REDISMODULE_OK) || *level < 1 || *level >
+    5) { INNER_ERROR("APBF: invalid level. Range is 1 to 5");
     }*/
 
     return REDISMODULE_OK;
@@ -88,7 +88,7 @@ int rmAPBF_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     const char *cmd = RedisModule_StringPtrLen(argv[0], NULL);
     bool timeFilter = (cmd[4] == 't' || cmd[4] == 'T');
-    
+
     if ((!timeFilter && argc != 4) || (timeFilter && argc != 5)) {
         return RedisModule_WrongArity(ctx);
     }
@@ -108,8 +108,7 @@ int rmAPBF_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (parseCreateArgs(ctx, argv, argc, &error, &capacity, &timeSpan) != REDISMODULE_OK)
         return REDISMODULE_OK;
 
-    
-    if (timeFilter == false) {  
+    if (timeFilter == false) {
         apbf = APBF_createHighLevelAPI(error, capacity, level);
         RedisModule_ModuleTypeSetValue(key, APBFCountType, apbf);
     } else {
@@ -138,8 +137,8 @@ int rmAPBF_Insert(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     for (int i = 2; i < argc; ++i) {
         size_t strlen;
         const char *str = RedisModule_StringPtrLen(argv[i], &strlen);
-        type == APBF_COUNT ? APBF_insertCount(apbf, str, strlen) :
-                             APBF_insertTime(apbf, str, strlen);
+        type == APBF_COUNT ? APBF_insertCount(apbf, str, strlen)
+                           : APBF_insertTime(apbf, str, strlen);
     }
 
     RedisModule_ReplicateVerbatim(ctx);
@@ -182,8 +181,9 @@ int rmAPBF_Info(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
     RedisModule_ReplyWithArray(ctx, 9 * 2);
     RedisModule_ReplyWithSimpleString(ctx, "Type");
-    RedisModule_ReplyWithSimpleString(ctx, (type == APBF_COUNT) ? "Age Partitioned Bloom Filter - Count":
-                                                                  "Age Partitioned Bloom Filter - Time");
+    RedisModule_ReplyWithSimpleString(ctx, (type == APBF_COUNT)
+                                               ? "Age Partitioned Bloom Filter - Count"
+                                               : "Age Partitioned Bloom Filter - Time");
     RedisModule_ReplyWithSimpleString(ctx, "Size");
     RedisModule_ReplyWithLongLong(ctx, APBFMemUsage(apbf));
     RedisModule_ReplyWithSimpleString(ctx, "Capacity");
@@ -218,7 +218,7 @@ void APBFRdbSave(RedisModuleIO *io, void *obj) {
     RedisModule_SaveUnsigned(io, apbf->counter);
     RedisModule_SaveUnsigned(io, apbf->currTime);
     RedisModule_SaveStringBuffer(io, (char *)&apbf->lastTimestamp, sizeof(timeval));
-    
+
     RedisModule_SaveStringBuffer(io, (const char *)apbf->slices,
                                  apbf->numSlices * sizeof(blmSlice));
 
