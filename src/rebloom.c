@@ -26,7 +26,7 @@ static RedisModuleType *BFType;
 static RedisModuleType *CFType;
 static double BFDefaultErrorRate = 0.01;
 static size_t BFDefaultInitCapacity = 100;
-static size_t CFDefaultInitCapacity = 1000;
+static size_t CFDefaultInitCapacity = 1024;
 static size_t CFMaxExpansions = 32;
 static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2);
 
@@ -901,7 +901,8 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     RedisModule_ReplyWithSimpleString(ctx, "Number of items inserted");
     RedisModule_ReplyWithLongLong(ctx, bf->size);
     RedisModule_ReplyWithSimpleString(ctx, "Expansion rate");
-    RedisModule_ReplyWithLongLong(ctx, bf->growth);
+    bf->options &BLOOM_OPT_NO_SCALING ? RedisModule_ReplyWithNull(ctx)
+                                      : RedisModule_ReplyWithLongLong(ctx, bf->growth);
 
     return REDISMODULE_OK;
 }
@@ -1059,7 +1060,7 @@ static void BFAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value
     SBChain *sb = value;
     size_t len;
     char *hdr = SBChain_GetEncodedHeader(sb, &len);
-    RedisModule_EmitAOF(aof, "BF.LOADCHUNK", "slb", key, 0, hdr, len);
+    RedisModule_EmitAOF(aof, "BF.LOADCHUNK", "slb", key, 1, hdr, len);
     SB_FreeEncodedHeader(hdr);
 
     long long iter = SB_CHUNKITER_INIT;

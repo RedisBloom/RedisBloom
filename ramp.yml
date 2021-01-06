@@ -19,4 +19,4 @@ capabilities:
     - persistence_rdb
     - hash_policy
     - clustering
-
+    - flash

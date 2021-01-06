@@ -9,15 +9,15 @@ Based on [Cuckoo Filter: Practically Better Than Bloom](
 ### Format:
 
 ```
-CF.RESERVE {key} {capacity} [BUCKETSIZE bucketSize] [MAXITERATIONS maxIterations]
-[EXPANSION expansion]
+CF.RESERVE {key} {capacity} [BUCKETSIZE {bucketsize}] [MAXITERATIONS {maxiterations}]
+[EXPANSION {expansion}]
 ```
 
 Create a Cuckoo Filter as `key` with a single sub-filter for the initial amount
 of `capacity` for items. Because of how Cuckoo Filters work, the filter is
 likely to declare itself full before `capacity` is reached and therefore fill
 rate will likely never reach 100%. The fill rate can be improved by using a
-larger `bucketSize` at the cost of a higher error rate.
+larger `bucketsize` at the cost of a higher error rate.
 When the filter self-declare itself `full`, it will auto-expand by generating
 additional sub-filters at the cost of reduced performance and increased error
 rate. The new sub-filter is created with size of the previous sub-filter
@@ -30,7 +30,7 @@ The minimal false positive error rate is 2/255 ≈ 0.78% when bucket size of 1 i
 used. Larger buckets increase the error rate linearly (for example, a bucket size
 of 3 yields a 2.35% error rate) but improve the fill rate of the filter.
 
-`maxIterations` dictates the number of attempts to find a slot for the incoming
+`maxiterations` dictates the number of attempts to find a slot for the incoming
 fingerprint. Once the filter gets full, high `maxIterations` value will slow
 down insertions. The default value is 20.
 
@@ -46,10 +46,10 @@ Make sure to reserve extra capacity if you want to avoid expansions.
 
 Optional parameters:
 
-* **bucketSize**: Number of items in each bucket. A higher bucket size value
+* **bucketsize**: Number of items in each bucket. A higher bucket size value
 improves the fill rate but also causes a higher error rate and slightly slower
 performance.
-* **maxIterations**: Number of attempts to swap items between buckets before
+* **maxiterations**: Number of attempts to swap items between buckets before
 declaring filter as full and creating an additional filter. A low value is
 better for performance and a higher number is better for filter fill rate.
 * **expansion**: When a new filter is created, its size is the size of the
@@ -95,7 +95,6 @@ attempts to `Cuckoo` swap items up to `maxIterations` times.
 
 "1" on success, error otherwise.
 
-
 ## CF.ADDNX
 
 Note: `CF.ADDNX` is an advanced command that might have implications if used
@@ -112,7 +111,7 @@ See documentation on `CF.ADD` for more information on this command.
 
 This command is equivalent to a `CF.CHECK` + `CF.ADD` command. It does not
 insert an element into the filter if its fingerprint already exists in order to
-us the available capacity more efficiently. However, deleting
+use the available capacity more efficiently. However, deleting
 elements can introduce **false negative** error rate!
 
 Note that this command is slower than `CF.ADD` because it first checks whether the
@@ -143,8 +142,8 @@ Note: `CF.INSERTNX` is an advanced command that can have unintended impact if us
 incorrectly.
 
 ```
-CF.INSERT {key} [CAPACITY {cap}] [NOCREATE] ITEMS {item ...}
-CF.INSERTNX {key} [CAPACITY {cap}] [NOCREATE] ITEMS {item ...}
+CF.INSERT {key} [CAPACITY {capacity}] [NOCREATE] ITEMS {item ...}
+CF.INSERTNX {key} [CAPACITY {capacity}] [NOCREATE] ITEMS {item ...}
 ```
 
 ### Description
@@ -163,16 +162,16 @@ the cost of more verbosity.
 ### Parameters
 
 * **key**: The name of the filter
-* **CAPACITY**: If specified, should be followed by the desired capacity of the
-    new filter, if this filter does not exist yet. If the filter already
-    exists, then this parameter is ignored. If the filter does not exist yet
-    and this parameter is *not* specified, then the filter is created with the
-    module-level default capacity. See `CF.RESERVE` for more information on
-    cuckoo filter capacities.
+* **capacity**: Specifies the desired capacity of the new filter, if this filter
+    does not exist yet. If the filter already exists, then this parameter is
+    ignored. If the filter does not exist yet and this parameter is *not*
+    specified, then the filter is created with the module-level default capacity
+    which is 1024. See `CF.RESERVE` for more information on cuckoo filter
+    capacities.
 * **NOCREATE**: If specified, prevents automatic filter creation if the filter
     does not exist. Instead, an error is returned if the filter does not
     already exist. This option is mutually exclusive with `CAPACITY`.
-* **ITEMS**: Begin the list of items to add.
+* **item**: One or more items to add. The `ITEMS` keyword must precede the list of items to add.
 
 ### Complexity
 
@@ -381,7 +380,7 @@ O(1)
 
 ### Returns
 
-```sql
+```
 127.0.0.1:6379> CF.INFO cf
  1) Size
  2) (integer) 1080
