@@ -15,18 +15,28 @@
 #define APBF_CALLOC(count, size) RedisModule_Calloc(count, size)
 #define APBF_FREE(ptr) RedisModule_Free(ptr)
 
+#define APBF_COUNT 1
+#define APBF_TIME  2
+
+#define APBF_DEFAULT_TIME_SIZE 1000
+
 RedisModuleType *APBFCountType;
 RedisModuleType *APBFTimeType;
 
 size_t APBFMemUsage(const void *value);
 
 static int GetAPBFKey(RedisModuleCtx *ctx, RedisModuleString *keyName, ageBloom_t **apbf,
-                      int mode) {
+                      int *type, int mode) {
     // All using this function should call RedisModule_AutoMemory to prevent memory leak
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, mode);
-    if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
+    if (key == NULL || RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_MODULE) {
         INNER_ERROR("APBF: key does not exist");
-    } else if (RedisModule_ModuleTypeGetType(key) != APBFCountType) {
+    } 
+    if (RedisModule_ModuleTypeGetType(key) == APBFCountType) {
+        *type = APBF_COUNT;
+    } else if (RedisModule_ModuleTypeGetType(key) == APBFTimeType) {
+        *type = APBF_TIME;
+    } else {
         INNER_ERROR(REDISMODULE_ERRORMSG_WRONGTYPE);
     }
     *apbf = RedisModule_ModuleTypeGetValue(key);
@@ -55,7 +65,7 @@ static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     // A minimum capacity of 64 ensures that assert (capacity > l) will hold
     // for all (k,l) configurations, since max l is 63.
     // It is possible to allow smaller capacity by finner testing against actual l
-    if ((RedisModule_StringToLongLong(argv[3], level) != REDISMODULE_OK) || *level < 1 || *level > 5) {
+    if ((RedisModule_StringToLongLong(argv[2], level) != REDISMODULE_OK) || *level < 1 || *level > 5) {
         INNER_ERROR("APBF: invalid level. Range is 1 to 5");
     }
 
@@ -70,7 +80,7 @@ int rmAPBF_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return RedisModule_WrongArity(ctx);
     }
 
-    char *cmd = RedisModule_StringPtrLen(argv[0], NULL);
+    const char *cmd = RedisModule_StringPtrLen(argv[0], NULL);
     bool timeFilter = (cmd[4] == 't' || cmd[4] == 'T');
 
     ageBloom_t *apbf = NULL;
@@ -87,9 +97,13 @@ int rmAPBF_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_OK;
 
     
-    apbf = (timeFilter == true) ? apbf APBF_createHighLevelAPI(error, capacity, level);
-    
-    RedisModule_ModuleTypeSetValue(key, APBFCountType, apbf);
+    if (timeFilter == true) { // false?
+        APBF_createHighLevelAPI(error, capacity, level);
+        RedisModule_ModuleTypeSetValue(key, APBFCountType, apbf);
+    } else {
+        APBF_createTimeAPI(error, APBF_DEFAULT_TIME_SIZE, level, capacity);
+        RedisModule_ModuleTypeSetValue(key, APBFTimeType, apbf);
+    }
 
     RedisModule_CloseKey(key);
     RedisModule_ReplicateVerbatim(ctx);
@@ -104,15 +118,17 @@ int rmAPBF_Insert(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return RedisModule_WrongArity(ctx);
     }
 
+    int type = 0;
     ageBloom_t *apbf = NULL;
-    if (GetAPBFKey(ctx, argv[1], &apbf, REDISMODULE_WRITE) != REDISMODULE_OK) {
+    if (GetAPBFKey(ctx, argv[1], &apbf, &type, REDISMODULE_WRITE) != REDISMODULE_OK) {
         return REDISMODULE_OK;
     }
 
     for (int i = 2; i < argc; ++i) {
         size_t strlen;
         const char *str = RedisModule_StringPtrLen(argv[i], &strlen);
-        APBF_insertCount(apbf, str, strlen);
+        type == APBF_COUNT ? APBF_insertCount(apbf, str, strlen) :
+                             APBF_insertTime(apbf, str, strlen);
     }
 
     RedisModule_ReplicateVerbatim(ctx);
@@ -126,8 +142,9 @@ int rmAPBF_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return RedisModule_WrongArity(ctx);
     }
 
+    int type = 0;
     ageBloom_t *apbf = NULL;
-    if (GetAPBFKey(ctx, argv[1], &apbf, REDISMODULE_READ) != REDISMODULE_OK) {
+    if (GetAPBFKey(ctx, argv[1], &apbf, &type, REDISMODULE_READ) != REDISMODULE_OK) {
         return REDISMODULE_OK;
     }
 
@@ -146,12 +163,16 @@ int rmAPBF_Info(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (argc != 2)
         return RedisModule_WrongArity(ctx);
 
+    int type = 0;
     ageBloom_t *apbf = NULL;
-    if (GetAPBFKey(ctx, argv[1], &apbf, REDISMODULE_READ) != REDISMODULE_OK) {
+    if (GetAPBFKey(ctx, argv[1], &apbf, &type, REDISMODULE_READ) != REDISMODULE_OK) {
         return REDISMODULE_OK;
     }
 
-    RedisModule_ReplyWithArray(ctx, 7 * 2);
+    RedisModule_ReplyWithArray(ctx, 9 * 2);
+    RedisModule_ReplyWithSimpleString(ctx, "Type");
+    RedisModule_ReplyWithSimpleString(ctx, (type == APBF_COUNT) ? "Age Partitioned Bloom Filter - Count":
+                                                                  "Age Partitioned Bloom Filter - Time");
     RedisModule_ReplyWithSimpleString(ctx, "Size");
     RedisModule_ReplyWithLongLong(ctx, APBFMemUsage(apbf));
     RedisModule_ReplyWithSimpleString(ctx, "Capacity");
@@ -166,6 +187,8 @@ int rmAPBF_Info(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_ReplyWithLongLong(ctx, apbf->batches);
     RedisModule_ReplyWithSimpleString(ctx, "Slices count");
     RedisModule_ReplyWithLongLong(ctx, apbf->numSlices);
+    RedisModule_ReplyWithSimpleString(ctx, "Time Span");
+    RedisModule_ReplyWithLongLong(ctx, apbf->timeSpan);
 
     return REDISMODULE_OK;
 }
@@ -179,12 +202,22 @@ void APBFRdbSave(RedisModuleIO *io, void *obj) {
     RedisModule_SaveUnsigned(io, apbf->capacity);
     RedisModule_SaveUnsigned(io, apbf->inserts);
     RedisModule_SaveUnsigned(io, apbf->numSlices);
-    RedisModule_SaveUnsigned(io, apbf->assessFreq);
+    RedisModule_SaveUnsigned(io, apbf->timeSpan);
+    RedisModule_SaveUnsigned(io, apbf->genSize);
+    RedisModule_SaveUnsigned(io, apbf->counter);
+    RedisModule_SaveUnsigned(io, apbf->currTime);
+    RedisModule_SaveStringBuffer(io, (char *)&apbf->lastTimestamp, sizeof(timeval));
+    
     RedisModule_SaveStringBuffer(io, (const char *)apbf->slices,
                                  apbf->numSlices * sizeof(blmSlice));
 
     for (int i = 0; i < apbf->numSlices; ++i) {
-        RedisModule_SaveStringBuffer(io, apbf->slices[i].data, apbf->slices[i].size);
+        blmSlice *slice = &apbf->slices[i];
+        RedisModule_SaveUnsigned(io, slice->size);
+        RedisModule_SaveUnsigned(io, slice->count);
+        RedisModule_SaveUnsigned(io, slice->hashIndex);
+        RedisModule_SaveUnsigned(io, slice->timestamp);
+        RedisModule_SaveStringBuffer(io, apbf->slices[i].data, apbf->slices[i].size / 8 + 1);
     }
 }
 
@@ -201,13 +234,24 @@ void *APBFRdbLoad(RedisModuleIO *io, int encver) {
     apbf->capacity = RedisModule_LoadUnsigned(io);
     apbf->inserts = RedisModule_LoadUnsigned(io);
     apbf->numSlices = RedisModule_LoadUnsigned(io);
-    apbf->assessFreq = RedisModule_LoadUnsigned(io);
+    apbf->timeSpan = RedisModule_LoadUnsigned(io);
+    apbf->genSize = RedisModule_LoadUnsigned(io);
+    apbf->counter = RedisModule_LoadUnsigned(io);
+    apbf->currTime = RedisModule_LoadUnsigned(io);
+
+    timeval time = *(timeval *)RedisModule_LoadStringBuffer(io, NULL);
+    apbf->lastTimestamp = time;
 
     size_t length = apbf->numSlices * sizeof(blmSlice);
     apbf->slices = (blmSlice *)RedisModule_LoadStringBuffer(io, &length);
 
     for (int i = 0; i < apbf->numSlices; ++i) {
-        apbf->slices[i].data = RedisModule_LoadStringBuffer(io, NULL);
+        blmSlice *slice = &apbf->slices[i];
+        slice->size = RedisModule_LoadUnsigned(io);
+        slice->count = RedisModule_LoadUnsigned(io);
+        slice->hashIndex = RedisModule_LoadUnsigned(io);
+        slice->timestamp = RedisModule_LoadUnsigned(io);
+        slice->data = RedisModule_LoadStringBuffer(io, NULL);
     }
 
     return apbf;
@@ -217,8 +261,8 @@ void APBFFree(void *value) { APBF_destroy(value); }
 
 size_t APBFMemUsage(const void *value) {
     ageBloom_t *apbf = (ageBloom_t *)value;
-    size_t size = sizeof(*apbf) + apbf->numSlices * sizeof(blmSlice);
-
+    size_t size = sizeof(*apbf);
+    size += apbf->numSlices * sizeof(blmSlice);
     for (int i = 0; i < apbf->numSlices; ++i) {
         size += apbf->slices[i].size / 8; // size is in bits, memUsage is in bytes
     }
@@ -238,6 +282,9 @@ int APBFModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     APBFCountType = RedisModule_CreateDataType(ctx, "APBFcTYPE", APBF_ENC_VER, &tm);
     if (APBFCountType == NULL)
         return REDISMODULE_ERR;
+    APBFTimeType = RedisModule_CreateDataType(ctx, "APBFtTYPE", APBF_ENC_VER, &tm);
+    if (APBFTimeType == NULL)
+        return REDISMODULE_ERR;
 
     // Counting filter
     RMUtil_RegisterWriteDenyOOMCmd(ctx, "apbfc.reserve", rmAPBF_Create);
@@ -250,7 +297,6 @@ int APBFModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RMUtil_RegisterWriteDenyOOMCmd(ctx, "apbft.add", rmAPBF_Insert);
     RMUtil_RegisterReadCmd(ctx, "apbft.exists", rmAPBF_Query);
     RMUtil_RegisterReadCmd(ctx, "apbft.info", rmAPBF_Info);
-
 
     return REDISMODULE_OK;
 }

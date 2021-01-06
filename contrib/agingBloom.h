@@ -28,6 +28,7 @@
 #include <time.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <sys/time.h>
 
 #define CHECK_ALL 0
 
@@ -35,6 +36,7 @@
 
 typedef struct ageBloom_s ageBloom_t;
 typedef uint64_t timestamp_t;
+typedef struct timeval timeval;
 typedef ageBloom_t ageBloom; // back support
 
 typedef struct {
@@ -47,19 +49,24 @@ typedef struct {
 
 struct ageBloom_s {
     // Low level variables
-    uint32_t numHash;       // k_a - Number of Hash functions used
-    uint32_t batches;       // l   - Number of batches to store
-    uint32_t optimalSlices; // k+l - Optimal number of slices
+    uint16_t numHash;         // k_a - Number of Hash functions used
+    uint16_t batches;         // l   - Number of batches to store
+    uint32_t optimalSlices;   // k+l - Optimal number of slices
 
     // High level variables
-    double errorRate;  // Required error rate
-    uint64_t capacity; // Capacity required by user
-    uint64_t inserts;  // Items already inserted
+    double errorRate;         // Required error rate
+    uint64_t capacity;        // Capacity required by user
+    uint64_t inserts;         // Number of items already inserted
 
     // Time based variables
-    uint32_t numSlices;  // Current number of slices
-    uint32_t assessFreq; // Frequency of assessment
-
+    uint32_t numSlices;       // Current number of slices
+    uint64_t timeSpan;        // Time span required by user
+    uint64_t genSize;         // g - Generation size
+    uint64_t counter;         // Used to know when to shift. A shift is made when counter = 0.
+    timeval lastTimestamp;    // Timestamp of the last operation (insert/query)
+    timestamp_t currTime;     // Current time in milliseconds
+    timestamp_t lastSlide;    // Time when last slide happened
+    
     blmSlice *slices;
 };
 
@@ -71,8 +78,9 @@ struct ageBloom_s {
  *  Number of `timeframes` is at minimum :    (hashFunctions * 2)
  *  `errorRate` can be used for maintainance when switching a timeframe.
  */
-ageBloom_t *APBF_createLowLevelAPI(uint32_t numHash, uint32_t timeframes, uint64_t sliceSize);
-ageBloom_t *APBF_createHighLevelAPI(int error, uint64_t capacity, int8_t level);
+ageBloom_t* APBF_createLowLevelAPI(uint16_t numHash, uint16_t timeframes, uint64_t sliceSize);
+ageBloom_t* APBF_createHighLevelAPI(int error, uint64_t capacity, int8_t level);
+ageBloom_t* APBF_createTimeAPI(int error, uint64_t capacity, int8_t level, timestamp_t timeSpan);
 
 /*
  *  Free all resources allocated to `apbf`.
@@ -108,6 +116,11 @@ uint32_t APBF_getHashNum(ageBloom_t *apbf);
 uint64_t APBF_size(ageBloom_t *apbf);
 uint64_t APBF_totalSize(ageBloom_t *apbf);
 uint64_t APBF_filterCap(ageBloom_t *apbf);
+
+/*
+ * Slides
+ */
+void APBF_slideTime(ageBloom_t *apbf);
 
 #endif //  __H_FLEX_BLOOM__
 
