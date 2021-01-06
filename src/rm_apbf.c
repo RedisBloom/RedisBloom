@@ -20,6 +20,13 @@
 
 #define APBF_DEFAULT_TIME_SIZE 1000
 
+typedef struct {
+    int error;
+    int level;
+    uint64_t capacity;
+    timestamp_t timeSpan;
+} createCtx;
+
 RedisModuleType *APBFCountType;
 RedisModuleType *APBFTimeType;
 
@@ -44,7 +51,7 @@ static int GetAPBFKey(RedisModuleCtx *ctx, RedisModuleString *keyName, ageBloom_
 }
 
 static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
-                           long long *error, long long *capacity, long long *level, bool timeFilter) {
+                           long long *error, long long *capacity, long long *timeSpan) {
 
     if ((RedisModule_StringToLongLong(argv[2], error) != REDISMODULE_OK) || *error < 1 ||
         *error > 5) {
@@ -55,36 +62,41 @@ static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     // for all (k,l) configurations, since max l is 63.
     // It is possible to allow smaller capacity by finner testing against actual l
     if ((RedisModule_StringToLongLong(argv[3], capacity) != REDISMODULE_OK) || *capacity < 64) {
-        if (timeFilter == true) {
-            INNER_ERROR("APBF: invalid period or less than 64");
-        } else {
-            INNER_ERROR("APBF: invalid capacity or less than 64");
-        }
+        INNER_ERROR("APBF: invalid capacity or less than 64");
     }
 
+    if (argc == 5) {
+        if ((RedisModule_StringToLongLong(argv[4], timeSpan) != REDISMODULE_OK) || *capacity < 1) {
+            INNER_ERROR("APBF: invalid time span");
+        }
+    }  
+    /*
     // A minimum capacity of 64 ensures that assert (capacity > l) will hold
     // for all (k,l) configurations, since max l is 63.
     // It is possible to allow smaller capacity by finner testing against actual l
     if ((RedisModule_StringToLongLong(argv[2], level) != REDISMODULE_OK) || *level < 1 || *level > 5) {
         INNER_ERROR("APBF: invalid level. Range is 1 to 5");
-    }
+    }*/
 
     return REDISMODULE_OK;
 }
+
 /*
  * APBF.CREATE idx Error Capacity Level
  */
 int rmAPBF_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    if (argc != 4) {
+    const char *cmd = RedisModule_StringPtrLen(argv[0], NULL);
+    bool timeFilter = (cmd[4] == 't' || cmd[4] == 'T');
+    
+    if ((!timeFilter && argc != 4) || (timeFilter && argc != 5)) {
         return RedisModule_WrongArity(ctx);
     }
 
-    const char *cmd = RedisModule_StringPtrLen(argv[0], NULL);
-    bool timeFilter = (cmd[4] == 't' || cmd[4] == 'T');
-
     ageBloom_t *apbf = NULL;
-    long long error, capacity, level;
+    long long error, capacity;
+    long long level = 3;
+    long long timeSpan;
     RedisModuleString *keyName = argv[1];
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ | REDISMODULE_WRITE);
 
@@ -93,15 +105,15 @@ int rmAPBF_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return RedisModule_ReplyWithError(ctx, "APBF: key already exists");
     }
 
-    if (parseCreateArgs(ctx, argv, argc, &error, &capacity, &level, timeFilter) != REDISMODULE_OK)
+    if (parseCreateArgs(ctx, argv, argc, &error, &capacity, &timeSpan) != REDISMODULE_OK)
         return REDISMODULE_OK;
 
     
-    if (timeFilter == true) { // false?
-        APBF_createHighLevelAPI(error, capacity, level);
+    if (timeFilter == false) {  
+        apbf = APBF_createHighLevelAPI(error, capacity, level);
         RedisModule_ModuleTypeSetValue(key, APBFCountType, apbf);
     } else {
-        APBF_createTimeAPI(error, APBF_DEFAULT_TIME_SIZE, level, capacity);
+        apbf = APBF_createTimeAPI(error, capacity, level, timeSpan);
         RedisModule_ModuleTypeSetValue(key, APBFTimeType, apbf);
     }
 
@@ -113,7 +125,6 @@ int rmAPBF_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
 int rmAPBF_Insert(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-
     if (argc < 3) {
         return RedisModule_WrongArity(ctx);
     }
