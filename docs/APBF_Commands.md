@@ -3,12 +3,13 @@
 Based on [Age-Partitioned Bloom Filters](http://arxiv.org/pdf/2001.03147)
     by Paulo Almeida, Carlos Baquero and Ariel Shtul.
 
-## APBF.RESERVE
+## APBFC.RESERVE
 
 ### Format:
 
 ```
-APBF.RESERVE {key} {error_rate} {capacity}
+APBFC.RESERVE {key} {error_rate} {capacity}
+APBFT.RESERVE {key} {error_rate} {capacity} {time_span}
 ```
 
 ### Description:
@@ -28,7 +29,8 @@ filter.
 * **capacity**: The number of latest entries in the filter. Therefore, out of
     an infinite flow of elements, only `capacity` number of elements will
     return True-Positive. All other elements will return False-Positive at
-    an `error_rate` percentage of the time. 
+    an `error_rate` percentage of the time.
+* **time_span**: Time until an element expires.
 
 ### Complexity
 
@@ -39,23 +41,24 @@ O(1)
 OK on success, error otherwise.
 
 ```sql
-127.0.0.1:6379> APBF.RESERVE apbf_1 3 1000
+127.0.0.1:6379> APBFC.RESERVE apbf_1 3 1000
 OK
-127.0.0.1:6379> APBF.RESERVE apbf_2 4 50000
+127.0.0.1:6379> APBFT.RESERVE apbf_2 4 50000 10
 OK
 ```
 
-## BF.ADD
+## APBFC.ADD
 
 ### Format
 
 ```
-APBF.ADD {key} {item}
+APBFC.ADD {key} {item} [item ...]
+APBFT.ADD {key} {item} [item ...]
 ```
 
 ### Description
 
-Adds an item to the Age-Partitioned Bloom-Filter, creating the filter if it
+Adds items to the Age-Partitioned Bloom-Filter, creating the filter if it
 does not yet exist.
 
 ### Parameters
@@ -71,48 +74,18 @@ O(k), where k is the number of `hash` functions used by the last sub-filter.
 
 "1" if the item was newly inserted, or "0" if it may have existed previously.
 
-## APBF.MADD (WIP)
+## APBFC.EXISTS
 
 ### Format
 
 ```
-BF.MADD {key} {item} [item...]
+APBFC.EXISTS {key} {item} [item ...]
+APBFT.EXISTS {key} {item} [item ...]
 ```
 
 ### Description
 
-Adds one or more items to the Bloom Filter and creates the filter if it does
-not exist yet.
-This command operates identically to `APBF.ADD` except that it allows multiple
-inputs and returns multiple values.
-
-### Parameters
-
-* **key**: The name of the filter
-* **items**: One or more items to add
-
-### Complexity
-
-O(k * n), where k is the number of `hash` functions used by the last sub-filter
-and m the number of items that are added.
-
-### Returns
-
-An array of booleans (integers). Each element is either true or false depending
-on whether the corresponding input element was newly added to the filter or may
-have previously existed.
-
-## BF.EXISTS
-
-### Format
-
-```
-BF.EXISTS {key} {item}
-```
-
-### Description
-
-Determines whether an item may exist in the Bloom Filter or not.
+Determines whether items exist in the Bloom Filter or not.
 
 ### Parameters
 
@@ -127,41 +100,13 @@ O(s), where s is the number of `slices` in the APBF.
 
 "0" if the item certainly does not exist, "1" if the item may exist.
 
-
-## BF.MEXISTS (WIP)
-
-### Format
-
-```
-BF.MEXISTS {key} {item} [item...]
-```
-
-### Description
-
-Determines if one or more items may exist in the filter or not.
-
-### Parameters
-
-* **key**: The name of the filter
-* **items**: One or more items to check
-
-### Complexity
-
-O(m * s), where m is the number of added elements and s is the number of
-`slices` in the APBF.
-
-### Returns
-
-An array of boolean values (actually integers). A true value means the
-corresponding item may exist in the filter, and a false value means it does not
-exist in the filter.
-
-## APBF.INFO
+## APBFC.INFO
 
 ### Format
 
 ```
-APBF.INFO {key}
+APBFC.INFO {key}
+APBFT.INFO {key}
 ```
 
 ### Description
