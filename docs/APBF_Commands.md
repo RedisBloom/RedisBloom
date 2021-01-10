@@ -3,13 +3,12 @@
 Based on [Age-Partitioned Bloom Filters](http://arxiv.org/pdf/2001.03147)
     by Paulo Almeida, Carlos Baquero and Ariel Shtul.
 
-## APBFC.RESERVE
+## APBF.RESERVE
 
 ### Format:
 
 ```
-APBFC.RESERVE {key} {error_rate} {capacity}
-APBFT.RESERVE {key} {error_rate} {capacity} {time_span}
+APBF.RESERVE {key} [COUNT/TIME] {error_rate} {capacity} [{time_span}]
 ```
 
 ### Description:
@@ -41,19 +40,18 @@ O(1)
 OK on success, error otherwise.
 
 ```sql
-127.0.0.1:6379> APBFC.RESERVE apbf_1 3 1000
+127.0.0.1:6379> APBF.RESERVE apbfc COUNT 3 1000
 OK
-127.0.0.1:6379> APBFT.RESERVE apbf_2 4 50000 10
+127.0.0.1:6379> APBF.RESERVE apbft TIME 4 5000 10
 OK
 ```
 
-## APBFC.ADD
+## APBF.ADD
 
 ### Format
 
 ```
-APBFC.ADD {key} {item} [item ...]
-APBFT.ADD {key} {item} [item ...]
+APBF.ADD {key} {item} [item ...]
 ```
 
 ### Description
@@ -74,13 +72,12 @@ O(k), where k is the number of `hash` functions used by the last sub-filter.
 
 "1" if the item was newly inserted, or "0" if it may have existed previously.
 
-## APBFC.EXISTS
+## APBF.EXISTS
 
 ### Format
 
 ```
-APBFC.EXISTS {key} {item} [item ...]
-APBFT.EXISTS {key} {item} [item ...]
+APBF.EXISTS {key} {item} [item ...]
 ```
 
 ### Description
@@ -100,13 +97,12 @@ O(s), where s is the number of `slices` in the APBF.
 
 "0" if the item certainly does not exist, "1" if the item may exist.
 
-## APBFC.INFO
+## APBF.INFO
 
 ### Format
 
 ```
-APBFC.INFO {key}
-APBFT.INFO {key}
+APBF.INFO {key}
 ```
 
 ### Description

@@ -53,7 +53,7 @@ static int GetAPBFKey(RedisModuleCtx *ctx, RedisModuleString *keyName, ageBloom_
 static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
                            long long *error, long long *capacity, long long *timeSpan) {
 
-    if ((RedisModule_StringToLongLong(argv[2], error) != REDISMODULE_OK) || *error < 1 ||
+    if ((RedisModule_StringToLongLong(argv[3], error) != REDISMODULE_OK) || *error < 1 ||
         *error > 5) {
         INNER_ERROR("APBF: invalid error");
     }
@@ -61,12 +61,12 @@ static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     // A minimum capacity of 64 ensures that assert (capacity > l) will hold
     // for all (k,l) configurations, since max l is 63.
     // It is possible to allow smaller capacity by finner testing against actual l
-    if ((RedisModule_StringToLongLong(argv[3], capacity) != REDISMODULE_OK) || *capacity < 64) {
+    if ((RedisModule_StringToLongLong(argv[4], capacity) != REDISMODULE_OK) || *capacity < 64) {
         INNER_ERROR("APBF: invalid capacity or less than 64");
     }
 
-    if (argc == 5) {
-        if ((RedisModule_StringToLongLong(argv[4], timeSpan) != REDISMODULE_OK) || *capacity < 1) {
+    if (argc == 6) {
+        if ((RedisModule_StringToLongLong(argv[5], timeSpan) != REDISMODULE_OK) || *capacity < 1) {
             INNER_ERROR("APBF: invalid time span");
         }
     }
@@ -86,17 +86,24 @@ static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
  */
 int rmAPBF_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    const char *cmd = RedisModule_StringPtrLen(argv[0], NULL);
-    bool timeFilter = (cmd[4] == 't' || cmd[4] == 'T');
-
-    if ((!timeFilter && argc != 4) || (timeFilter && argc != 5)) {
+    if (argc < 5) {
         return RedisModule_WrongArity(ctx);
+    }
+
+    bool timeFilter;
+    const char *typeStr = RedisModule_StringPtrLen(argv[2], NULL);
+    if (strcasecmp(typeStr, "COUNT") == 0) {
+        timeFilter = false;
+    } else if (strcasecmp(typeStr, "TIME") == 0) {
+        timeFilter = true;
+    } else {
+        return RedisModule_ReplyWithError(ctx, "Invalid type for APBF");
     }
 
     ageBloom_t *apbf = NULL;
     long long error, capacity;
     long long level = 3;
-    long long timeSpan;
+    long long timeSpan = 0;
     RedisModuleString *keyName = argv[1];
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ | REDISMODULE_WRITE);
 
@@ -105,8 +112,12 @@ int rmAPBF_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return RedisModule_ReplyWithError(ctx, "APBF: key already exists");
     }
 
-    if (parseCreateArgs(ctx, argv, argc, &error, &capacity, &timeSpan) != REDISMODULE_OK)
+    if (parseCreateArgs(ctx, argv, argc, &error, &capacity, &timeSpan) != REDISMODULE_OK) {
         return REDISMODULE_OK;
+    }
+    if (timeFilter && timeSpan == 0) {
+        return RedisModule_ReplyWithError(ctx, "Time span for time filter is 0 or missing");
+    }
 
     if (timeFilter == false) {
         apbf = APBF_createHighLevelAPI(error, capacity, level);
@@ -298,16 +309,10 @@ int APBFModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_ERR;
 
     // Counting filter
-    RMUtil_RegisterWriteDenyOOMCmd(ctx, "apbfc.reserve", rmAPBF_Create);
-    RMUtil_RegisterWriteDenyOOMCmd(ctx, "apbfc.add", rmAPBF_Insert);
-    RMUtil_RegisterReadCmd(ctx, "apbfc.exists", rmAPBF_Query);
-    RMUtil_RegisterReadCmd(ctx, "apbfc.info", rmAPBF_Info);
-
-    // Counting filter
-    RMUtil_RegisterWriteDenyOOMCmd(ctx, "apbft.reserve", rmAPBF_Create);
-    RMUtil_RegisterWriteDenyOOMCmd(ctx, "apbft.add", rmAPBF_Insert);
-    RMUtil_RegisterReadCmd(ctx, "apbft.exists", rmAPBF_Query);
-    RMUtil_RegisterReadCmd(ctx, "apbft.info", rmAPBF_Info);
+    RMUtil_RegisterWriteDenyOOMCmd(ctx, "apbf.reserve", rmAPBF_Create);
+    RMUtil_RegisterWriteDenyOOMCmd(ctx, "apbf.add", rmAPBF_Insert);
+    RMUtil_RegisterReadCmd(ctx, "apbf.exists", rmAPBF_Query);
+    RMUtil_RegisterReadCmd(ctx, "apbf.info", rmAPBF_Info);
 
     return REDISMODULE_OK;
 }
