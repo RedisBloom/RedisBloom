@@ -23,6 +23,7 @@ filter.
 ### Parameters:
 
 * **key**: The key under which the filter is found
+* **COUNT/TIME**: Type of filter. `Count` keeps `capacity` elements in the filter. 'Time' keeps elements for `time_span` seconds. 
 * **error_rate**: The desired probability for false positives. The rate is
     an integer from 1 to 5.
 * **capacity**: The number of latest entries in the filter. Therefore, out of
