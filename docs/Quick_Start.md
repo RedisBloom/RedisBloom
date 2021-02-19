@@ -3,7 +3,7 @@
 
 ## Redis Cloud
 
-RedisBloom is available on all Redis Cloud managed services.  Redis Cloud Essentials offers a completely free managed databbases up to 30MB.
+RedisBloom is available on all Redis Cloud managed services.  Redis Cloud Essentials offers a completely free managed database up to 30MB.
 
 [Get started here](https://redislabs.com/try-free/)
 
