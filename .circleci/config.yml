@@ -44,15 +44,10 @@ commands:
           command: make setup
       - run:
           name: Install Redis
-          command: python3 ./deps/readies/bin/getredis -v 6 --force <<parameters.getredis_params>>
+          command: python3 ./deps/readies/bin/getredis -v 6 <<parameters.getredis_params>>
       - run:
           name: Build
           command: make build <<parameters.build_params>> SHOW=1
-      - run:
-          name: Unit Test
-          command: |
-            mkdir -p ~/workspace/tests
-            make unittests TEST_REPORT_DIR=$HOME/workspace/tests <<parameters.test_params>> SHOW=1
       - run:
           name: Flow Test
           no_output_timeout: 30m
@@ -93,7 +88,7 @@ jobs:
           platform: debian
           build_params: VALGRIND=1 -j
           test_params: VALGRIND=1 SIMPLE=1
-          getredis_params: --valgrind
+          getredis_params: --force --valgrind
 
   build:
     docker:
