@@ -88,7 +88,6 @@ jobs:
   valgrind:
     docker:
       - image: redisfab/rmbuilder:6.0.9-x64-buster
-    resource_class: xlarge
     steps:
       - ci_steps:
           platform: debian
