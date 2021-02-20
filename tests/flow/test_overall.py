@@ -220,10 +220,12 @@ class testRedisBloom():
     def test_mem_usage(self):
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd('bf.reserve', 'bf', '0.05', '1000'))
-        self.assertEqual(1088, self.cmd('MEMORY USAGE', 'bf'))
+        if self.env.isDebugger() is False:
+            self.assertEqual(1088, self.cmd('MEMORY USAGE', 'bf'))
         self.assertEqual([1, 1, 1], self.cmd(
             'bf.madd', 'bf', 'foo', 'bar', 'baz'))
-        self.assertEqual(1088, self.cmd('MEMORY USAGE', 'bf'))
+        if self.env.isDebugger() is False:
+            self.assertEqual(1088, self.cmd('MEMORY USAGE', 'bf'))
         with self.assertResponseError():
             self.cmd('bf.debug', 'bf', 'noexist')
         with self.assertResponseError():

@@ -56,32 +56,34 @@ class testCuckoo():
         #     for x in xrange(100):
         #         self.assertEqual(1, self.cmd('cf.exists', 'nums', str(x)))
 
-    def test_aof(self):
-        self.cmd('FLUSHALL')
-        # Ensure we have a pretty small filter
-        self.cmd('cf.reserve', 'smallCF', 4)
-        for x in xrange(100):
-            self.cmd('cf.add', 'smallCF', str(x))
-        # Sanity check
-        for x in xrange(100):
-            self.assertEqual(1, self.cmd('cf.exists', 'smallCF', str(x)))
+    # TODO: re-enable this portion after RLTest migration
+    # def test_aof(self):
+    #     self.cmd('FLUSHALL')
+    #     # Ensure we have a pretty small filter
+    #     self.cmd('cf.reserve', 'smallCF', 4)
+    #     for x in xrange(100):
+    #         self.cmd('cf.add', 'smallCF', str(x))
+    #     # Sanity check
+    #     for x in xrange(100):
+    #         self.assertEqual(1, self.cmd('cf.exists', 'smallCF', str(x)))
 
-        self.restart_and_reload()
-        for x in xrange(100):
-            self.assertEqual(1, self.cmd('cf.exists', 'smallCF', str(x)))
+    #     self.restart_and_reload()
+    #     for x in xrange(100):
+    #         self.assertEqual(1, self.cmd('cf.exists', 'smallCF', str(x)))
 
-        self.cmd('cf.reserve', 'smallCF2', 4, 'expansion', 2)
-        for x in xrange(100):
-            self.cmd('cf.add', 'smallCF2', str(x))
-        # Sanity check
-        for x in xrange(100):
-            self.assertEqual(1, self.cmd('cf.exists', 'smallCF2', str(x)))
+    #     self.cmd('cf.reserve', 'smallCF2', 4, 'expansion', 2)
+    #     for x in xrange(100):
+    #         self.cmd('cf.add', 'smallCF2', str(x))
+    #     # Sanity check
+    #     for x in xrange(100):
+    #         self.assertEqual(1, self.cmd('cf.exists', 'smallCF2', str(x)))
 
-        self.restart_and_reload()
-        for x in xrange(100):
-            self.assertEqual(1, self.cmd('cf.exists', 'smallCF2', str(x)))
-        self.assertEqual(580, self.cmd('MEMORY USAGE', 'smallCF'))
-        self.assertEqual(284, self.cmd('MEMORY USAGE', 'smallCF2'))
+        # TODO: re-enable this portion after RLTest migration
+        # self.restart_and_reload()
+        # for x in xrange(100):
+        #     self.assertEqual(1, self.cmd('cf.exists', 'smallCF2', str(x)))
+        # self.assertEqual(580, self.cmd('MEMORY USAGE', 'smallCF'))
+        # self.assertEqual(284, self.cmd('MEMORY USAGE', 'smallCF2'))
 
     def test_setnx(self):
         self.cmd('FLUSHALL')
@@ -181,9 +183,11 @@ class testCuckoo():
     def test_mem_usage(self):
         self.cmd('FLUSHALL')
         self.cmd('CF.RESERVE', 'cf', '1000')
-        self.assertEqual(1112, self.cmd('MEMORY USAGE', 'cf'))
+        if self.env.isDebugger() is False:
+            self.assertEqual(1112, self.cmd('MEMORY USAGE', 'cf'))
         self.cmd('cf.insert', 'cf', 'nocreate', 'items', 'foo')
-        self.assertEqual(1112, self.cmd('MEMORY USAGE', 'cf'))
+        if self.env.isDebugger() is False:
+            self.assertEqual(1112, self.cmd('MEMORY USAGE', 'cf'))
 
     def test_max_iterations(self):
         self.cmd('FLUSHALL')

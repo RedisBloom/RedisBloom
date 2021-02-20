@@ -29,7 +29,8 @@ class testCMS():
         self.assertEqual([5], self.cmd('cms.query', 'cms2', 'a'))
         self.assertEqual(['width', 2000, 'depth', 7, 'count', 5],
                          self.cmd('cms.info', 'cms2'))
-        self.assertEqual(840, self.cmd('MEMORY USAGE', 'cms1'))
+        if self.env.isDebugger() is False:
+            self.assertEqual(840, self.cmd('MEMORY USAGE', 'cms1'))
 
     def test_validation(self):
         self.cmd('FLUSHALL')
