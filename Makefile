@@ -57,7 +57,7 @@ $(MODULE_SO): $(MODULE_OBJ) $(DEPS)
 	$(LD) $^ -o $@ $(SHOBJ_LDFLAGS) $(LDFLAGS)
 
 build: all
-	$(MAKE) -C tests build-test
+	$(MAKE) -C tests
 
 
 
@@ -82,9 +82,6 @@ test: $(MODULE_SO)
 	GEN=$(GEN) AOF=$(AOF) SLAVES=$(SLAVES) \
 	VALGRIND=$(VALGRIND) \
 	$(ROOT)/tests/flow/tests.sh
-
-build-test: $(MODULE_SO)
-	$(MAKE) -C tests build-test
 
 perf:
 	$(MAKE) -C tests perf

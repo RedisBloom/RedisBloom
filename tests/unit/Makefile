@@ -19,8 +19,6 @@ test-cuckoo: test-cuckoo.o $(DEPS)
 test-perf: test-perf.o $(DEPS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-build-test: test-basic test-perf test-cuckoo
-
 clean:
 	$(RM) test-basic test-perf test-cuckoo 
 	$(RM) *.o
