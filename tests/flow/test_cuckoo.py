@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
+import os
+
 from RLTest import Env
 from redis import ResponseError
 
 xrange = range
+
+is_valgrind = True if ('VGD' in os.environ or 'VALGRIND' in os.environ) else False
 
 
 class testCuckoo():
@@ -78,12 +82,12 @@ class testCuckoo():
     #     for x in xrange(100):
     #         self.assertEqual(1, self.cmd('cf.exists', 'smallCF2', str(x)))
 
-        # TODO: re-enable this portion after RLTest migration
-        # self.restart_and_reload()
-        # for x in xrange(100):
-        #     self.assertEqual(1, self.cmd('cf.exists', 'smallCF2', str(x)))
-        # self.assertEqual(580, self.cmd('MEMORY USAGE', 'smallCF'))
-        # self.assertEqual(284, self.cmd('MEMORY USAGE', 'smallCF2'))
+    # TODO: re-enable this portion after RLTest migration
+    # self.restart_and_reload()
+    # for x in xrange(100):
+    #     self.assertEqual(1, self.cmd('cf.exists', 'smallCF2', str(x)))
+    # self.assertEqual(580, self.cmd('MEMORY USAGE', 'smallCF'))
+    # self.assertEqual(284, self.cmd('MEMORY USAGE', 'smallCF2'))
 
     def test_setnx(self):
         self.cmd('FLUSHALL')
@@ -183,10 +187,10 @@ class testCuckoo():
     def test_mem_usage(self):
         self.cmd('FLUSHALL')
         self.cmd('CF.RESERVE', 'cf', '1000')
-        if self.env.isDebugger() is False:
+        if is_valgrind is False:
             self.assertEqual(1112, self.cmd('MEMORY USAGE', 'cf'))
         self.cmd('cf.insert', 'cf', 'nocreate', 'items', 'foo')
-        if self.env.isDebugger() is False:
+        if is_valgrind is False:
             self.assertEqual(1112, self.cmd('MEMORY USAGE', 'cf'))
 
     def test_max_iterations(self):

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import os
+
 from RLTest import Env
 from redis import ResponseError
 
@@ -8,6 +10,9 @@ xrange = range
 def ConvertInfo(lst):
     res_dct = {lst[i]: lst[i + 1] for i in range(0, len(lst), 2)}
     return res_dct
+
+
+is_valgrind = True if ('VGD' in os.environ or 'VALGRIND' in os.environ) else False
 
 
 class testRedisBloom():
@@ -220,11 +225,11 @@ class testRedisBloom():
     def test_mem_usage(self):
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd('bf.reserve', 'bf', '0.05', '1000'))
-        if self.env.isDebugger() is False:
+        if is_valgrind is False:
             self.assertEqual(1088, self.cmd('MEMORY USAGE', 'bf'))
         self.assertEqual([1, 1, 1], self.cmd(
             'bf.madd', 'bf', 'foo', 'bar', 'baz'))
-        if self.env.isDebugger() is False:
+        if is_valgrind is False:
             self.assertEqual(1088, self.cmd('MEMORY USAGE', 'bf'))
         with self.assertResponseError():
             self.cmd('bf.debug', 'bf', 'noexist')
