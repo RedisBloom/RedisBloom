@@ -272,6 +272,7 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
     for (uint32_t i = 0; i < topk->k; ++i) {
         topk->heap[i].item = RedisModule_LoadStringBuffer(io, &itemSize);
         if (itemSize == 1) {
+            RedisModule_Free(topk->heap[i].item);
             topk->heap[i].item = NULL;
         }
     }
