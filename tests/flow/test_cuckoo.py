@@ -210,7 +210,7 @@ class testCuckoo():
         self.cmd('cf.add', 'nums', 'RedisLabs')
         self.cmd('cf.del', 'nums', 'RedisLabs')
         d1 = self.cmd('cf.debug', 'nums')
-        self.retry_with_rdb_reload()
+        self.env.dumpAndReload()
         # for _ in self.client.retry_with_rdb_reload():   
         #     self.cmd('ping')    
         d2 = self.cmd('cf.debug', 'nums')
