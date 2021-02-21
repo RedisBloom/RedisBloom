@@ -93,9 +93,10 @@ jobs:
           at: /workspace
       - run:
           name: Package
+          environment:
+            - LC_ALL=C.UTF-8
+            - LANG=C.UTF-8
           command: |
-            export LC_ALL=C.UTF-8
-            export LANG=C.UTF-8
             python -m RAMP.ramp pack -m /workspace/ramp.yml -o /workspace/build/$PACKAGE_NAME.{os}-{architecture}.$CIRCLE_BRANCH.zip /workspace/$MODULE_ARTIFACT
       - persist_to_workspace:
           root: /workspace
@@ -210,7 +211,7 @@ workflows:
   version: 2
   build_and_package:
     jobs:
-      - lint 
+      - lint
       - static-analysis-infer
       - build:
           <<: *on-any-branch
