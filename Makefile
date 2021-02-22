@@ -20,10 +20,15 @@ ifeq ($(uname_S),Linux)
 	SHOBJ_CFLAGS ?=  -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -shared -Wl,-Bsymbolic,-Bsymbolic-functions
 else
+	# version 10.15 changed SDK dir
+	# https://stackoverflow.com/questions/58278260/cant-compile-a-c-program-on-a-mac-after-upgrading-to-catalina-10-15
+	MACOS_VERSION = $(shell sh -c 'sw_vers -productVersion 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' ' )
+	ifeq ($(shell expr $(MACOS_VERSION) \>= 10.15), 1)
+		SHOBJ_LDFLAGS ?= -syslibroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+	endif
 	CC=clang
-	CFLAGS += -mmacosx-version-min=10.6
 	SHOBJ_CFLAGS ?= -dynamic -fno-common -g -ggdb
-	SHOBJ_LDFLAGS ?= -dylib -exported_symbol _RedisModule_OnLoad -macosx_version_min 10.6
+	SHOBJ_LDFLAGS += -dylib -exported_symbol _RedisModule_OnLoad
 endif
 
 ROOT=$(shell pwd)
