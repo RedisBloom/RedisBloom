@@ -46,6 +46,25 @@ markdown_extensions:
 
 plugins:
   - search
+  - modules-template:
+      modules:
+        - name: 'Search'
+          link: '/redisearch'
+
+        - name: 'Time Series'
+          link: '/redistimeseries'
+
+        - name: 'Graph'
+          link: '/redisgraph'
+
+        - name: 'JSON'
+          link: '/redisjson'
+
+        - name: 'AI'
+          link: '/redisai'
+
+        - name: 'Gears'
+          link: '/redisgears'
   - versions-menu:
       include-regex: '([0-9]+).([0-9]+)'
 
