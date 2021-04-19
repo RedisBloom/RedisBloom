@@ -27,7 +27,7 @@ else
 		SHOBJ_LDFLAGS ?= -syslibroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 	endif
 	CC=clang
-	SHOBJ_CFLAGS ?= -dynamic -fno-common -g -ggdb
+	CFLAGS ?= -dynamic -fcommon -g -ggdb
 	SHOBJ_LDFLAGS += -dylib -exported_symbol _RedisModule_OnLoad
 endif
 
