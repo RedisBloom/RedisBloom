@@ -17,10 +17,13 @@ commands:
   setup-automation:
     steps:
       - run:
+          name: Pull Submodules
+          command: git submodule update --init --recursive
+      - run:
           name: Setup automation
           command: |
             make setup
-  
+
   ci_steps:
     parameters:
       platform:
@@ -244,7 +247,7 @@ workflows:
   version: 2
   build_and_package:
     jobs:
-      - lint 
+      - lint
       - static-analysis-infer
       - build:
           <<: *on-any-branch
