@@ -20,7 +20,7 @@ commands:
           name: Setup automation
           command: |
             make setup
-  
+
   ci_steps:
     parameters:
       platform:
@@ -189,6 +189,9 @@ jobs:
       - image: redisfab/rmbuilder:6.0.9-x64-buster
     steps:
       - checkout
+      - run:
+          name: Pull Submodules
+          command: git submodule update --init --recursive
       - setup-automation
       - run:
           name: Run QA Automation
@@ -244,7 +247,7 @@ workflows:
   version: 2
   build_and_package:
     jobs:
-      - lint 
+      - lint
       - static-analysis-infer
       - build:
           <<: *on-any-branch
