@@ -19,9 +19,41 @@ commands:
       - run:
           name: Setup automation
           command: |
-            (mkdir -p deps; cd deps; git clone https://github.com/RedisLabsModules/readies.git)
-            PIP=1 ./deps/readies/bin/getpy2
-            python2 -m pip install -r ./deps/readies/paella/requirements.txt
+            make setup
+  
+  ci_steps:
+    parameters:
+      platform:
+        type: string
+      getredis_params:
+        type: string
+        default: ""
+      build_params:
+        type: string
+        default: ""
+      test_params:
+        type: string
+        default: ""
+    steps:
+      - checkout
+      - run:
+          name: Pull Submodules
+          command: git submodule update --init --recursive
+      - run:
+          name: Install prerequisites
+          command: make setup
+      - run:
+          name: Install Redis
+          command: python3 ./deps/readies/bin/getredis -v 6 <<parameters.getredis_params>>
+      - run:
+          name: Build
+          command: make build <<parameters.build_params>> SHOW=1
+      - run:
+          name: Flow Test
+          no_output_timeout: 30m
+          command: |
+            mkdir -p ~/workspace/tests
+            make test TEST_REPORT_DIR=$HOME/workspace/tests <<parameters.test_params>> SHOW=1
 
 
 jobs:
@@ -48,21 +80,23 @@ jobs:
           command: |
             CC=clang INFER=infer make static-analysis
 
+  valgrind:
+    docker:
+      - image: redisfab/rmbuilder:6.0.9-x64-buster
+    steps:
+      - ci_steps:
+          platform: debian
+          build_params: VALGRIND=1 -j
+          test_params: VALGRIND=1 SIMPLE=1
+          getredis_params: --force --valgrind
+
   build:
     docker:
       - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
     steps:
       - checkout
-      - run:
-          name: Submodule checkout
-          command: git submodule update --init --recursive
-      - setup-automation
-      - run:
-          name: Build
-          command: make -j `nproc`
-      - run:
-          name: Test
-          command: make test
+      - ci_steps:
+          platform: debian
       - run:
           name: Coverage
           command: |
@@ -213,6 +247,10 @@ workflows:
       - lint 
       - static-analysis-infer
       - build:
+          <<: *on-any-branch
+          requires:
+            - lint
+      - valgrind:
           <<: *on-any-branch
           requires:
             - lint

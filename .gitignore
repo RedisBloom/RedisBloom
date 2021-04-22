@@ -11,10 +11,12 @@
 *.html
 *.info
 *.css
-tests/test-basic
-tests/test-perf
-tests/test-cuckoo
+tests/flow/logs
+tests/unit/test-basic
+tests/unit/test-perf
+tests/unit/test-cuckoo
 site/
 venv/
-deps/
+deps/infer
+deps/infer*
 infer-out/

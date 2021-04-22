@@ -62,13 +62,31 @@ $(MODULE_SO): $(MODULE_OBJ) $(DEPS)
 	$(LD) $^ -o $@ $(SHOBJ_LDFLAGS) $(LDFLAGS)
 
 build: all
-	$(MAKE) -C tests build-test
+	$(MAKE) -C tests
+
+
+
+TEST_REPORT_DIR ?= $(PWD)
+
+ifeq ($(SIMPLE),1)
+export GEN=1
+export SLAVES=0
+export AOF=0
+export CLUSTER=0
+else
+export GEN ?= 1
+export SLAVES ?= 1
+export AOF ?= 1
+export CLUSTER ?= 0
+endif
 
 test: $(MODULE_SO)
-	$(MAKE) -C tests test
-
-build-test: $(MODULE_SO)
-	$(MAKE) -C tests build-test
+	$(MAKE) -C tests/unit test
+	MODULE=$(realpath $(MODULE_SO)) \
+	CLUSTER=$(CLUSTER) \
+	GEN=$(GEN) AOF=$(AOF) SLAVES=$(SLAVES) \
+	VALGRIND=$(VALGRIND) \
+	$(ROOT)/tests/flow/tests.sh
 
 perf:
 	$(MAKE) -C tests perf
@@ -77,7 +95,10 @@ lint:
 	clang-format -style=file -Werror -n $(SRCDIR)/*
 
 setup:
+	@echo Setting up system...
 	./opt/build/get-fbinfer.sh
+	./deps/readies/bin/getpy3
+	python3 -m pip install -r ./deps/readies/paella/requirements.txt
 
 static-analysis-docker:
 	$(MAKE) clean
