@@ -17,6 +17,9 @@ commands:
   setup-automation:
     steps:
       - run:
+          name: Pull Submodules
+          command: git submodule update --init --recursive
+      - run:
           name: Setup automation
           command: |
             make setup
@@ -189,9 +192,6 @@ jobs:
       - image: redisfab/rmbuilder:6.0.9-x64-buster
     steps:
       - checkout
-      - run:
-          name: Pull Submodules
-          command: git submodule update --init --recursive
       - setup-automation
       - run:
           name: Run QA Automation
