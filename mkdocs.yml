@@ -35,6 +35,7 @@ nav:
     - 'Cuckoo Filter': 'Cuckoo_Commands.md'
     - 'Count-Min-Sketch': 'CountMinSketch_Commands.md'
     - 'Top-K': 'TopK_Commands.md'
+    - 'T-Digest': 'TDigest_Commands.md'
   - 'Contributor agreement': 'contrib.md'
 
 markdown_extensions:

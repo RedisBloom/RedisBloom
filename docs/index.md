@@ -26,6 +26,7 @@ Detailed command references for each data structure:
 * [Cuckoo Filter](Cuckoo_Commands.md)
 * [Count-Min Sketch](CountMinSketch_Commands.md)
 * [Top-K](TopK_Commands.md)
+* [T-Digest](TDigest_Commands.md)
 
 ## Bloom vs. Cuckoo
 Bloom filters typically exhibit better performance and scalability when inserting

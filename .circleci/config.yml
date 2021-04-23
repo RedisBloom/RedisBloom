@@ -81,7 +81,7 @@ jobs:
       - run:
           name: run fbinfer
           command: |
-            CC=clang INFER=infer make static-analysis
+            INFER=infer make static-analysis
 
   valgrind:
     docker:
