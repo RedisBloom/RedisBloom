@@ -7,16 +7,16 @@ test: test-basic test-cuckoo
 perf: test-perf
 	time ./test-perf
 
-CPPFLAGS:=$(CPPFLAGS) -I$(ROOT)/src
+CPPFLAGS:=$(CPPFLAGS)
 CFLAGS:=$(CFLAGS)
 
-test-basic: test-basic.o $(DEPS)
+test-basic: test-basic.o $(DEPS_TEST)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-test-cuckoo: test-cuckoo.o $(DEPS)
+test-cuckoo: test-cuckoo.o $(DEPS_TEST)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-test-perf: test-perf.o $(DEPS)
+test-perf: test-perf.o $(DEPS_TEST)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 clean:

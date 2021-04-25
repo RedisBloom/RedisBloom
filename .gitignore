@@ -20,3 +20,4 @@ venv/
 deps/infer
 deps/infer*
 infer-out/
+.idea
