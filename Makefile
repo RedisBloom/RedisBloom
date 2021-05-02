@@ -80,6 +80,8 @@ $(LIBTDIGEST):
 
 libtdigest: $(LIBTDIGEST)
 
+fetch:
+	-@git submodule update --init --recursive
 
 build: all
 	$(MAKE) -C tests
