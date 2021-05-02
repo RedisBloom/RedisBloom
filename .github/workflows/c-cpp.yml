@@ -24,7 +24,7 @@ jobs:
         sudo apt-get install redis
     - name: install deps
       run: |
-        ./deps/readies/bin/getpy3
-        ./system-setup.py
+        sudo ./deps/readies/bin/getpy3
+        sudo ./system-setup.py
     - name: make test
       run: make test
