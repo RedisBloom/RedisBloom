@@ -23,4 +23,6 @@ jobs:
         sudo apt-get update
         sudo apt-get install redis
     - name: make test
-      run: make test
+      run: |
+         make setup
+         make test
