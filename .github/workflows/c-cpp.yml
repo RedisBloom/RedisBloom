@@ -22,7 +22,9 @@ jobs:
         sudo add-apt-repository ppa:redislabs/redis
         sudo apt-get update
         sudo apt-get install redis
-    - name: make test
+    - name: install deps
       run: |
-         make setup
-         make test
+        ./deps/readies/bin/getpy3
+        ./system-setup.py
+    - name: make test
+      run: make test
