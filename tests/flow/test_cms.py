@@ -153,6 +153,8 @@ class testCMS():
         self.assertOk(self.cmd('cms.initbydim', 'foo', '2000', '10'))
         self.assertOk(self.cmd('cms.initbydim', 'bar', '2000', '10'))
         self.assertOk(self.cmd('cms.initbydim', 'baz', '2000', '10'))
+        self.assertRaises(ResponseError, self.cmd, 'cms.incrby', 'foo', 'item', 'foo')
+        self.assertRaises(ResponseError, self.cmd, 'cms.incrby', 'foo', 'item', '-1')
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 2, 'foo')
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 'B', 3, 'foo')
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 1, 'bar', 'weights', 'B')
