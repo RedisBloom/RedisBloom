@@ -18,7 +18,8 @@ commands:
     steps:
       - run:
           name: Pull Submodules
-          command: git submodule update --init --recursive
+          command: |
+            make fetch
       - run:
           name: Setup automation
           command: |
@@ -39,12 +40,7 @@ commands:
         default: ""
     steps:
       - checkout
-      - run:
-          name: Pull Submodules
-          command: git submodule update --init --recursive
-      - run:
-          name: Install prerequisites
-          command: make setup
+      - setup-automation
       - run:
           name: Install Redis
           command: python3 ./deps/readies/bin/getredis -v 6 <<parameters.getredis_params>>
@@ -65,6 +61,7 @@ jobs:
       - image: redislabsmodules/llvm-toolset:latest
     steps:
       - checkout
+      - setup-automation
       - run:
           name: lint
           command: |
@@ -77,7 +74,8 @@ jobs:
       - checkout
       - run:
           name: Submodule checkout
-          command: git submodule update --init --recursive
+          command: |
+            make fetch
       - run:
           name: run fbinfer
           command: |
