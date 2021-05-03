@@ -117,9 +117,9 @@ lint:
 
 setup:
 	@echo Setting up system...
-	./opt/build/get-fbinfer.sh
-	./deps/readies/bin/getpy3
-	python3 -m pip install -r ./deps/readies/paella/requirements.txt
+	@./opt/build/get-fbinfer.sh
+	@./deps/readies/bin/getpy3
+	@./system-setup.py
 
 static-analysis-docker:
 	$(MAKE) clean
