@@ -94,12 +94,10 @@ static int parseIncrByArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         (*pairs)[i].key = RedisModule_StringPtrLen(argv[2 + i * 2], &(*pairs)[i].keylen);
         if (RedisModule_StringToLongLong(argv[2 + i * 2 + 1], &((*pairs)[i].value)) !=
             REDISMODULE_OK) {
-            RedisModule_ReplyWithError(ctx, "CMS: Cannot parse number");
-            return REDISMODULE_ERR;
+            INNER_ERROR("CMS: Cannot parse number");
         }
         if ((*pairs)[i].value < 0) {
-            RedisModule_ReplyWithError(ctx, "CMS: Number cannot be negative");
-            return REDISMODULE_ERR;
+            INNER_ERROR("CMS: Number cannot be negative");
         }
     }
     return REDISMODULE_OK;
@@ -115,19 +113,20 @@ int CMSketch_IncrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModuleString *keyName = argv[1];
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ);
     CMSketch *cms = NULL;
+    CMSPair *pairArray = NULL;
 
     if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
-        INNER_ERROR("CMS: key does not exist");
+        RedisModule_ReplyWithError(ctx, "CMS: key does not exist");
+        goto done;
     } else if (RedisModule_ModuleTypeGetType(key) != CMSketchType) {
         RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
-        RedisModule_CloseKey(key);
-        return REDISMODULE_OK;
+        goto done;
     } else {
         cms = RedisModule_ModuleTypeGetValue(key);
     }
 
     int pairCount = (argc - 2) / 2;
-    CMSPair *pairArray = CMS_CALLOC(pairCount, sizeof(CMSPair));
+    pairArray = CMS_CALLOC(pairCount, sizeof(CMSPair));
     if (parseIncrByArgs(ctx, argv, argc, &pairArray, pairCount) != REDISMODULE_OK) {
         goto done;
     }
@@ -139,7 +138,8 @@ int CMSketch_IncrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_ReplicateVerbatim(ctx);
 
 done:
-    CMS_FREE(pairArray);
+    if (pairArray)
+        CMS_FREE(pairArray);
     RedisModule_CloseKey(key);
     return REDISMODULE_OK;
 }
