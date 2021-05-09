@@ -92,7 +92,13 @@ static int parseIncrByArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
                            int qty) {
     for (int i = 0; i < qty; ++i) {
         (*pairs)[i].key = RedisModule_StringPtrLen(argv[2 + i * 2], &(*pairs)[i].keylen);
-        RedisModule_StringToLongLong(argv[2 + i * 2 + 1], &((*pairs)[i].value));
+        if (RedisModule_StringToLongLong(argv[2 + i * 2 + 1], &((*pairs)[i].value)) !=
+            REDISMODULE_OK) {
+            INNER_ERROR("CMS: Cannot parse number");
+        }
+        if ((*pairs)[i].value < 0) {
+            INNER_ERROR("CMS: Number cannot be negative");
+        }
     }
     return REDISMODULE_OK;
 }
@@ -107,27 +113,34 @@ int CMSketch_IncrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModuleString *keyName = argv[1];
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ);
     CMSketch *cms = NULL;
+    CMSPair *pairArray = NULL;
 
     if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
-        INNER_ERROR("CMS: key does not exist");
+        RedisModule_ReplyWithError(ctx, "CMS: key does not exist");
+        goto done;
     } else if (RedisModule_ModuleTypeGetType(key) != CMSketchType) {
-        return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+        RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+        goto done;
     } else {
         cms = RedisModule_ModuleTypeGetValue(key);
     }
 
     int pairCount = (argc - 2) / 2;
-    CMSPair *pairArray = CMS_CALLOC(pairCount, sizeof(CMSPair));
-    parseIncrByArgs(ctx, argv, argc, &pairArray, pairCount);
+    pairArray = CMS_CALLOC(pairCount, sizeof(CMSPair));
+    if (parseIncrByArgs(ctx, argv, argc, &pairArray, pairCount) != REDISMODULE_OK) {
+        goto done;
+    }
     RedisModule_ReplyWithArray(ctx, pairCount);
     for (int i = 0; i < pairCount; ++i) {
         size_t count = CMS_IncrBy(cms, pairArray[i].key, pairArray[i].keylen, pairArray[i].value);
         RedisModule_ReplyWithLongLong(ctx, (long long)count);
     }
-
-    CMS_FREE(pairArray);
-    RedisModule_CloseKey(key);
     RedisModule_ReplicateVerbatim(ctx);
+
+done:
+    if (pairArray)
+        CMS_FREE(pairArray);
+    RedisModule_CloseKey(key);
     return REDISMODULE_OK;
 }
 
