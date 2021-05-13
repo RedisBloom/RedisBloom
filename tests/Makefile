@@ -1,33 +1,13 @@
-all: test test-cuckoo test-perf
+all: test 
 
-PYTHON:=python
+test: unit_tests flow_tests
 
-test: test-basic test-cuckoo
-	./test-basic
-	./test-cuckoo
-	$(PYTHON) pytests.py
-	$(PYTHON) cuckoo.py
-	$(PYTHON) cms.py
-	$(PYTHON) topk.py
-	$(PYTHON) init_test.py
+flow_tests: 
+	make -C flow
 
-perf: test-perf
-	time ./test-perf
-
-CPPFLAGS:=$(CPPFLAGS) -I$(ROOT)/src
-CFLAGS:=$(CFLAGS)
-
-test-basic: test-basic.o $(DEPS)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-
-test-cuckoo: test-cuckoo.o $(DEPS)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-
-test-perf: test-perf.o $(DEPS)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-
-build-test: test-basic test-perf test-cuckoo
+unit_tests: 
+	make -C unit
 
 clean:
-	$(RM) test-basic *.o *.rdb *.pyc
-	$(RM) -fr *.dSYM
+	make -C unit clean
+	make -C flow clean

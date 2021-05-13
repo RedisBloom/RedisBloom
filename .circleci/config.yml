@@ -1,28 +1,76 @@
 version: 2.1
 
 commands:
+
+  # If this build is from a fork, stop executing the current job and return success.
+  # This is useful to avoid steps that will fail due to missing credentials.
   early_return_for_forked_pull_requests:
-    description: >-
-      If this build is from a fork, stop executing the current job and return success.
-      This is useful to avoid steps that will fail due to missing credentials.
     steps:
       - run:
           name: Early return if this build is from a forked PR
           command: |
             if [ -n "$CIRCLE_PR_NUMBER" ]; then
-              echo "Nothing to do for forked PRs, so marking this step successful"
+              echo "Nothing to do for forked PRs, so marking this step successful."
+              circleci step halt
+            fi
+
+  early_returns:
+    steps:
+      - run:
+          name: Early return if this is a docs build
+          command: |
+            if [[ $CIRCLE_BRANCH == *docs ]]; then
+              echo "Identifies as documents PR, no testing required."
+              circleci step halt
+            fi
+      - run:
+          name: Early return if this branch should ignore CI
+          command: |
+            if [[ $CIRCLE_BRANCH == *noci ]]; then
+              echo "Identifies as actively ignoring CI, no testing required."
               circleci step halt
             fi
 
   setup-automation:
     steps:
       - run:
+          name: Pull Submodules
+          command: |
+            make fetch
+      - run:
           name: Setup automation
           command: |
-            (mkdir -p deps; cd deps; git clone https://github.com/RedisLabsModules/readies.git)
-            PIP=1 ./deps/readies/bin/getpy2
-            python2 -m pip install -r ./deps/readies/paella/requirements.txt
+            make setup
 
+  ci_steps:
+    parameters:
+      platform:
+        type: string
+      getredis_params:
+        type: string
+        default: ""
+      build_params:
+        type: string
+        default: ""
+      test_params:
+        type: string
+        default: ""
+    steps:
+      - early_returns
+      - checkout
+      - setup-automation
+      - run:
+          name: Install Redis
+          command: python3 ./deps/readies/bin/getredis -v 6 <<parameters.getredis_params>>
+      - run:
+          name: Build
+          command: make build <<parameters.build_params>> SHOW=1
+      - run:
+          name: Flow Test
+          no_output_timeout: 30m
+          command: |
+            mkdir -p ~/workspace/tests
+            make test TEST_REPORT_DIR=$HOME/workspace/tests <<parameters.test_params>> SHOW=1
 
 jobs:
   lint:
@@ -30,6 +78,7 @@ jobs:
       - image: redislabsmodules/llvm-toolset:latest
     steps:
       - checkout
+      - setup-automation
       - run:
           name: lint
           command: |
@@ -42,27 +91,29 @@ jobs:
       - checkout
       - run:
           name: Submodule checkout
-          command: git submodule update --init --recursive
+          command: |
+            make fetch
       - run:
           name: run fbinfer
           command: |
-            CC=clang INFER=infer make static-analysis
+            INFER=infer make static-analysis
+
+  valgrind:
+    docker:
+      - image: redisfab/rmbuilder:6.0.9-x64-buster
+    steps:
+      - ci_steps:
+          platform: debian
+          build_params: VALGRIND=1 -j
+          test_params: VALGRIND=1 SIMPLE=1
+          getredis_params: --force --valgrind
 
   build:
     docker:
       - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
     steps:
-      - checkout
-      - run:
-          name: Submodule checkout
-          command: git submodule update --init --recursive
-      - setup-automation
-      - run:
-          name: Build
-          command: make -j `nproc`
-      - run:
-          name: Test
-          command: make test
+      - ci_steps:
+          platform: debian
       - run:
           name: Coverage
           command: |
@@ -70,14 +121,13 @@ jobs:
             apt-get install -y lcov curl
             make coverage
             bash <(curl -s https://codecov.io/bash)
-      - early_return_for_forked_pull_requests
       - run:
           name: Persist Artifacts
           command: |
             mkdir -p /workspace/build
             cp $MODULE_ARTIFACT /workspace/
             cp ramp.yml /workspace
-
+      - early_return_for_forked_pull_requests
       - persist_to_workspace:
           root: /workspace
           paths:
@@ -210,9 +260,13 @@ workflows:
   version: 2
   build_and_package:
     jobs:
-      - lint 
+      - lint
       - static-analysis-infer
       - build:
+          <<: *on-any-branch
+          requires:
+            - lint
+      - valgrind:
           <<: *on-any-branch
           requires:
             - lint

@@ -3,6 +3,7 @@
 #include "cf.h"
 #include "rm_cms.h"
 #include "rm_topk.h"
+#include "rm_tdigest.h"
 #include "version.h"
 #include "rmutil/util.h"
 
@@ -1292,6 +1293,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 
     CMSModule_onLoad(ctx, argv, argc);
     TopKModule_onLoad(ctx, argv, argc);
+    if (TDigestModule_onLoad(ctx, argv, argc) == REDISMODULE_ERR)
+        return REDISMODULE_ERR;
 
     static RedisModuleTypeMethods typeprocs = {.version = REDISMODULE_TYPE_METHOD_VERSION,
                                                .rdb_load = BFRdbLoad,
