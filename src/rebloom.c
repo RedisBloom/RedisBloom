@@ -467,6 +467,7 @@ static int BFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             return RedisModule_ReplyWithError(ctx, errmsg);
         } else {
             RedisModule_ModuleTypeSetValue(key, BFType, sb);
+            RedisModule_ReplicateVerbatim(ctx);
             return RedisModule_ReplyWithSimpleString(ctx, "OK");
         }
     } else if (status != SB_OK) {
