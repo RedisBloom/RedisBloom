@@ -1,16 +1,33 @@
 version: 2.1
 
 commands:
+
+  # If this build is from a fork, stop executing the current job and return success.
+  # This is useful to avoid steps that will fail due to missing credentials.
   early_return_for_forked_pull_requests:
-    description: >-
-      If this build is from a fork, stop executing the current job and return success.
-      This is useful to avoid steps that will fail due to missing credentials.
     steps:
       - run:
           name: Early return if this build is from a forked PR
           command: |
             if [ -n "$CIRCLE_PR_NUMBER" ]; then
-              echo "Nothing to do for forked PRs, so marking this step successful"
+              echo "Nothing to do for forked PRs, so marking this step successful."
+              circleci step halt
+            fi
+
+  early_returns:
+    steps:
+      - run:
+          name: Early return if this is a docs build
+          command: |
+            if [[ $CIRCLE_BRANCH == *docs ]]; then
+              echo "Identifies as documents PR, no testing required."
+              circleci step halt
+            fi
+      - run:
+          name: Early return if this branch should ignore CI
+          command: |
+            if [[ $CIRCLE_BRANCH == *noci ]]; then
+              echo "Identifies as actively ignoring CI, no testing required."
               circleci step halt
             fi
 
@@ -39,6 +56,7 @@ commands:
         type: string
         default: ""
     steps:
+      - early_returns
       - checkout
       - setup-automation
       - run:
@@ -53,7 +71,6 @@ commands:
           command: |
             mkdir -p ~/workspace/tests
             make test TEST_REPORT_DIR=$HOME/workspace/tests <<parameters.test_params>> SHOW=1
-
 
 jobs:
   lint:
@@ -95,7 +112,6 @@ jobs:
     docker:
       - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
     steps:
-      - checkout
       - ci_steps:
           platform: debian
       - run:
@@ -105,14 +121,13 @@ jobs:
             apt-get install -y lcov curl
             make coverage
             bash <(curl -s https://codecov.io/bash)
-      - early_return_for_forked_pull_requests
       - run:
           name: Persist Artifacts
           command: |
             mkdir -p /workspace/build
-            cp $MODULE_ARTIFACT /workspace/
+            cp redisbloom.so /workspace/
             cp ramp.yml /workspace
-
+      - early_return_for_forked_pull_requests
       - persist_to_workspace:
           root: /workspace
           paths:
@@ -131,7 +146,7 @@ jobs:
           command: |
             export LC_ALL=C.UTF-8
             export LANG=C.UTF-8
-            python -m RAMP.ramp pack -m /workspace/ramp.yml -o /workspace/build/$PACKAGE_NAME.{os}-{architecture}.$CIRCLE_BRANCH.zip /workspace/$MODULE_ARTIFACT
+            python -m RAMP.ramp pack -m /workspace/ramp.yml -o /workspace/build/$PACKAGE_NAME.{os}-{architecture}.$CIRCLE_BRANCH.zip /workspace/redisbloom.so
       - persist_to_workspace:
           root: /workspace
           paths:
@@ -149,13 +164,13 @@ jobs:
           command: |
             export LC_ALL=C.UTF-8
             export LANG=C.UTF-8
-            python -m RAMP.ramp pack -m /workspace/ramp.yml -o /workspace/build/$PACKAGE_NAME.{os}-{architecture}.{semantic_version}.zip /workspace/$MODULE_ARTIFACT
+            python -m RAMP.ramp pack -m /workspace/ramp.yml -o /workspace/build/$PACKAGE_NAME.{os}-{architecture}.{semantic_version}.zip /workspace/redisbloom.so
       - run:
           name: Package
           command: |
             export LC_ALL=C.UTF-8
             export LANG=C.UTF-8
-            python -m RAMP.ramp pack -m /workspace/ramp.yml -o /workspace/build/$PACKAGE_NAME.{os}-{architecture}.latest.zip /workspace/$MODULE_ARTIFACT
+            python -m RAMP.ramp pack -m /workspace/ramp.yml -o /workspace/build/$PACKAGE_NAME.{os}-{architecture}.latest.zip /workspace/redisbloom.so
       - persist_to_workspace:
           root: /workspace
           paths:
