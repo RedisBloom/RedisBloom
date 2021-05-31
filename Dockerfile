@@ -18,6 +18,9 @@ WORKDIR /build
 
 RUN ./deps/readies/bin/getpy3
 RUN ./system-setup.py
+RUN apt-get update -qq
+RUN apt-get upgrade -qqy
+RUN rm -rf /var/cache/apt/
 RUN make fetch
 RUN make all
 
