@@ -255,6 +255,9 @@ on-master-and-version-tags: &on-master-and-version-tags
     tags:
       only: /^v[0-9].*/
 
+context: &context
+  context:
+    - common
 
 workflows:
   version: 2
@@ -279,13 +282,16 @@ workflows:
           requires:
             - build
       - deploy_branch:
+          <<: *context
           requires:
             - package_branch
       - release_automation:
+          <<: *context
           requires:
             - deploy_branch
       - deploy_release:
           <<: *on-version-tags
+          <<: *context
           requires:
             - package_release
 
@@ -295,4 +301,5 @@ workflows:
           cron: "07 20 * * *"
           <<: *on-master
     jobs:
-      - nightly_automation
+      - nightly_automation:
+          <<: *context
