@@ -72,6 +72,45 @@ commands:
             mkdir -p ~/workspace/tests
             make test TEST_REPORT_DIR=$HOME/workspace/tests <<parameters.test_params>> SHOW=1
 
+  benchmark-steps:
+    parameters:
+      github_actor:
+        type: string
+        default: $CIRCLE_USERNAME
+      module_path:
+        type: string
+        default: ../../redisbloom.so
+    steps:
+      - run:
+          name: Install remote benchmark tool dependencies
+          command: |
+            VERSION=0.14.8 ./deps/readies/bin/getterraform
+      - run:
+          name: Install remote benchmark python dependencies
+          command: python3 -m pip install -r ./tests/benchmarks/requirements.txt
+      - run:
+          name: Run CI benchmarks on aws
+          timeout: 60m
+          no_output_timeout: 30m
+          command: |
+            cd ./tests/benchmarks
+            export AWS_ACCESS_KEY_ID=$PERFORMANCE_EC2_ACCESS_KEY
+            export AWS_SECRET_ACCESS_KEY=$PERFORMANCE_EC2_SECRET_KEY
+            export AWS_DEFAULT_REGION=$PERFORMANCE_EC2_REGION
+            export EC2_PRIVATE_PEM=$PERFORMANCE_EC2_PRIVATE_PEM
+
+            redisbench-admin run-remote \
+              --required-module bf \
+              --module_path << parameters.module_path >> \
+              --github_actor << parameters.github_actor >> \
+              --github_repo $CIRCLE_PROJECT_REPONAME \
+              --github_org $CIRCLE_PROJECT_USERNAME \
+              --github_sha $CIRCLE_SHA1 \
+              --github_branch $CIRCLE_BRANCH \
+              --upload_results_s3 \
+              --triggering_env circleci \
+              --push_results_redistimeseries
+
 jobs:
   lint:
     docker:
@@ -220,6 +259,17 @@ jobs:
           name: Run QA Automation
           command: MODULE_VERSION=$CIRCLE_BRANCH VERBOSE=1 TEST=nightly QUICK=1 ./tests/qa/run
 
+  performance-automation:
+    docker:
+      - image: redisfab/rmbuilder:6.2.3-x64-bionic
+    steps:
+      - checkout
+      - setup-automation
+      - run:
+          name: build artifact
+          command: make build
+      - benchmark-steps
+
 
 on-any-branch: &on-any-branch
   filters:
@@ -255,6 +305,16 @@ on-master-and-version-tags: &on-master-and-version-tags
     tags:
       only: /^v[0-9].*/
 
+on-integ-and-version-tags: &on-integ-and-version-tags
+  filters:
+    branches:
+      only:
+        - master
+        - /^\d+\.\d+.*$/
+        - /^feature-.*$/
+        - /^perf-.*$/
+    tags:
+      only: /^v[0-9].*/
 
 workflows:
   version: 2
@@ -270,6 +330,11 @@ workflows:
           <<: *on-any-branch
           requires:
             - lint
+      - performance-automation:
+          <<: *on-integ-and-version-tags
+          requires:
+            - lint
+          context: common
       - package_branch:
           <<: *on-master
           requires:
@@ -296,3 +361,5 @@ workflows:
           <<: *on-master
     jobs:
       - nightly_automation
+      - performance-automation:
+          context: common
