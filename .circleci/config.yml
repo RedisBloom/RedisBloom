@@ -360,6 +360,5 @@ workflows:
           cron: "07 20 * * *"
           <<: *on-master
     jobs:
-      - nightly_automation
       - performance-automation:
           context: common
