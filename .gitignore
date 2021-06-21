@@ -21,3 +21,4 @@ deps/infer
 deps/infer*
 infer-out/
 .idea
+tests/benchmarks/profile_*
