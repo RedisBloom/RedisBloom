@@ -2,12 +2,20 @@
 #include <stdlib.h>  // malloc
 #include <strings.h> // strncasecmp
 
-#include "tdigest.h"
+#include "rm_tdigest.h"
 #include "rmutil/util.h"
 #include "version.h"
-
-#include "rm_tdigest.h"
 #include "redismodule.h"
+
+// defining TD_ALLOC_H is used to change the t-digest allocator at compile time
+// The define should be placed before including "tdigest.h" for the first time
+#define TD_ALLOC_H
+#define __td_malloc RedisModule_Alloc
+#define __td_calloc RedisModule_Calloc
+#define __td_realloc RedisModule_Realloc
+#define __td_free RedisModule_Free
+
+#include "tdigest.h"
 
 RedisModuleType *TDigestSketchType;
 
