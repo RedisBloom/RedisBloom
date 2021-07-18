@@ -169,7 +169,7 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
         }
     }
 
-    if (*countPtr >= heapMin && heapSearched == false) {
+    if (maxCount >= heapMin && heapSearched == false) {
         itemHeapPtr = checkExistInHeap(topk, item, itemlen);
         heapSearched = true;
     }
