@@ -187,25 +187,40 @@ static int TopK_Count_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
 }
 
 static int TopK_List_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-
-    if (argc != 2)
+    if (argc != 2 && argc != 3)
         return RedisModule_WrongArity(ctx);
+
+    bool withCount = 0;
+    if (argc == 3) {
+        size_t len;
+        const char *countStr = RedisModule_StringPtrLen(argv[2], &len);
+        if (strncasecmp(countStr, "WITHCOUNT", len) == 0) {
+            withCount = 1;
+        } else {
+            return RedisModule_ReplyWithError(ctx, "WITHCOUNT keyword expected");
+        }
+    }
 
     TopK *topk = NULL;
     if (GetTopKKey(ctx, argv[1], &topk, REDISMODULE_READ) != REDISMODULE_OK) {
         return REDISMODULE_OK;
     }
-    uint32_t k = topk->k;
-    char **heapList = TOPK_CALLOC(k, (sizeof(char *)));
-    TopK_List(topk, heapList);
-    RedisModule_ReplyWithArray(ctx, k);
-    for (int i = 0; i < k; ++i) {
-        if (heapList[i] != NULL) {
-            RedisModule_ReplyWithSimpleString(ctx, heapList[i]);
+    HeapBucket *heapList = TopK_List(topk);
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
+    long arrlen = 0;
+    for (int i = 0; i < topk->k; ++i) {
+        if (heapList[i].count != 0) {
+            RedisModule_ReplyWithSimpleString(ctx, heapList[i].item);
+            if (withCount) {
+                RedisModule_ReplyWithLongLong(ctx, heapList[i].count);
+            }
+            arrlen += 1 + withCount;
         } else {
-            RedisModule_ReplyWithNull(ctx);
+            break;
         }
     }
+    RedisModule_ReplySetArrayLength(ctx, arrlen);
+
     TOPK_FREE(heapList);
 
     return REDISMODULE_OK;
