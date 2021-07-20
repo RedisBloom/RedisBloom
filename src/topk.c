@@ -214,9 +214,7 @@ size_t TopK_Count(TopK *topk, const char *item, size_t itemlen) {
 }
 
 int cmpHeapBucket(const HeapBucket *res1, const HeapBucket *res2) {
-    return res1->count < res2->count ?  1 :
-           res1->count > res2->count ? -1 :
-           0;
+    return res1->count < res2->count ? 1 : res1->count > res2->count ? -1 : 0;
 }
 
 HeapBucket *TopK_List(TopK *topk) {
