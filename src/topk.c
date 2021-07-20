@@ -219,9 +219,7 @@ int cmpHeapBucket(const HeapBucket *res1, const HeapBucket *res2) {
 
 HeapBucket *TopK_List(TopK *topk) {
     HeapBucket *heapList = TOPK_CALLOC(topk->k, (sizeof(*heapList)));
-    for (uint32_t i = 0; i < topk->k; ++i) {
-        heapList[i] = topk->heap[i];
-    }
+    memcpy(heapList, topk->heap, topk->k * sizeof(HeapBucket));
     qsort(heapList, topk->k, sizeof(*heapList), (__compar_fn_t)cmpHeapBucket);
     return heapList;
 }
