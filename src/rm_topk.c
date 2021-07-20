@@ -214,7 +214,7 @@ static int TopK_List_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
             if (withCount) {
                 RedisModule_ReplyWithLongLong(ctx, heapList[i].count);
             }
-            arrlen += withCount ? 2 : 1;
+            arrlen += 1 + withCount;
         } else {
             break;
         }
