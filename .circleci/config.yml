@@ -31,16 +31,31 @@ commands:
               circleci step halt
             fi
 
-  setup-automation:
+  checkout-all:
     steps:
+      - checkout
       - run:
           name: Pull Submodules
           command: |
-            make fetch
+            git submodule update --init --recursive
+
+  # called separately from make fetch, so that system-setup isn't triggered
+  setup-automation:
+    steps:
+      - checkout-all
       - run:
-          name: Setup automation
+          name: Pre-build system setup
           command: |
-            make setup
+            ./opt/build/get-fbinfer.sh
+            ./deps/readies/bin/getpy3
+
+  setup-build-system:
+    steps:
+      - setup-automation
+      - run:
+          name: Setup build system
+          command: |
+            ./system-setup.py
 
   ci_steps:
     parameters:
@@ -58,7 +73,7 @@ commands:
     steps:
       - early_returns
       - checkout
-      - setup-automation
+      - setup-build-system
       - run:
           name: Install Redis
           command: python3 ./deps/readies/bin/getredis -v 6 <<parameters.getredis_params>>
@@ -117,7 +132,7 @@ jobs:
       - image: redislabsmodules/llvm-toolset:latest
     steps:
       - checkout
-      - setup-automation
+      - setup-build-system
       - run:
           name: lint
           command: |
@@ -173,6 +188,19 @@ jobs:
             - '*.so'
             - ramp.yml
             - build
+
+  build-dockers:
+    docker:
+      - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
+    steps:
+      - checkout
+      - setup_remote_docker
+      - setup-build-system
+      - run:
+          name: Build dockers
+          command: |
+            docker login -u redisfab -p $DOCKER_REDISFAB_PWD
+            make docker # docker_push
 
   package_branch:
     docker:
@@ -244,7 +272,7 @@ jobs:
       - image: redisfab/rmbuilder:6.0.9-x64-buster
     steps:
       - checkout
-      - setup-automation
+      - setup-build-system
       - run:
           name: Run QA Automation
           command: MODULE_VERSION=$CIRCLE_TAG VERBOSE=1 TEST=release ./tests/qa/run
@@ -254,7 +282,7 @@ jobs:
       - image: redisfab/rmbuilder:6.0.9-x64-buster
     steps:
       - checkout
-      - setup-automation
+      - setup-build-system
       - run:
           name: Run QA Automation
           command: MODULE_VERSION=$CIRCLE_BRANCH VERBOSE=1 TEST=nightly QUICK=1 ./tests/qa/run
@@ -264,7 +292,7 @@ jobs:
       - image: redisfab/rmbuilder:6.2.3-x64-bionic
     steps:
       - checkout
-      - setup-automation
+      - setup-build-system
       - run:
           name: build artifact
           command: make build
@@ -320,41 +348,46 @@ workflows:
   version: 2
   build_and_package:
     jobs:
-      - lint
-      - static-analysis-infer
-      - build:
-          <<: *on-any-branch
-          requires:
-            - lint
-      - valgrind:
-          <<: *on-any-branch
-          requires:
-            - lint
-      - performance-automation:
-          <<: *on-integ-and-version-tags
-          requires:
-            - lint
+#      - lint
+#      - static-analysis-infer
+#      - build:
+#          <<: *on-any-branch
+#          requires:
+#            - lint
+#      - valgrind:
+#          <<: *on-any-branch
+#          requires:
+#            - lint
+#      - performance-automation:
+#          <<: *on-integ-and-version-tags
+#          requires:
+#            - lint
+#          context: common
+#      - package_branch:
+#          <<: *on-master
+#          requires:
+#            - build
+#      - package_release:
+#          <<: *on-version-tags
+#          requires:
+#            - build
+#      - deploy_branch:
+#          context: common
+#          requires:
+#            - package_branch
+      - build-dockers:
+          <<: *on-master-and-version-tags
           context: common
-      - package_branch:
-          <<: *on-master
-          requires:
-            - build
-      - package_release:
-          <<: *on-version-tags
-          requires:
-            - build
-      - deploy_branch:
-          context: common
-          requires:
-            - package_branch
-      - release_automation:
-          requires:
-            - deploy_branch
-      - deploy_release:
-          context: common
-          <<: *on-version-tags
-          requires:
-            - package_release
+#          requires:
+#            - valgrind
+#      - release_automation:
+#          requires:
+#            - deploy_branch
+#      - deploy_release:
+#          context: common
+#          <<: *on-version-tags
+#          requires:
+#            - package_release
 
   nightly:
     triggers:

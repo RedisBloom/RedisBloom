@@ -1,0 +1,24 @@
+#----------------------------------------------------------------------------------------------
+FROM {{REDIS_DOCKER_ORG}}/redis:{{REDIS_VERSION}}-{{REDIS_ARCH}}-{{REDIS_OSNICK}} AS builder
+
+ADD ./ /build
+WORKDIR /build
+
+RUN ./deps/readies/bin/getpy3
+RUN ./deps/readies/bin/getupdates
+RUN ./system-setup.py
+
+RUN make fetch
+RUN make all
+
+#----------------------------------------------------------------------------------------------
+FROM {{REDIS_DOCKER_ORG}}/redis:{{REDIS_VERSION}}-{{REDIS_ARCH}}-{{REDIS_OSNICK}}
+
+{% set LIBDIR="/usr/lib/redis/modules" %}
+WORKDIR /data
+RUN mkdir -p {{LIBDIR}}
+
+COPY --from=builder /build/redisbloom.so {{LIBDIR}}
+
+EXPOSE 6379
+CMD ["redis-server", "--loadmodule", "{{LIBDIR}}/redisbloom.so"]

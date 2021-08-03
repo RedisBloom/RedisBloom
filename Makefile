@@ -52,7 +52,7 @@ DEPS = $(ROOT)/contrib/MurmurHash2.o \
 	   $(SRCDIR)/rm_tdigest.o \
 	   $(SRCDIR)/topk.o \
 	   $(SRCDIR)/rm_cms.o \
-	   $(SRCDIR)/cms.o 
+	   $(SRCDIR)/cms.o
 
 DEPS_TEST = $(ROOT)/contrib/MurmurHash2.o \
 	   $(ROOT)/rmutil/util.o \
@@ -63,7 +63,7 @@ DEPS_TEST = $(ROOT)/contrib/MurmurHash2.o \
 	   $(SRCDIR)/rm_cms.o \
 	   $(SRCDIR)/cms.o
 
-export 
+export
 
 ifeq ($(COV),1)
 CFLAGS += -fprofile-arcs -ftest-coverage
@@ -130,7 +130,7 @@ static-analysis:
 	$(MAKE) clean
 	$(MAKE) libtdigest
 	 CC=clang $(INFER) run --fail-on-issue --biabduction --skip-analysis-in-path ".*rmutil.*" -- $(MAKE)
-	
+
 format:
 	clang-format -style=file -i $(SRCDIR)/*
 
@@ -153,10 +153,10 @@ clean:
 distclean: clean
 
 docker:
-	docker build -t redislabs/rebloom .
+	${MAKE} -C build/docker
 
 docker_push: docker
-	docker push redislabs/rebloom:latest
+	${MAKE} -C build/docker PUBLISH=1
 
 # Compile an executable that prints the current version
 print_version:  $(SRCDIR)/version.h $(SRCDIR)/print_version.c
