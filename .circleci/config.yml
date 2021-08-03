@@ -376,8 +376,9 @@ workflows:
 #          requires:
 #            - package_branch
       - build-dockers:
-          <<: *on-master-and-version-tags
-          context: common
+          <<: *on-any-branch
+          # <<: *on-master-and-version-tags
+          # context: common
 #          requires:
 #            - valgrind
 #      - release_automation:
