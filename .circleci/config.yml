@@ -199,7 +199,7 @@ jobs:
       - run:
           name: Build dockers
           command: |
-            docker login -u redisfab -p $DOCKER_REDISFAB_PWD
+            # docker login -u redisfab -p "${DOCKER_REDISFAB_PWD}"
             make docker # docker_push
 
   package_branch:
