@@ -249,8 +249,7 @@ workflows:
           requires:
             - lint
       - package_branch:
-          <<: *on-any-branch
-          #@@<<: *on-integ-branch
+          <<: *on-integ-branch
           requires:
             - build
       - package_release:
@@ -259,18 +258,19 @@ workflows:
             - build
       - deploy_branch:
           context: common
+          <<: *on-integ-branch
           requires:
             - package_branch
-      - release_automation:
-          context: common
-          <<: *on-version-tags
-          requires:
-            - deploy_branch
       - deploy_release:
           context: common
           <<: *on-version-tags
           requires:
             - package_release
+      - release_automation:
+          context: common
+          <<: *on-version-tags
+          requires:
+            - deploy_release
 
   nightly:
     triggers:
