@@ -14,15 +14,119 @@ commands:
               circleci step halt
             fi
 
-  setup-automation:
+  early_returns:
+    steps:
+      - run:
+          name: Early return if this is a docs build
+          command: |
+            if [[ $CIRCLE_BRANCH == *docs ]]; then
+              echo "Identifies as documents PR, no testing required."
+              circleci step halt
+            fi
+      - run:
+          name: Early return if this branch should ignore CI
+          command: |
+            if [[ $CIRCLE_BRANCH == *noci ]]; then
+              echo "Identifies as actively ignoring CI, no testing required."
+              circleci step halt
+            fi
+
+  setup-executor:
+    steps:
+      - run:
+          name: Setup executor
+          command: |
+            apt-get -qq update
+            apt-get -q install -y git openssh-client curl ca-certificates make tar gzip
+            bash <(curl -fsSL https://raw.githubusercontent.com/docker/docker-install/master/install.sh)
+      - setup_remote_docker:
+          version: 20.10.2
+          docker_layer_caching: true
+
+  checkout-all:
+    steps:
+      - checkout
+      - run:
+          name: Checkout submodules
+          command: git submodule update --init --recursive
+
+   setup-automation:
     steps:
       - run:
           name: Setup automation
           command: |
-            (mkdir -p deps; cd deps; git clone https://github.com/RedisLabsModules/readies.git)
-            PIP=1 ./deps/readies/bin/getpy2
-            python2 -m pip install -r ./deps/readies/paella/requirements.txt
+            git submodule update --init deps/readies
+            ./deps/readies/bin/getpy2
 
+
+  ci_steps:
+    parameters:
+      platform:
+        type: string
+      getredis_params:
+        type: string
+        default: ""
+      build_params:
+        type: string
+        default: ""
+      test_params:
+        type: string
+        default: ""
+    steps:
+      - early_returns
+      - checkout-all
+      - setup-automation
+      - run:
+          name: Install Redis
+          command: python3 ./deps/readies/bin/getredis -v 6 <<parameters.getredis_params>>
+      - run:
+          name: Build
+          command: make build <<parameters.build_params>> SHOW=1
+      - run:
+          name: Flow Test
+          no_output_timeout: 30m
+          command: |
+            mkdir -p ~/workspace/tests
+            make test TEST_REPORT_DIR=$HOME/workspace/tests <<parameters.test_params>> SHOW=1
+
+  benchmark-steps:
+    parameters:
+      github_actor:
+        type: string
+        default: $CIRCLE_USERNAME
+      module_path:
+        type: string
+        default: ../../redisbloom.so
+    steps:
+      - run:
+          name: Install remote benchmark tool dependencies
+          command: |
+            VERSION=0.14.8 ./deps/readies/bin/getterraform
+      - run:
+          name: Install remote benchmark python dependencies
+          command: python3 -m pip install -r ./tests/benchmarks/requirements.txt
+      - run:
+          name: Run CI benchmarks on aws
+          timeout: 60m
+          no_output_timeout: 30m
+          command: |
+            cd ./tests/benchmarks
+            export AWS_ACCESS_KEY_ID=$PERFORMANCE_EC2_ACCESS_KEY
+            export AWS_SECRET_ACCESS_KEY=$PERFORMANCE_EC2_SECRET_KEY
+            export AWS_DEFAULT_REGION=$PERFORMANCE_EC2_REGION
+            export EC2_PRIVATE_PEM=$PERFORMANCE_EC2_PRIVATE_PEM
+
+            redisbench-admin run-remote \
+              --required-module bf \
+              --module_path << parameters.module_path >> \
+              --github_actor << parameters.github_actor >> \
+              --github_repo $CIRCLE_PROJECT_REPONAME \
+              --github_org $CIRCLE_PROJECT_USERNAME \
+              --github_sha $CIRCLE_SHA1 \
+              --github_branch $CIRCLE_BRANCH \
+              --upload_results_s3 \
+              --triggering_env circleci \
+              --push_results_redistimeseries
 
 jobs:
   lint:
@@ -30,6 +134,7 @@ jobs:
       - image: redislabsmodules/llvm-toolset:latest
     steps:
       - checkout
+      - setup-automation
       - run:
           name: lint
           command: |
@@ -39,10 +144,7 @@ jobs:
     docker:
       - image: redisbench/infer-linux64:1.0.0
     steps:
-      - checkout
-      - run:
-          name: Submodule checkout
-          command: git submodule update --init --recursive
+      - checkout-all
       - run:
           name: run fbinfer
           command: |
@@ -52,10 +154,7 @@ jobs:
     docker:
       - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
     steps:
-      - checkout
-      - run:
-          name: Submodule checkout
-          command: git submodule update --init --recursive
+      - checkout-all
       - setup-automation
       - run:
           name: Build
@@ -77,7 +176,7 @@ jobs:
             mkdir -p /workspace/build
             cp $MODULE_ARTIFACT /workspace/
             cp ramp.yml /workspace
-
+      - early_return_for_forked_pull_requests
       - persist_to_workspace:
           root: /workspace
           paths:
@@ -171,6 +270,17 @@ jobs:
           name: Run QA Automation
           command: MODULE_VERSION=$CIRCLE_BRANCH VERBOSE=1 TEST=nightly QUICK=1 ./tests/qa/run
 
+  performance-automation:
+    docker:
+      - image: redisfab/rmbuilder:6.2.3-x64-bionic
+    steps:
+      - checkout
+      - setup-automation
+      - run:
+          name: build artifact
+          command: make build
+      - benchmark-steps
+
 
 on-any-branch: &on-any-branch
   filters:
@@ -206,6 +316,16 @@ on-master-and-version-tags: &on-master-and-version-tags
     tags:
       only: /^v[0-9].*/
 
+on-integ-and-version-tags: &on-integ-and-version-tags
+  filters:
+    branches:
+      only:
+        - master
+        - /^\d+\.\d+.*$/
+        - /^feature-.*$/
+        - /^perf-.*$/
+    tags:
+      only: /^v[0-9].*/
 
 workflows:
   version: 2
@@ -217,6 +337,15 @@ workflows:
           <<: *on-any-branch
           requires:
             - lint
+      - valgrind:
+          <<: *on-any-branch
+          requires:
+            - lint
+#      - performance-automation:
+#          <<: *on-integ-and-version-tags
+#          requires:
+#            - lint
+#          context: common
       - package_branch:
           <<: *on-master
           requires:
@@ -226,20 +355,23 @@ workflows:
           requires:
             - build
       - deploy_branch:
+          context: common
           requires:
             - package_branch
       - release_automation:
           requires:
             - deploy_branch
       - deploy_release:
+          context: common
           <<: *on-version-tags
           requires:
             - package_release
 
-  nightly:
-    triggers:
-      - schedule:
-          cron: "07 20 * * *"
-          <<: *on-master
-    jobs:
-      - nightly_automation
+#  nightly:
+#    triggers:
+#      - schedule:
+#          cron: "07 20 * * *"
+#          <<: *on-master
+#    jobs:
+#      - performance-automation:
+#          context: common

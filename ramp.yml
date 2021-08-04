@@ -20,4 +20,4 @@ capabilities:
     - hash_policy
     - clustering
     - flash
-    - intershard_tls    
+    - intershard_tls
