@@ -24,6 +24,8 @@ commands:
             python2 -m pip install -r ./deps/readies/paella/requirements.txt
 
 
+#----------------------------------------------------------------------------------------------------------------------------------
+
 jobs:
   lint:
     docker:
@@ -171,6 +173,7 @@ jobs:
           name: Run QA Automation
           command: MODULE_VERSION=$CIRCLE_BRANCH VERBOSE=1 TEST=nightly QUICK=1 ./tests/qa/run
 
+#----------------------------------------------------------------------------------------------------------------------------------
 
 on-any-branch: &on-any-branch
   filters:
@@ -190,6 +193,28 @@ on-master: &on-master
   filters:
     branches:
       only: master
+    tags:
+      ignore: /.*/
+
+on-integ-branch: &on-integ-branch
+  filters:
+    branches:
+      only:
+        - master
+        - /^\d+\.\d+.*$/
+        - /^feature-.*$/
+    tags:
+      ignore: /.*/
+
+not-on-integ-branch: &not-on-integ-branch
+  filters:
+    branches:
+      ignore:
+        - master
+        - /^\d+\.\d+.*$/
+        - /^feature-.*$/
+    tags:
+      ignore: /.*/
 
 on-version-tags: &on-version-tags
   filters:
@@ -198,14 +223,18 @@ on-version-tags: &on-version-tags
     tags:
       only: /^v[0-9].*/
 
-on-master-and-version-tags: &on-master-and-version-tags
+on-integ-and-version-tags: &on-integ-and-version-tags
   filters:
     branches:
       only:
         - master
+        - /^\d+\.\d+.*$/
+        - /^feature-.*$/
+        - /^perf-.*$/
     tags:
       only: /^v[0-9].*/
 
+#----------------------------------------------------------------------------------------------------------------------------------
 
 workflows:
   version: 2
@@ -218,7 +247,7 @@ workflows:
           requires:
             - lint
       - package_branch:
-          <<: *on-master
+          <<: *on-integ-branch
           requires:
             - build
       - package_release:
@@ -226,12 +255,16 @@ workflows:
           requires:
             - build
       - deploy_branch:
+          context: common
           requires:
             - package_branch
       - release_automation:
+          context: common
+          <<: *on-version-tags
           requires:
             - deploy_branch
       - deploy_release:
+          context: common
           <<: *on-version-tags
           requires:
             - package_release
@@ -240,6 +273,10 @@ workflows:
     triggers:
       - schedule:
           cron: "07 20 * * *"
-          <<: *on-master
+          filters:
+            branches:
+              only:
+                - master
+                - /^feature-.*$/
     jobs:
       - nightly_automation
