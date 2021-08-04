@@ -249,7 +249,8 @@ workflows:
           requires:
             - lint
       - package_branch:
-          <<: *on-integ-branch
+	      <<: *on-any-branch
+          #@@<<: *on-integ-branch
           requires:
             - build
       - package_release:
