@@ -95,10 +95,9 @@ jobs:
           at: /workspace
       - run:
           name: Package
-          environment:
-            - LC_ALL=C.UTF-8
-            - LANG=C.UTF-8
           command: |
+            export LC_ALL=C.UTF-8
+            export LANG=C.UTF-8
             python -m RAMP.ramp pack -m /workspace/ramp.yml -o /workspace/build/$PACKAGE_NAME.{os}-{architecture}.$CIRCLE_BRANCH.zip /workspace/$MODULE_ARTIFACT
       - persist_to_workspace:
           root: /workspace
@@ -106,6 +105,7 @@ jobs:
             - build
       - store_artifacts:
           path: /workspace/build
+
   package_release:
     docker:
       - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
@@ -130,6 +130,7 @@ jobs:
             - build
       - store_artifacts:
           path: /workspace/build
+
   deploy_branch:
     docker:
       - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
@@ -141,6 +142,7 @@ jobs:
           command: >-
             aws s3 cp /workspace/build/ s3://redismodules/$PACKAGE_NAME/ --acl
             public-read --recursive --exclude "*" --include "*.zip"
+
   deploy_release:
     docker:
       - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
@@ -256,18 +258,19 @@ workflows:
             - build
       - deploy_branch:
           context: common
+          <<: *on-integ-branch
           requires:
             - package_branch
-      - release_automation:
-          context: common
-          <<: *on-version-tags
-          requires:
-            - deploy_branch
       - deploy_release:
           context: common
           <<: *on-version-tags
           requires:
             - package_release
+      - release_automation:
+          context: common
+          <<: *on-version-tags
+          requires:
+            - deploy_release
 
   nightly:
     triggers:
