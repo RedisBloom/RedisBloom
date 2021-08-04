@@ -9,7 +9,7 @@ commands:
       - run:
           name: Early return if this build is from a forked PR
           command: |
-            if [ -n "$CIRCLE_PR_NUMBER" ]; then
+            if [[ -n "$CIRCLE_PR_NUMBER" ]]; then
               echo "Nothing to do for forked PRs, so marking this step successful"
               circleci step halt
             fi
@@ -50,7 +50,7 @@ commands:
           name: Checkout submodules
           command: git submodule update --init --recursive
 
-   setup-automation:
+  setup-automation:
     steps:
       - run:
           name: Setup automation
@@ -149,6 +149,16 @@ jobs:
           name: run fbinfer
           command: |
             CC=clang INFER=infer make static-analysis
+
+  valgrind:
+    docker:
+      - image: redisfab/rmbuilder:6.0.9-x64-buster
+    steps:
+      - ci_steps:
+          platform: debian
+          build_params: VALGRIND=1 -j
+          test_params: VALGRIND=1 SIMPLE=1
+          getredis_params: --force --valgrind
 
   build:
     docker:
