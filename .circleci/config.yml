@@ -357,7 +357,9 @@ workflows:
   build_and_package:
     jobs:
       - lint
+          <<: *on-any-branch
       - static-analysis-infer
+          <<: *on-any-branch
       - build:
           <<: *on-any-branch
           requires:
