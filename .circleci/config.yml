@@ -242,9 +242,9 @@ workflows:
   version: 2
   build_and_package:
     jobs:
-      - lint
+      - lint:
           <<: *on-any-branch
-      - static-analysis-infer
+      - static-analysis-infer:
           <<: *on-any-branch
       - build:
           <<: *on-any-branch
