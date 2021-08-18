@@ -1,16 +1,16 @@
 version: 2.1
 
 commands:
-
-  # If this build is from a fork, stop executing the current job and return success.
-  # This is useful to avoid steps that will fail due to missing credentials.
   early_return_for_forked_pull_requests:
+    description: >-
+      If this build is from a fork, stop executing the current job and return success.
+      This is useful to avoid steps that will fail due to missing credentials.
     steps:
       - run:
           name: Early return if this build is from a forked PR
           command: |
             if [ -n "$CIRCLE_PR_NUMBER" ]; then
-              echo "Nothing to do for forked PRs, so marking this step successful."
+              echo "Nothing to do for forked PRs, so marking this step successful"
               circleci step halt
             fi
 
@@ -30,6 +30,25 @@ commands:
               echo "Identifies as actively ignoring CI, no testing required."
               circleci step halt
             fi
+
+  setup-executor:
+    steps:
+      - run:
+          name: Setup executor
+          command: |
+            apt-get -qq update
+            apt-get -q install -y git openssh-client curl ca-certificates make tar gzip
+            bash <(curl -fsSL https://raw.githubusercontent.com/docker/docker-install/master/install.sh)
+      - setup_remote_docker:
+          version: 20.10.2
+          docker_layer_caching: true
+
+  checkout-all:
+    steps:
+      - checkout
+      - run:
+          name: Checkout submodules
+          command: git submodule update --init --recursive
 
   setup-automation:
     steps:
@@ -57,7 +76,7 @@ commands:
         default: ""
     steps:
       - early_returns
-      - checkout
+      - checkout-all
       - setup-automation
       - run:
           name: Install Redis
@@ -127,11 +146,7 @@ jobs:
     docker:
       - image: redisbench/infer-linux64:1.0.0
     steps:
-      - checkout
-      - run:
-          name: Submodule checkout
-          command: |
-            make fetch
+      - checkout-all
       - run:
           name: run fbinfer
           command: |
@@ -160,6 +175,7 @@ jobs:
             apt-get install -y lcov curl
             make coverage
             bash <(curl -s https://codecov.io/bash)
+      - early_return_for_forked_pull_requests
       - run:
           name: Persist Artifacts
           command: |
@@ -192,6 +208,7 @@ jobs:
             - build
       - store_artifacts:
           path: /workspace/build
+
   package_release:
     docker:
       - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
@@ -216,6 +233,7 @@ jobs:
             - build
       - store_artifacts:
           path: /workspace/build
+
   deploy_branch:
     docker:
       - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
@@ -227,6 +245,7 @@ jobs:
           command: >-
             aws s3 cp /workspace/build/ s3://redismodules/$PACKAGE_NAME/ --acl
             public-read --recursive --exclude "*" --include "*.zip"
+
   deploy_release:
     docker:
       - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
@@ -270,6 +289,7 @@ jobs:
           command: make build
       - benchmark-steps
 
+#----------------------------------------------------------------------------------------------------------------------------------
 
 on-any-branch: &on-any-branch
   filters:
@@ -289,19 +309,33 @@ on-master: &on-master
   filters:
     branches:
       only: master
+    tags:
+      ignore: /.*/
+
+on-integ-branch: &on-integ-branch
+  filters:
+    branches:
+      only:
+        - master
+        - /^\d+\.\d+.*$/
+        - /^feature-.*$/
+    tags:
+      ignore: /.*/
+
+not-on-integ-branch: &not-on-integ-branch
+  filters:
+    branches:
+      ignore:
+        - master
+        - /^\d+\.\d+.*$/
+        - /^feature-.*$/
+    tags:
+      ignore: /.*/
 
 on-version-tags: &on-version-tags
   filters:
     branches:
       ignore: /.*/
-    tags:
-      only: /^v[0-9].*/
-
-on-master-and-version-tags: &on-master-and-version-tags
-  filters:
-    branches:
-      only:
-        - master
     tags:
       only: /^v[0-9].*/
 
@@ -316,12 +350,16 @@ on-integ-and-version-tags: &on-integ-and-version-tags
     tags:
       only: /^v[0-9].*/
 
+#----------------------------------------------------------------------------------------------------------------------------------
+
 workflows:
   version: 2
   build_and_package:
     jobs:
-      - lint
-      - static-analysis-infer
+      - lint:
+          <<: *on-any-branch
+      - static-analysis-infer:
+          <<: *on-any-branch
       - build:
           <<: *on-any-branch
           requires:
@@ -336,7 +374,7 @@ workflows:
             - lint
           context: common
       - package_branch:
-          <<: *on-master
+          <<: *on-integ-branch
           requires:
             - build
       - package_release:
@@ -345,22 +383,29 @@ workflows:
             - build
       - deploy_branch:
           context: common
+          <<: *on-integ-branch
           requires:
             - package_branch
-      - release_automation:
-          requires:
-            - deploy_branch
       - deploy_release:
           context: common
           <<: *on-version-tags
           requires:
             - package_release
+      - release_automation:
+          context: common
+          <<: *on-version-tags
+          requires:
+            - deploy_release
 
   nightly:
     triggers:
       - schedule:
           cron: "07 20 * * *"
-          <<: *on-master
+          filters:
+            branches:
+              only:
+                - master
+                - /^feature-.*$/
     jobs:
       - performance-automation:
           context: common
