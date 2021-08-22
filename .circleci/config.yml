@@ -154,7 +154,7 @@ jobs:
 
   valgrind:
     docker:
-      - image: redisfab/rmbuilder:6.0.9-x64-buster
+      - image: redisfab/rmbuilder:6.2.3-x64-buster
     steps:
       - ci_steps:
           platform: debian
@@ -164,7 +164,7 @@ jobs:
 
   build:
     docker:
-      - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
+      - image: 'redisfab/rmbuilder:6.2.3-x64-bionic'
     steps:
       - ci_steps:
           platform: debian
@@ -192,7 +192,7 @@ jobs:
 
   package_branch:
     docker:
-      - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
+      - image: 'redisfab/rmbuilder:6.2.3-x64-bionic'
     steps:
       - attach_workspace:
           at: /workspace
@@ -211,7 +211,7 @@ jobs:
 
   package_release:
     docker:
-      - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
+      - image: 'redisfab/rmbuilder:6.2.3-x64-bionic'
     steps:
       - attach_workspace:
           at: /workspace
@@ -236,7 +236,7 @@ jobs:
 
   deploy_branch:
     docker:
-      - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
+      - image: 'redisfab/rmbuilder:6.2.3-x64-bionic'
     steps:
       - attach_workspace:
           at: /workspace
@@ -248,7 +248,7 @@ jobs:
 
   deploy_release:
     docker:
-      - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
+      - image: 'redisfab/rmbuilder:6.2.3-x64-bionic'
     steps:
       - attach_workspace:
           at: /workspace
@@ -260,7 +260,7 @@ jobs:
 
   release_automation:
     docker:
-      - image: redisfab/rmbuilder:6.0.9-x64-buster
+      - image: redisfab/rmbuilder:6.2.3-x64-buster
     steps:
       - checkout
       - setup-automation
@@ -270,7 +270,7 @@ jobs:
 
   nightly_automation:
     docker:
-      - image: redisfab/rmbuilder:6.0.9-x64-buster
+      - image: redisfab/rmbuilder:6.2.3-x64-buster
     steps:
       - checkout
       - setup-automation
