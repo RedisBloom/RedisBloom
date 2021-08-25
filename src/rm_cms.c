@@ -35,8 +35,7 @@ static int GetCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName, CMSketch *
     return REDISMODULE_OK;
 }
 
-static int GetCMSKeyIgnore(RedisModuleCtx *ctx, RedisModuleString *keyName, CMSketch **cms,
-        int mode) {
+static int GetCMSKeyIgnore(RedisModuleCtx *ctx, RedisModuleString *keyName, CMSketch **cms, int mode) {
     // All using this function should call RedisModule_AutoMemory to prevent memory leak
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, mode);
     if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
