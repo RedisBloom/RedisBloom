@@ -69,7 +69,7 @@ static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
             prob >= 1) {
             INNER_ERROR("CMS: invalid prob value");
         }
-        CMS_DimFromProb(overEst, prob, (size_t *) width, (size_t *) depth);
+        CMS_DimFromProb(overEst, prob, (size_t *)width, (size_t *)depth);
     }
 
     return REDISMODULE_OK;
@@ -148,11 +148,11 @@ int CMSketch_IncrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_ReplyWithArray(ctx, pairCount);
     for (int i = 0; i < pairCount; ++i) {
         size_t count = CMS_IncrBy(cms, pairArray[i].key, pairArray[i].keylen, pairArray[i].value);
-        RedisModule_ReplyWithLongLong(ctx, (long long) count);
+        RedisModule_ReplyWithLongLong(ctx, (long long)count);
     }
     RedisModule_ReplicateVerbatim(ctx);
 
-    done:
+done:
     if (pairArray)
         CMS_FREE(pairArray);
     RedisModule_CloseKey(key);
@@ -333,7 +333,7 @@ void CMSRdbSave(RedisModuleIO *io, void *obj) {
     RedisModule_SaveUnsigned(io, cms->width);
     RedisModule_SaveUnsigned(io, cms->depth);
     RedisModule_SaveUnsigned(io, cms->counter);
-    RedisModule_SaveStringBuffer(io, (const char *) cms->array,
+    RedisModule_SaveStringBuffer(io, (const char *)cms->array,
                                  cms->width * cms->depth * sizeof(uint32_t));
 }
 
@@ -347,7 +347,7 @@ void *CMSRdbLoad(RedisModuleIO *io, int encver) {
     cms->depth = RedisModule_LoadUnsigned(io);
     cms->counter = RedisModule_LoadUnsigned(io);
     size_t length = cms->width * cms->depth * sizeof(size_t);
-    cms->array = (uint32_t *) RedisModule_LoadStringBuffer(io, &length);
+    cms->array = (uint32_t *)RedisModule_LoadStringBuffer(io, &length);
 
     return cms;
 }
@@ -355,18 +355,18 @@ void *CMSRdbLoad(RedisModuleIO *io, int encver) {
 void CMSFree(void *value) { CMS_Destroy(value); }
 
 size_t CMSMemUsage(const void *value) {
-    CMSketch *cms = (CMSketch *) value;
+    CMSketch *cms = (CMSketch *)value;
     return sizeof(cms) + cms->width * cms->depth * sizeof(size_t);
 }
 
 int CMSModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     // TODO: add option to set defaults from command line and in program
     RedisModuleTypeMethods tm = {.version = REDISMODULE_TYPE_METHOD_VERSION,
-            .rdb_load = CMSRdbLoad,
-            .rdb_save = CMSRdbSave,
-            .aof_rewrite = RMUtil_DefaultAofRewrite,
-            .mem_usage = CMSMemUsage,
-            .free = CMSFree};
+                                 .rdb_load = CMSRdbLoad,
+                                 .rdb_save = CMSRdbSave,
+                                 .aof_rewrite = RMUtil_DefaultAofRewrite,
+                                 .mem_usage = CMSMemUsage,
+                                 .free = CMSFree};
 
     CMSketchType = RedisModule_CreateDataType(ctx, "CMSk-TYPE", CMS_ENC_VER, &tm);
     if (CMSketchType == NULL)
