@@ -35,7 +35,8 @@ static int GetCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName, CMSketch *
     return REDISMODULE_OK;
 }
 
-static int GetCMSKeyIgnore(RedisModuleCtx *ctx, RedisModuleString *keyName, CMSketch **cms, int mode) {
+static int GetCMSKeyIgnore(RedisModuleCtx *ctx, RedisModuleString *keyName, CMSketch **cms,
+        int mode) {
     // All using this function should call RedisModule_AutoMemory to prevent memory leak
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, mode);
     if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
@@ -209,11 +210,11 @@ int CMSketch_BatchQuery(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         }
     }
     RedisModule_ReplyWithArray(ctx, itemCount);
-    //set 0
+    // set 0
     memset(temp, 0, sizeof(temp));
-    //if all keys don't exists, return all values 0
+    // if all keys don't exists, return all values 0
     if (key_index != 0 && depth > 0) {
-        //cal hash, avoid multiple calculations
+        // cal hash, avoid multiple calculations
         unsigned int hash_arr[itemCount][depth];
         for (int i = 0; i < itemCount; ++i) {
             size_t length = 0;
