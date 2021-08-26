@@ -32,6 +32,13 @@ class testCMS():
         self.assertEqual([5], self.cmd('cms.query', 'cms2', 'a'))
         self.assertEqual(['width', 2000, 'depth', 7, 'count', 5],
                          self.cmd('cms.info', 'cms2'))
+
+        self.assertOk(self.cmd('cms.initbydim', 'k1', '100', '2'))
+        self.assertOk(self.cmd('cms.initbydim', 'k2', '100', '2'))
+        self.assertEqual([5], self.cmd('cms.incrby', 'k1', 'v1', '5'))
+        self.assertEqual([5], self.cmd('cms.incrby', 'k2', 'v2', '5'))
+        self.assertEqual([5, 5], self.cmd('cms.batchquery', 'KEYS', 'k1', 'k2', 'VALUES', 'v1', 'v2'))
+
         if is_valgrind is False:
             self.assertEqual(840, self.cmd('MEMORY USAGE', 'cms1'))
 
