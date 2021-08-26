@@ -32,6 +32,13 @@ class testCMS():
         self.assertEqual([5], self.cmd('cms.query', 'cms2', 'a'))
         self.assertEqual(['width', 2000, 'depth', 7, 'count', 5],
                          self.cmd('cms.info', 'cms2'))
+
+        self.assertOk(self.cmd('cms.initbydim', 'k1', '100', '5'))
+        self.assertOk(self.cmd('cms.initbydim', 'k2', '100', '5'))
+        self.assertEqual([5], self.cmd('cms.incrby', 'k1', 'v1', '5'))
+        self.assertEqual([5], self.cmd('cms.incrby', 'k2', 'v2', '5'))
+        self.assertEqual([5, 5], self.cmd('cms.batchquery', 'KEYS', 'k1', 'k2', 'VALUES', 'v1', 'v2'))
+
         if is_valgrind is False:
             self.assertEqual(840, self.cmd('MEMORY USAGE', 'cms1'))
 
@@ -106,6 +113,30 @@ class testCMS():
         #     self.assertEqual([2], self.cmd('cms.query', 'test', 'foo'))
         #     self.assertEqual([1], self.cmd('cms.query', 'test', 'bar'))
         #     self.assertEqual([0], self.cmd('cms.query', 'test', 'nonexist'))
+
+    def test_batchquery(self):
+        self.assertOk(self.cmd('cms.initbydim', 'k1', '100', '5'))
+        self.assertOk(self.cmd('cms.initbydim', 'k2', '100', '5'))
+        self.assertOk(self.cmd('cms.initbydim', 'k3', '100', '6'))
+        self.assertEqual([5], self.cmd('cms.incrby', 'k1', 'v1', '5'))
+        self.assertEqual([5], self.cmd('cms.incrby', 'k2', 'v2', '5'))
+        self.assertEqual([5], self.cmd('cms.incrby', 'k3', 'v3', '5'))
+        self.assertEqual([5, 5], self.cmd('cms.batchquery', 'KEYS', 'k1', 'k2', 'VALUES', 'v1', 'v2'))
+        # k1, k3 have diff depth, error
+        self.assertRaises(ResponseError, self.cmd, 'cms.batchquery', 'KEYS', 'k1', 'k3', 'VALUES', 'v1', 'v3')
+        # at least one key existed, k1 existed
+        self.assertEqual([5, 0], self.cmd('cms.batchquery', 'KEYS', 'k1', 'k4', 'VALUES', 'v1', 'v4'))
+        # at least one key existed, all not existed, return 0 arr
+        self.assertEqual([0, 0], self.cmd('cms.batchquery', 'KEYS', 'k4', 'k5', 'VALUES', 'v4', 'v5'))
+        # error command (KEYS missing)
+        self.assertRaises(ResponseError, self.cmd, 'cms.batchquery', 'k4', 'k5', 'VALUES', 'v4', 'v5')
+        self.assertRaises(ResponseError, self.cmd, 'cms.batchquery', 'KEYS', 'VALUES', 'v4', 'v5')
+        # error command (VALUES missing)
+        self.assertRaises(ResponseError, self.cmd, 'cms.batchquery', 'KEYS', 'k4', 'k5', 'v4', 'v5')
+        self.assertRaises(ResponseError, self.cmd, 'cms.batchquery', 'KEYS', 'k4', 'k5', 'VALUES')
+        # error command (all missing)
+        self.assertRaises(ResponseError, self.cmd, 'cms.batchquery', 'k4', 'k5', 'v4', 'v5')
+        self.assertRaises(ResponseError, self.cmd, 'cms.batchquery')
 
     def test_merge(self):
         self.cmd('FLUSHALL')
