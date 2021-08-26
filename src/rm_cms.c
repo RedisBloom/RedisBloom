@@ -7,6 +7,9 @@
 
 #include "cms.h"
 #include "rm_cms.h"
+#include "contrib/murmurhash2.h"
+
+#define CMS_HASH(item, itemlen, i) MurmurHash2(item, itemlen, i)
 
 #define INNER_ERROR(x)                                                                             \
     RedisModule_ReplyWithError(ctx, x);                                                            \
@@ -27,6 +30,19 @@ static int GetCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName, CMSketch *
         INNER_ERROR("CMS: key does not exist");
     } else if (RedisModule_ModuleTypeGetType(key) != CMSketchType) {
         INNER_ERROR(REDISMODULE_ERRORMSG_WRONGTYPE);
+    }
+    *cms = RedisModule_ModuleTypeGetValue(key);
+    return REDISMODULE_OK;
+}
+
+static int GetCMSKeyIgnore(RedisModuleCtx *ctx, RedisModuleString *keyName, CMSketch **cms,
+                           int mode) {
+    // All using this function should call RedisModule_AutoMemory to prevent memory leak
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, mode);
+    if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
+        return REDISMODULE_ERR;
+    } else if (RedisModule_ModuleTypeGetType(key) != CMSketchType) {
+        return REDISMODULE_ERR;
     }
     *cms = RedisModule_ModuleTypeGetValue(key);
     return REDISMODULE_OK;
@@ -161,6 +177,62 @@ int CMSketch_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     for (int i = 0; i < itemCount; ++i) {
         const char *str = RedisModule_StringPtrLen(argv[2 + i], &length);
         RedisModule_ReplyWithLongLong(ctx, CMS_Query(cms, str, length));
+    }
+
+    return REDISMODULE_OK;
+}
+
+int CMSketch_BatchQuery(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+    if (argc < 5) {
+        return RedisModule_WrongArity(ctx);
+    }
+    int pos1 = RMUtil_ArgIndex("KEYS", argv, argc);
+    int pos2 = RMUtil_ArgIndex("VALUES", argv, argc);
+    int keyCount = pos2 - pos1 - 1;
+    int itemCount = argc - 3 - keyCount;
+    if (pos1 == -1 || pos2 == -1 || keyCount <= 0 || itemCount <= 0) {
+        INNER_ERROR("CMS: BATCHQUERY MUST BE: cms.batchquery KEYS k1 k2 k3... VALUES v1 v2 v3...");
+    }
+    unsigned int temp[itemCount];
+    CMSketch *key_arr[pos2 - pos1];
+    int key_index = 0;
+    int depth = 0;
+    for (int i = pos1 + 1; i < pos2; ++i) {
+        CMSketch *cms = NULL;
+        if (GetCMSKeyIgnore(ctx, argv[i], &cms, REDISMODULE_READ) == REDISMODULE_OK) {
+            if (depth != 0 && depth != cms->depth) {
+                INNER_ERROR("CMS: all keys must have same depth");
+            } else {
+                depth = cms->depth;
+            }
+            key_arr[key_index++] = cms;
+        }
+    }
+    RedisModule_ReplyWithArray(ctx, itemCount);
+    // set 0
+    memset(temp, 0, sizeof(temp));
+    // if all keys don't exists, return all values 0
+    if (key_index != 0 && depth > 0) {
+        // cal hash, avoid multiple calculations
+        unsigned int hash_arr[itemCount][depth];
+        for (int i = 0; i < itemCount; ++i) {
+            size_t length = 0;
+            const char *str = RedisModule_StringPtrLen(argv[pos2 + 1 + i], &length);
+            for (size_t j = 0; j < depth; ++j) {
+                uint32_t hash = CMS_HASH(str, length, j);
+                hash_arr[i][j] = hash;
+            }
+        }
+        for (int i = 0; i < key_index; ++i) {
+            for (int j = 0; j < itemCount; ++j) {
+                temp[j] += CMS_QueryByHash(key_arr[i], hash_arr[j]);
+            }
+        }
+    }
+
+    for (int i = 0; i < itemCount; ++i) {
+        RedisModule_ReplyWithLongLong(ctx, temp[i]);
     }
 
     return REDISMODULE_OK;
@@ -305,6 +377,7 @@ int CMSModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RMUtil_RegisterWriteDenyOOMCmd(ctx, "cms.initbyprob", CMSketch_Create);
     RMUtil_RegisterWriteDenyOOMCmd(ctx, "cms.incrby", CMSketch_IncrBy);
     RMUtil_RegisterReadCmd(ctx, "cms.query", CMSketch_Query);
+    RMUtil_RegisterReadCmd(ctx, "cms.batchquery", CMSketch_BatchQuery);
     RMUtil_RegisterWriteDenyOOMCmd(ctx, "cms.merge", CMSketch_Merge);
     RMUtil_RegisterReadCmd(ctx, "cms.info", CMSKetch_Info);
 
