@@ -149,9 +149,17 @@ Count of one or more items in one or more keys
 #### Example
 
 ```
+127.0.0.1:6379> CMS.INITBYPROB test1 0.001 0.01
+...
+127.0.0.1:6379> CMS.INITBYPROB test2 0.001 0.01
+...
+127.0.0.1:6379> CMS.INCRBY test1 foo 10 bar 42
+...
+127.0.0.1:6379> CMS.INCRBY test2 foo 10 bar 42
+...
 127.0.0.1:6379> CMS.BATCHQUERY KEYS test1 test2 VALUES foo bar
-1) (integer) 10
-2) (integer) 42
+1) (integer) 20
+2) (integer) 84
 ```
 
 ## Merge
