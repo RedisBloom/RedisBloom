@@ -195,6 +195,7 @@ int CMSketch_BatchQuery(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         INNER_ERROR("CMS: BATCHQUERY MUST BE: cms.batchquery KEYS k1 k2 k3... VALUES v1 v2 v3...");
     }
     unsigned int temp[itemCount];
+    memset(temp, 0, sizeof(temp));
     CMSketch *key_arr[pos2 - pos1];
     int key_index = 0;
     int depth = 0;
@@ -210,8 +211,6 @@ int CMSketch_BatchQuery(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         }
     }
     RedisModule_ReplyWithArray(ctx, itemCount);
-    // set 0
-    memset(temp, 0, sizeof(temp));
     // if all keys don't exists, return all values 0
     if (key_index != 0 && depth > 0) {
         // cal hash, avoid multiple calculations

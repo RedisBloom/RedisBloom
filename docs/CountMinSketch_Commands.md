@@ -125,6 +125,35 @@ Count of one or more items
 2) (integer) 42
 ```
 
+### CMS.BATCHQUERY
+
+Returns the count for one or more items in one or more sketch.
+
+```
+CMS.QUERYBATCH KEYS {key ...} VALUES {item ...}
+```
+
+### Parameters:
+
+* **key**: One or more keys for which to find these items.
+* **item**: One or more items for which to return the count.
+
+### Complexity
+
+O(n * m), where n is the num of the keys, m is the num of the items
+
+### Return
+
+Count of one or more items in one or more keys
+
+#### Example
+
+```
+127.0.0.1:6379> CMS.BATCHQUERY KEYS test1 test2 VALUES foo bar
+1) (integer) 10
+2) (integer) 42
+```
+
 ## Merge
 
 ### CMS.MERGE
