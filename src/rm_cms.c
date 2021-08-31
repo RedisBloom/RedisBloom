@@ -194,8 +194,8 @@ int CMSketch_BatchQuery(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     if (pos1 == -1 || pos2 == -1 || keyCount <= 0 || itemCount <= 0) {
         INNER_ERROR("CMS: BATCHQUERY MUST BE: cms.batchquery KEYS k1 k2 k3... VALUES v1 v2 v3...");
     }
-    unsigned int temp[itemCount];
-    memset(temp, 0, sizeof(temp));
+    unsigned int counter[itemCount];
+    memset(counter, 0, sizeof(counter));
     CMSketch *key_arr[pos2 - pos1];
     int key_index = 0;
     int depth = 0;
@@ -225,13 +225,13 @@ int CMSketch_BatchQuery(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         }
         for (int i = 0; i < key_index; ++i) {
             for (int j = 0; j < itemCount; ++j) {
-                temp[j] += CMS_QueryByHash(key_arr[i], hash_arr[j]);
+                counter[j] += CMS_QueryByHash(key_arr[i], hash_arr[j]);
             }
         }
     }
 
     for (int i = 0; i < itemCount; ++i) {
-        RedisModule_ReplyWithLongLong(ctx, temp[i]);
+        RedisModule_ReplyWithLongLong(ctx, counter[i]);
     }
 
     return REDISMODULE_OK;

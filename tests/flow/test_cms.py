@@ -122,6 +122,8 @@ class testCMS():
         self.assertEqual([5], self.cmd('cms.incrby', 'k2', 'v2', '5'))
         self.assertEqual([5], self.cmd('cms.incrby', 'k3', 'v3', '5'))
         self.assertEqual([5, 5], self.cmd('cms.batchquery', 'KEYS', 'k1', 'k2', 'VALUES', 'v1', 'v2'))
+        self.assertEqual([5], self.cmd('cms.incrby', 'k1', 'v2', '5'))
+        self.assertEqual([5, 10], self.cmd('cms.batchquery', 'KEYS', 'k1', 'k2', 'VALUES', 'v1', 'v2'))
         # k1, k3 have diff depth, error
         self.assertRaises(ResponseError, self.cmd, 'cms.batchquery', 'KEYS', 'k1', 'k3', 'VALUES', 'v1', 'v3')
         # at least one key existed, k1 existed
