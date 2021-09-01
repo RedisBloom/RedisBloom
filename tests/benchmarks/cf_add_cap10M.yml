@@ -8,7 +8,7 @@ remote:
  - setup: redisbloom-m5
 dbconfig:
   - init_commands:
-    - 'BF.RESERVE largebloom 0.001 10000000'
+    - 'CF.RESERVE largecuckoo 10000000'
 clientconfig:
   - tool: redis-benchmark
   - min-tool-version: "6.2.0"
@@ -18,4 +18,4 @@ clientconfig:
     - threads: 2
     - pipeline: 1
     - keyspacelen: 10000000
-    - command: 'BF.ADD largebloom __rand_int__'
+    - command: 'CF.ADD largecuckoo __rand_int__'
