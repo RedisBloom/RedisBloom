@@ -1,8 +1,8 @@
 version: 0.2
-name: "bf_add_cap10M_err0.001"
-description: "Benchmarking adding an item to the Bloom Filter, 
-              with an desired false positive rate of 0.1%, and 
-              an initial capacity of 10M items"
+name: "cms_add_err0.001_prob0.01"
+description: "Benchmarking adding an item to the Count Min Sketch, 
+              with an desired error rate of 0.001%, and a desired
+              error probability of 0.01"
 remote:
  - type: oss-standalone
  - setup: redisbloom-m5

@@ -1,8 +1,7 @@
 version: 0.2
-name: "bf_add_cap10M_err0.001"
-description: "Benchmarking adding an item to the Bloom Filter, 
-              with an desired false positive rate of 0.1%, and 
-              an initial capacity of 10M items"
+name: "tdigest_incrby_cap10M_comp100"
+description: "Benchmarking adding an item to the t-Digest sketch, 
+              with an desired compression of 100"
 remote:
  - type: oss-standalone
  - setup: redisbloom-m5
