@@ -90,6 +90,8 @@ commands:
           command: |
             mkdir -p ~/workspace/tests
             make test TEST_REPORT_DIR=$HOME/workspace/tests <<parameters.test_params>> SHOW=1
+      - store_artifacts:
+          path: ~project/tests/flow/logs
 
   benchmark-steps:
     parameters:
