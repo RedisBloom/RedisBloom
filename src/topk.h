@@ -82,6 +82,6 @@ bool TopK_Query(TopK *topk, const char *item, size_t itemlen);
 size_t TopK_Count(TopK *topk, const char *item, size_t itemlen);
 
 /*  Returns full 'heapList' of items in 'topk' DS. */
-void TopK_List(TopK *topk, char **heapList);
+HeapBucket *TopK_List(TopK *topk);
 
 #endif

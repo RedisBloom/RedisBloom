@@ -1,0 +1,20 @@
+version: 0.2
+name: "topk_incrby_k100"
+description: "Benchmarking adding an item to the TopK Sketch, 
+              with maintain top 100 items"
+remote:
+ - type: oss-standalone
+ - setup: redisbloom-m5
+dbconfig:
+  - init_commands:
+    - 'TOPK.RESERVE topk 100'
+clientconfig:
+  - tool: redis-benchmark
+  - min-tool-version: "6.2.0"
+  - parameters:
+    - clients: 16
+    - requests: 10000000
+    - threads: 2
+    - pipeline: 1
+    - keyspacelen: 10000000
+    - command: 'TOPK.INCRBY topk __rand_int__ 1'

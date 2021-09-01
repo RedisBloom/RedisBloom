@@ -213,8 +213,13 @@ size_t TopK_Count(TopK *topk, const char *item, size_t itemlen) {
     return res;
 }
 
-void TopK_List(TopK *topk, char **heapList) {
-    for (uint32_t i = 0; i < topk->k; ++i) {
-        heapList[i] = topk->heap[i].item;
-    }
+int cmpHeapBucket(const HeapBucket *res1, const HeapBucket *res2) {
+    return res1->count < res2->count ? 1 : res1->count > res2->count ? -1 : 0;
+}
+
+HeapBucket *TopK_List(TopK *topk) {
+    HeapBucket *heapList = TOPK_CALLOC(topk->k, (sizeof(*heapList)));
+    memcpy(heapList, topk->heap, topk->k * sizeof(HeapBucket));
+    qsort(heapList, topk->k, sizeof(*heapList), (__compar_fn_t)cmpHeapBucket);
+    return heapList;
 }
