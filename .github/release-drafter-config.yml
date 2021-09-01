@@ -12,7 +12,7 @@ categories:
       - 'bug'
   - title: 'Maintenance'
     label: 'chore'
-change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+change-template: '- $TITLE (#$NUMBER)'
 exclude-labels:
   - 'skip-changelog'
 template: |
