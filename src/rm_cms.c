@@ -184,15 +184,27 @@ int CMSketch_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
 int CMSketch_BatchQuery(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
+    int ignore_key = 0;
     if (argc < 5) {
         return RedisModule_WrongArity(ctx);
     }
     int pos1 = RMUtil_ArgIndex("KEYS", argv, argc);
     int pos2 = RMUtil_ArgIndex("VALUES", argv, argc);
+    int nx = RMUtil_ArgIndex("NX", argv, argc);
+    int xx = RMUtil_ArgIndex("XX", argv, argc);
     int keyCount = pos2 - pos1 - 1;
     int itemCount = argc - 3 - keyCount;
-    if (pos1 == -1 || pos2 == -1 || keyCount <= 0 || itemCount <= 0) {
-        INNER_ERROR("CMS: BATCHQUERY MUST BE: cms.batchquery KEYS k1 k2 k3... VALUES v1 v2 v3...");
+    if (nx == argc - 1) {
+        ignore_key = 1;
+        itemCount--;
+    } else if (xx == argc - 1) {
+        ignore_key = 0;
+        itemCount--;
+    }
+    if (pos1 == -1 || pos2 == -1 || keyCount <= 0 || itemCount <= 0 ||
+        (nx != -1 && nx != argc - 1) || (xx != -1 && xx != argc - 1)) {
+        INNER_ERROR(
+            "CMS: BATCHQUERY MUST BE: cms.batchquery KEYS k1 k2 k3... VALUES v1 v2 v3... [XX/NX]");
     }
     unsigned int counter[itemCount];
     memset(counter, 0, sizeof(counter));
@@ -201,7 +213,10 @@ int CMSketch_BatchQuery(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     int depth = 0;
     for (int i = pos1 + 1; i < pos2; ++i) {
         CMSketch *cms = NULL;
-        if (GetCMSKeyIgnore(ctx, argv[i], &cms, REDISMODULE_READ) == REDISMODULE_OK) {
+        if ((ignore_key == 1 &&
+             GetCMSKeyIgnore(ctx, argv[i], &cms, REDISMODULE_READ) == REDISMODULE_OK) ||
+            (ignore_key == 0 &&
+             GetCMSKey(ctx, argv[i], &cms, REDISMODULE_READ) == REDISMODULE_OK)) {
             if (depth != 0 && depth != cms->depth) {
                 INNER_ERROR("CMS: all keys must have same depth");
             } else {

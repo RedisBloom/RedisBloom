@@ -130,13 +130,14 @@ Count of one or more items
 Returns the count for one or more items in one or more sketch.
 
 ```
-CMS.QUERYBATCH KEYS {key ...} VALUES {item ...}
+CMS.QUERYBATCH KEYS {key ...} VALUES {item ...} [NX/XX]
 ```
 
 ### Parameters:
 
 * **key**: One or more keys for which to find these items.
 * **item**: One or more items for which to return the count.
+* **[NX/XX]**: NX: Allow key not existed, XX: All key must existed. DEFAULT [XX]
 
 ### Complexity
 

@@ -119,17 +119,17 @@ class testCMS():
         self.assertOk(self.cmd('cms.initbydim', 'k2', '100', '5'))
         self.assertOk(self.cmd('cms.initbydim', 'k3', '100', '6'))
         self.assertEqual([5], self.cmd('cms.incrby', 'k1', 'v1', '5'))
+        self.assertEqual([5], self.cmd('cms.incrby', 'k1', 'v2', '5'))
         self.assertEqual([5], self.cmd('cms.incrby', 'k2', 'v2', '5'))
         self.assertEqual([5], self.cmd('cms.incrby', 'k3', 'v3', '5'))
-        self.assertEqual([5, 5], self.cmd('cms.batchquery', 'KEYS', 'k1', 'k2', 'VALUES', 'v1', 'v2'))
-        self.assertEqual([5], self.cmd('cms.incrby', 'k1', 'v2', '5'))
         self.assertEqual([5, 10], self.cmd('cms.batchquery', 'KEYS', 'k1', 'k2', 'VALUES', 'v1', 'v2'))
         # k1, k3 have diff depth, error
         self.assertRaises(ResponseError, self.cmd, 'cms.batchquery', 'KEYS', 'k1', 'k3', 'VALUES', 'v1', 'v3')
-        # at least one key existed, k1 existed
-        self.assertEqual([5, 0], self.cmd('cms.batchquery', 'KEYS', 'k1', 'k4', 'VALUES', 'v1', 'v4'))
-        # at least one key existed, all not existed, return 0 arr
-        self.assertEqual([0, 0], self.cmd('cms.batchquery', 'KEYS', 'k4', 'k5', 'VALUES', 'v4', 'v5'))
+        # NX: allow key not existed, XX: all keys must existed, DEFAULT XX
+        self.assertRaises(ResponseError, self.cmd, 'cms.batchquery', 'KEYS', 'k1', 'k4', 'VALUES', 'k1', 'k4')
+        self.assertEqual([5, 0], self.cmd('cms.batchquery', 'KEYS', 'k1', 'k4', 'VALUES', 'v1', 'v4', 'NX'))
+        self.assertRaises(ResponseError, self.cmd, 'cms.batchquery', 'KEYS', 'k1', 'k4', 'VALUES', 'k1', 'k4', 'XX')
+        self.assertEqual([0, 0], self.cmd('cms.batchquery', 'KEYS', 'k4', 'k5', 'VALUES', 'v4', 'v5', 'NX'))
         # error command (KEYS missing)
         self.assertRaises(ResponseError, self.cmd, 'cms.batchquery', 'k4', 'k5', 'VALUES', 'v4', 'v5')
         self.assertRaises(ResponseError, self.cmd, 'cms.batchquery', 'KEYS', 'VALUES', 'v4', 'v5')
