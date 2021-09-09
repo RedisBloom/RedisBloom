@@ -109,7 +109,7 @@ class testTopK():
         self.cmd('topk.add', 'topk', 'foo', 'baz', '42', 'foo', 'baz', )
         self.cmd('topk.add', 'topk', 'foo', 'bar', 'baz', 'foo', 'baz', )
         self.assertEqual(['foo', 'baz'], self.cmd('topk.list', 'topk'))
-        self.assertEqual([None, None, None, 'foo', None],
+        self.assertEqual([None, None, 'foo', None, None],
                          self.cmd('topk.add', 'topk', 'bar', 'bar', 'bar', 'bar', 'bar'))
         self.assertEqual(['bar', 'baz'], self.cmd('topk.list', 'topk'))
 
