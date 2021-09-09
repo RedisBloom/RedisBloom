@@ -111,7 +111,7 @@ class testTopK():
         self.assertEqual(['foo', 'baz'], self.cmd('topk.list', 'topk'))
         self.assertEqual([None, None, None, 'foo', None],
                          self.cmd('topk.add', 'topk', 'bar', 'bar', 'bar', 'bar', 'bar'))
-        self.assertEqual(['baz', 'bar'], self.cmd('topk.list', 'topk'))
+        self.assertEqual(['bar', 'baz'], self.cmd('topk.list', 'topk'))
 
         self.assertRaises(ResponseError, self.cmd, 'topk.list', 'topk', '_topk_')
 
@@ -161,8 +161,18 @@ class testTopK():
         self.cmd('topk.add', 'topk', 'foo', 'baz', '42', 'foo', 'baz', )
         self.cmd('topk.add', 'topk', 'foo', 'bar', 'baz', 'foo', 'baz', )
         heapList = self.cmd('topk.list', 'topk')
-        self.assertEqual(['bar', 'foo', 'baz'], heapList)
+        self.assertEqual(['foo', 'baz', 'bar'], heapList)
 
         info = self.cmd('topk.info', 'topk')
         expected_info = ['k', 3, 'width', 8, 'depth', 7, 'decay', '0.90000000000000002']
         self.assertEqual(expected_info, info)
+
+
+    def test_list_with_count(self):
+        self.cmd('FLUSHALL')
+        self.cmd('topk.reserve', 'topk', '3')
+        self.cmd('topk.add', 'topk', 'foo', 'bar', 'baz', '42', 'foo', 'bar', 'baz', )
+        self.cmd('topk.add', 'topk', 'foo', 'baz', '42', 'foo', )
+        self.cmd('topk.add', 'topk', 'foo', 'bar', 'baz', 'foo', )
+        heapList = self.cmd('topk.list', 'topk', 'WITHCOUNT')
+        self.assertEqual(['foo', 6, 'baz', 4, 'bar', 3], heapList)
