@@ -167,7 +167,6 @@ class testTopK():
         expected_info = ['k', 3, 'width', 8, 'depth', 7, 'decay', '0.90000000000000002']
         self.assertEqual(expected_info, info)
 
-
     def test_list_with_count(self):
         self.cmd('FLUSHALL')
         self.cmd('topk.reserve', 'topk', '3')
@@ -176,3 +175,10 @@ class testTopK():
         self.cmd('topk.add', 'topk', 'foo', 'bar', 'baz', 'foo', )
         heapList = self.cmd('topk.list', 'topk', 'WITHCOUNT')
         self.assertEqual(['foo', 6, 'baz', 4, 'bar', 3], heapList)
+
+    def test_list_no_duplicates(self):
+        self.cmd('FLUSHALL')
+        self.cmd('topk.reserve', 'topk', '10', '8', '7', '1')
+        self.cmd('topk.add', 'topk', 'j', 'h', 'd', 'j', 'h', 'h', 'j', 'g', 'e', 'g', 'i', 'f', 'g', 'f', 'a', 'j', 'c', 'i', 'a', 'd')
+        heapList = self.cmd('topk.list', 'topk')
+        self.assertEqual(len(set(heapList)), len(heapList)) 
