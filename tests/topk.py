@@ -98,7 +98,7 @@ class TopKTest(ModuleTestCase('../redisbloom.so')):
         self.cmd('topk.add', 'topk', 'foo', 'baz', '42', 'foo', 'baz',)
         self.cmd('topk.add', 'topk', 'foo', 'bar', 'baz', 'foo', 'baz',)
         self.assertEqual(['foo', 'baz'], self.cmd('topk.list', 'topk'))
-        self.assertEqual([None, None, None, 'foo', None], 
+        self.assertEqual([None, None, 'foo', None, None],
                          self.cmd('topk.add', 'topk', 'bar', 'bar', 'bar', 'bar', 'bar'))
         self.assertEqual(['bar', 'baz'], self.cmd('topk.list', 'topk'))
 
@@ -161,6 +161,13 @@ class TopKTest(ModuleTestCase('../redisbloom.so')):
         self.cmd('topk.add', 'topk', 'foo', 'bar', 'baz', 'foo', )
         heapList = self.cmd('topk.list', 'topk', 'WITHCOUNT')
         self.assertEqual(['foo', 6, 'baz', 4, 'bar', 3], heapList)
+
+    def test_list_no_duplicates(self):
+        self.cmd('FLUSHALL')
+        self.cmd('topk.reserve', 'topk', '10', '8', '7', '1')
+        self.cmd('topk.add', 'topk', 'j', 'h', 'd', 'j', 'h', 'h', 'j', 'g', 'e', 'g', 'i', 'f', 'g', 'f', 'a', 'j', 'c', 'i', 'a', 'd')
+        heapList = self.cmd('topk.list', 'topk')
+        self.assertEqual(len(set(heapList)), len(heapList)) 
 
 if __name__ == "__main__":
     import unittest
