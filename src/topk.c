@@ -122,8 +122,6 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
     counter_t maxCount = 0;
     uint32_t fp = TOPK_HASH(item, itemlen, GA);
 
-    bool heapSearched = false;
-    HeapBucket *itemHeapPtr = NULL;
     counter_t heapMin = topk->heap->count;
 
     // get max item count
@@ -136,14 +134,8 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
             *countPtr = increment;
             maxCount = max(maxCount, *countPtr);
         } else if (runner->fp == fp) {
-            if (*countPtr >= heapMin && heapSearched == false) {
-                itemHeapPtr = checkExistInHeap(topk, item, itemlen);
-                heapSearched = true;
-            }
-            if (itemHeapPtr || *countPtr <= heapMin) {
-                *countPtr += increment;
-                maxCount = max(maxCount, *countPtr);
-            }
+            *countPtr += increment;
+            maxCount = max(maxCount, *countPtr);
         } else {
             uint32_t local_incr = increment;
             for (; local_incr > 0; --local_incr) {
@@ -170,19 +162,22 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
     }
 
     // update heap
-    if (itemHeapPtr != NULL) {
-        itemHeapPtr->count = maxCount; // Not max of the two, as it might have been decayed
-        heapifyDown(topk->heap, topk->k, itemHeapPtr - topk->heap);
-    } else if (maxCount > heapMin) {
-        // TOPK_FREE(topk->heap[0].item);
-        char *expelled = topk->heap[0].item;
+    if (maxCount >= heapMin) {
+        HeapBucket *itemHeapPtr = checkExistInHeap(topk, item, itemlen);
+        if (itemHeapPtr != NULL) {
+            itemHeapPtr->count = maxCount; // Not max of the two, as it might have been decayed
+            heapifyDown(topk->heap, topk->k, itemHeapPtr - topk->heap);
+        } else {
+            // TOPK_FREE(topk->heap[0].item);
+            char *expelled = topk->heap[0].item;
 
-        topk->heap[0].count = maxCount;
-        topk->heap[0].fp = fp;
-        topk->heap[0].item = topKStrndup(item, itemlen);
-        topk->heap[0].itemlen = itemlen;
-        heapifyDown(topk->heap, topk->k, 0);
-        return expelled;
+            topk->heap[0].count = maxCount;
+            topk->heap[0].fp = fp;
+            topk->heap[0].item = topKStrndup(item, itemlen);
+            topk->heap[0].itemlen = itemlen;
+            heapifyDown(topk->heap, topk->k, 0);
+            return expelled;
+        }
     }
     return NULL;
 }
