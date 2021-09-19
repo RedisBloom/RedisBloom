@@ -207,8 +207,8 @@ class testCuckoo():
 
     def test_num_deletes(self):
         self.cmd('FLUSHALL')
-        self.cmd('cf.add', 'nums', 'RedisLabs')
-        self.cmd('cf.del', 'nums', 'RedisLabs')
+        self.cmd('cf.add', 'nums', 'Redis')
+        self.cmd('cf.del', 'nums', 'Redis')
         d1 = self.cmd('cf.debug', 'nums')
         self.env.dumpAndReload()
         # for _ in self.client.retry_with_rdb_reload():   
