@@ -59,6 +59,7 @@ commands:
       - run:
           name: Setup automation
           command: |
+            ./deps/readies/bin/getpy3
             make setup
 
   ci_steps:
