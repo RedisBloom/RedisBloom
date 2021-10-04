@@ -421,7 +421,7 @@ workflows:
           <<: *on-any-branch
           matrix:
             parameters:
-              platform: [bionic]
+              platform: [buster]
 #      - deploy_branch:
 #          context: common
 #          <<: *on-integ-branch
