@@ -177,8 +177,9 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE a 10 MAXITERATIONS string')
 
     def test_num_deletes(self):
-        self.cmd('cf.add', 'nums', 'RedisLabs')
-        self.cmd('cf.del', 'nums', 'RedisLabs')
+        self.cmd('FLUSHALL')
+        self.cmd('cf.add', 'nums', 'Redis')
+        self.cmd('cf.del', 'nums', 'Redis')
         d1 = self.cmd('cf.debug', 'nums')
         for _ in self.client.retry_with_rdb_reload():   
             self.cmd('ping')    

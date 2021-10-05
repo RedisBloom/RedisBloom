@@ -1,6 +1,6 @@
 display_name: RedisBloom
-author: Redis Labs
-email: redismodules@redislabs.com
+author: Redis
+email: redismodules@redis.com
 description: Bloom Filter Module for Redis
 homepage: http://redisbloom.io
 license: Redis Source Available License Agreement
