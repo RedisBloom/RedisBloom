@@ -5,7 +5,7 @@
 
 RedisBloom is available on all Redis Cloud managed services.  Redis Cloud Essentials offers a completely free managed database up to 30MB.
 
-[Get started here](https://redislabs.com/try-free/)
+[Get started here](https://redis.com/try-free/)
 
 ## Launch RedisBloom with Docker
 ```
@@ -14,7 +14,7 @@ docker run -p 6379:6379 --name redis-redisbloom redislabs/rebloom:latest
 
 ## Download
 
-A pre-compiled version can be downloaded from [RedisLabs download center](https://redislabs.com/download-center/modules/).
+A pre-compiled version can be downloaded from [Redis download center](https://redis.com/download-center/modules/).
 
 ## Building
 

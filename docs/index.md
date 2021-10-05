@@ -1,7 +1,7 @@
 <img src="images/logo.svg" alt="logo" width="200"/>
 
 # RedisBloom: Probabilistic Data Structures for Redis
-[![Forum](https://img.shields.io/badge/Forum-RedisBloom-blue)](https://forum.redislabs.com/c/modules/redisbloom)
+[![Forum](https://img.shields.io/badge/Forum-RedisBloom-blue)](https://forum.redis.com/c/modules/redisbloom)
 [![Discord](https://img.shields.io/discord/697882427875393627?style=flat-square)](https://discord.gg/wXhwjCQ)
 
 The RedisBloom module provides four data structures: a scalable **Bloom filter**,  a **cuckoo filter**, a **count-min sketch**, and a **top-k**. These data structures trade perfect accuracy for extreme memory efficiency, so they're especially useful for big data and streaming applications.
@@ -38,9 +38,9 @@ See each driver's README for details and documentation.
 
 | Project | Language | License | Author | URL |
 | ------- | -------- | ------- | ------ | --- |
-| redisbloom-py | Python | BSD | [Redis Labs](https://redislabs.com) | [GitHub](https://github.com/RedisBloom/redisbloom-py) |
-| JReBloom | Java | BSD | [Redis Labs](https://redislabs.com) | [GitHub](https://github.com/RedisBloom/JReBloom) |
-| redisbloom-go | Golang | BSD | [Redis Labs](https://redislabs.com) | [GitHub](https://github.com/RedisBloom/redisbloom-go) |
+| redisbloom-py | Python | BSD | [Redis](https://redis.com) | [GitHub](https://github.com/RedisBloom/redisbloom-py) |
+| JReBloom | Java | BSD | [Redis](https://redis.com) | [GitHub](https://github.com/RedisBloom/JReBloom) |
+| redisbloom-go | Golang | BSD | [Redis](https://redis.com) | [GitHub](https://github.com/RedisBloom/redisbloom-go) |
 | rebloom | JavaScript | MIT | [Albert Team](https://cvitae.now.sh/) | [GitHub](https://github.com/albert-team/rebloom) |
 | phpredis-bloom | PHP | MIT | [Rafa Campoy](https://github.com/averias) | [GitHub](https://github.com/averias/phpredis-bloom) |
 | phpRebloom | PHP | MIT | [Alessandro Balasco](https://github.com/palicao) | [GitHub](https://github.com/palicao/phpRebloom) |
@@ -52,14 +52,14 @@ See each driver's README for details and documentation.
 1. [Probabilistic Data Structures - The most useful thing in Redis you probably aren't using](https://youtu.be/dq-0xagF7v8?t=102)
 
 ### Blog posts
-1. [RedisBloom Quick Start Tutorial](https://docs.redislabs.com/latest/modules/redisbloom/redisbloom-quickstart/)
-1. [Developing with Bloom Filters](https://docs.redislabs.com/latest/modules/redisbloom/)
-1. [RedisBloom on Redis Enterprise](https://redislabs.com/redis-enterprise/redis-bloom/)
-1. [Probably and No: Redis, RedisBloom, and Bloom Filters](https://redislabs.com/blog/redis-redisbloom-bloom-filters/)
-1. [RedisBloom – Bloom Filter Datatype for Redis](https://redislabs.com/blog/rebloom-bloom-filter-datatype-redis/)
+1. [RedisBloom Quick Start Tutorial](https://docs.redis.com/latest/modules/redisbloom/redisbloom-quickstart/)
+1. [Developing with Bloom Filters](https://docs.redis.com/latest/modules/redisbloom/)
+1. [RedisBloom on Redis Enterprise](https://redis.com/redis-enterprise/redis-bloom/)
+1. [Probably and No: Redis, RedisBloom, and Bloom Filters](https://redis.com/blog/redis-redisbloom-bloom-filters/)
+1. [RedisBloom – Bloom Filter Datatype for Redis](https://redis.com/blog/rebloom-bloom-filter-datatype-redis/)
 
 ## Mailing List / Forum
-Got questions? Feel free to ask at the [RedisBloom forum](https://forum.redislabs.com/c/modules/redisbloom).
+Got questions? Feel free to ask at the [RedisBloom forum](https://forum.redis.com/c/modules/redisbloom).
 
 ## License
 RedisBloom is licensed under the [Redis Source Available License Agreement](LICENSE)
