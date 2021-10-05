@@ -424,6 +424,8 @@ workflows:
           matrix:
             parameters:
               platform: [buster]
+          requires:
+            - build
       - deploy_branch:
           context: common
           <<: *on-integ-branch
