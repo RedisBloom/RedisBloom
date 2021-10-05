@@ -14,6 +14,42 @@ commands:
               circleci step halt
             fi
 
+  early-returns:
+    steps:
+      - run:
+          name: Early return if this is a docs build
+          command: |
+            if [[ $CIRCLE_BRANCH == *docs ]]; then
+              echo "Identifies as documents PR, no testing required."
+              circleci step halt
+            fi
+      - run:
+          name: Early return if this branch should ignore CI
+          command: |
+            if [[ $CIRCLE_BRANCH == *noci ]]; then
+              echo "Identifies as actively ignoring CI, no testing required."
+              circleci step halt
+            fi
+
+  setup-executor:
+    steps:
+      - run:
+          name: Setup executor
+          command: |
+            apt-get -qq update
+            apt-get -q install -y git openssh-client curl ca-certificates make tar gzip
+            bash <(curl -fsSL https://raw.githubusercontent.com/docker/docker-install/master/install.sh)
+      - setup_remote_docker:
+          version: 20.10.2
+          docker_layer_caching: true
+
+  checkout-all:
+    steps:
+      - checkout
+      - run:
+          name: Checkout submodules
+          command: git submodule update --init --recursive
+
   setup-automation:
     steps:
       - run:
@@ -22,9 +58,63 @@ commands:
             (mkdir -p deps; cd deps; git clone https://github.com/RedisLabsModules/readies.git)
             PIP=1 ./deps/readies/bin/getpy2
             python2 -m pip install -r ./deps/readies/paella/requirements.txt
+            make setup
+
+  ci_steps:
+    parameters:
+      platform:
+        type: string
+      getredis_params:
+        type: string
+        default: ""
+      build_params:
+        type: string
+        default: ""
+      test_params:
+        type: string
+        default: ""
+    steps:
+      - early-returns
+      - checkout-all
+      - setup-automation
+      - run:
+          name: Install Redis
+          command: python3 ./deps/readies/bin/getredis -v 6 <<parameters.getredis_params>>
+      - run:
+          name: Build
+          command: make build <<parameters.build_params>> SHOW=1
+      - run:
+          name: Flow Test
+          no_output_timeout: 30m
+          command: |
+            mkdir -p ~/workspace/tests
+            make test TEST_REPORT_DIR=$HOME/workspace/tests <<parameters.test_params>> SHOW=1
 
 
 #----------------------------------------------------------------------------------------------------------------------------------
+
+  platform-build-steps:
+    parameters:
+      platform:
+        type: string
+    steps:
+      - early-returns
+      - setup-executor
+      - checkout-all
+      - run:
+          name: Install dependencies
+          command: |
+            ./deps/readies/bin/getpy3
+      - run:
+          name: Build for platform (docker build)
+          command: |
+            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> TEST=1 VERBOSE=1
+      - early_return_for_forked_pull_requests
+      - run:
+          name: Build for platform (docker publish)
+          command: |
+            docker login -u redisfab -p $DOCKER_REDISFAB_PWD
+            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> TEST=1 VERBOSE=1 PUBLISH=1 DOCKERWRAPPER_EXTRA_VARS="DOCKER_PUSH_ONLY=1"
 
 jobs:
   lint:
@@ -86,6 +176,16 @@ jobs:
             - '*.so'
             - ramp.yml
             - build
+
+  platform_build:
+    parameters:
+      platform:
+        type: string
+    docker:
+      - image: debian:bullseye
+    steps:
+      - platform-build-steps:
+          platform: <<parameters.platform>>
 
   package_branch:
     docker:
@@ -236,6 +336,10 @@ on-integ-and-version-tags: &on-integ-and-version-tags
     tags:
       only: /^v[0-9].*/
 
+context: &context
+  context:
+    - common
+
 #----------------------------------------------------------------------------------------------------------------------------------
 
 workflows:
@@ -273,6 +377,12 @@ workflows:
           <<: *on-version-tags
           requires:
             - deploy_release
+      - platform_build:
+          <<: *context
+          <<: *on-integ-and-version-tags
+          matrix:
+            parameters:
+              platform: [buster]
 
 #  nightly:
 #    triggers:
