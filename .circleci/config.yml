@@ -393,53 +393,52 @@ workflows:
   version: 2
   build_and_package:
     jobs:
-#      - lint:
-#          <<: *on-any-branch
-#      - static-analysis-infer:
-#          <<: *on-any-branch
-#      - build:
-#          <<: *on-any-branch
-#          requires:
-#            - lint
-#      - valgrind:
-#          <<: *on-any-branch
-#          requires:
-#            - lint
-#      - performance-automation:
-#          <<: *on-integ-and-version-tags
-#          requires:
-#            - lint
-#          context: common
-#      - package_branch:
-#          <<: *on-integ-branch
-#          requires:
-#            - build
-#      - package_release:
-#          <<: *on-version-tags
-#          requires:
-#            - build
+      - lint:
+          <<: *on-any-branch
+      - static-analysis-infer:
+          <<: *on-any-branch
+      - build:
+          <<: *on-any-branch
+          requires:
+            - lint
+      - valgrind:
+          <<: *on-any-branch
+          requires:
+            - lint
+      - performance-automation:
+          <<: *on-integ-and-version-tags
+          requires:
+            - lint
+          context: common
+      - package_branch:
+          <<: *on-integ-branch
+          requires:
+            - build
+      - package_release:
+          <<: *on-version-tags
+          requires:
+            - build
       - platform_build:
           <<: *context
-#         <<: *on-integ-and-version-tags
-          <<: *on-any-branch
+          <<: *on-integ-and-version-tags
           matrix:
             parameters:
               platform: [buster]
-#      - deploy_branch:
-#          context: common
-#          <<: *on-integ-branch
-#          requires:
-#            - package_branch
-#      - deploy_release:
-#          context: common
-#          <<: *on-version-tags
-#          requires:
-#            - package_release
-#      - release_automation:
-#          context: common
-#          <<: *on-version-tags
-#          requires:
-#            - deploy_release
+      - deploy_branch:
+          context: common
+          <<: *on-integ-branch
+          requires:
+            - package_branch
+      - deploy_release:
+          context: common
+          <<: *on-version-tags
+          requires:
+            - package_release
+      - release_automation:
+          context: common
+          <<: *on-version-tags
+          requires:
+            - deploy_release
 
   nightly:
     triggers:
