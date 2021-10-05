@@ -14,7 +14,7 @@ commands:
               circleci step halt
             fi
 
-  early_returns:
+  early-returns:
     steps:
       - run:
           name: Early return if this is a docs build
@@ -75,7 +75,7 @@ commands:
         type: string
         default: ""
     steps:
-      - early_returns
+      - early-returns
       - checkout-all
       - setup-automation
       - run:
@@ -129,6 +129,29 @@ commands:
               --upload_results_s3 \
               --triggering_env circleci \
               --push_results_redistimeseries
+
+  platform-build-steps:
+    parameters:
+      platform:
+        type: string
+    steps:
+      - early-returns
+      - setup-executor
+      - checkout-all
+      - run:
+          name: Install dependencies
+          command: |
+            ./deps/readies/bin/getpy3
+      - run:
+          name: Build for platform (docker build)
+          command: |
+            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> TEST=1 VERBOSE=1
+      - early_return_for_forked_pull_requests
+      - run:
+          name: Build for platform (docker publish)
+          command: |
+            docker login -u redisfab -p $DOCKER_REDISFAB_PWD
+            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> TEST=1 VERBOSE=1 PUBLISH=1 DOCKERWRAPPER_EXTRA_VARS="DOCKER_PUSH_ONLY=1"
 
 jobs:
   lint:
@@ -189,6 +212,16 @@ jobs:
             - '*.so'
             - ramp.yml
             - build
+
+  platform_build:
+    parameters:
+      platform:
+        type: string
+    docker:
+      - image: debian:bullseye
+    steps:
+      - platform-build-steps:
+          platform: <<parameters.platform>>
 
   package_branch:
     docker:
@@ -350,52 +383,63 @@ on-integ-and-version-tags: &on-integ-and-version-tags
     tags:
       only: /^v[0-9].*/
 
+context: &context
+  context:
+    - common
+
 #----------------------------------------------------------------------------------------------------------------------------------
 
 workflows:
   version: 2
   build_and_package:
     jobs:
-      - lint:
+#      - lint:
+#          <<: *on-any-branch
+#      - static-analysis-infer:
+#          <<: *on-any-branch
+#      - build:
+#          <<: *on-any-branch
+#          requires:
+#            - lint
+#      - valgrind:
+#          <<: *on-any-branch
+#          requires:
+#            - lint
+#      - performance-automation:
+#          <<: *on-integ-and-version-tags
+#          requires:
+#            - lint
+#          context: common
+#      - package_branch:
+#          <<: *on-integ-branch
+#          requires:
+#            - build
+#      - package_release:
+#          <<: *on-version-tags
+#          requires:
+#            - build
+      - platform_build:
+          <<: *context
+#         <<: *on-integ-and-version-tags
           <<: *on-any-branch
-      - static-analysis-infer:
-          <<: *on-any-branch
-      - build:
-          <<: *on-any-branch
-          requires:
-            - lint
-      - valgrind:
-          <<: *on-any-branch
-          requires:
-            - lint
-      - performance-automation:
-          <<: *on-integ-and-version-tags
-          requires:
-            - lint
-          context: common
-      - package_branch:
-          <<: *on-integ-branch
-          requires:
-            - build
-      - package_release:
-          <<: *on-version-tags
-          requires:
-            - build
-      - deploy_branch:
-          context: common
-          <<: *on-integ-branch
-          requires:
-            - package_branch
-      - deploy_release:
-          context: common
-          <<: *on-version-tags
-          requires:
-            - package_release
-      - release_automation:
-          context: common
-          <<: *on-version-tags
-          requires:
-            - deploy_release
+          matrix:
+            parameters:
+              platform: [buster]
+#      - deploy_branch:
+#          context: common
+#          <<: *on-integ-branch
+#          requires:
+#            - package_branch
+#      - deploy_release:
+#          context: common
+#          <<: *on-version-tags
+#          requires:
+#            - package_release
+#      - release_automation:
+#          context: common
+#          <<: *on-version-tags
+#          requires:
+#            - deploy_release
 
   nightly:
     triggers:
