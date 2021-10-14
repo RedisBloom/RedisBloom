@@ -197,7 +197,7 @@ jobs:
             apt-get update -qq
             apt-get install -y lcov curl
             make coverage
-            bash <(curl -s https://codecov.io/bash)
+            bash <(curl -s https://raw.githubusercontent.com/codecov/codecov-bash/master/codecov)
       - early_return_for_forked_pull_requests
       - run:
           name: Persist Artifacts
