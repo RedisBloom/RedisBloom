@@ -1,3 +1,4 @@
+#define REDISMODULE_MAIN
 #include "redismodule.h"
 #include "sb.h"
 #include "cf.h"
