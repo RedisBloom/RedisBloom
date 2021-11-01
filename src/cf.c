@@ -1,3 +1,4 @@
+#define REDISMODULE_MAIN
 #include "redismodule.h"
 #define CUCKOO_MALLOC RedisModule_Alloc
 #define CUCKOO_CALLOC RedisModule_Calloc

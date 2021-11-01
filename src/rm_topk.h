@@ -1,6 +1,7 @@
 #ifndef TOPK_MODULE_H
 #define TOPK_MODULE_H
 
+#define REDISMODULE_MAIN
 #include "redismodule.h"
 
 #define TOPK_ENC_VER 0

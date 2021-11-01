@@ -3,6 +3,7 @@
 
 #include <stdint.h> // uint32_t
 
+#define REDISMODULE_MAIN
 #define REDIS_MODULE_TARGET
 #ifdef REDIS_MODULE_TARGET
 #include "redismodule.h"

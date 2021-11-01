@@ -1,6 +1,7 @@
 #ifndef CMS_MODULE_H
 #define CMS_MODULE_H
 
+#define REDISMODULE_MAIN
 #include "redismodule.h"
 
 #define DEFAULT_WIDTH 2.7
