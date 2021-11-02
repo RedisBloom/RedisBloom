@@ -63,6 +63,6 @@ CuckooInsertStatus CuckooFilter_Insert(CuckooFilter *filter, CuckooHash hash);
 int CuckooFilter_Delete(CuckooFilter *filter, CuckooHash hash);
 int CuckooFilter_Check(const CuckooFilter *filter, CuckooHash hash);
 uint64_t CuckooFilter_Count(const CuckooFilter *filter, CuckooHash);
-uint64_t CuckooFilter_Compact(CuckooFilter *filter);
+void CuckooFilter_Compact(CuckooFilter *filter);
 void CuckooFilter_GetInfo(const CuckooFilter *cf, CuckooHash hash, CuckooKey *out);
 #endif

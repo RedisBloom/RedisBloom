@@ -341,34 +341,32 @@ static int relocateSlot(CuckooFilter *cf, CuckooBucket bucket, uint16_t filterIx
 static uint64_t CuckooFilter_CompactSingle(CuckooFilter *cf, uint16_t filterIx) {
     SubCF *currentFilter = &cf->filters[filterIx];
     MyCuckooBucket *filter = currentFilter->data;
-    int dirty = 0;
-    uint64_t numRelocs = 0;
+    int rv = RELOC_OK;
 
     for (uint64_t bucketIx = 0; bucketIx < currentFilter->numBuckets; ++bucketIx) {
         for (uint16_t slotIx = 0; slotIx < currentFilter->bucketSize; ++slotIx) {
             int status = relocateSlot(cf, &filter[bucketIx * currentFilter->bucketSize], filterIx,
                                       bucketIx, slotIx);
             if (status == RELOC_FAIL) {
-                dirty = 1;
-            } else if (status == RELOC_OK) {
-                numRelocs++;
+                rv = RELOC_FAIL;
             }
         }
     }
-    if (!dirty) {
+    if (rv == RELOC_OK) {
         CUCKOO_FREE(filter);
         cf->numFilters--;
     }
-    return numRelocs;
+    return rv;
 }
 
-uint64_t CuckooFilter_Compact(CuckooFilter *cf) {
-    uint64_t ret = 0;
+void CuckooFilter_Compact(CuckooFilter *cf) {
     for (uint64_t ii = cf->numFilters; ii > 1; --ii) {
-        ret += CuckooFilter_CompactSingle(cf, ii - 1);
+        if (CuckooFilter_CompactSingle(cf, ii - 1) == RELOC_FAIL) {
+            // if compacting failed, stop as lower filters cannot be freed.
+            break;
+        }
     }
     cf->numDeletes = 0;
-    return ret;
 }
 
 /* CF.DEBUG uses another function
