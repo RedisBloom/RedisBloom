@@ -355,7 +355,7 @@ static uint64_t CuckooFilter_CompactSingle(CuckooFilter *cf, uint16_t filterIx) 
             }
         }
     }
-    if (!dirty) {
+    if (!dirty && filterIx == cf->numFilters - 1) {
         CUCKOO_FREE(filter);
         cf->numFilters--;
     }
