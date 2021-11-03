@@ -5,6 +5,7 @@
 #include "rm_tdigest.h"
 #include "rmutil/util.h"
 #include "version.h"
+#define REDISMODULE_MAIN
 #include "redismodule.h"
 
 // defining TD_ALLOC_H is used to change the t-digest allocator at compile time
