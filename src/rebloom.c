@@ -762,7 +762,7 @@ static int CFCompact_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     if (status != SB_OK) {
         return RedisModule_ReplyWithError(ctx, "Cuckoo filter was not found");
     }
-    CuckooFilter_Compact(cf);
+    CuckooFilter_Compact(cf, true);
     RedisModule_ReplicateVerbatim(ctx);
     return RedisModule_ReplyWithSimpleString(ctx, "OK");
 }
