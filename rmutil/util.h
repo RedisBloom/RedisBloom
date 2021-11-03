@@ -1,6 +1,6 @@
 #ifndef __UTIL_H__
 #define __UTIL_H__
-
+#define REDISMODULE_MAIN
 #include "../src/redismodule.h"
 #include <stdarg.h>
 

@@ -1,7 +1,7 @@
 /*
- * Copyright 2019 Redis Labs Ltd. and Contributors
+ * Copyright 2019 Redis Ltd. and Contributors
  *
- * This file is available under the Redis Labs Source Available License Agreement
+ * This file is available under the Redis Source Available License Agreement
  *
  * This Top-K Data Type is based on Heavy Keeper algorithm. The paper can be found
  * at https://www.usenix.org/system/files/conference/atc18/atc18-gong.pdf
@@ -17,6 +17,8 @@
 #include <stdbool.h> //  bool
 #include <string.h>  //  memcpy
 #include <stdlib.h>  //  calloc
+
+#define REDISMODULE_MAIN
 
 #define REDIS_MODULE_TARGET
 #ifdef REDIS_MODULE_TARGET
@@ -82,6 +84,6 @@ bool TopK_Query(TopK *topk, const char *item, size_t itemlen);
 size_t TopK_Count(TopK *topk, const char *item, size_t itemlen);
 
 /*  Returns full 'heapList' of items in 'topk' DS. */
-void TopK_List(TopK *topk, char **heapList);
+HeapBucket *TopK_List(TopK *topk);
 
 #endif

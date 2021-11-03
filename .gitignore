@@ -22,3 +22,4 @@ deps/infer*
 infer-out/
 .idea
 tests/benchmarks/profile_*
+/bin/
