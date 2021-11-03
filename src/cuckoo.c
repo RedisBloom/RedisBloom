@@ -185,7 +185,7 @@ int CuckooFilter_Delete(CuckooFilter *filter, CuckooHash hash) {
             filter->numItems--;
             filter->numDeletes++;
             if (filter->numFilters > 1 && filter->numDeletes > (double)filter->numItems * 0.10) {
-                CuckooFilter_Compact(filter);
+                CuckooFilter_Compact(filter, false);
             }
             return 1;
         }
@@ -352,16 +352,22 @@ static uint64_t CuckooFilter_CompactSingle(CuckooFilter *cf, uint16_t filterIx) 
             }
         }
     }
-    if (rv == RELOC_OK) {
+    // we free a filter only if it the latest one
+    if (rv == RELOC_OK && filterIx == cf->numFilters - 1) {
         CUCKOO_FREE(filter);
         cf->numFilters--;
     }
     return rv;
 }
 
-void CuckooFilter_Compact(CuckooFilter *cf) {
+/**
+ * Attempt to move elements to older filters. If latest filter is emptied, it is freed.
+ * `bool` determines whether to continue iteration on other filters once a filter cannot
+ * be freed and therefore following filter cannot be freed either.
+ */
+void CuckooFilter_Compact(CuckooFilter *cf, bool cont) {
     for (uint64_t ii = cf->numFilters; ii > 1; --ii) {
-        if (CuckooFilter_CompactSingle(cf, ii - 1) == RELOC_FAIL) {
+        if (CuckooFilter_CompactSingle(cf, ii - 1) == RELOC_FAIL && !cont) {
             // if compacting failed, stop as lower filters cannot be freed.
             break;
         }
