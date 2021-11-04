@@ -36,7 +36,7 @@ const char *CF_GetEncodedChunk(const CuckooFilter *cf, long long *pos, size_t *b
                                size_t bytelimit) {
     // First find filter
     long long offset = *pos - 1;
-    long long currentSize;
+    long long currentSize = 0;
     int filterIx = 0;
     SubCF *filter;
     for (; filterIx < cf->numFilters; ++filterIx) {

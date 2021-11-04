@@ -806,7 +806,7 @@ static int CFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
         return REDISMODULE_OK;
     }
 
-    size_t chunkLen;
+    size_t chunkLen = 0;
     const char *chunk = CF_GetEncodedChunk(cf, &pos, &chunkLen, MAX_SCANDUMP_SIZE);
     if (chunk == NULL) {
         RedisModule_ReplyWithLongLong(ctx, 0);
