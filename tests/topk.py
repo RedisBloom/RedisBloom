@@ -118,7 +118,7 @@ class TopKTest(ModuleTestCase('../redisbloom.so')):
         self.client.dr.dump_and_reload()
         self.cmd('topk.reserve', 'test', '3', '50', '5', '0.9')
         self.cmd('topk.add', 'test', 'foo')
-        self.assertEqual([None, 'foo', None], self.cmd('topk.list', 'test'))
+        self.assertEqual(['foo'], self.cmd('topk.list', 'test'))
         self.assertEqual(4192, self.cmd('MEMORY USAGE', 'test'))
 
     def test_time(self):
