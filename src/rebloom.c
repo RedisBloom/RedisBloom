@@ -401,7 +401,7 @@ static int BFDebug_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     return REDISMODULE_OK;
 }
 
-#define MAX_SCANDUMP_SIZE 535822336 // 511MB
+#define MAX_SCANDUMP_SIZE (1024 * 1024 * 16)
 
 /**
  * BF.SCANDUMP <KEY> <ITER>
