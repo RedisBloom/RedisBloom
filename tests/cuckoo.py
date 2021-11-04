@@ -77,38 +77,6 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertEqual(1, self.cmd('cf.add', 'cf', 'k1'))
         self.assertEqual(2, self.cmd('cf.count', 'cf', 'k1'))
 
-    def test_scandump(self):
-        maxrange = 500
-        self.cmd('cf.reserve', 'cf', int(maxrange / 4))
-        self.cmd('cf.scandump', 'cf', '0')
-        for x in xrange(maxrange):
-            self.cmd('cf.add', 'cf', str(x))
-        for x in xrange(maxrange):
-            self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
-
-        # Start with scandump
-        self.assertRaises(ResponseError, self.cmd, 'cf.scandump', 'cf')
-        self.assertRaises(ResponseError, self.cmd, 'cf.scandump', 'cf', 'str')
-        self.assertRaises(ResponseError, self.cmd, 'cf.scandump', 'noexist', '0')
-        chunks = []
-        while True:
-            last_pos = chunks[-1][0] if chunks else 0
-            chunk = self.cmd('cf.scandump', 'cf', last_pos)
-            if not chunk[0]:
-                break
-            chunks.append(chunk)
-            print("Scaning chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
-
-        self.cmd('del', 'cf')
-        self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf')
-        self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf', 'str')
-        for chunk in chunks:
-            print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
-            self.cmd('cf.loadchunk', 'cf', *chunk)
-
-        for x in xrange(maxrange):
-            self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
-
     def test_insert(self):
         # Ensure insert with default capacity works
         self.assertEqual(1, self.cmd('cf.add', 'f1', 'foo'))
@@ -205,6 +173,30 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertRaises(ResponseError, self.cmd, 'CF.COMPACT a')
         self.assertRaises(ResponseError, self.cmd, 'CF.COMPACT a b')
 
+
+    def test_compact(self):
+        self.env = Env()
+        self.cmd('FLUSHALL')
+        q = 100
+        self.cmd('CF.RESERVE cf 8 MAXITERATIONS 50')
+
+        for x in xrange(q):
+            self.cmd('cf.add cf', str(x))
+
+        for x in xrange(q):
+            self.assertEqual(1, self.cmd('cf.exists cf', str(x)))
+
+        str1 = self.cmd('cf.debug cf')[49:52]
+        self.assertGreaterEqual(str1, "130")  # In experiments was larger than 130
+        self.assertEqual(self.cmd('cf.compact cf'), 'OK')
+        str2 = self.cmd('cf.debug cf')[49:52]
+        self.assertGreaterEqual(str1, str2)  # Expect to see reduction after compaction
+
+        self.assertRaises(ResponseError, self.cmd, 'CF.COMPACT a')
+        self.assertRaises(ResponseError, self.cmd, 'CF.COMPACT a b')
+        self.env = Env(decodeResponses=True)
+
+
     def test_max_expansions(self):
         self.cmd('CF.RESERVE', 'cf', '4')
         for i in range(124):
@@ -267,6 +259,100 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
             self.cmd('cf.info', 'bf')   
         with self.assertResponseError():
             self.cmd('cf.info') 
+
+    def test_scandump(self):
+        self.cmd('FLUSHALL')
+        maxrange = 500
+        self.cmd('cf.reserve', 'cf', int(maxrange / 8))
+        self.assertEqual([0, None], self.cmd('cf.scandump', 'cf', '0'))
+        for x in xrange(maxrange):
+            self.cmd('cf.add', 'cf', str(x))
+        for x in xrange(maxrange):
+            self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
+        # Start with scandump
+        self.assertRaises(ResponseError, self.cmd, 'cf.scandump', 'cf')
+        self.assertRaises(ResponseError, self.cmd, 'cf.scandump', 'cf', 'str')
+        self.assertRaises(ResponseError, self.cmd, 'cf.scandump', 'noexist', '0')
+        chunks = []
+        while True:
+            last_pos = chunks[-1][0] if chunks else 0
+            chunk = self.cmd('cf.scandump', 'cf', last_pos)
+            if not chunk[0]:
+                break
+            chunks.append(chunk)
+            # print("Scaning chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+        self.cmd('del', 'cf')
+        self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf')
+        self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf', 'str')
+        for chunk in chunks:
+            print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            self.cmd('cf.loadchunk', 'cf', *chunk)
+        for x in xrange(maxrange):
+            self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
+
+    def test_scandump_with_expansion(self):
+        self.cmd('FLUSHALL')
+        maxrange = 500
+    
+        self.cmd('cf.reserve', 'cf', int(maxrange / 8), 'expansion', '2')
+        self.assertEqual([0, None], self.cmd('cf.scandump', 'cf', '0'))
+        for x in xrange(maxrange):
+            self.cmd('cf.add', 'cf', str(x))
+        for x in xrange(maxrange):
+            self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
+
+        chunks = []
+        while True:
+            i = 0
+            last_pos = chunks[-1][0] if chunks else 0
+            chunk = self.cmd('cf.scandump', 'cf', last_pos)
+            if not chunk[0]:
+                break
+            chunks.append(chunk)
+            print("Scaning chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+        # delete filter
+        self.cmd('del', 'cf')
+
+        self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf')
+        self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf', 'str')
+        for chunk in chunks:
+            print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            self.cmd('cf.loadchunk', 'cf', *chunk)
+        # check loaded filter
+        for x in xrange(maxrange):
+            self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
+    
+    def test_scandump_huge(self):
+        self.cmd('FLUSHALL')
+    
+        self.cmd('cf.reserve', 'cf', 1024 * 1024 * 64)
+        self.assertEqual([0, None], self.cmd('cf.scandump', 'cf', '0'))
+        for x in xrange(6):
+            self.cmd('cf.add', 'cf', 'foo')
+        for x in xrange(6):
+            self.assertEqual(1, self.cmd('cf.exists', 'cf', 'foo'))
+
+        chunks = []
+        while True:
+            i = 0
+            last_pos = chunks[-1][0] if chunks else 0
+            chunk = self.cmd('cf.scandump', 'cf', last_pos)
+            if not chunk[0]:
+                break
+            chunks.append(chunk)
+            print("Scaning chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+        # delete filter
+        self.cmd('del', 'cf')
+
+        self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf')
+        self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf', 'str')
+        for chunk in chunks:
+            print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            self.cmd('cf.loadchunk', 'cf', *chunk)
+        # check loaded filter
+        for x in xrange(6):
+            self.assertEqual(1, self.cmd('cf.exists', 'cf', 'foo'))
+
 
 if __name__ == "__main__":
     import unittest
