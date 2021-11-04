@@ -383,14 +383,14 @@ static int BFDebug_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     // Start writing info
     RedisModule_ReplyWithArray(ctx, 1 + sb->nfilters);
 
-    RedisModuleString *info_s = RedisModule_CreateStringPrintf(ctx, "size:%llu", sb->size);
+    RedisModuleString *info_s = RedisModule_CreateStringPrintf(ctx, "size:%lu", sb->size);
     RedisModule_ReplyWithString(ctx, info_s);
     RedisModule_FreeString(ctx, info_s);
 
     for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         const SBLink *lb = sb->filters + ii;
         info_s = RedisModule_CreateStringPrintf(
-            ctx, "bytes:%llu bits:%llu hashes:%u hashwidth:%u capacity:%u size:%lu ratio:%g",
+            ctx, "bytes:%lu bits:%llu hashes:%u hashwidth:%u capacity:%lu size:%lu ratio:%g",
             lb->inner.bytes, lb->inner.bits ? lb->inner.bits : 1LLU << lb->inner.n2,
             lb->inner.hashes, sb->options & BLOOM_OPT_FORCE64 ? 64 : 32, lb->inner.entries,
             lb->size, lb->inner.error);
@@ -1214,37 +1214,37 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     }
 
     if (argc % 2) {
-        BAIL("Invalid number of arguments passed", NULL);
+        BAIL("Invalid number of arguments passed");
     }
 
     for (int ii = 0; ii < argc; ii += 2) {
         if (!rsStrcasecmp(argv[ii], "initial_size")) {
             long long v;
             if (RedisModule_StringToLongLong(argv[ii + 1], &v) == REDISMODULE_ERR) {
-                BAIL("Invalid argument for 'INITIAL_SIZE'", NULL);
+                BAIL("Invalid argument for 'INITIAL_SIZE'");
             }
             if (v > 0) {
                 BFDefaultInitCapacity = v;
             } else {
-                BAIL("INITIAL_SIZE must be > 0", NULL);
+                BAIL("INITIAL_SIZE must be > 0");
             }
         } else if (!rsStrcasecmp(argv[ii], "error_rate")) {
             double d;
             if (RedisModule_StringToDouble(argv[ii + 1], &d) == REDISMODULE_ERR) {
-                BAIL("Invalid argument for 'ERROR_RATE'", NULL);
+                BAIL("Invalid argument for 'ERROR_RATE'");
             } else if (d <= 0) {
-                BAIL("ERROR_RATE must be > 0", NULL);
+                BAIL("ERROR_RATE must be > 0");
             } else {
                 BFDefaultErrorRate = d;
             }
         } else if (!rsStrcasecmp(argv[ii], "cf_max_expansions")) {
             long long l;
             if (RedisModule_StringToLongLong(argv[ii + 1], &l) == REDISMODULE_ERR || l <= 0) {
-                BAIL("Invalid argument for 'CF_MAX_EXPANSIONS'", NULL);
+                BAIL("Invalid argument for 'CF_MAX_EXPANSIONS'");
             }
             CFMaxExpansions = l;
         } else {
-            BAIL("Unrecognized option", NULL);
+            BAIL("Unrecognized option");
         }
     }
 
