@@ -440,7 +440,7 @@ class testRedisBloomNoCodec():
     def test_scandump_huge(self):
         self.cmd('FLUSHALL')
     
-        self.cmd('bf.reserve', 'bf', 0.01, 1024 * 1024 * 1024)
+        self.cmd('bf.reserve', 'bf', 0.01, 1024 * 1024 * 64)
         for x in xrange(6):
             self.cmd('bf.add', 'bf', 'foo')
         for x in xrange(6):
