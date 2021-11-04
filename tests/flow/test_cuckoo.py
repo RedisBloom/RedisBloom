@@ -382,7 +382,7 @@ class testCuckooNoCodec():
     def test_scandump_huge(self):
         self.cmd('FLUSHALL')
     
-        self.cmd('cf.reserve', 'cf', 1024 * 1024 * 1024)
+        self.cmd('cf.reserve', 'cf', 1024 * 1024 * 64)
         self.assertEqual([0, None], self.cmd('cf.scandump', 'cf', '0'))
         for x in xrange(6):
             self.cmd('cf.add', 'cf', 'foo')
