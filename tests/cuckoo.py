@@ -175,7 +175,6 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
 
 
     def test_compact(self):
-        self.env = Env()
         self.cmd('FLUSHALL')
         q = 100
         self.cmd('CF.RESERVE cf 8 MAXITERATIONS 50')
@@ -194,8 +193,6 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
 
         self.assertRaises(ResponseError, self.cmd, 'CF.COMPACT a')
         self.assertRaises(ResponseError, self.cmd, 'CF.COMPACT a b')
-        self.env = Env(decodeResponses=True)
-
 
     def test_max_expansions(self):
         self.cmd('CF.RESERVE', 'cf', '4')
