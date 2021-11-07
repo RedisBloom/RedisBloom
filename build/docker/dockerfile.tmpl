@@ -12,6 +12,7 @@ FROM redisfab/redis:{{REDIS_VERSION}}-{{REDIS_ARCH}}-{{REDIS_OSNICK}} AS builder
 ADD ./ /build
 WORKDIR /build
 
+RUN apt-get update -qq
 RUN ./deps/readies/bin/getpy3
 RUN ./deps/readies/bin/getupdates
 RUN ./system-setup.py
