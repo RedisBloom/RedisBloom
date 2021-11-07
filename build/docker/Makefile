@@ -1,4 +1,4 @@
-REDIS_VERSION=6.0.9
+REDIS_VERSION=6.2.5
 PRODUCT=rebloom
 
 OSNICK ?= bionic
