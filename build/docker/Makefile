@@ -1,8 +1,8 @@
-REDIS_VERSION=6.2.5
+REDIS_VERSION=6.0.9
 PRODUCT=rebloom
 
-OSNICK ?= buster
-OSNICK_OFFICIAL ?= buster
+OSNICK ?= bionic
+OSNICK_OFFICIAL ?= bionic
 
 ROOT=../../
 READIES=${ROOT}/deps/readies
