@@ -328,7 +328,7 @@ workflows:
             - build
           matrix:
             parameters:
-              platform: [buster]
+              platform: [bionic,buster]
       - release_automation:
           context: common
           <<: *on-version-tags
