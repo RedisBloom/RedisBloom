@@ -846,6 +846,7 @@ static int CFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             return RedisModule_ReplyWithError(ctx, "Couldn't create filter!");
         }
         RedisModule_ModuleTypeSetValue(key, CFType, cf);
+        RedisModule_ReplicateVerbatim(ctx);
         return RedisModule_ReplyWithSimpleString(ctx, "OK");
     }
 
