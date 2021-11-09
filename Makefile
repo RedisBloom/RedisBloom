@@ -125,3 +125,21 @@ cov coverage:
 	lcov -r $(COV_DIR)/gcov.info "*test*" "*contrib*" "*redismodule.h" "*util.c*" -o $(COV_DIR)/gcov.info > /dev/null 2>&1
 	lcov -l $(COV_DIR)/gcov.info
 	genhtml --legend -o $(COV_DIR)/report $(COV_DIR)/gcov.info > /dev/null 2>&1
+
+ifneq ($(REMOTE),)
+BENCHMARK_ARGS = run-remote
+else
+BENCHMARK_ARGS = run-local
+endif
+
+BENCHMARK_ARGS += --module_path $(realpath $(MODULE_SO)) --required-module bf
+
+ifneq ($(BENCHMARK),)
+BENCHMARK_ARGS += --test $(BENCHMARK)
+endif
+
+bench benchmark: $(MODULE_SO)
+	cd ./tests/benchmarks ;\
+	redisbench-admin $(BENCHMARK_ARGS)
+
+.PHONY: bench benchmark
