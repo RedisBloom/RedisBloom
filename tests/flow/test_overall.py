@@ -357,3 +357,112 @@ class testRedisBloom():
         info = ConvertInfo(self.cmd('bf.info bf'))
         self.assertEqual(info["Capacity"], 300000000)
         self.assertEqual(info["Size"], 1132420288)
+
+class testRedisBloomNoCodec():
+    def __init__(self):
+        self.env = Env(decodeResponses=False)
+        self.assertOk = self.env.assertTrue
+        self.cmd = self.env.cmd
+        self.assertEqual = self.env.assertEqual
+        self.assertRaises = self.env.assertRaises
+        self.assertTrue = self.env.assertTrue
+        self.assertAlmostEqual = self.env.assertAlmostEqual
+        self.assertGreater = self.env.assertGreater
+        self.restart_and_reload = self.env.restartAndReload
+        self.assertResponseError = self.env.assertResponseError
+        self.retry_with_rdb_reload = self.env.dumpAndReload
+        self.assertNotEqual = self.env.assertNotEqual
+        self.assertGreaterEqual = self.env.assertGreaterEqual
+        self.assertLessEqual = self.env.assertLessEqual
+        self.assertLess = self.env.assertLess
+
+
+    def test_scandump(self):
+        self.cmd('FLUSHALL')
+        maxrange = 500
+        self.cmd('bf.reserve', 'bf', 0.01, int(maxrange / 8))
+        for x in xrange(maxrange):
+            self.cmd('bf.add', 'bf', str(x))
+        for x in xrange(maxrange):
+            self.assertEqual(1, self.cmd('bf.exists', 'bf', str(x)))
+        # Start with scandump
+        self.assertRaises(ResponseError, self.cmd, 'bf.scandump', 'bf')
+        self.assertRaises(ResponseError, self.cmd, 'bf.scandump', 'bf', 'str')
+        self.assertRaises(ResponseError, self.cmd, 'bf.scandump', 'noexist', '0')
+        chunks = []
+        while True:
+            last_pos = chunks[-1][0] if chunks else 0
+            chunk = self.cmd('bf.scandump', 'bf', last_pos)
+            if not chunk[0]:
+                break
+            chunks.append(chunk)
+            # print("Scaning chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+        self.cmd('del', 'bf')
+        self.assertRaises(ResponseError, self.cmd, 'bf.loadchunk', 'bf')
+        self.assertRaises(ResponseError, self.cmd, 'bf.loadchunk', 'bf', 'str')
+        for chunk in chunks:
+            print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            self.cmd('bf.loadchunk', 'bf', *chunk)
+        for x in xrange(maxrange):
+            self.assertEqual(1, self.cmd('bf.exists', 'bf', str(x)))
+
+    def test_scandump_with_expansion(self):
+        self.cmd('FLUSHALL')
+        maxrange = 500
+    
+        self.cmd('bf.reserve', 'bf', 0.01, int(maxrange / 8), 'expansion', '2')
+        for x in xrange(maxrange):
+            self.cmd('bf.add', 'bf', str(x))
+        for x in xrange(maxrange):
+            self.assertEqual(1, self.cmd('bf.exists', 'bf', str(x)))
+
+        chunks = []
+        while True:
+            i = 0
+            last_pos = chunks[-1][0] if chunks else 0
+            chunk = self.cmd('bf.scandump', 'bf', last_pos)
+            if not chunk[0]:
+                break
+            chunks.append(chunk)
+            print("Scaning chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+        # delete filter
+        self.cmd('del', 'bf')
+
+        self.assertRaises(ResponseError, self.cmd, 'bf.loadchunk', 'bf')
+        self.assertRaises(ResponseError, self.cmd, 'bf.loadchunk', 'bf', 'str')
+        for chunk in chunks:
+            print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            self.cmd('bf.loadchunk', 'bf', *chunk)
+        # check loaded filter
+        for x in xrange(maxrange):
+            self.assertEqual(1, self.cmd('bf.exists', 'bf', str(x)))
+    
+    def test_scandump_huge(self):
+        self.cmd('FLUSHALL')
+    
+        self.cmd('bf.reserve', 'bf', 0.01, 1024 * 1024 * 64)
+        for x in xrange(6):
+            self.cmd('bf.add', 'bf', 'foo')
+        for x in xrange(6):
+            self.assertEqual(1, self.cmd('bf.exists', 'bf', 'foo'))
+
+        chunks = []
+        while True:
+            i = 0
+            last_pos = chunks[-1][0] if chunks else 0
+            chunk = self.cmd('bf.scandump', 'bf', last_pos)
+            if not chunk[0]:
+                break
+            chunks.append(chunk)
+            print("Scaning chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+        # delete filter
+        self.cmd('del', 'bf')
+
+        self.assertRaises(ResponseError, self.cmd, 'bf.loadchunk', 'bf')
+        self.assertRaises(ResponseError, self.cmd, 'bf.loadchunk', 'bf', 'str')
+        for chunk in chunks:
+            print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            self.cmd('bf.loadchunk', 'bf', *chunk)
+        # check loaded filter
+        for x in xrange(6):
+            self.assertEqual(1, self.cmd('bf.exists', 'bf', 'foo'))

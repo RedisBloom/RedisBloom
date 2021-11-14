@@ -1,6 +1,6 @@
 #ifndef TDIGEST_MODULE_H
 #define TDIGEST_MODULE_H
-
+#define REDISMODULE_MAIN
 #include "redismodule.h"
 
 #define TDIGEST_ENC_VER 0

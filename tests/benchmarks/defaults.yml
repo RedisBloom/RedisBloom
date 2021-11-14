@@ -3,9 +3,10 @@ exporter:
   redistimeseries:
     timemetric: "$.StartTime"
     metrics:
-      - "$.Totals.overallQuantiles.all_queries.q0"
-      - "$.Totals.overallQuantiles.all_queries.q50"
-      - "$.Totals.overallQuantiles.all_queries.q95"
-      - "$.Totals.overallQuantiles.all_queries.q99"
-      - "$.Totals.overallQuantiles.all_queries.q100"
-      - "$.Totals.overallQueryRates.all_queries"
+      - "$.Tests.Overall.avg_latency_ms"
+      - "$.Tests.Overall.min_latency_ms"
+      - "$.Tests.Overall.p50_latency_ms"
+      - "$.Tests.Overall.p95_latency_ms"
+      - "$.Tests.Overall.p99_latency_ms"
+      - "$.Tests.Overall.max_latency_ms"
+      - "$.Tests.Overall.rps"

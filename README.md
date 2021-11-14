@@ -1,6 +1,6 @@
 [![GitHub issues](https://img.shields.io/github/release/RedisLabsModules/redisbloom.svg)](https://github.com/RedisBloom/RedisBloom/releases/latest)
 [![CircleCI](https://circleci.com/gh/RedisBloom/RedisBloom.svg?style=svg)](https://circleci.com/gh/RedisBloom/RedisBloom)
-[![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/redislabs/rebloom.svg)](https://hub.docker.com/r/redislabs/rebloom/builds/)
+[![Dockerhub](https://img.shields.io/badge/dockerhub-redislabs%2Frebloom-blue)](https://hub.docker.com/r/redislabs/rebloom/tags/)
 [![codecov](https://codecov.io/gh/RedisBloom/RedisBloom/branch/master/graph/badge.svg)](https://codecov.io/gh/RedisBloom/RedisBloom)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/RedisBloom/RedisBloom.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/RedisBloom/RedisBloom/alerts/)
 
@@ -84,6 +84,7 @@ $ redis-server --loadmodule /path/to/redisbloom.so
 | StackExchange.Redis (extensions) | .NET | MIT | [StackExchange](https://github.com/StackExchange/StackExchange.Redis) | [GitHub](https://gist.github.com/naile/96de4e9548c7b5fd6c0614009ffec755) |
 | redis-modules-sdk | TypeScript | BSD-3-Clause | [Dani Tseitlin](https://github.com/danitseitlin) | [GitHub](https://github.com/danitseitlin/redis-modules-sdk) |
 | redis-modules-java | Java | Apache License 2.0 | [dengliming](https://github.com/dengliming) | [GitHub](https://github.com/dengliming/redis-modules-java) |
+| NRedisBloom | .NET | MIT | [yadazula](https://github.com/yadazula) | [GitHub](https://github.com/yadazula/NRedisBloom) |
 
 ## Documentation
 Documentation and full command reference at [redisbloom.io](http://redisbloom.io).

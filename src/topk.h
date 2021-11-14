@@ -18,6 +18,8 @@
 #include <string.h>  //  memcpy
 #include <stdlib.h>  //  calloc
 
+#define REDISMODULE_MAIN
+
 #define REDIS_MODULE_TARGET
 #ifdef REDIS_MODULE_TARGET
 #include "redismodule.h"
