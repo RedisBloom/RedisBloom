@@ -2,7 +2,7 @@ REDIS_VERSION=6.2.5
 PRODUCT=rebloom
 
 OSNICK ?= buster
-OSNICK_OFFICIAL ?= buster
+PUBLISH_OSNICK ?= buster
 
 ROOT=../../
 READIES=${ROOT}/deps/readies
