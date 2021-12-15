@@ -145,13 +145,13 @@ commands:
       - run:
           name: Build for platform (docker build)
           command: |
-            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> CIRCLE_BRANCH=${CIRCLE_BRANCH} CIRCLE_TAG=${CIRCLE_TAG} TEST=1 VERBOSE=1
+            make -C build/docker build OSNICK=<<parameters.platform>> TEST=1 VERBOSE=1
       - early_return_for_forked_pull_requests
       - run:
           name: Build for platform (docker publish)
           command: |
             docker login -u redisfab -p $DOCKER_REDISFAB_PWD
-            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> TEST=1 VERBOSE=1 PUBLISH=1 CIRCLE_BRANCH=${CIRCLE_BRANCH} CIRCLE_TAG=${CIRCLE_TAG} DOCKERWRAPPER_EXTRA_VARS="DOCKER_PUSH_ONLY=1"
+            make -C build/docker build OSNICK=<<parameters.platform>> TEST=1 VERBOSE=1 PUBLISH=1 DOCKERWRAPPER_EXTRA_VARS="DOCKER_PUSH_ONLY=1"
 
 jobs:
   lint:
