@@ -6,4 +6,4 @@ PUBLISH_OSNICK ?= bullseye
 
 ROOT=../../
 READIES=${ROOT}/deps/readies
-include ${READIES}/mk/docker.rules
+include ${READIES}/mk/module.docker.rules
