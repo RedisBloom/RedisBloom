@@ -1,7 +1,7 @@
 /*
- * Copyright 2019 Redis Labs Ltd. and Contributors
+ * Copyright 2019 Redis Ltd. and Contributors
  *
- * This file is available under the Redis Labs Source Available License Agreement
+ * This file is available under the Redis Source Available License Agreement
  *
  * This Top-K Data Type is based on Heavy Keeper algorithm. The paper can be found
  * at https://www.usenix.org/system/files/conference/atc18/atc18-gong.pdf
@@ -122,8 +122,6 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
     counter_t maxCount = 0;
     uint32_t fp = TOPK_HASH(item, itemlen, GA);
 
-    bool heapSearched = false;
-    HeapBucket *itemHeapPtr = NULL;
     counter_t heapMin = topk->heap->count;
 
     // get max item count
@@ -136,14 +134,8 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
             *countPtr = increment;
             maxCount = max(maxCount, *countPtr);
         } else if (runner->fp == fp) {
-            if (*countPtr >= heapMin && heapSearched == false) {
-                itemHeapPtr = checkExistInHeap(topk, item, itemlen);
-                heapSearched = true;
-            }
-            if (itemHeapPtr || *countPtr <= heapMin) {
-                *countPtr += increment;
-                maxCount = max(maxCount, *countPtr);
-            }
+            *countPtr += increment;
+            maxCount = max(maxCount, *countPtr);
         } else {
             uint32_t local_incr = increment;
             for (; local_incr > 0; --local_incr) {
@@ -170,19 +162,22 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
     }
 
     // update heap
-    if (itemHeapPtr != NULL) {
-        itemHeapPtr->count = maxCount; // Not max of the two, as it might have been decayed
-        heapifyDown(topk->heap, topk->k, itemHeapPtr - topk->heap);
-    } else if (maxCount > heapMin) {
-        // TOPK_FREE(topk->heap[0].item);
-        char *expelled = topk->heap[0].item;
+    if (maxCount >= heapMin) {
+        HeapBucket *itemHeapPtr = checkExistInHeap(topk, item, itemlen);
+        if (itemHeapPtr != NULL) {
+            itemHeapPtr->count = maxCount; // Not max of the two, as it might have been decayed
+            heapifyDown(topk->heap, topk->k, itemHeapPtr - topk->heap);
+        } else {
+            // TOPK_FREE(topk->heap[0].item);
+            char *expelled = topk->heap[0].item;
 
-        topk->heap[0].count = maxCount;
-        topk->heap[0].fp = fp;
-        topk->heap[0].item = topKStrndup(item, itemlen);
-        topk->heap[0].itemlen = itemlen;
-        heapifyDown(topk->heap, topk->k, 0);
-        return expelled;
+            topk->heap[0].count = maxCount;
+            topk->heap[0].fp = fp;
+            topk->heap[0].item = topKStrndup(item, itemlen);
+            topk->heap[0].itemlen = itemlen;
+            heapifyDown(topk->heap, topk->k, 0);
+            return expelled;
+        }
     }
     return NULL;
 }
@@ -213,8 +208,15 @@ size_t TopK_Count(TopK *topk, const char *item, size_t itemlen) {
     return res;
 }
 
-void TopK_List(TopK *topk, char **heapList) {
-    for (uint32_t i = 0; i < topk->k; ++i) {
-        heapList[i] = topk->heap[i].item;
-    }
+int cmpHeapBucket(const void *tmp1, const void *tmp2) {
+    const HeapBucket *res1 = tmp1;
+    const HeapBucket *res2 = tmp2;
+    return res1->count < res2->count ? 1 : res1->count > res2->count ? -1 : 0;
+}
+
+HeapBucket *TopK_List(TopK *topk) {
+    HeapBucket *heapList = TOPK_CALLOC(topk->k, (sizeof(*heapList)));
+    memcpy(heapList, topk->heap, topk->k * sizeof(HeapBucket));
+    qsort(heapList, topk->k, sizeof(*heapList), cmpHeapBucket);
+    return heapList;
 }

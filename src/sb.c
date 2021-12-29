@@ -1,4 +1,5 @@
 #include "sb.h"
+#define REDISMODULE_MAIN
 #include "redismodule.h"
 #define BLOOM_CALLOC RedisModule_Calloc
 #define BLOOM_FREE RedisModule_Free

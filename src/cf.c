@@ -1,3 +1,4 @@
+#define REDISMODULE_MAIN
 #include "redismodule.h"
 #define CUCKOO_MALLOC RedisModule_Alloc
 #define CUCKOO_CALLOC RedisModule_Calloc
@@ -33,51 +34,66 @@ static uint8_t *getBucketPos(const CuckooFilter *cf, long long pos, size_t *offs
 
 const char *CF_GetEncodedChunk(const CuckooFilter *cf, long long *pos, size_t *buflen,
                                size_t bytelimit) {
-    size_t offset;
-    uint8_t *bucket = getBucketPos(cf, *pos, &offset);
-    if (!bucket) {
+    // First find filter
+    long long offset = *pos - 1;
+    long long currentSize = 0;
+    int filterIx = 0;
+    SubCF *filter;
+    for (; filterIx < cf->numFilters; ++filterIx) {
+        filter = cf->filters + filterIx;
+        currentSize = filter->bucketSize * filter->numBuckets;
+        if (offset < currentSize) {
+            break;
+        }
+        offset -= currentSize;
+    }
+
+    // all filters already returned
+    if (filterIx == cf->numFilters) {
         return NULL;
     }
-    size_t chunksz = cf->numBuckets - offset;
-    size_t max_buckets = (bytelimit / cf->bucketSize);
-    if (chunksz > max_buckets) {
-        chunksz = max_buckets;
+
+    if (currentSize <= bytelimit) {
+        // filter size is smaller than the limit. Add it all
+        *buflen = currentSize;
+        *pos += currentSize;
+        return (const char *)filter->data;
+    } else {
+        size_t remaining = currentSize - offset;
+        if (remaining > bytelimit) {
+            // return another piece from the filter
+            *buflen = bytelimit;
+            *pos += bytelimit;
+        } else {
+            // return the rest of the filter
+            *buflen = remaining;
+            *pos += remaining;
+        }
+        return (const char *)filter->data + offset;
     }
-    *pos += chunksz;
-    *buflen = chunksz * cf->bucketSize;
-    return (const char *)bucket;
 }
 
 int CF_LoadEncodedChunk(const CuckooFilter *cf, long long pos, const char *data, size_t datalen) {
-    if (datalen == 0 || datalen % cf->bucketSize != 0) {
-        // printf("problem with datalen!\n");
+    if (datalen == 0) {
         return REDISMODULE_ERR;
     }
 
-    size_t nbuckets = datalen / cf->bucketSize;
-    if (nbuckets > pos) {
-        // printf("nbuckets>pos. pos=%lu. nbuckets=%lu\n", nbuckets, pos);
-        return REDISMODULE_ERR;
+    // calculate offset
+    long long offset = pos - datalen - 1;
+    long long currentSize;
+    int filterIx = 0;
+    SubCF *filter;
+    for (; filterIx < cf->numFilters; ++filterIx) {
+        filter = cf->filters + filterIx;
+        currentSize = filter->bucketSize * filter->numBuckets;
+        if (offset < currentSize) {
+            break;
+        }
+        offset -= currentSize;
     }
 
-    pos -= nbuckets;
-
-    size_t offset;
-    uint8_t *bucketpos = getBucketPos(cf, pos, &offset);
-    if (bucketpos == NULL) {
-        // printf("bucketpos=NULL\n");
-        return REDISMODULE_ERR;
-    }
-
-    // printf("OFFSET: %lu\n", offset);
-
-    if (offset + nbuckets > cf->numBuckets) {
-        // printf("offset+nbuckets > cf->numBuckets. offset=%lu, nbuckets=%lu, numBuckets=%lu\n",
-        //        offset, nbuckets, cf->numBuckets);
-        return REDISMODULE_ERR;
-    }
-
-    memcpy(bucketpos, data, datalen);
+    // copy data to filter
+    memcpy(filter->data + offset, data, datalen);
     return REDISMODULE_OK;
 }
 

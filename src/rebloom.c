@@ -1,3 +1,4 @@
+#define REDISMODULE_MAIN
 #include "redismodule.h"
 #include "sb.h"
 #include "cf.h"
@@ -382,14 +383,14 @@ static int BFDebug_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     // Start writing info
     RedisModule_ReplyWithArray(ctx, 1 + sb->nfilters);
 
-    RedisModuleString *info_s = RedisModule_CreateStringPrintf(ctx, "size:%llu", sb->size);
+    RedisModuleString *info_s = RedisModule_CreateStringPrintf(ctx, "size:%lu", sb->size);
     RedisModule_ReplyWithString(ctx, info_s);
     RedisModule_FreeString(ctx, info_s);
 
     for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         const SBLink *lb = sb->filters + ii;
         info_s = RedisModule_CreateStringPrintf(
-            ctx, "bytes:%llu bits:%llu hashes:%u hashwidth:%u capacity:%u size:%lu ratio:%g",
+            ctx, "bytes:%lu bits:%llu hashes:%u hashwidth:%u capacity:%lu size:%lu ratio:%g",
             lb->inner.bytes, lb->inner.bits ? lb->inner.bits : 1LLU << lb->inner.n2,
             lb->inner.hashes, sb->options & BLOOM_OPT_FORCE64 ? 64 : 32, lb->inner.entries,
             lb->size, lb->inner.error);
@@ -400,7 +401,7 @@ static int BFDebug_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     return REDISMODULE_OK;
 }
 
-#define MAX_SCANDUMP_SIZE 535822336 // 511MB
+#define MAX_SCANDUMP_SIZE (1024 * 1024 * 16)
 
 /**
  * BF.SCANDUMP <KEY> <ITER>
@@ -765,7 +766,7 @@ static int CFCompact_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     if (status != SB_OK) {
         return RedisModule_ReplyWithError(ctx, "Cuckoo filter was not found");
     }
-    CuckooFilter_Compact(cf);
+    CuckooFilter_Compact(cf, true);
     RedisModule_ReplicateVerbatim(ctx);
     return RedisModule_ReplyWithSimpleString(ctx, "OK");
 }
@@ -805,7 +806,7 @@ static int CFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
         return REDISMODULE_OK;
     }
 
-    size_t chunkLen;
+    size_t chunkLen = 0;
     const char *chunk = CF_GetEncodedChunk(cf, &pos, &chunkLen, MAX_SCANDUMP_SIZE);
     if (chunk == NULL) {
         RedisModule_ReplyWithLongLong(ctx, 0);
@@ -848,6 +849,7 @@ static int CFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             return RedisModule_ReplyWithError(ctx, "Couldn't create filter!");
         }
         RedisModule_ModuleTypeSetValue(key, CFType, cf);
+        RedisModule_ReplicateVerbatim(ctx);
         return RedisModule_ReplyWithSimpleString(ctx, "OK");
     }
 
@@ -1213,37 +1215,37 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     }
 
     if (argc % 2) {
-        BAIL("Invalid number of arguments passed", NULL);
+        BAIL("Invalid number of arguments passed");
     }
 
     for (int ii = 0; ii < argc; ii += 2) {
         if (!rsStrcasecmp(argv[ii], "initial_size")) {
             long long v;
             if (RedisModule_StringToLongLong(argv[ii + 1], &v) == REDISMODULE_ERR) {
-                BAIL("Invalid argument for 'INITIAL_SIZE'", NULL);
+                BAIL("Invalid argument for 'INITIAL_SIZE'");
             }
             if (v > 0) {
                 BFDefaultInitCapacity = v;
             } else {
-                BAIL("INITIAL_SIZE must be > 0", NULL);
+                BAIL("INITIAL_SIZE must be > 0");
             }
         } else if (!rsStrcasecmp(argv[ii], "error_rate")) {
             double d;
             if (RedisModule_StringToDouble(argv[ii + 1], &d) == REDISMODULE_ERR) {
-                BAIL("Invalid argument for 'ERROR_RATE'", NULL);
+                BAIL("Invalid argument for 'ERROR_RATE'");
             } else if (d <= 0) {
-                BAIL("ERROR_RATE must be > 0", NULL);
+                BAIL("ERROR_RATE must be > 0");
             } else {
                 BFDefaultErrorRate = d;
             }
         } else if (!rsStrcasecmp(argv[ii], "cf_max_expansions")) {
             long long l;
             if (RedisModule_StringToLongLong(argv[ii + 1], &l) == REDISMODULE_ERR || l <= 0) {
-                BAIL("Invalid argument for 'CF_MAX_EXPANSIONS'", NULL);
+                BAIL("Invalid argument for 'CF_MAX_EXPANSIONS'");
             }
             CFMaxExpansions = l;
         } else {
-            BAIL("Unrecognized option", NULL);
+            BAIL("Unrecognized option");
         }
     }
 

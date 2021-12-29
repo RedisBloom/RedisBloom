@@ -14,7 +14,7 @@ commands:
               circleci step halt
             fi
 
-  early_returns:
+  early-returns:
     steps:
       - run:
           name: Early return if this is a docs build
@@ -75,7 +75,7 @@ commands:
         type: string
         default: ""
     steps:
-      - early_returns
+      - early-returns
       - checkout-all
       - setup-automation
       - run:
@@ -132,6 +132,29 @@ commands:
               --triggering_env circleci \
               --push_results_redistimeseries
 
+  platform-build-steps:
+    parameters:
+      platform:
+        type: string
+    steps:
+      - early-returns
+      - setup-executor
+      - checkout-all
+      - run:
+          name: Install dependencies
+          command: |
+            ./deps/readies/bin/getpy3
+      - run:
+          name: Build for platform (docker build)
+          command: |
+            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> TEST=1 VERBOSE=1
+      - early_return_for_forked_pull_requests
+      - run:
+          name: Build for platform (docker publish)
+          command: |
+            docker login -u redisfab -p $DOCKER_REDISFAB_PWD
+            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> TEST=1 VERBOSE=1 PUBLISH=1 DOCKERWRAPPER_EXTRA_VARS="DOCKER_PUSH_ONLY=1"
+
 jobs:
   lint:
     docker:
@@ -176,7 +199,7 @@ jobs:
             apt-get update -qq
             apt-get install -y lcov curl
             make coverage
-            bash <(curl -s https://codecov.io/bash)
+            bash <(curl -s https://raw.githubusercontent.com/codecov/codecov-bash/master/codecov)
       - early_return_for_forked_pull_requests
       - run:
           name: Persist Artifacts
@@ -191,6 +214,16 @@ jobs:
             - '*.so'
             - ramp.yml
             - build
+
+  platform_build:
+    parameters:
+      platform:
+        type: string
+    docker:
+      - image: debian:bullseye
+    steps:
+      - platform-build-steps:
+          platform: <<parameters.platform>>
 
   package_branch:
     docker:
@@ -352,6 +385,10 @@ on-integ-and-version-tags: &on-integ-and-version-tags
     tags:
       only: /^v[0-9].*/
 
+context: &context
+  context:
+    - common
+
 #----------------------------------------------------------------------------------------------------------------------------------
 
 workflows:
@@ -381,6 +418,14 @@ workflows:
             - build
       - package_release:
           <<: *on-version-tags
+          requires:
+            - build
+      - platform_build:
+          <<: *context
+          <<: *on-integ-and-version-tags
+          matrix:
+            parameters:
+              platform: [buster]
           requires:
             - build
       - deploy_branch:
