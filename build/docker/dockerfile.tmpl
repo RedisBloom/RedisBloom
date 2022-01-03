@@ -1,9 +1,9 @@
 
-SHELL ["/bin/bash", "-l", "-c"]
-
 #----------------------------------------------------------------------------------------------
 FROM redisfab/redis:{{REDIS_VERSION}}-{{ARCH}}-{{OSNICK}} AS redis
 FROM {{OS}} AS builder
+
+SHELL ["/bin/bash", "-l", "-c"]
 
 ADD ./ /build
 WORKDIR /build
@@ -19,6 +19,8 @@ RUN make all
 
 #----------------------------------------------------------------------------------------------
 FROM redisfab/redis:{{VERSION}}-{{ARCH}}-{{OSNICK}}
+
+SHELL ["/bin/bash", "-l", "-c"]
 
 ENV LIBDIR {{MODULES_DIR}}
 WORKDIR /data
