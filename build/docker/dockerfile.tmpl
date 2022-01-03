@@ -1,33 +1,30 @@
-ARG REDIS_VER={{REDIS_VERSION}}
 
-# stretch|bionic|buster
-ARG OSNICK={{REDIS_OSNICK}}
-
-# ARCH=x64|arm64v8|arm32v7
-ARG ARCH=x64
+SHELL ["/bin/bash", "-l", "-c"]
 
 #----------------------------------------------------------------------------------------------
-FROM redisfab/redis:{{REDIS_VERSION}}-{{REDIS_ARCH}}-{{REDIS_OSNICK}} AS builder
+FROM redisfab/redis:{{REDIS_VERSION}}-{{ARCH}}-{{OSNICK}} AS redis
+FROM {{OS}} AS builder
 
 ADD ./ /build
 WORKDIR /build
 
-RUN ./deps/readies/bin/getpy3
+COPY --from=redis /usr/local/ /usr/local/
+
 RUN ./deps/readies/bin/getupdates
+RUN ./deps/readies/bin/getpy3
 RUN ./system-setup.py
 
 RUN make fetch
 RUN make all
 
 #----------------------------------------------------------------------------------------------
-FROM redisfab/redis:{{REDIS_VERSION}}-{{REDIS_ARCH}}-{{REDIS_OSNICK}}
+FROM redisfab/redis:{{VERSION}}-{{ARCH}}-{{OSNICK}}
 
-ARG REDIS_VER
-ENV LIBDIR /usr/lib/redis/modules
+ENV LIBDIR {{MODULES_DIR}}
 WORKDIR /data
-RUN mkdir -p "$LIBDIR"
+RUN mkdir -p "{{MODULES_DIR}}"
 
-COPY --from=builder /build/redisbloom.so "$LIBDIR"
+COPY --from=builder /build/redisbloom.so "{{MODULES_DIR}}"
 
 EXPOSE 6379
-CMD ["redis-server", "--loadmodule", "/usr/lib/redis/modules/redisbloom.so"]
+CMD ["redis-server", "--loadmodule", "{{MODULES_DIR}}/redisbloom.so"]
