@@ -1,3 +1,8 @@
+
+ROOT=../..
+MK.pyver:=3
+include $(ROOT)/deps/readies/mk/main
+
 REDIS_VERSION=6.2.6
 REPO=rebloom
 
@@ -9,6 +14,4 @@ PREVIEW_BRANCH=2.4
 
 ART_DIR=$(ROOT)/bin/artifacts
 
-ROOT=../..
-READIES=${ROOT}/deps/readies
-include ${READIES}/mk/module.docker.rules
+include $(MK)/module.docker.rules
