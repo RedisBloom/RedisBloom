@@ -223,7 +223,7 @@ SBChain *SB_NewChainFromHeader(const char *buf, size_t bufLen, const char **errm
     sb->nfilters = header->nfilters;
     sb->options = header->options;
     sb->size = header->size;
-    sb->growth = sb->growth;
+    sb->growth = header->growth;
 
     for (size_t ii = 0; ii < header->nfilters; ++ii) {
         SBLink *dstlink = sb->filters + ii;
