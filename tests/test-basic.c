@@ -219,6 +219,10 @@ TEST_F(encoding, testEncodingSimple) {
     const char *errmsg;
     SBChain *chain2 = SB_NewChainFromHeader(hdr, len, &errmsg);
     ASSERT_NE(NULL, chain2);
+    ASSERT_EQ(chain->size, chain2->size);
+    ASSERT_EQ(chain->growth, chain2->growth);
+    ASSERT_EQ(chain->options, chain2->options);
+    ASSERT_EQ(chain->nfilters, chain2->nfilters);
 
     for (size_t ii = 0; ii < numEncs; ++ii) {
         ASSERT_EQ(0, SBChain_LoadEncodedChunk(chain2, encs[ii].iter, encs[ii].buf, encs[ii].nbuf,
