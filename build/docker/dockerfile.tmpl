@@ -12,8 +12,8 @@ FROM redisfab/redis:{{REDIS_VERSION}}-{{ARCH}}-{{OSNICK}} AS builder
 ADD ./ /build
 WORKDIR /build
 
-RUN ./deps/readies/bin/getpy3
 RUN ./deps/readies/bin/getupdates
+RUN ./deps/readies/bin/getpy3
 RUN ./system-setup.py
 
 RUN make all
