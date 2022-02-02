@@ -1,9 +1,12 @@
+ROOT=../../
+MK.pyver := 3
+
+include $(ROOT)/deps/readies/mk/main
+
 REDIS_VERSION=6.2.5
-PRODUCT=rebloom
+REPO=rebloom
 
 OSNICK ?= buster
 OSNICK_OFFICIAL ?= buster
 
-ROOT=../../
-READIES=${ROOT}/deps/readies
-include ${READIES}/mk/docker.rules
+include ${MK}/module.docker.rules
