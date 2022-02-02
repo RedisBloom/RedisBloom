@@ -27,15 +27,7 @@ class RedisTimeSeriesSetup(paella.Setup):
     def redhat_compat(self):
         self.group_install("'Development Tools'")
         self.install("redhat-lsb-core")
-        if self.dist == "amzn":
-            self.run("amazon-linux-extras install epel")
-            self.install("python3-devel")
-        elif self.dist == "centos" and self.ver == "8":
-            self.install("epel-release dnf-plugins-core")
-            self.run("yum config-manager --set-enabled powertools")
-        else:
-            self.install("epel-release")
-            self.install("python3-devel libaec-devel")
+        self.run("%s/bin/getepel" % READIES)
 
     def arch_compat(self):
         pass

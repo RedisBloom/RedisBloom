@@ -417,7 +417,7 @@ workflows:
           <<: *on-integ-and-version-tags
           matrix:
             parameters:
-              platform: [bionic, xenial, centos7, ol8, focal]
+              platform: [bionic, buster]
           requires:
             - build
       - deploy_branch:
