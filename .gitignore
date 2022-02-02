@@ -16,5 +16,4 @@ tests/test-perf
 tests/test-cuckoo
 site/
 venv/
-deps/
 infer-out/

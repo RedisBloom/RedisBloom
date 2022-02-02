@@ -19,7 +19,7 @@ commands:
       - run:
           name: Setup automation
           command: |
-            (mkdir -p deps; cd deps; git clone https://github.com/RedisLabsModules/readies.git)
+            git submodule update --init --recursive
             PIP=1 ./deps/readies/bin/getpy2
             python2 -m pip install -r ./deps/readies/paella/requirements.txt
 
@@ -42,29 +42,6 @@ commands:
           version: 20.10.2
           docker_layer_caching: true
 
-  platform-build-steps:
-    parameters:
-      platform:
-        type: string
-    steps:
-      - setup-executor
-      - checkout-all
-      - run:
-          name: Install dependencies
-          command: |
-            (mkdir -p deps; cd deps; git clone https://github.com/RedisLabsModules/readies.git)
-            ./deps/readies/bin/getpy3
-      - run:
-          name: Build for platform (docker build)
-          command: |
-            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> TEST=1 VERBOSE=1
-      - early_return_for_forked_pull_requests
-      - run:
-          name: Build for platform (docker publish)
-          command: |
-            docker login -u redisfab -p $DOCKER_REDISFAB_PWD
-            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> TEST=1 VERBOSE=1 PUBLISH=1 DOCKERWRAPPER_EXTRA_VARS="DOCKER_PUSH_ONLY=1"
-  
   benchmark-steps:
     parameters:
       github_actor:
@@ -102,6 +79,22 @@ commands:
               --upload_results_s3 \
               --triggering_env circleci \
               --push_results_redistimeseries
+
+  platform-build-steps:
+    parameters:
+      platform:
+        type: string
+    steps:
+      - setup-executor
+      - checkout-all
+      - run:
+          name: Install dependencies
+          command: |
+            ./deps/readies/bin/getpy3
+      - run:
+          name: Build for platform (docker build)
+          command: |
+            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> ARTIFACTS=0 OFFICIAL=1
 
 jobs:
   lint:
@@ -261,7 +254,7 @@ jobs:
       - run:
           name: Run QA Automation
           command: MODULE_VERSION=$CIRCLE_BRANCH VERBOSE=1 TEST=nightly QUICK=1 ./tests/qa/run
-  
+
   performance-automation:
     docker:
       - image: redisfab/rmbuilder:6.2.3-x64-bionic
@@ -381,13 +374,13 @@ workflows:
             - build
           matrix:
             parameters:
-              platform: [bionic,buster]
+              platform: [buster]
       - release_automation:
           context: common
           <<: *on-version-tags
           requires:
             - deploy_release
-  
+
   nightly:
     triggers:
       - schedule:
