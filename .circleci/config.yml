@@ -19,6 +19,7 @@ commands:
       - run:
           name: Setup automation
           command: |
+            git submodule update --recursive
             PIP=1 ./deps/readies/bin/getpy2
             python2 -m pip install -r ./deps/readies/paella/requirements.txt
 
