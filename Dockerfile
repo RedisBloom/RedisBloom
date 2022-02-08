@@ -29,8 +29,9 @@ RUN if [ -e /usr/bin/yum ]; then \
         rm -rf /var/cache/yum; \
     fi
 
-RUN make fetch
-RUN make all
+RUN bash -l -c "make fetch"
+RUN bash -l -c "make all"
+RUN bash -l -c "TEST= make test"
 
 #----------------------------------------------------------------------------------------------
 FROM redisfab/redis:${REDIS_VER}-${ARCH}-${OSNICK}

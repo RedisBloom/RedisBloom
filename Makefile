@@ -52,7 +52,7 @@ DEPS = $(ROOT)/contrib/MurmurHash2.o \
 	   $(SRCDIR)/rm_tdigest.o \
 	   $(SRCDIR)/topk.o \
 	   $(SRCDIR)/rm_cms.o \
-	   $(SRCDIR)/cms.o 
+	   $(SRCDIR)/cms.o
 
 DEPS_TEST = $(ROOT)/contrib/MurmurHash2.o \
 	   $(ROOT)/rmutil/util.o \
@@ -63,7 +63,7 @@ DEPS_TEST = $(ROOT)/contrib/MurmurHash2.o \
 	   $(SRCDIR)/rm_cms.o \
 	   $(SRCDIR)/cms.o
 
-export 
+export
 
 ifeq ($(COV),1)
 CFLAGS += -fprofile-arcs -ftest-coverage
@@ -130,13 +130,13 @@ static-analysis:
 	$(MAKE) clean
 	$(MAKE) libtdigest
 	 CC=clang $(INFER) run --fail-on-issue --biabduction --skip-analysis-in-path ".*rmutil.*" -- $(MAKE)
-	
+
 format:
 	clang-format -style=file -i $(SRCDIR)/*
 
-package: $(MODULE_SO)
+pack: $(MODULE_SO)
 	mkdir -p $(ROOT)/build
-	ramp-packer -vvv -m ramp.yml -o "$(ROOT)/build/rebloom.{os}-{architecture}.latest.zip" "$(MODULE_SO)"
+	$(ROOT)/pack.sh
 
 clean:
 	$(RM) $(MODULE_OBJ) $(MODULE_SO) $(DEPS)
