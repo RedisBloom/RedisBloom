@@ -16,8 +16,12 @@ RUN ./deps/readies/bin/getpy3
 RUN ./deps/readies/bin/getupdates
 RUN ./system-setup.py
 
-RUN make fetch
-RUN make all
+RUN bash -l -c "make fetch"
+RUN bash -l -c "make all"
+
+{% if TEST == "1" %}
+RUN bash -l -c "TEST= make test"
+{% endif %}
 
 #----------------------------------------------------------------------------------------------
 FROM redisfab/redis:{{REDIS_VERSION}}-{{ARCH}}-{{OSNICK}}
