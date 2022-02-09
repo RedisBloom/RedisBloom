@@ -16,7 +16,6 @@ RUN ./deps/readies/bin/getpy3
 RUN ./deps/readies/bin/getupdates
 RUN ./system-setup.py
 
-RUN bash -l -c "make fetch"
 RUN bash -l -c "make all"
 
 {% if PACK == "1" %}

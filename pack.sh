@@ -8,8 +8,7 @@ export READIES=$ROOT/deps/readies
 cd $ROOT
 
 export PYTHONWARNINGS=ignore
-export LC_ALL=C.UTF-8
-export LANG=C.UTF-8
+export LC_CTYPE=en_US.UTF-8
 
 #----------------------------------------------------------------------------------------------
 
