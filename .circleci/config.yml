@@ -167,41 +167,13 @@ jobs:
 
   valgrind:
     docker:
-      - image: redisfab/rmbuilder:6.2.3-x64-buster
+      - image: redisfab/rmbuilder:6.2.3-x64-bionic
     steps:
       - ci_steps:
           platform: debian
           build_params: VALGRIND=1 -j
           test_params: VALGRIND=1 SIMPLE=1
           getredis_params: --force --valgrind
-
-  build:
-    docker:
-      - image: 'redisfab/rmbuilder:6.2.3-x64-bionic'
-    steps:
-      - ci_steps:
-          platform: debian
-      - run:
-          name: Coverage
-          command: |
-            apt-get update -qq
-            apt-get install -y lcov curl
-            make coverage
-            bash <(curl -s https://raw.githubusercontent.com/codecov/codecov-bash/master/codecov)
-      - early_return_for_forked_pull_requests
-      - run:
-          name: Persist Artifacts
-          command: |
-            mkdir -p /workspace/build
-            cp redisbloom.so /workspace/
-            cp ramp.yml /workspace
-      - early_return_for_forked_pull_requests
-      - persist_to_workspace:
-          root: /workspace
-          paths:
-            - '*.so'
-            - ramp.yml
-            - build
 
   platform_build:
     parameters:
@@ -266,7 +238,7 @@ jobs:
       - run:
           name: Deploy to S3
           command: >-
-            aws s3 cp /workspace/build/ s3://redismodules/$PACKAGE_NAME/ --acl
+            aws s3 cp /workspace/build/ s3://redismodules/$PACKAGE_NAME/snapshots/ --acl
             public-read --recursive --exclude "*" --include "*.zip"
 
   deploy_release:
@@ -387,10 +359,6 @@ workflows:
           <<: *on-any-branch
       - static-analysis-infer:
           <<: *on-any-branch
-      - build:
-          <<: *on-any-branch
-          requires:
-            - lint
       - valgrind:
           <<: *on-any-branch
           requires:
@@ -400,32 +368,22 @@ workflows:
           requires:
             - lint
           context: common
-      - package_branch:
-          <<: *on-integ-branch
-          requires:
-            - build
-      - package_release:
-          <<: *on-version-tags
-          requires:
-            - build
       - platform_build:
           <<: *context
           <<: *on-integ-and-version-tags
           matrix:
             parameters:
               platform: [xenial, bionic, focal, buster, centos7, ol8]
-          requires:
-            - build
       - deploy_branch:
           context: common
           <<: *on-integ-branch
           requires:
-            - package_branch
+            - platform_build
       - deploy_release:
           context: common
           <<: *on-version-tags
           requires:
-            - package_release
+            - platform_build
       - release_automation:
           context: common
           <<: *on-version-tags
