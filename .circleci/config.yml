@@ -143,11 +143,10 @@ commands:
           command: |
             make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> ARTIFACTS=1 OFFICIAL=1 VERSION=$CIRCLE_TAG BRANCH=$CIRCLE_BRANCH SHOW=1 TEST=1
       - persist_to_workspace:
-          root: /workspace
+          root: bin
           paths:
-            - build
-      - store_artifacts:
-          path: /workspace/build
+            - artifacts/snaphots/*
+            - artifacts/*
 
 jobs:
   lint:
@@ -235,30 +234,33 @@ jobs:
       - store_artifacts:
           path: /workspace/build
 
-  deploy_branch:
+  deploy_snapshots:
     docker:
-      - image: 'redisfab/rmbuilder:6.2.3-x64-bionic'
+      - image: redisfab/rmbuilder:6.2.5-x64-bullseye
     steps:
       - attach_workspace:
-          at: /workspace
+          at: workspace
       - run:
           name: Deploy to S3
-          command: >-
-            aws s3 cp /workspace/build/ s3://redismodules/$PACKAGE_NAME/snapshots/ --acl
-            public-read --recursive --exclude "*" --include "*.zip"
+          command: |
+            cd workspace/artifacts/snapshots
+            for f in `ls *.zip *.tgz`; do
+              aws s3 cp $f s3://redismodules/redisbloom/snapshots/$path --acl public-read
+            done
 
   deploy_release:
     docker:
-      - image: 'redisfab/rmbuilder:6.2.3-x64-bionic'
+      - image: redisfab/rmbuilder:6.2.5-x64-bullseye
     steps:
       - attach_workspace:
-          at: /workspace
+          at: workspace
       - run:
           name: Deploy to S3
-          command: >-
-            aws s3 cp /workspace/build/ s3://redismodules/$PACKAGE_NAME/ --acl
-            public-read --recursive --exclude "*" --include "*.zip"
-
+          command: |
+            cd workspace/artifacts/
+            for f in `ls *.zip *.tgz`; do
+              aws s3 cp $f s3://redismodules/redisbloom/$path --acl public-read
+            done
   release_automation:
     docker:
       - image: redisfab/rmbuilder:6.2.3-x64-buster
@@ -380,7 +382,7 @@ workflows:
           matrix:
             parameters:
               platform: [xenial, bionic, focal, buster, centos7, ol8]
-      - deploy_branch:
+      - deploy_snapshots:
           context: common
           <<: *on-integ-branch
           requires:
