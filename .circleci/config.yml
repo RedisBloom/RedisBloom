@@ -148,7 +148,7 @@ jobs:
     docker:
       - image: redislabsmodules/llvm-toolset:latest
     steps:
-      - checkout
+      - checkout-all
       - setup-automation
       - run:
           name: lint
@@ -285,7 +285,7 @@ jobs:
     docker:
       - image: redisfab/rmbuilder:6.2.3-x64-buster
     steps:
-      - checkout
+      - checkout-all
       - setup-automation
       - run:
           name: Run QA Automation
@@ -295,7 +295,7 @@ jobs:
     docker:
       - image: redisfab/rmbuilder:6.2.3-x64-buster
     steps:
-      - checkout
+      - checkout-all
       - setup-automation
       - run:
           name: Run QA Automation
@@ -305,7 +305,7 @@ jobs:
     docker:
       - image: redisfab/rmbuilder:6.2.3-x64-bionic
     steps:
-      - checkout
+      - checkout-all
       - setup-automation
       - run:
           name: build artifact
