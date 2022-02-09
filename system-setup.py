@@ -22,7 +22,10 @@ class RedisTimeSeriesSetup(paella.Setup):
         self.install("git jq curl")
 
     def debian_compat(self):
-        self.run("%s/bin/getgcc --modern" % READIES)
+        if self.osnick == 'buster':
+            self.run("%s/bin/getgcc" % READIES)
+        else:
+            self.run("%s/bin/getgcc --modern" % READIES)
 
     def redhat_compat(self):
         self.run("%s/bin/getepel" % READIES)
