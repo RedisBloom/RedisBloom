@@ -53,10 +53,6 @@ commands:
   setup-automation:
     steps:
       - run:
-          name: Pull Submodules
-          command: |
-            make fetch
-      - run:
           name: Setup automation
           command: |
             make setup
