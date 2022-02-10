@@ -57,14 +57,14 @@ commands:
       - run:
           name: Build for platform (docker build)
           command: |
-            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> TEST=1 VERBOSE=1
+            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> ARTIFACTS=1 OFFICIAL=1 VERSION=$CIRCLE_TAG BRANCH=$CIRCLE_BRANCH SHOW=1 TEST=1
       - early_return_for_forked_pull_requests
-      - run:
-          name: Build for platform (docker publish)
-          command: |
-            docker login -u redisfab -p $DOCKER_REDISFAB_PWD
-            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> TEST=1 VERBOSE=1 PUBLISH=1 DOCKERWRAPPER_EXTRA_VARS="DOCKER_PUSH_ONLY=1"
-  
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - artifacts/snapshots/*
+            - artifacts/*
+
   benchmark-steps:
     parameters:
       github_actor:
@@ -118,10 +118,7 @@ jobs:
     docker:
       - image: redisbench/infer-linux64:1.0.0
     steps:
-      - checkout
-      - run:
-          name: Submodule checkout
-          command: git submodule update --init --recursive
+      - checkout-all
       - run:
           name: run fbinfer
           command: |
@@ -131,10 +128,7 @@ jobs:
     docker:
       - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
     steps:
-      - checkout
-      - run:
-          name: Submodule checkout
-          command: git submodule update --init --recursive
+      - checkout-all
       - setup-automation
       - run:
           name: Build
@@ -218,29 +212,33 @@ jobs:
       - store_artifacts:
           path: /workspace/build
 
-  deploy_branch:
+  deploy_snapshots:
     docker:
-      - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
+      - image: redisfab/rmbuilder:6.2.5-x64-bullseye
     steps:
       - attach_workspace:
-          at: /workspace
+          at: workspace
       - run:
           name: Deploy to S3
-          command: >-
-            aws s3 cp /workspace/build/ s3://redismodules/$PACKAGE_NAME/ --acl
-            public-read --recursive --exclude "*" --include "*.zip"
+          command: |
+            cd workspace/artifacts/snapshots
+            for f in `ls *.zip *.tgz`; do
+              aws s3 cp $f s3://redismodules/redisbloom/snapshots/$path --acl public-read
+            done
 
   deploy_release:
     docker:
-      - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
+      - image: redisfab/rmbuilder:6.2.5-x64-bullseye
     steps:
       - attach_workspace:
-          at: /workspace
+          at: workspace
       - run:
           name: Deploy to S3
-          command: >-
-            aws s3 cp /workspace/build/ s3://redismodules/$PACKAGE_NAME/ --acl
-            public-read --recursive --exclude "*" --include "*.zip"
+          command: |
+            cd workspace/artifacts/
+            for f in `ls *.zip *.tgz`; do
+              aws s3 cp $f s3://redismodules/redisbloom/$path --acl public-read
+            done
 
   release_automation:
     docker:
@@ -261,7 +259,7 @@ jobs:
       - run:
           name: Run QA Automation
           command: MODULE_VERSION=$CIRCLE_BRANCH VERBOSE=1 TEST=nightly QUICK=1 ./tests/qa/run
-  
+
   performance-automation:
     docker:
       - image: redisfab/rmbuilder:6.2.3-x64-bionic
@@ -364,7 +362,7 @@ workflows:
           <<: *on-version-tags
           requires:
             - build
-      - deploy_branch:
+      - deploy_snapshots:
           context: common
           <<: *on-integ-branch
           requires:
@@ -381,13 +379,13 @@ workflows:
             - build
           matrix:
             parameters:
-              platform: [bionic,buster]
+              platform: [xenial, bionic, focal, buster, centos7, ol8]
       - release_automation:
           context: common
           <<: *on-version-tags
           requires:
             - deploy_release
-  
+
   nightly:
     triggers:
       - schedule:

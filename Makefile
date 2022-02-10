@@ -11,7 +11,7 @@ endif
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 username := $(shell sh -c 'id -u')
 usergroup := $(shell sh -c 'id -g')
-CPPFLAGS =  -Wall -Wno-unused-function $(DEBUGFLAGS) -fPIC -std=gnu99 -D_GNU_SOURCE
+CPPFLAGS =  -Wall -Wno-unused-function $(DEBUGFLAGS) -fPIC -D_GNU_SOURCE
 # CC:=$(shell sh -c 'type $(CC) >/dev/null 2>/dev/null && echo $(CC) || echo gcc')
 
 # Compile flags for linux / osx
@@ -42,9 +42,7 @@ DEPS = $(ROOT)/contrib/MurmurHash2.o \
 	   $(SRCDIR)/rm_topk.o \
 	   $(SRCDIR)/topk.o \
 	   $(SRCDIR)/rm_cms.o \
-	   $(SRCDIR)/cms.o 
-
-export 
+	   $(SRCDIR)/cms.o
 
 ifeq ($(COV),1)
 CFLAGS += -fprofile-arcs -ftest-coverage
@@ -55,6 +53,9 @@ all: $(MODULE_SO)
 
 $(MODULE_SO): $(MODULE_OBJ) $(DEPS)
 	$(LD) $^ -o $@ $(SHOBJ_LDFLAGS) $(LDFLAGS)
+
+$(LIBTDIGEST):
+	$(MAKE) -C deps/t-digest-c library_static
 
 build: all
 	$(MAKE) -C tests build-test
@@ -81,18 +82,17 @@ static-analysis-docker:
 static-analysis:
 	$(MAKE) clean
 	$(INFER) run --fail-on-issue --biabduction --skip-analysis-in-path ".*rmutil.*" -- $(MAKE)
-	
+
 format:
 	clang-format -style=file -i $(SRCDIR)/*
 
-package: $(MODULE_SO)
+pack: $(MODULE_SO)
 	mkdir -p $(ROOT)/build
-	ramp-packer -vvv -m ramp.yml -o "$(ROOT)/build/rebloom.{os}-{architecture}.latest.zip" "$(MODULE_SO)"
+	$(ROOT)/pack.sh
 
 clean:
 	$(RM) $(MODULE_OBJ) $(MODULE_SO) $(DEPS)
 	$(RM) -f print_version
-	$(RM) -rf build
 	$(RM) -rf infer-out
 	$(RM) -rf tmp
 	find . -name '*.gcov' -delete
