@@ -40,7 +40,8 @@ See each driver's README for details and documentation.
 | ------- | -------- | ------- | ------ | --- |
 | redisbloom-py | Python | BSD | [Redis](https://redis.com) | [GitHub](https://github.com/RedisBloom/redisbloom-py) |
 | JRedisBloom | Java | BSD | [Redis](https://redis.com) | [GitHub](https://github.com/RedisBloom/JRedisBloom) |
-| redisbloom-go | Golang | BSD | [Redis](https://redis.com) | [GitHub](https://github.com/RedisBloom/redisbloom-go) |
+| redisbloom-go | Go | BSD | [Redis](https://redis.com) | [GitHub](https://github.com/RedisBloom/redisbloom-go) |
+| rueidis | Go | Apache License 2.0 | [Rueian](https://github.com/rueian) | [GitHub](https://github.com/rueian/rueidis) |
 | rebloom | JavaScript | MIT | [Albert Team](https://cvitae.now.sh/) | [GitHub](https://github.com/albert-team/rebloom) |
 | phpredis-bloom | PHP | MIT | [Rafa Campoy](https://github.com/averias) | [GitHub](https://github.com/averias/phpredis-bloom) |
 | phpRebloom | PHP | MIT | [Alessandro Balasco](https://github.com/palicao) | [GitHub](https://github.com/palicao/phpRebloom) |
