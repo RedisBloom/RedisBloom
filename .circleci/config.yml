@@ -53,10 +53,6 @@ commands:
   setup-automation:
     steps:
       - run:
-          name: Pull Submodules
-          command: |
-            make fetch
-      - run:
           name: Setup automation
           command: |
             make setup
@@ -145,14 +141,19 @@ commands:
       - run:
           name: Build for platform (docker build)
           command: |
-            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> ARTIFACTS=0 OFFICIAL=1
+            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> ARTIFACTS=1 OFFICIAL=1 VERSION=$CIRCLE_TAG BRANCH=$CIRCLE_BRANCH SHOW=1 TEST=1
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - artifacts/snaphots/*
+            - artifacts/*
 
 jobs:
   lint:
     docker:
       - image: redislabsmodules/llvm-toolset:latest
     steps:
-      - checkout
+      - checkout-all
       - setup-automation
       - run:
           name: lint
@@ -171,41 +172,13 @@ jobs:
 
   valgrind:
     docker:
-      - image: redisfab/rmbuilder:6.2.3-x64-buster
+      - image: redisfab/rmbuilder:6.2.3-x64-bionic
     steps:
       - ci_steps:
           platform: debian
           build_params: VALGRIND=1 -j
           test_params: VALGRIND=1 SIMPLE=1
           getredis_params: --force --valgrind
-
-  build:
-    docker:
-      - image: 'redisfab/rmbuilder:6.2.3-x64-bionic'
-    steps:
-      - ci_steps:
-          platform: debian
-      - run:
-          name: Coverage
-          command: |
-            apt-get update -qq
-            apt-get install -y lcov curl
-            make coverage
-            bash <(curl -s https://raw.githubusercontent.com/codecov/codecov-bash/master/codecov)
-      - early_return_for_forked_pull_requests
-      - run:
-          name: Persist Artifacts
-          command: |
-            mkdir -p /workspace/build
-            cp redisbloom.so /workspace/
-            cp ramp.yml /workspace
-      - early_return_for_forked_pull_requests
-      - persist_to_workspace:
-          root: /workspace
-          paths:
-            - '*.so'
-            - ramp.yml
-            - build
 
   platform_build:
     parameters:
@@ -261,35 +234,38 @@ jobs:
       - store_artifacts:
           path: /workspace/build
 
-  deploy_branch:
+  deploy_snapshots:
     docker:
-      - image: 'redisfab/rmbuilder:6.2.3-x64-bionic'
+      - image: redisfab/rmbuilder:6.2.5-x64-bullseye
     steps:
       - attach_workspace:
-          at: /workspace
+          at: workspace
       - run:
           name: Deploy to S3
-          command: >-
-            aws s3 cp /workspace/build/ s3://redismodules/$PACKAGE_NAME/ --acl
-            public-read --recursive --exclude "*" --include "*.zip"
+          command: |
+            cd workspace/artifacts/snapshots
+            for f in `ls *.zip *.tgz`; do
+              aws s3 cp $f s3://redismodules/redisbloom/snapshots/$path --acl public-read
+            done
 
   deploy_release:
     docker:
-      - image: 'redisfab/rmbuilder:6.2.3-x64-bionic'
+      - image: redisfab/rmbuilder:6.2.5-x64-bullseye
     steps:
       - attach_workspace:
-          at: /workspace
+          at: workspace
       - run:
           name: Deploy to S3
-          command: >-
-            aws s3 cp /workspace/build/ s3://redismodules/$PACKAGE_NAME/ --acl
-            public-read --recursive --exclude "*" --include "*.zip"
-
+          command: |
+            cd workspace/artifacts/
+            for f in `ls *.zip *.tgz`; do
+              aws s3 cp $f s3://redismodules/redisbloom/$path --acl public-read
+            done
   release_automation:
     docker:
       - image: redisfab/rmbuilder:6.2.3-x64-buster
     steps:
-      - checkout
+      - checkout-all
       - setup-automation
       - run:
           name: Run QA Automation
@@ -299,7 +275,7 @@ jobs:
     docker:
       - image: redisfab/rmbuilder:6.2.3-x64-buster
     steps:
-      - checkout
+      - checkout-all
       - setup-automation
       - run:
           name: Run QA Automation
@@ -309,7 +285,7 @@ jobs:
     docker:
       - image: redisfab/rmbuilder:6.2.3-x64-bionic
     steps:
-      - checkout
+      - checkout-all
       - setup-automation
       - run:
           name: build artifact
@@ -391,10 +367,6 @@ workflows:
           <<: *on-any-branch
       - static-analysis-infer:
           <<: *on-any-branch
-      - build:
-          <<: *on-any-branch
-          requires:
-            - lint
       - valgrind:
           <<: *on-any-branch
           requires:
@@ -404,32 +376,22 @@ workflows:
           requires:
             - lint
           context: common
-      - package_branch:
-          <<: *on-integ-branch
-          requires:
-            - build
-      - package_release:
-          <<: *on-version-tags
-          requires:
-            - build
       - platform_build:
           <<: *context
           <<: *on-integ-and-version-tags
           matrix:
             parameters:
-              platform: [bionic, buster]
-          requires:
-            - build
-      - deploy_branch:
+              platform: [xenial, bionic, focal, buster, centos7, ol8]
+      - deploy_snapshots:
           context: common
           <<: *on-integ-branch
           requires:
-            - package_branch
+            - platform_build
       - deploy_release:
           context: common
           <<: *on-version-tags
           requires:
-            - package_release
+            - platform_build
       - release_automation:
           context: common
           <<: *on-version-tags
