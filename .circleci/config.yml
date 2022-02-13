@@ -19,7 +19,6 @@ commands:
       - run:
           name: Setup automation
           command: |
-            (mkdir -p deps; cd deps; git clone https://github.com/RedisLabsModules/readies.git)
             PIP=1 ./deps/readies/bin/getpy2
             python2 -m pip install -r ./deps/readies/paella/requirements.txt
 
@@ -52,7 +51,6 @@ commands:
       - run:
           name: Install dependencies
           command: |
-            (mkdir -p deps; cd deps; git clone https://github.com/RedisLabsModules/readies.git)
             ./deps/readies/bin/getpy3
       - run:
           name: Build for platform (docker build)
