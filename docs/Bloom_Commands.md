@@ -362,7 +362,7 @@ Return information about `key`
 
 ### Parameters
 
-* **key**: Name of the key to restore
+* **key**: Name of the key to return information about
 
 ### Complexity O
 

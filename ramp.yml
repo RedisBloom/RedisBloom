@@ -1,7 +1,7 @@
 display_name: RedisBloom
 author: Redis
 email: redismodules@redis.com
-description: Bloom Filter Module for Redis
+description: Probabilistic Data Structures for Redis
 homepage: http://redisbloom.io
 license: Redis Source Available License Agreement
 command_line_args: ""
@@ -20,4 +20,5 @@ capabilities:
     - hash_policy
     - clustering
     - flash
-    - intershard_tls    
+    - intershard_tls
+    - intershard_tls_pass

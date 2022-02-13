@@ -10,12 +10,8 @@
     "test_names_modules": [
         "{{RS_MODULE}}"
     ],
+    "global_spot_instances": "ondemand",
     "cycle_environments_setup": [
-      {
-        "teardown": true,
-        "name":"trusty-amd64-aws",
-        "concurrency": 1
-      },
       {
         "teardown": true,
         "name": "xenial-amd64-aws",
@@ -29,6 +25,11 @@
       {
         "teardown": true,
         "name": "rhel7.7-x86_64-aws",
+        "concurrency": 1
+      },
+      {
+        "teardown": true,
+        "name": "rhel8-x86_64-aws",
         "concurrency": 1
       }
     ]
