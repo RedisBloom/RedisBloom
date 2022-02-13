@@ -261,7 +261,7 @@ jobs:
     docker:
       - image: redisfab/rmbuilder:6.2.3-x64-bionic
     steps:
-      - checkout
+      - checkout-all
       - setup-automation
       - run:
           name: build artifact
