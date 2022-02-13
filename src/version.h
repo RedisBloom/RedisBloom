@@ -11,7 +11,7 @@
 #endif
 
 #ifndef REBLOOM_VERSION_PATCH
-#define REBLOOM_VERSION_PATCH 10
+#define REBLOOM_VERSION_PATCH 11
 
 #endif
 
