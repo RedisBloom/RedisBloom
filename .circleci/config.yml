@@ -57,8 +57,7 @@ commands:
       - run:
           name: Build for platform (docker build)
           command: |
-            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> ARTIFACTS=1 OFFICIAL=1 VERSION=$CIRCLE_TAG BRANCH=$CIRCLE_BRANCH SHOW=1 TEST=1
-      - early_return_for_forked_pull_requests
+            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> ARTIFACTS=1 OFFICIAL=1 VERSION=$CIRCLE_TAG BRANCH=$CIRCLE_BRANCH SHOW=1 TEST=0
       - persist_to_workspace:
           root: bin
           paths:
@@ -366,17 +365,15 @@ workflows:
           context: common
           <<: *on-integ-branch
           requires:
-            - package_branch
+            - platform_build
       - deploy_release:
           context: common
           <<: *on-version-tags
           requires:
-            - package_release
+            - platform_build
       - platform_build:
           <<: *context
           <<: *on-integ-and-version-tags
-          requires:
-            - build
           matrix:
             parameters:
               platform: [xenial, bionic, focal, buster, centos7, ol8]

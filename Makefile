@@ -11,7 +11,7 @@ endif
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 username := $(shell sh -c 'id -u')
 usergroup := $(shell sh -c 'id -g')
-CPPFLAGS =  -Wall -Wno-unused-function $(DEBUGFLAGS) -fPIC -std=gnu99 -D_GNU_SOURCE
+CPPFLAGS =  -Wall -Wno-unused-function $(DEBUGFLAGS) -fPIC -std=gnu99 -D_GNU_SOURCE -fcommon
 # CC:=$(shell sh -c 'type $(CC) >/dev/null 2>/dev/null && echo $(CC) || echo gcc')
 
 # Compile flags for linux / osx
@@ -42,9 +42,9 @@ DEPS = $(ROOT)/contrib/MurmurHash2.o \
 	   $(SRCDIR)/rm_topk.o \
 	   $(SRCDIR)/topk.o \
 	   $(SRCDIR)/rm_cms.o \
-	   $(SRCDIR)/cms.o 
+	   $(SRCDIR)/cms.o
 
-export 
+export
 
 ifeq ($(COV),1)
 CFLAGS += -fprofile-arcs -ftest-coverage
@@ -84,7 +84,7 @@ static-analysis-docker:
 static-analysis:
 	$(MAKE) clean
 	$(INFER) run --fail-on-issue --biabduction --skip-analysis-in-path ".*rmutil.*" -- $(MAKE)
-	
+
 format:
 	clang-format -style=file -i $(SRCDIR)/*
 
