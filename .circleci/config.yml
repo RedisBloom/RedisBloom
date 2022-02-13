@@ -19,7 +19,6 @@ commands:
       - run:
           name: Setup automation
           command: |
-            git submodule update --init --recursive
             PIP=1 ./deps/readies/bin/getpy2
             python2 -m pip install -r ./deps/readies/paella/requirements.txt
 
@@ -41,6 +40,27 @@ commands:
       - setup_remote_docker:
           version: 20.10.2
           docker_layer_caching: true
+
+  platform-build-steps:
+    parameters:
+      platform:
+        type: string
+    steps:
+      - setup-executor
+      - checkout-all
+      - run:
+          name: Install dependencies
+          command: |
+            ./deps/readies/bin/getpy3
+      - run:
+          name: Build for platform (docker build)
+          command: |
+            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> ARTIFACTS=1 OFFICIAL=1 VERSION=$CIRCLE_TAG BRANCH=$CIRCLE_BRANCH SHOW=1 TEST=0
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - artifacts/snapshots/*.zip
+            - artifacts/*.zip
 
   benchmark-steps:
     parameters:
@@ -80,22 +100,6 @@ commands:
               --triggering_env circleci \
               --push_results_redistimeseries
 
-  platform-build-steps:
-    parameters:
-      platform:
-        type: string
-    steps:
-      - setup-executor
-      - checkout-all
-      - run:
-          name: Install dependencies
-          command: |
-            ./deps/readies/bin/getpy3
-      - run:
-          name: Build for platform (docker build)
-          command: |
-            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> ARTIFACTS=0 OFFICIAL=1
-
 jobs:
   lint:
     docker:
@@ -111,10 +115,7 @@ jobs:
     docker:
       - image: redisbench/infer-linux64:1.0.0
     steps:
-      - checkout
-      - run:
-          name: Submodule checkout
-          command: git submodule update --init --recursive
+      - checkout-all
       - run:
           name: run fbinfer
           command: |
@@ -124,10 +125,7 @@ jobs:
     docker:
       - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
     steps:
-      - checkout
-      - run:
-          name: Submodule checkout
-          command: git submodule update --init --recursive
+      - checkout-all
       - setup-automation
       - run:
           name: Build
@@ -211,29 +209,33 @@ jobs:
       - store_artifacts:
           path: /workspace/build
 
-  deploy_branch:
+  deploy_snapshots:
     docker:
-      - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
+      - image: redisfab/rmbuilder:6.2.5-x64-bullseye
     steps:
       - attach_workspace:
-          at: /workspace
+          at: workspace
       - run:
           name: Deploy to S3
-          command: >-
-            aws s3 cp /workspace/build/ s3://redismodules/$PACKAGE_NAME/ --acl
-            public-read --recursive --exclude "*" --include "*.zip"
+          command: |
+            cd workspace/artifacts/snapshots
+            for f in `ls *.zip *.tgz`; do
+              aws s3 cp $f s3://redismodules/redisbloom/snapshots/$path --acl public-read
+            done
 
   deploy_release:
     docker:
-      - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
+      - image: redisfab/rmbuilder:6.2.5-x64-bullseye
     steps:
       - attach_workspace:
-          at: /workspace
+          at: workspace
       - run:
           name: Deploy to S3
-          command: >-
-            aws s3 cp /workspace/build/ s3://redismodules/$PACKAGE_NAME/ --acl
-            public-read --recursive --exclude "*" --include "*.zip"
+          command: |
+            cd workspace/artifacts/
+            for f in `ls *.zip *.tgz`; do
+              aws s3 cp $f s3://redismodules/redisbloom/$path --acl public-read
+            done
 
   release_automation:
     docker:
@@ -259,7 +261,7 @@ jobs:
     docker:
       - image: redisfab/rmbuilder:6.2.3-x64-bionic
     steps:
-      - checkout
+      - checkout-all
       - setup-automation
       - run:
           name: build artifact
@@ -357,24 +359,22 @@ workflows:
           <<: *on-version-tags
           requires:
             - build
-      - deploy_branch:
+      - deploy_snapshots:
           context: common
           <<: *on-integ-branch
           requires:
-            - package_branch
+            - platform_build
       - deploy_release:
           context: common
           <<: *on-version-tags
           requires:
-            - package_release
+            - platform_build
       - platform_build:
           <<: *context
           <<: *on-integ-and-version-tags
-          requires:
-            - build
           matrix:
             parameters:
-              platform: [buster]
+              platform: [xenial, bionic, focal, buster, centos7, ol8]
       - release_automation:
           context: common
           <<: *on-version-tags

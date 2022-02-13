@@ -12,11 +12,19 @@ FROM redisfab/redis:{{REDIS_VERSION}}-{{ARCH}}-{{OSNICK}} AS builder
 ADD ./ /build
 WORKDIR /build
 
-RUN ./deps/readies/bin/getupdates
 RUN ./deps/readies/bin/getpy3
+RUN ./deps/readies/bin/getupdates
 RUN ./system-setup.py
 
-RUN make all
+RUN bash -l -c "make all"
+
+{% if PACK == "1" %}
+RUN bash -l -c "make pack"
+{% endif %}
+
+{% if TEST == "1" %}
+RUN bash -l -c "TEST= make test"
+{% endif %}
 
 #----------------------------------------------------------------------------------------------
 FROM redisfab/redis:{{REDIS_VERSION}}-{{ARCH}}-{{OSNICK}}
@@ -24,8 +32,10 @@ FROM redisfab/redis:{{REDIS_VERSION}}-{{ARCH}}-{{OSNICK}}
 ARG REDIS_VER
 ENV LIBDIR /usr/lib/redis/modules
 WORKDIR /data
-RUN mkdir -p "$LIBDIR"
+RUN mkdir -p "$LIBDIR" /var/opt/redislabs/artifats
+RUN chown -R redis:redis /var/opt/redislabs/
 
+COPY --from=builder /build/bin/artifacts/ /var/opt/redislabs/artifacts
 COPY --from=builder /build/redisbloom.so "$LIBDIR"
 
 EXPOSE 6379
