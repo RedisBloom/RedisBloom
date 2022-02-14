@@ -180,7 +180,7 @@ jobs:
             mkdir -p /workspace/bin
             cp /workspace/$MODULE_ARTIFACT /workspace/bin
       - persist_to_workspace:
-          root: bin
+          root: /workspace/bin
           paths:
             - '*.zip'
       - store_artifacts:
@@ -198,8 +198,8 @@ jobs:
             export LC_ALL=C.UTF-8
             export LANG=C.UTF-8
             python -m RAMP.ramp pack -m /workspace/ramp.yml -o /workspace/build/$PACKAGE_NAME.{os}-{architecture}.{semantic_version}.zip /workspace/$MODULE_ARTIFACT
-            mkdir -p /bin
-            cp /workspace/$MODULE_ARTIFACT bin
+            mkdir -p /workspace/bin
+            cp /workspace/$MODULE_ARTIFACT /workspace/bin
       - run:
           name: Package
           command: |
