@@ -289,7 +289,7 @@ jobs:
       - setup-automation
       - run:
           name: build artifact
-          command: make build
+          command: make `pwd`/redisbloom.so
       - benchmark-steps
 
 #----------------------------------------------------------------------------------------------------------------------------------
