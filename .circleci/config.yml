@@ -349,7 +349,7 @@ on-integ-and-version-tags: &on-integ-and-version-tags
         - master
         - /^\d+\.\d+.*$/
         - /^feature-.*$/
-        - /^perf-.*$/
+        - /^perf.*$/
     tags:
       only: /^v[0-9].*/
 
