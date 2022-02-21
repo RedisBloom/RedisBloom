@@ -279,7 +279,7 @@ jobs:
           name: Deploy to S3
           command: |
             cd workspace/artifacts/snapshots
-            for f in `ls *.zip *.tgz`; do
+            for f in `ls *.zip`; do
               aws s3 cp $f s3://redismodules/redisbloom/snapshots/$path --acl public-read
             done
 
@@ -293,9 +293,10 @@ jobs:
           name: Deploy to S3
           command: |
             cd workspace/artifacts/
-            for f in `ls *.zip *.tgz`; do
+            for f in `ls *.zip`; do
               aws s3 cp $f s3://redismodules/redisbloom/$path --acl public-read
             done
+
   release_automation:
     docker:
       - image: redisfab/rmbuilder:6.2.3-x64-buster
