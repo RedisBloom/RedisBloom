@@ -180,6 +180,40 @@ jobs:
           test_params: VALGRIND=1 SIMPLE=1
           getredis_params: --force --valgrind
 
+  build-macos:
+    macos:
+      xcode: 11.6.0
+    steps:
+      - checkout-all
+      - run:
+          name: Fix macOS setup
+          command: |
+            # brew update || true
+            # workaround for ramp pack failure
+            sudo mkdir -p /var/opt/redislabs
+            sudo chmod 777 /var/opt/redislabs
+      - run:
+          name: Install dependencies
+          command: |
+            ./deps/readies/bin/getpy3
+      - run:
+          name: Build for mac
+          command: |
+            bash -l -c "make all"
+      - run:
+          name: Create RAMP
+          command: |
+            bash -l -c "make pack"
+      - run:
+          name: Run tests
+          command: |
+            bash -l -c "TEST= make test"
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - artifacts/snaphots/*
+            - artifacts/*
+
   platform_build:
     parameters:
       platform:
@@ -376,6 +410,9 @@ workflows:
           requires:
             - lint
           context: common
+      - build-macos:
+          <<: *context
+          <<: *on-integ-and-version-tags
       - platform_build:
           <<: *context
           <<: *on-integ-and-version-tags
@@ -387,6 +424,7 @@ workflows:
           <<: *on-integ-branch
           requires:
             - platform_build
+            - build-macos
       - deploy_release:
           context: common
           <<: *on-version-tags
