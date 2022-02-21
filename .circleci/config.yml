@@ -147,6 +147,7 @@ commands:
           paths:
             - artifacts/snaphots/*
             - artifacts/*
+            - artifacts/!tests/
 
 jobs:
   lint:
