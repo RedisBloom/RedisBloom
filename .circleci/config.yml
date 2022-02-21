@@ -196,7 +196,7 @@ jobs:
           name: Install dependencies
           command: |
             ./deps/readies/bin/getpy3
-            ,/system-setup.py
+            ./system-setup.py
       - run:
           name: Build for mac
           command: |
