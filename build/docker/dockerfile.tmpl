@@ -12,10 +12,10 @@ FROM redisfab/redis:{{REDIS_VERSION}}-{{ARCH}}-{{OSNICK}} AS builder
 ADD ./ /build
 WORKDIR /build
 
+RUN ./deps/readies/bin/getpy2
 RUN ./deps/readies/bin/getpy3
 RUN ./deps/readies/bin/getupdates
 RUN ./system-setup.py
-RUN ln -s /usr/bin/python3 /usr/bin/python
 
 RUN bash -l -c "make all"
 
