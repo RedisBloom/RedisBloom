@@ -31,6 +31,9 @@ class RedisTimeSeriesSetup(paella.Setup):
         self.run("%s/bin/getepel" % READIES)
         self.run("%s/bin/getgcc --modern" % READIES)
 
+    def macos(self):
+        self.run("%s/bin/getredis" % READIES)
+
     def common_last(self):
         if self.dist in ["centos", 'ol'] and self.ver == "8":
             self.install("https://pkgs.dyn.su/el8/base/x86_64/lcov-1.14-3.el8.noarch.rpm")
