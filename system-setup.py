@@ -42,6 +42,7 @@ class RedisTimeSeriesSetup(paella.Setup):
         else:
             self.install("lcov")
         self.run("python3 %s/bin/getrmpytools" % READIES)
+        self.run("python2 %s/bin/getrmpytools" % READIES)
         self.run("python3 {READIES}/bin/getcmake".format(READIES=READIES))
 
 #----------------------------------------------------------------------------------------------
