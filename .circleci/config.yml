@@ -145,8 +145,8 @@ commands:
       - persist_to_workspace:
           root: bin
           paths:
-            - artifacts/snaphots/*
-            - artifacts/*
+            - artifacts/snaphots/*.zip
+            - artifacts/*.zip
 
 jobs:
   lint:
@@ -179,6 +179,41 @@ jobs:
           build_params: VALGRIND=1 -j
           test_params: VALGRIND=1 SIMPLE=1
           getredis_params: --force --valgrind
+
+  build-macos:
+    macos:
+      xcode: 11.6.0
+    steps:
+      - checkout-all
+      - run:
+          name: Fix macOS setup
+          command: |
+            # brew update || true
+            # workaround for ramp pack failure
+            sudo mkdir -p /var/opt/redislabs
+            sudo chmod 777 /var/opt/redislabs
+      - run:
+          name: Install dependencies
+          command: |
+            ./deps/readies/bin/getpy3
+            ./system-setup.py
+      - run:
+          name: Build for mac
+          command: |
+            bash -l -c "make all"
+      - run:
+          name: Create RAMP
+          command: |
+            bash -l -c "make pack"
+      - run:
+          name: Run tests
+          command: |
+            bash -l -c "TEST= make test"
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - artifacts/snaphots/*.zip
+            - artifacts/*.zip
 
   platform_build:
     parameters:
@@ -243,8 +278,8 @@ jobs:
       - run:
           name: Deploy to S3
           command: |
-            cd workspace/artifacts/snapshots
-            for f in `ls *.zip *.tgz`; do
+            cd workspace/artifacts/
+            for f in `ls *.zip`; do
               aws s3 cp $f s3://redismodules/redisbloom/snapshots/$path --acl public-read
             done
 
@@ -258,9 +293,10 @@ jobs:
           name: Deploy to S3
           command: |
             cd workspace/artifacts/
-            for f in `ls *.zip *.tgz`; do
+            for f in `ls *.zip`; do
               aws s3 cp $f s3://redismodules/redisbloom/$path --acl public-read
             done
+
   release_automation:
     docker:
       - image: redisfab/rmbuilder:6.2.3-x64-buster
@@ -376,6 +412,9 @@ workflows:
           requires:
             - lint
           context: common
+      - build-macos:
+          <<: *context
+          <<: *on-integ-and-version-tags
       - platform_build:
           <<: *context
           <<: *on-integ-and-version-tags
@@ -387,6 +426,7 @@ workflows:
           <<: *on-integ-branch
           requires:
             - platform_build
+            - build-macos
       - deploy_release:
           context: common
           <<: *on-version-tags
