@@ -1,5 +1,5 @@
 ROOT=../../
-MK.pyver := 3
+MK.pyver := 2
 
 include $(ROOT)/deps/readies/mk/main
 
