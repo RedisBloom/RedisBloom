@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 
 import sys
 import os
@@ -41,9 +41,8 @@ class RedisTimeSeriesSetup(paella.Setup):
             self.install("lcov-git", aur=True)
         else:
             self.install("lcov")
-        self.run("python3 %s/bin/getrmpytools" % READIES)
-        self.run("python2 %s/bin/getrmpytools" % READIES)
-        self.run("python3 {READIES}/bin/getcmake".format(READIES=READIES))
+        self.pip_install("rmtest rltest ramp-packer")
+        self.run("{READIES}/bin/getcmake".format(READIES=READIES))
 
 #----------------------------------------------------------------------------------------------
 

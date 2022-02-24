@@ -51,7 +51,7 @@ commands:
       - run:
           name: Install dependencies
           command: |
-            ./deps/readies/bin/getpy3
+            ./deps/readies/bin/getpy2
       - run:
           name: Build for platform (docker build)
           command: |
@@ -170,7 +170,6 @@ jobs:
           name: Install dependencies
           command: |
             ./deps/readies/bin/getpy2
-            ./deps/readies/bin/getpy3
             ./system-setup.py
       - run:
           name: Build for mac

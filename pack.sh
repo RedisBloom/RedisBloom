@@ -73,7 +73,7 @@ export DEPNAMES=""
 
 export PACKAGE_NAME=${PACKAGE_NAME:-${PRODUCT}}
 
-RAMP_PROG="python3 -m RAMP.ramp"
+RAMP_PROG="python -m RAMP.ramp"
 
 #----------------------------------------------------------------------------------------------
 
@@ -99,7 +99,7 @@ pack_ramp() {
 		RAMP_YAML=$ROOT/ramp.yml
 	fi
 
-	python3 $READIES/bin/xtx \
+	python $READIES/bin/xtx \
 		$xtx_vars \
 		-e NUMVER -e SEMVER \
 		$RAMP_YAML > /tmp/ramp.yml
