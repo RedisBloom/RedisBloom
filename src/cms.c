@@ -52,14 +52,20 @@ size_t CMS_IncrBy(CMSketch *cms, const char *item, size_t itemlen, size_t value)
     assert(item);
 
     size_t minCount = (size_t)-1;
+    int overflow = 0;
 
     for (size_t i = 0; i < cms->depth; ++i) {
         uint32_t hash = CMS_HASH(item, itemlen, i);
-        cms->array[(hash % cms->width) + (i * cms->width)] += value;
-        minCount = min(minCount, cms->array[(hash % cms->width) + (i * cms->width)]);
+        size_t loc = (hash % cms->width) + (i * cms->width);
+        cms->array[loc] += value;
+        if (cms->array[loc] < value) {
+            cms->array[loc] = UINT32_MAX;
+            overflow = 1;
+        }
+        minCount = min(minCount, cms->array[loc]);
     }
     cms->counter += value;
-    return minCount;
+    return !overflow ? minCount : UINT32_MAX;
 }
 
 size_t CMS_Query(CMSketch *cms, const char *item, size_t itemlen) {

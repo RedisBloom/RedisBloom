@@ -177,6 +177,23 @@ class testCMS():
             self.cmd('cms.incrby', 'B', str(i), itemsB[i])
         self.assertOk(self.cmd('cms.merge', 'C', 2, 'A', 'B'))
 
+    def test_overflow(self):
+        large_val = 1024*1024*1024*2 - 1
+        
+        self.cmd('FLUSHALL')
+        self.cmd('cms.initbydim', 'cms', '1000', '5')
+        self.assertEqual([large_val], self.cmd('cms.incrby', 'cms', 'a', large_val))
+        self.assertEqual([large_val], self.cmd('cms.query', 'cms', 'a'))
+        self.assertEqual([large_val * 2], self.cmd('cms.incrby', 'cms', 'a', large_val))
+        self.assertEqual([large_val * 2], self.cmd('cms.query', 'cms', 'a'))
+        
+        # overflow as result > UNIT32_MAX
+        res = self.cmd('cms.incrby', 'cms', 'a', large_val)
+        # result of insert is an error message
+        self.env.assertResponseError(res[0], contained='CMS: INCRBY overflow')
+        # result of query in UINT32_MAX
+        self.assertEqual([large_val * 2 + 1], self.cmd('cms.query', 'cms', 'a'))
+
     def test_smallset(self):
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd('cms.initbydim', 'cms1', '2', '2'))
