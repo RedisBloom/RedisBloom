@@ -10,6 +10,14 @@ cd $ROOT
 export PYTHONWARNINGS=ignore
 export LC_CTYPE=en_US.UTF-8
 
+if [ -f /usr/bin/python ]; then
+    PYTHON=/usr/bin/python
+elif [ -f /usr/bin/python2 ]; then
+    PYTHON=/usr/bin/python2
+elif [ -f /usr/bin/python3 ]; then
+    PYTHON=/usr/bin/python3
+fi
+
 #----------------------------------------------------------------------------------------------
 
 if [[ $1 == --help || $1 == help ]]; then
@@ -73,7 +81,7 @@ export DEPNAMES=""
 
 export PACKAGE_NAME=${PACKAGE_NAME:-${PRODUCT}}
 
-RAMP_PROG="python -m RAMP.ramp"
+RAMP_PROG="${PYTHON} -m RAMP.ramp"
 
 #----------------------------------------------------------------------------------------------
 
@@ -99,7 +107,7 @@ pack_ramp() {
 		RAMP_YAML=$ROOT/ramp.yml
 	fi
 
-	python $READIES/bin/xtx \
+	${PYTHON} $READIES/bin/xtx \
 		$xtx_vars \
 		-e NUMVER -e SEMVER \
 		$RAMP_YAML > /tmp/ramp.yml
