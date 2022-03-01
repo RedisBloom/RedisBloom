@@ -47,7 +47,6 @@ size_t CMS_IncrBy(CMSketch *cms, const char *item, size_t itemlen, size_t value)
     assert(item);
 
     size_t minCount = (size_t)-1;
-    int overflow = 0;
 
     for (size_t i = 0; i < cms->depth; ++i) {
         uint32_t hash = CMS_HASH(item, itemlen, i);
