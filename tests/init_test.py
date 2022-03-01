@@ -73,6 +73,18 @@ class InitTestCaseFailError(ModuleTestCase('../redisbloom.so', module_args=['ERR
         else:
             self.assertOk('NotOK')
 
+
+class InitTestCaseFailError(ModuleTestCase('../redisbloom.so', module_args=['ERROR_RATE', '2'])):
+    def test_init_args(self):
+        try:
+            c, s = self.client, self.server
+        except Exception:
+            delattr(self, '_server')
+            self.assertOk('OK')
+        else:
+            self.assertOk('NotOK')
+
+
 class InitTestCaseFailErrorStr(ModuleTestCase('../redisbloom.so', module_args=['ERROR_RATE', 'BF'])):
     def test_init_args(self):
         try:
