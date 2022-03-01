@@ -133,7 +133,11 @@ int CMSketch_IncrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_ReplyWithArray(ctx, pairCount);
     for (int i = 0; i < pairCount; ++i) {
         size_t count = CMS_IncrBy(cms, pairArray[i].key, pairArray[i].keylen, pairArray[i].value);
-        RedisModule_ReplyWithLongLong(ctx, (long long)count);
+        if (count != UINT32_MAX) {
+            RedisModule_ReplyWithLongLong(ctx, (long long)count);
+        } else {
+            RedisModule_ReplyWithError(ctx, "CMS: INCRBY overflow");
+        }
     }
     RedisModule_ReplicateVerbatim(ctx);
 
