@@ -51,11 +51,12 @@ commands:
       - run:
           name: Install dependencies
           command: |
+            ./deps/readies/bin/getpy2
             ./deps/readies/bin/getpy3
       - run:
           name: Build for platform (docker build)
           command: |
-            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> ARTIFACTS=1 OFFICIAL=1 VERSION=$CIRCLE_TAG BRANCH=$CIRCLE_BRANCH SHOW=1 TEST=0
+            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> ARTIFACTS=1 OFFICIAL=1 VERSION=$CIRCLE_TAG BRANCH=$CIRCLE_BRANCH SHOW=1 TEST=1
       - persist_to_workspace:
           root: bin
           paths:
@@ -154,6 +155,40 @@ jobs:
             - '*.so'
             - ramp.yml
             - build
+  build-macos:
+    macos:
+      xcode: 11.6.0
+    steps:
+      - checkout-all
+      - run:
+          name: Fix macOS setup
+          command: |
+            # brew update || true
+            # workaround for ramp pack failure
+            sudo mkdir -p /var/opt/redislabs
+            sudo chmod 777 /var/opt/redislabs
+      - run:
+          name: Install dependencies
+          command: |
+            ./deps/readies/bin/getpy2
+            ./system-setup.py
+      - run:
+          name: Build for mac
+          command: |
+            bash -l -c "make all"
+      - run:
+          name: Create RAMP
+          command: |
+            bash -l -c "make pack"
+      - run:
+          name: Run tests
+          command: |
+            bash -l -c "TEST= make test"
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - artifacts/snaphots/*.zip
+            - artifacts/*.zip
 
   platform_build:
     parameters:
@@ -346,6 +381,9 @@ workflows:
           <<: *on-any-branch
           requires:
             - lint
+      - build-macos:
+          <<: *context
+          <<: *on-integ-and-version-tags
       - performance-automation:
           <<: *on-integ-and-version-tags
           requires:

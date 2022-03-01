@@ -1,6 +1,6 @@
 all: test test-cuckoo test-perf
 
-PYTHON:=python
+PYTHON:=python2
 
 test: test-basic test-cuckoo
 	./test-basic
