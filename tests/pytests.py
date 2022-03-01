@@ -6,9 +6,9 @@ import sys
 if sys.version >= '3':
     xrange = range
 
-def ConvertInfo(lst): 
-    res_dct = {lst[i]: lst[i + 1] for i in range(0, len(lst), 2)} 
-    return res_dct 
+def ConvertInfo(lst):
+    res_dct = {lst[i]: lst[i + 1] for i in range(0, len(lst), 2)}
+    return res_dct
 
 class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
     def test_custom_filter(self):
@@ -83,22 +83,22 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
 
     def test_oom(self):
         self.assertRaises(ResponseError, self.cmd, 'bf.reserve', 'test', 0.01, 4294967296 * 4294967296)
-    
+
     def test_rdb_reload(self):
         self.assertEqual(1, self.cmd('bf.add', 'test', 'foo'))
-        c = self.client   
-        yield 1 
+        c = self.client
+        yield 1
         c.dr.dump_and_reload()
         yield 2
         self.assertEqual(1, self.cmd('bf.exists', 'test', 'foo'))
         self.assertEqual(0, self.cmd('bf.exists', 'test', 'bar'))
-    
+
     def test_dump_and_load(self):
         # Store a filter
         quantity = 1000
         error_rate = 0.001
         self.cmd('bf.reserve', 'myBloom', error_rate, quantity *1024 * 8)
-        # test is probabilistic and might fail. It is OK to change variables if 
+        # test is probabilistic and might fail. It is OK to change variables if
         # certain to not break anything
         def do_verify(add):
             false_positives = 0.0
@@ -113,15 +113,15 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
             self.assertLessEqual(false_positives/quantity, error_rate)
 
         with self.assertResponseError():
-            self.cmd('bf.scandump', 'myBloom') 
+            self.cmd('bf.scandump', 'myBloom')
         with self.assertResponseError():
-            self.cmd('bf.scandump', 'myBloom', 'str')   
+            self.cmd('bf.scandump', 'myBloom', 'str')
         with self.assertResponseError():
-            self.cmd('bf.scandump', 'myCuckoo', 0) 
+            self.cmd('bf.scandump', 'myCuckoo', 0)
         with self.assertResponseError():
-            self.cmd('bf.loadchunk', 'myBloom')   
+            self.cmd('bf.loadchunk', 'myBloom')
         with self.assertResponseError():
-            self.cmd('bf.loadchunk', 'myBloom', 'str', 'data')            
+            self.cmd('bf.loadchunk', 'myBloom', 'str', 'data')
 
         do_verify(add=True)
         cmds = []
@@ -194,16 +194,16 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         self.assertEqual(['size:3', 'bytes:98880 bits:791040 hashes:11 hashwidth:64 capacity:50000 size:3 ratio:0.0005'],
                          [x.decode() for x in self.cmd('bf.debug', 'missingFilter')])
 
-    def test_mem_usage(self):
-        self.assertOk(self.cmd('bf.reserve', 'bf', '0.05', '1000'))
-        self.assertEqual(1088, self.cmd('MEMORY USAGE', 'bf'))
-        self.assertEqual([1, 1, 1], self.cmd(
-            'bf.madd', 'bf', 'foo', 'bar', 'baz'))
-        self.assertEqual(1088, self.cmd('MEMORY USAGE', 'bf'))
-        with self.assertResponseError():
-            self.cmd('bf.debug', 'bf', 'noexist')
-        with self.assertResponseError():
-            self.cmd('bf.debug', 'cf')
+#    def test_mem_usage(self):
+#        self.assertOk(self.cmd('bf.reserve', 'bf', '0.05', '1000'))
+#        self.assertEqual(1088, self.cmd('MEMORY USAGE', 'bf'))
+#        self.assertEqual([1, 1, 1], self.cmd(
+#            'bf.madd', 'bf', 'foo', 'bar', 'baz'))
+#        self.assertEqual(1088, self.cmd('MEMORY USAGE', 'bf'))
+#        with self.assertResponseError():
+#            self.cmd('bf.debug', 'bf', 'noexist')
+#        with self.assertResponseError():
+#            self.cmd('bf.debug', 'cf')
 
     def test_expansion(self):
         self.assertOk(self.cmd('bf.reserve exp1 0.01 4 expansion 1'))
@@ -217,7 +217,7 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
             self.assertEqual(1, self.cmd('bf.exists exp1', str(i)))
             self.assertEqual(1, self.cmd('bf.exists exp2', str(i)))
             self.assertEqual(1, self.cmd('bf.exists exp4', str(i)))
-        
+
         self.assertEqual(23, self.cmd('bf.info', 'exp1')[5])
         self.assertEqual(5, self.cmd('bf.info', 'exp2')[5])
         self.assertEqual(4, self.cmd('bf.info', 'exp4')[5])
@@ -225,9 +225,9 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         with self.assertResponseError():
             self.cmd('bf.reserve exp4 0.01 4 expansion')
         with self.assertResponseError():
-            self.cmd('bf.reserve exp4 0.01 4 expansion 0')            
+            self.cmd('bf.reserve exp4 0.01 4 expansion 0')
         with self.assertResponseError():
-            self.cmd('bf.reserve exp4 0.01 4 expansion str') 
+            self.cmd('bf.reserve exp4 0.01 4 expansion str')
 
     def test_debug(self):
         self.assertOk(self.cmd('bf.reserve', 'bf', '0.01', '10'))
@@ -240,7 +240,7 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
                 'bytes:160 bits:1280 hashes:11 hashwidth:64 capacity:80 size:29 ratio:0.000625'])
 
         self.cmd('del', 'bf')
-        
+
         self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '100'))
         for i in range(4000):
             self.cmd('bf.add', 'bf', str(i))
@@ -255,15 +255,15 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
     def test_info(self):
         self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '100'))
         self.assertEqual(self.cmd('bf.info bf'), ['Capacity', 100,
-                                                  'Size', 352, 
-                                                  'Number of filters', 1L, 
+                                                  'Size', 352,
+                                                  'Number of filters', 1L,
                                                   'Number of items inserted', 0L,
                                                   'Expansion rate', 2L])
 
         with self.assertResponseError():
-            self.cmd('bf.info', 'cf')   
+            self.cmd('bf.info', 'cf')
         with self.assertResponseError():
-            self.cmd('bf.info')                                             
+            self.cmd('bf.info')
 
     def test_no_1_error_rate(self):
         with self.assertResponseError():
@@ -348,7 +348,7 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
     def test_scandump_with_expansion(self):
         self.cmd('FLUSHALL')
         maxrange = 500
-    
+
         self.cmd('bf.reserve', 'bf', 0.01, int(maxrange / 8), 'expansion', '2')
         for x in xrange(maxrange):
             self.cmd('bf.add', 'bf', str(x))
@@ -375,10 +375,10 @@ class RebloomTestCase(ModuleTestCase('../redisbloom.so')):
         # check loaded filter
         for x in xrange(maxrange):
             self.assertEqual(1, self.cmd('bf.exists', 'bf', str(x)))
-    
+
     def test_scandump_huge(self):
         self.cmd('FLUSHALL')
-    
+
         self.cmd('bf.reserve', 'bf', 0.01, 1024 * 1024 * 64)
         for x in xrange(6):
             self.cmd('bf.add', 'bf', 'foo')
