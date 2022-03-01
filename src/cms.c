@@ -6,12 +6,8 @@
 #include "cms.h"
 #include "contrib/murmurhash2.h"
 
-#define min(a, b)                                                                                  \
-    ({                                                                                             \
-        __typeof__(a) _a = (a);                                                                    \
-        __typeof__(b) _b = (b);                                                                    \
-        _a < _b ? _a : _b;                                                                         \
-    })
+#define min(a,b) (((a)<(b))?(a):(b))
+
 
 #define BIT64 64
 #define CMS_HASH(item, itemlen, i) MurmurHash2(item, itemlen, i)
@@ -60,12 +56,11 @@ size_t CMS_IncrBy(CMSketch *cms, const char *item, size_t itemlen, size_t value)
         cms->array[loc] += value;
         if (cms->array[loc] < value) {
             cms->array[loc] = UINT32_MAX;
-            overflow = 1;
         }
         minCount = min(minCount, cms->array[loc]);
     }
     cms->counter += value;
-    return !overflow ? minCount : UINT32_MAX;
+    return minCount;
 }
 
 size_t CMS_Query(CMSketch *cms, const char *item, size_t itemlen) {
