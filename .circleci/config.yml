@@ -52,6 +52,7 @@ commands:
           name: Install dependencies
           command: |
             ./deps/readies/bin/getpy2
+            ./deps/readies/bin/getpy3
       - run:
           name: Build for platform (docker build)
           command: |

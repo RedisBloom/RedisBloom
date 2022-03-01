@@ -32,7 +32,7 @@ class RedisTimeSeriesSetup(paella.Setup):
         self.run("%s/bin/getgcc --modern" % READIES)
 
     def macos(self):
-        self.run("{PYTHON} {READIES}/bin/getredis".format(PYTHON=sys.executable, READIES=READIES)
+        self.run("{PYTHON} {READIES}/bin/getredis".format(PYTHON=sys.executable, READIES=READIES))
 
     def common_last(self):
         if self.dist in ["centos", 'ol'] and self.ver == "8":
