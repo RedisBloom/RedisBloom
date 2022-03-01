@@ -6,8 +6,7 @@
 #include "cms.h"
 #include "contrib/murmurhash2.h"
 
-#define min(a,b) (((a)<(b))?(a):(b))
-
+#define min(a, b) (((a) < (b)) ? (a) : (b))
 
 #define BIT64 64
 #define CMS_HASH(item, itemlen, i) MurmurHash2(item, itemlen, i)
