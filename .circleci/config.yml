@@ -402,11 +402,13 @@ workflows:
           <<: *on-integ-branch
           requires:
             - platform_build
+            - build-macos
       - deploy_release:
           context: common
           <<: *on-version-tags
           requires:
             - platform_build
+            - build-macos
       - platform_build:
           <<: *context
           <<: *on-integ-and-version-tags
