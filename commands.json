@@ -23,9 +23,12 @@
       },
       {
         "name": "nonscaling",
-        "type": "enum",
-        "enum": [
-          "NONSCALING"
+        "type": "oneof",
+        "arguments": [
+          {
+            "name": "NONSCALING",
+            "type": "pure-token"
+          }
         ],
         "optional": true
       }
@@ -94,25 +97,34 @@
       },
       {
         "name": "nocreate",
-        "type": "enum",
-        "enum": [
-          "NOCREATE"
+        "type": "oneof",
+        "arguments": [
+          {
+            "name": "NOCREATE",
+            "type": "pure-token"
+          }
         ],
         "optional": true
       },
       {
         "name": "nonscaling",
-        "type": "enum",
-        "enum": [
-          "NONSCALING"
+        "type": "oneof",
+        "arguments": [
+          {
+            "name": "NONSCALING",
+            "type": "pure-token"
+          }
         ],
         "optional": true
       },
       {
         "name": "items",
-        "type": "enum",
-        "enum": [
-          "ITEMS"
+        "type": "oneof",
+        "arguments": [
+          {
+            "name": "ITEMS",
+            "type": "pure-token"
+          }
         ]
       },
       {
@@ -290,17 +302,23 @@
       },
       {
         "name": "nocreate",
-        "type": "enum",
-        "enum": [
-          "NOCREATE"
+        "type": "oneof",
+        "arguments": [
+          {
+            "name": "NOCREATE",
+            "type": "pure-token"
+          }
         ],
         "optional": true
       },
       {
         "name": "items",
-        "type": "enum",
-        "enum": [
-          "ITEMS"
+        "type": "oneof",
+        "arguments": [
+          {
+            "name": "ITEMS",
+            "type": "pure-token"
+          }
         ]
       },
       {
@@ -328,17 +346,23 @@
       },
       {
         "name": "nocreate",
-        "type": "enum",
-        "enum": [
-          "NOCREATE"
+        "type": "oneof",
+        "arguments": [
+          {
+            "name": "NOCREATE",
+            "type": "pure-token"
+          }
         ],
         "optional": true
       },
       {
         "name": "items",
-        "type": "enum",
-        "enum": [
-          "ITEMS"
+        "type": "oneof",
+        "arguments": [
+          {
+            "name": "ITEMS",
+            "type": "pure-token"
+          }
         ]
       },
       {
@@ -517,7 +541,7 @@
         "name": "items",
         "type": "block",
         "multiple": true,
-        "block": [
+        "arguments": [
           {
             "name": "item",          
             "type": "string"
@@ -570,12 +594,15 @@
         "name": "weight",
         "type": "block",
         "optional": true,
-        "block": [
+        "arguments": [
           {
             "name": "weights",
-            "type": "enum",
-            "enum": [
-              "WEIGHTS"
+            "type": "oneof",
+            "arguments": [
+              {
+                "name": "WEIGHTS",
+                "type": "pure-token"
+              }
             ]
           },
           {
@@ -619,7 +646,7 @@
         "name": "params",
         "type": "block",
         "optional": true,
-        "block": [
+        "arguments": [
           {
             "name": "width",
             "type": "integer"
@@ -667,7 +694,7 @@
         "name": "items",
         "type": "block",
         "multiple": true,
-        "block": [
+        "arguments": [
           {
             "name": "item",          
             "type": "string"
@@ -713,9 +740,12 @@
       },
       {
         "name": "withcount",
-        "type": "enum",
-        "enum": [
-          "WITHCOUNT"
+        "type": "oneof",
+        "arguments": [
+          {
+            "name": "WITHCOUNT",
+            "type": "pure-token"
+          }
         ]
       }
     ],
@@ -776,7 +806,7 @@
         "name": "values",
         "type": "block",
         "multiple": true,
-        "block": [
+        "arguments": [
           {
             "name": "value",          
             "type": "double"
