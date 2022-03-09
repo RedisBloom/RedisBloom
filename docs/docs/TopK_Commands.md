@@ -1,3 +1,12 @@
+---
+title: "TopK filter commands"
+linkTitle: "TopK filter commands"
+type: docs
+weight: 1
+description: >
+    "RedisBloom TopK Filter Command Documentation"
+---
+
 # RedisBloom TopK Filter Command Documentation
 
 Based on paper - **HeavyKeeper: An Accurate Algorithm for Finding Top-k Elephant Flows.**

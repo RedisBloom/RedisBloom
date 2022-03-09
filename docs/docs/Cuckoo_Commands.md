@@ -1,3 +1,12 @@
+---
+title: "Cuckoo filter commands"
+linkTitle: "Cuckoo filter commands"
+type: docs
+weight: 1
+description: >
+    "RedisBloom Cuckoo Filter Command Documentation"
+---
+
 # RedisBloom Cuckoo Filter Documentation
 
 Based on [Cuckoo Filter: Practically Better Than Bloom](

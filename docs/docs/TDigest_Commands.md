@@ -1,3 +1,12 @@
+---
+title: "T-Digest sketch commands"
+linkTitle: "T-Digest sketch commands"
+type: docs
+weight: 1
+description: >
+    "RedisBloom T-Digest Sketch Command Documentation"
+---
+
 # RedisBloom T-Digest Documentation
 
 The T-Digest data structure can be used to estimate rank statistics such as the median, percentiles, cumulative distributions, as well as trimmed means with high accuracy, particularly near the tails (quantiles near 0 or 1). It can be included 

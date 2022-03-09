@@ -1,3 +1,11 @@
+---
+title: "Count-Min sketch commands"
+linkTitle: "Count-Min sketch commands"
+type: docs
+weight: 1
+description: >
+    "RedisBloom Count-Min Sketch Command Documentation"
+---
 # RedisBloom Count-Min Sketch Documentation
 
 ## Create
