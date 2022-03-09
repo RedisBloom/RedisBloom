@@ -1,4 +1,6 @@
-redis==3.5.3
-pytest==4.6.11
-requests==2.25.1
-rmtest==0.7.0
+redis~=3.5.3
+# pytest==4.6.11
+# requests==2.25.1
+# rmtest==0.7.0
+RLTest~=0.4.2
+ramp-packer~=2.2.1

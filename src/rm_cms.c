@@ -8,9 +8,11 @@
 #include "cms.h"
 #include "rm_cms.h"
 
-#define INNER_ERROR(x)                                                                             \
-    RedisModule_ReplyWithError(ctx, x);                                                            \
-    return REDISMODULE_ERR;
+#define INNER_ERROR(x) \
+    do { \
+        RedisModule_ReplyWithError(ctx, x); \
+        return REDISMODULE_ERR; \
+    } while(0)
 
 RedisModuleType *CMSketchType;
 

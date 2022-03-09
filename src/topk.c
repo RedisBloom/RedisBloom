@@ -16,7 +16,7 @@
 #include <stdbool.h> // bool
 
 #include "topk.h"
-#include "../contrib/murmurhash2.h"
+#include "murmur2/murmurhash2.h"
 
 #define TOPK_HASH(item, itemlen, i) MurmurHash2(item, itemlen, i)
 #define GA 1919

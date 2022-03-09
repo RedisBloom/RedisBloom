@@ -4,7 +4,7 @@
 #include <stdlib.h> // malloc
 
 #include "cms.h"
-#include "contrib/murmurhash2.h"
+#include "murmur2/murmurhash2.h"
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 
