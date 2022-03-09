@@ -272,8 +272,7 @@ jobs:
       - checkout-all
       - run:
           name: run fbinfer
-          command: |
-            INFER=infer make static-analysis
+          command: make static-analysis
 
   build:
     docker:
@@ -494,8 +493,8 @@ workflows:
           <<: *on-any-branch
       - build:
           <<: *not-on-integ-branch
-      - static-analysis-infer:
-          <<: *on-any-branch
+      # - static-analysis-infer:
+      #     <<: *on-any-branch
       - coverage:
           <<: *on-any-branch
       - valgrind:

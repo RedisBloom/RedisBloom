@@ -49,8 +49,8 @@ make deps          # build dependant modules
 make all           # build all libraries and packages
 
 make run           # run redis-server with module
+make test          # run all tests
 
-make tests         # run all tests
 make unit_tests    # run unit tests
 
 make flow_tests    # run tests
@@ -114,12 +114,10 @@ LD_LIBS += \
 	  -lc -lm -lpthread
 
 ifeq ($(OS),linux)
-LD_LIBS += -lssl -lcrypto
 SO_LD_FLAGS += -shared -Bsymbolic $(LD_FLAGS)
 endif
 
 ifeq ($(OS),macos)
-LD_LIBS += -L$(LIBSSL_PREFIX)/lib -lssl -lcrypto
 SO_LD_FLAGS += -bundle -undefined dynamic_lookup $(LD_FLAGS)
 DYLIB_LD_FLAGS += -dynamiclib $(LD_FLAGS)
 endif
@@ -262,11 +260,11 @@ run: $(TARGET)
 
 #----------------------------------------------------------------------------------------------
 
-tests: unit_tests flow_tests
+test: unit_tests flow_tests
 
 #----------------------------------------------------------------------------------------------
 
-unit_tests:
+unit_tests: $(TARGET)
 	@echo Running unit tests...
 	$(SHOW)$(MAKE) -C tests/unit build test
 
@@ -287,18 +285,12 @@ endif
 ifneq ($(RLEC),1)
 
 flow_tests: #$(TARGET)
-ifeq ($(COV),1)
-	$(COVERAGE_RESET)
-endif
 	$(SHOW)\
 	MODULE=$(realpath $(TARGET)) \
 	GEN=$(GEN) AOF=$(AOF) SLAVES=$(SLAVES) OSS_CLUSTER=$(OSS_CLUSTER) \
 	VALGRIND=$(VALGRIND) \
 	TEST=$(TEST) \
 	$(ROOT)/tests/flow/tests.sh
-ifeq ($(COV),1)
-	$(COVERAGE_COLLECT_REPORT)
-endif
 
 else # RLEC
 
@@ -315,15 +307,15 @@ endif # RLEC
 
 #----------------------------------------------------------------------------------------------
 
-BENCHMARK_ARGS = redisbench-admin run-local
-
-ifneq ($(REMOTE),)
-	BENCHMARK_ARGS = redisbench-admin run-remote 
+ifneq ($(REMOTE),1)
+BENCHMARK_ARGS=run-local
+else
+BENCHMARK_ARGS=run-remote 
 endif
 
 BENCHMARK_ARGS += \
 	--module_path $(realpath $(TARGET)) \
-	--required-module timeseries \
+	--required-module bf \
 	--dso $(realpath $(TARGET))
 
 ifneq ($(BENCHMARK),)
@@ -335,7 +327,7 @@ BENCHMARK_ARGS += $(BENCH_ARGS)
 endif
 
 benchmark: $(TARGET)
-	$(SHOW)set -e; cd $(ROOT)/tests/benchmarks; $(BENCHMARK_ARGS)
+	$(SHOW)set -e; cd $(ROOT)/tests/benchmarks; redisbench-admin $(BENCHMARK_ARGS)
 
 .PHONY: benchmark
 
@@ -377,9 +369,22 @@ pack: $(TARGET)
 
 #----------------------------------------------------------------------------------------------
 
+INFER=infer
+INFER_DOCKER=redisbench/infer-linux64:1.0.0
+
+static-analysis: #$(TARGET)
+ifeq ($(DOCKER),1)
+	$(SHOW)docker run -v $(ROOT)/:/RedisBloom/ --user "$(username):$(usergroup)" $(INFER_DOCKER) \
+		bash -c "cd RedisBloom && CC=clang infer run --fail-on-issue --biabduction --skip-analysis-in-path '.*rmutil.*'  -- make"
+else
+	$(SHOW)CC=clang $(INFER) run --fail-on-issue --biabduction --skip-analysis-in-path '.*rmutil.*' -- $(MAKE) VARIANT=infer
+endif
+
+#----------------------------------------------------------------------------------------------
+
 coverage:
 	$(SHOW)$(COVERAGE_RESET)
-	$(SHOW)$(MAKE) tests
+	$(SHOW)$(MAKE) test
 	$(SHOW)$(COVERAGE_COLLECT_REPORT)
 
 .PHONY: coverage

@@ -1,12 +1,18 @@
-ROOT=../../
-MK.pyver := 3
 
+ROOT=../..
+MK.pyver:=3
 include $(ROOT)/deps/readies/mk/main
 
-REDIS_VERSION=6.2.5
 REPO=rebloom
 
-OSNICK ?= buster
-OSNICK.official ?= buster
+REDIS_VERSION=6.2.6
 
-include ${MK}/module.docker.rules
+OSNICK.official=bullseye
+
+INT_BRANCHES=2.2 2.0 1.1 1.0
+LATEST_BRANCH=2.2
+PREVIEW_BRANCH=2.2
+
+ART_DIR=$(ROOT)/bin/artifacts
+
+include $(MK)/module.docker.rules
