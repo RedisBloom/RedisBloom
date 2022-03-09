@@ -1,3 +1,11 @@
+---
+title: "Bloom filter commands"
+linkTitle: "Bloom filter commands"
+type: docs
+weight: 1
+description: >
+    "RedisBloom Bloom Filter Command Documentation"
+---
 # RedisBloom Bloom Filter Command Documentation
 
 Based on [Space/Time Trade-offs in Hash Coding with Allowable Errors](
