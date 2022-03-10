@@ -109,6 +109,7 @@ TARGET=$(BINROOT)/redisbloom.so
 CC=gcc
 
 CC_FLAGS = \
+	-D_GNU_SOURCE \
 	-I. \
 	-Isrc \
 	-I$(ROOT)/deps \
@@ -306,13 +307,7 @@ flow_tests: #$(TARGET)
 else # RLEC
 
 flow_tests: #$(TARGET)
-ifeq ($(COV),1)
-	$(COVERAGE_RESET)
-endif
 	$(SHOW)RLEC=1 $(ROOT)/tests/flow/tests.sh
-ifeq ($(COV),1)
-	$(COVERAGE_COLLECT_REPORT)
-endif
 
 endif # RLEC
 
@@ -372,9 +367,9 @@ endif
 #----------------------------------------------------------------------------------------------
 
 coverage:
-	$(SHOW)$(MAKE) build
+	$(SHOW)$(MAKE) build COV=1
 	$(SHOW)$(COVERAGE_RESET)
-	$(SHOW)$(MAKE) test
+	$(SHOW)$(MAKE) test COV=1
 	$(SHOW)$(COVERAGE_COLLECT_REPORT)
 
 .PHONY: coverage
