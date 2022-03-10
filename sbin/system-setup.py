@@ -33,13 +33,14 @@ class RedisBloomSetup(paella.Setup):
         self.run("%s/bin/getredis" % READIES)
 
     def common_last(self):
+        self.install("valgrind")
         if self.dist == "arch":
             self.install("lcov-git", aur=True)
         else:
             self.install("lcov")
-        self.run("python3 %s/bin/getrmpytools" % READIES)
-        self.run("python3 {READIES}/bin/getcmake --usr".format(READIES=READIES))
         self.run("{ROOT}/sbin/get-fbinfer".format(ROOT=ROOT))
+        self.run("{PYTHON} {READIES}/bin/getrmpytools".format(PYTHON=self.python, READIES=READIES))
+        self.run("{PYTHON} {READIES}/bin/getcmake --usr".format(PYTHON=self.python, READIES=READIES))
         self.pip_install("-r tests/flow/requirements.txt")
         self.pip_install("pudb awscli")
 

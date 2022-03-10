@@ -1,10 +1,7 @@
 
 ifneq ($(filter coverage show-cov upload-cov,$(MAKECMDGOALS)),)
-COV=1
+export COV=1
 endif
-
-ROOT=.
-MK.pyver:=3
 
 ifeq ($(VG),1)
 override VALGRIND:=1
@@ -18,15 +15,15 @@ endif
 
 MK_ALL_TARGETS=bindirs deps build pack
 
+ROOT=.
+MK.pyver:=3
 include $(ROOT)/deps/readies/mk/main
 
 #----------------------------------------------------------------------------------------------  
 
-export T_DIGEST_C_BINDIR=$(ROOT)/bin/$(FULL_VARIANT.release)/t-digest-c
+# export T_DIGEST_C_BINDIR=$(ROOT)/bin/$(FULL_VARIANT.release)/t-digest-c
+export T_DIGEST_C_BINDIR=$(ROOT)/bin/$(FULL_VARIANT)/t-digest-c
 include $(ROOT)/build/t-digest-c/Makefile.defs
-
-# export RMUTIL_BINDIR=$(ROOT)/bin/$(FULL_VARIANT.release)/rmutil
-# include $(ROOT)/build/rmutil/Makefile.defs
 
 #----------------------------------------------------------------------------------------------  
 
@@ -156,7 +153,7 @@ _SOURCES=\
 	src/cms.c
 
 SOURCES=$(addprefix $(SRCDIR)/,$(_SOURCES))
-HEADERS=$(patsubst $(SRCDIR)/%.c,$(SRCDIR)/%.h,$(SOURCES))
+HEADERS=$(sort $(wildcard src/*.h $(patsubst %.c,%.h,$(SOURCES))))
 OBJECTS=$(patsubst $(SRCDIR)/%.c,$(BINDIR)/%.o,$(SOURCES))
 
 CC_DEPS = $(patsubst $(SRCDIR)/%.c, $(BINDIR)/%.d, $(SOURCES) $(TEST_SOURCES))
@@ -202,7 +199,7 @@ t-digest-c: $(T_DIGEST_C)
 
 $(T_DIGEST_C):
 	@echo Building $@ ...
-	$(SHOW)$(MAKE) --no-print-directory -C $(ROOT)/build/t-digest-c DEBUG=''
+	$(SHOW)$(MAKE) --no-print-directory -C $(ROOT)/build/t-digest-c
 
 #----------------------------------------------------------------------------------------------
 
@@ -222,9 +219,7 @@ else
 	-$(SHOW)rm -f $(TARGET)
 endif
 ifdef ($(DEPS),1)
-	-$(SHOW)$(MAKE) --no-print-directory -C $(ROOT)/build/rmutil  DEBUG='' clean
-	-$(SHOW)$(MAKE) --no-print-directory -C $(ROOT)/build/fast_double_parser_c DEBUG='' clean
-	-$(SHOW)$(MAKE) --no-print-directory -C $(ROOT)/tests/unit DEBUG='' clean
+	-$(SHOW)$(MAKE) --no-print-directory -C $(ROOT)/build/t-digest-c clean
 endif
 
 -include $(CC_DEPS)
@@ -237,13 +232,12 @@ $(TARGET): $(BIN_DIRS) $(MISSING_DEPS) $(OBJECTS)
 	@echo Linking $@...
 	$(SHOW)$(CC) $(SO_LD_FLAGS) -o $@ $(OBJECTS) $(LD_LIBS)
 ifeq ($(OS),macos)
-	$(SHOW)$(CC) $(DYLIB_LD_FLAGS) -o $(patsubst %.so,%.dylib,$@) $(OBJECTS) $(LD_LIBS)
+	$(SHOW)$(CC) $(SO_LD_FLAGS) -o $(patsubst %.so,%.dylib,$@) $(OBJECTS) $(LD_LIBS)
 endif
-#	$(SHOW)cd $(BINROOT)/..; ln -sf $(FULL_VARIANT)/$(notdir $(TARGET)) $(notdir $(TARGET))
 
 #----------------------------------------------------------------------------------------------
 
-NO_LINT_PATTERNS=
+NO_LINT_PATTERNS=./deps/
 
 LINT_SOURCES=$(call filter-out2,$(NO_LINT_PATTERNS),$(SOURCES) $(HEADERS))
 

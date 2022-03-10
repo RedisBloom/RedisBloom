@@ -6,7 +6,7 @@
 #include <stdarg.h>
 #include <limits.h>
 #include <string.h>
-#define REDISMODULE_EXPERIMENTAL_API
+// #define REDISMODULE_EXPERIMENTAL_API
 #include "util.h"
 
 /**

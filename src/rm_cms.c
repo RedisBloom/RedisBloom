@@ -8,11 +8,13 @@
 #include "cms.h"
 #include "rm_cms.h"
 
+// clang-format off
 #define INNER_ERROR(x) \
     do { \
         RedisModule_ReplyWithError(ctx, x); \
         return REDISMODULE_ERR; \
     } while(0)
+// clang-format on
 
 RedisModuleType *CMSketchType;
 

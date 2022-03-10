@@ -8,6 +8,8 @@
 #include "cuckoo.c"
 #include "cf.h"
 
+#if 0 // unused
+
 // Get the bucket corresponding to the given position. 'offset' is modified to be the
 // actual position (beginning of bucket) where `pos` is mapped to, with respect to
 // the current filter. The filter itself is not returned directly (but can be inferred)
@@ -32,6 +34,8 @@ static uint8_t *getBucketPos(const CuckooFilter *cf, long long pos, size_t *offs
     }
     return cf->filters[filterIx].data + *offset;
 }
+
+#endif // 0
 
 const char *CF_GetEncodedChunk(const CuckooFilter *cf, long long *pos, size_t *buflen,
                                size_t bytelimit) {
