@@ -65,10 +65,27 @@ make flow_tests    # run tests
   EXT=1            # run tests with existing redis-server running
 
 make pack          # build packages (ramp & dependencies)
+make upload-artifacts   # copy snapshot packages to S3
+  OSNICK=nick             # copy snapshots for specific OSNICK
+make upload-release     # copy release packages to S3
 
-make docker        # build artifacts for given platform
-  OSNICK=nick        # build for OSNICK `nick`
-  TEST=1             # also run tests
+common options for upload operations:
+  STAGING=1             # copy to staging lab area (for validation)
+  FORCE=1               # allow operation outside CI environment
+  VERBOSE=1             # show more details
+  NOP=1                 # do not copy, just print commands
+
+make coverage      # perform coverage analysis
+make show-cov      # show coverage analysis results (implies COV=1)
+make upload-cov    # upload coverage analysis results to codecov.io (implies COV=1)
+
+make docker        # build for specific Linux distribution
+  OSNICK=nick        # Linux distribution to build for
+  REDIS_VER=ver      # use Redis version `ver`
+  TEST=1             # test aftar build
+  PACK=1             # create packages
+  ARTIFACTS=1        # copy artifacts from docker image
+  PUBLISH=1          # publish (i.e. docker push) after build
 
 make static-analysis   # Perform static analysis via fbinter
 
@@ -327,39 +344,17 @@ benchmark: $(TARGET)
 
 #----------------------------------------------------------------------------------------------
 
-VALGRIND_ARGS=\
-	--leak-check=full \
-	--keep-debuginfo=yes \
-	--show-reachable=no \
-	--show-possibly-lost=no \
-	--track-origins=yes \
-	--suppressions=$(ROOT)/tests/redis_valgrind.sup \
-	-v redis-server
-
-valgrind: $(TARGET)
-	$(SHOW)valgrind $(VALGRIND_ARGS) --loadmodule $(realpath $(TARGET)) $(REDIS_ARGS) --dir /tmp
-
-CALLGRIND_ARGS=\
-	--tool=callgrind \
-	--dump-instr=yes \
-	--simulate-cache=no \
-	--collect-jumps=yes \
-	--collect-atstart=yes \
-	--instr-atstart=yes \
-	-v redis-server --protected-mode no --save "" --appendonly no
-
-callgrind: $(TARGET)
-	$(SHOW)valgrind $(CALLGRIND_ARGS) --loadmodule $(realpath $(TARGET)) $(REDIS_ARGS) --dir /tmp
-
-.PHONY: valgrind callgrind
-
-#----------------------------------------------------------------------------------------------
-
 pack: $(TARGET)
 	@echo Creating packages...
 	$(SHOW)MODULE=$(realpath $(TARGET)) BINDIR=$(BINDIR) $(ROOT)/sbin/pack.sh
 
-.PHONY: pack
+upload-release:
+	$(SHOW)RELEASE=1 ./sbin/upload-artifacts
+
+upload-artifacts:
+	$(SHOW)SNAPSHOT=1 ./sbin/upload-artifacts
+
+.PHONY: pack upload-artifacts upload-release
 
 #----------------------------------------------------------------------------------------------
 
@@ -377,6 +372,7 @@ endif
 #----------------------------------------------------------------------------------------------
 
 coverage:
+	$(SHOW)$(MAKE) build
 	$(SHOW)$(COVERAGE_RESET)
 	$(SHOW)$(MAKE) test
 	$(SHOW)$(COVERAGE_COLLECT_REPORT)
@@ -387,6 +383,9 @@ coverage:
 
 docker:
 	$(SHOW)$(MAKE) -C build/docker
+ifeq ($(PUBLISH),1)
+	$(SHOW)make -C build/docker publish
+endif
 
 .PHONY: docker
 
