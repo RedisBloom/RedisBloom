@@ -412,7 +412,7 @@ workflows:
           <<: *on-integ-and-version-tags
           matrix:
             parameters:
-              platform: [xenial, bionic, focal, buster, centos7, ol8]
+              platform: [xenial, bionic, focal, buster, centos7, rocky8]
       - release_automation:
           context: common
           <<: *on-version-tags
