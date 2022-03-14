@@ -1,9 +1,10 @@
 ---
 title: RedisBloom - Probabilistic Datatypes Module for Redis
-linkTitle: RedisBloom
+linkTitle: RedisBloom Documentation
 type: docs
-weight: 1
 ---
+
+<img src="images/logo.svg" alt="logo" width="200"/>
 
 [![Forum](https://img.shields.io/badge/Forum-RedisBloom-blue)](https://forum.redis.com/c/modules/redisbloom)
 [![Discord](https://img.shields.io/discord/697882427875393627?style=flat-square)](https://discord.gg/wXhwjCQ)
