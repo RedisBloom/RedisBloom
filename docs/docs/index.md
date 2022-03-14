@@ -1,6 +1,8 @@
 ---
 title: RedisBloom - Probabilistic Datatypes Module for Redis
 linkTitle: RedisBloom
+type: docs
+weight: 1
 ---
 
 [![Forum](https://img.shields.io/badge/Forum-RedisBloom-blue)](https://forum.redis.com/c/modules/redisbloom)
@@ -16,24 +18,28 @@ A **top-k** maintains a list of _k_ most frequently seen items.
 
 ## Quick start guide
 1. [Quick Start](Quick_Start.md)
-1. [Command references](#command-references)
 1. [Client libraries](#client-libraries)
 1. [References](#references)
 1. [License](#license)
-
-## Command references
-Detailed command references for each data structure:
-
-* [Bloom Filter](Bloom_Commands.md)
-* [Cuckoo Filter](Cuckoo_Commands.md)
-* [Count-Min Sketch](CountMinSketch_Commands.md)
-* [Top-K](TopK_Commands.md)
-* [T-Digest](TDigest_Commands.md)
 
 ## Bloom vs. Cuckoo
 Bloom filters typically exhibit better performance and scalability when inserting
 items (so if you're often adding items to your dataset, then a Bloom filter may be ideal).
 Cuckoo filters are quicker on check operations and also allow deletions.
+
+## Academic sources
+Bloom Filter
+1. [Space/Time Trade-offs in Hash Coding with Allowable Errors](http://www.dragonwins.com/domains/getteched/bbc/literature/Bloom70.pdf) by Burton H. Bloom.
+1. [Scalable Bloom Filters](https://haslab.uminho.pt/cbm/files/dbloom.pdf)
+
+Cuckoo Filter
+1. [Cuckoo Filter: Practically Better Than Bloom](https://www.cs.cmu.edu/~dga/papers/cuckoo-conext2014.pdf)
+
+Count-Min Sketch
+1. [An Improved Data Stream Summary: The Count-Min Sketch and its Applications](http://dimacs.rutgers.edu/~graham/pubs/papers/cm-full.pdf)
+
+Top-K
+1. [HeavyKeeper: An Accurate Algorithm for Finding Top-k Elephant Flows.](https://yangtonghome.github.io/uploads/HeavyKeeper_ToN.pdf)
 
 ## Client libraries
 See each driver's README for details and documentation.
