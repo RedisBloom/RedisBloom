@@ -216,6 +216,31 @@ checked on all `sub-filters`.
 is a probabilistic data structure, false positives (but not false negatives) may
 be returned.
 
+## CF.MEXISTS
+
+```
+CF.MEXISTS {key} {item ...}
+```
+
+Determines if one or more items may exist in the Cuckoo filter or not.
+
+### Parameters
+
+* **key**: The name of the filter
+* **items**: One or more items to check
+
+### Complexity
+
+O(m * n), where m is the number of added elements, n is the number of `sub-filters`. 
+Both alternative locations are checked on all `sub-filters`.
+
+### Returns
+
+An array of boolean values (actually integers). 
+"0" if the item certainly does not exist, "1" if the item may exist. Because this
+is a probabilistic data structure, false positives (but not false negatives) may
+be returned.
+
 ## CF.DEL
 
 ```
