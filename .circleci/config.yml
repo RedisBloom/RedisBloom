@@ -414,6 +414,15 @@ on-integ-and-version-tags: &on-integ-and-version-tags
         - master
         - /^\d+\.\d+.*$/
         - /^feature-.*$/
+    tags:
+      only: /^v[0-9].*/
+
+on-perf-tags: &on-perf-tags
+  filters:
+    branches:
+      only:
+        - master
+        - /^\d+\.\d+.*$/
         - /^perf.*$/
     tags:
       only: /^v[0-9].*/
@@ -437,12 +446,12 @@ workflows:
           requires:
             - lint
       - benchmark-bloom-oss-standalone:
-          <<: *on-integ-and-version-tags
+          <<: *on-perf-tags
           requires:
             - lint
           context: common
       - benchmark-bloom-oss-standalone-profiler:
-          <<: *on-integ-and-version-tags
+          <<: *on-perf-tags
           requires:
             - lint
           context: common
