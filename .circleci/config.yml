@@ -95,6 +95,18 @@ commands:
       module_path:
         type: string
         default: ../../redisbloom.so
+      profile_env:
+        type: string
+        default: "0"
+      benchmark_glob:
+        type: string
+        default: "*.yml"
+      triggering_env:
+        type: string
+        default: "circleci"
+      allowed_envs:
+        type: string
+        default: "oss-standalone"
     steps:
       - run:
           name: Install remote benchmark tool dependencies
@@ -113,7 +125,9 @@ commands:
             export AWS_SECRET_ACCESS_KEY=$PERFORMANCE_EC2_SECRET_KEY
             export AWS_DEFAULT_REGION=$PERFORMANCE_EC2_REGION
             export EC2_PRIVATE_PEM=$PERFORMANCE_EC2_PRIVATE_PEM
-
+            export PROFILE=<< parameters.profile_env >>
+            export BENCHMARK_GLOB=<< parameters.benchmark_glob >>
+            export PERF_CALLGRAPH_MODE="dwarf"
             redisbench-admin run-remote \
               --required-module bf \
               --module_path << parameters.module_path >> \
@@ -123,8 +137,10 @@ commands:
               --github_sha $CIRCLE_SHA1 \
               --github_branch $CIRCLE_BRANCH \
               --upload_results_s3 \
-              --triggering_env circleci \
-              --push_results_redistimeseries
+              --triggering_env << parameters.triggering_env >> \
+              --fail_fast \
+              --push_results_redistimeseries \
+              --allowed-envs << parameters.allowed_envs >>
 
   platform-build-steps:
     parameters:
@@ -317,16 +333,29 @@ jobs:
           name: Run QA Automation
           command: MODULE_VERSION=$CIRCLE_BRANCH VERBOSE=1 TEST=nightly QUICK=1 ./tests/qa/run
 
-  performance-automation:
+  benchmark-bloom-oss-standalone:
     docker:
-      - image: redisfab/rmbuilder:6.2.3-x64-bionic
+      - image: redisfab/rmbuilder:6.2.5-x64-bionic
     steps:
       - checkout-all
       - setup-automation
       - run:
           name: build artifact
-          command: make build
+          command: make all
       - benchmark-steps
+  
+  benchmark-bloom-oss-standalone-profiler:
+    docker:
+      - image: redisfab/rmbuilder:6.2.5-x64-bionic
+    steps:
+      - checkout-all
+      - setup-automation
+      - run:
+          name: build artifact
+          command: make all
+      - benchmark-steps:
+          profile_env: "1"
+          triggering_env: "circleci.profilers" # results generated with profilers attached are not mixed with the ones without it 
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
@@ -385,6 +414,15 @@ on-integ-and-version-tags: &on-integ-and-version-tags
         - master
         - /^\d+\.\d+.*$/
         - /^feature-.*$/
+    tags:
+      only: /^v[0-9].*/
+
+on-perf-tags: &on-perf-tags
+  filters:
+    branches:
+      only:
+        - master
+        - /^\d+\.\d+.*$/
         - /^perf.*$/
     tags:
       only: /^v[0-9].*/
@@ -407,8 +445,13 @@ workflows:
           <<: *on-any-branch
           requires:
             - lint
-      - performance-automation:
-          <<: *on-integ-and-version-tags
+      - benchmark-bloom-oss-standalone:
+          <<: *on-perf-tags
+          requires:
+            - lint
+          context: common
+      - benchmark-bloom-oss-standalone-profiler:
+          <<: *on-perf-tags
           requires:
             - lint
           context: common
@@ -448,5 +491,7 @@ workflows:
                 - master
                 - /^feature-.*$/
     jobs:
-      - performance-automation:
+      - benchmark-bloom-oss-standalone:
+          context: common
+      - benchmark-bloom-oss-standalone-profiler:
           context: common
