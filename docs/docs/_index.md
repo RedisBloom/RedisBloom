@@ -1,5 +1,5 @@
 ---
-title: RedisBloom - Probabilistic Datatypes Module for Redis
+title: RedisBloom - Probabilistic Datatypes for Redis
 linkTitle: RedisBloom
 type: docs
 ---
