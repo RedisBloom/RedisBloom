@@ -4,12 +4,9 @@ linkTitle: "Clients"
 type: docs
 weight: 4
 description: >
-    List of RedisGraph client libraries
+    RedisBloom has several client libraries, written by the module authors and community members - abstracting the API in different programming languages.
+    While it is possible and simple to use the raw Redis commands API, in most cases it's easier to just use a client library abstracting it.
 ---
-
-RedisGraph has several client libraries, written by the module authors and community members - abstracting the API in different programming languages.
-
-While it is possible and simple to use the raw Redis commands API, in most cases it's easier to just use a client library abstracting it.
 
 ## Currently available Libraries
 
