@@ -1,7 +1,6 @@
 ---
 title: RedisBloom - Probabilistic Datatypes for Redis
 linkTitle: RedisBloom
-type: docs
 ---
 
 <img src="images/logo.svg" alt="logo" width="200"/>

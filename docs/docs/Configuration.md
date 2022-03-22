@@ -1,7 +1,6 @@
 ---
 title: "Configuration"
 linkTitle: "Configuration"
-type: docs
 weight: 5
 description: >
     RedisBloom supports a few run-time configuration options that can be defined when loading the module. In the future more options will be added.

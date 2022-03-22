@@ -1,7 +1,6 @@
 ---
 title: "Commands"
 linkTitle: "Commands"
-type: docs
 weight: 2
 description: >
     Commands Overview

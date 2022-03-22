@@ -1,7 +1,6 @@
 ---
 title: "Client Libraries"
 linkTitle: "Clients"
-type: docs
 weight: 4
 description: >
     RedisBloom has several client libraries, written by the module authors and community members - abstracting the API in different programming languages.
