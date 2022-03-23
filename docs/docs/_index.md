@@ -1,11 +1,10 @@
 ---
-title: RedisBloom - Probabilistic Datatypes for Redis
-linkTitle: RedisBloom
+title: RedisBloom
+linkTitle: Probabilistic
+description: Bloom filters and other probabilistic data structures for Redis
+type: docs
 ---
 
-<img src="images/logo.svg" alt="logo" width="200"/>
-
-[![Forum](https://img.shields.io/badge/Forum-RedisBloom-blue)](https://forum.redis.com/c/modules/redisbloom)
 [![Discord](https://img.shields.io/discord/697882427875393627?style=flat-square)](https://discord.gg/wXhwjCQ)
 
 RedisBloom adds four probabilistic data structures to Redis: a scalable **Bloom filter**, a **cuckoo filter**, a **count-min sketch**, and a **top-k**. These data structures trade perfect accuracy for extreme memory efficiency, so they're especially useful for big data and streaming applications.
@@ -16,7 +15,7 @@ A **count-min sketch** is generally used to determine the frequency of events in
 
 A **top-k** maintains a list of _k_ most frequently seen items.
 
-## Bloom vs. Cuckoo
+## Bloom vs. Cuckoo filters
 Bloom filters typically exhibit better performance and scalability when inserting
 items (so if you're often adding items to your dataset, then a Bloom filter may be ideal).
 Cuckoo filters are quicker on check operations and also allow deletions.
