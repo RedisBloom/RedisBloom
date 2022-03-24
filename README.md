@@ -73,10 +73,11 @@ $ redis-server --loadmodule /path/to/redisbloom.so
 ```
 
 ## Client libraries
-| Project | Language | License | Author | URL |
-| ------- | -------- | ------- | ------ | --- |
+| Project | Language | License | Author | URL | Comment |
+| ------- | -------- | ------- | ------ | --- | --- |
+| Jedis | Java | MIT | [Redis](https://redis.com) | [GitHub](https://github.com/redis/jedis) |
 | redisbloom-py | Python | BSD | [Redis](https://redis.com) | [GitHub](https://github.com/RedisBloom/redisbloom-py) |
-| JReBloom | Java | BSD | [Redis](https://redis.com) | [GitHub](https://github.com/RedisBloom/JReBloom) |
+| JReBloom | Java | BSD | [Redis](https://redis.com) | [GitHub](https://github.com/RedisBloom/JReBloom) | Deprecated |
 | redisbloom-go | Go | BSD | [Redis](https://redis.com) | [GitHub](https://github.com/RedisBloom/redisbloom-go) |
 | rueidis | Go | Apache License 2.0 | [Rueian](https://github.com/rueian) | [GitHub](https://github.com/rueian/rueidis) |
 | rebloom | JavaScript | MIT | [Albert Team](https://cvitae.now.sh/) | [GitHub](https://github.com/albert-team/rebloom) |
