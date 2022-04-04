@@ -23,13 +23,8 @@
       },
       {
         "name": "nonscaling",
-        "type": "oneof",
-        "arguments": [
-          {
-            "name": "NONSCALING",
-            "type": "pure-token"
-          }
-        ],
+        "type": "pure-token",
+        "token": "NONSCALING",
         "optional": true
       }
     ],
@@ -97,35 +92,20 @@
       },
       {
         "name": "nocreate",
-        "type": "oneof",
-        "arguments": [
-          {
-            "name": "NOCREATE",
-            "type": "pure-token"
-          }
-        ],
+        "token": "NOCREATE",
+        "type": "pure-token",
         "optional": true
       },
       {
         "name": "nonscaling",
-        "type": "oneof",
-        "arguments": [
-          {
-            "name": "NONSCALING",
-            "type": "pure-token"
-          }
-        ],
+        "token": "NONSCALING",
+        "type": "pure-token",
         "optional": true
       },
       {
         "name": "items",
-        "type": "oneof",
-        "arguments": [
-          {
-            "name": "ITEMS",
-            "type": "pure-token"
-          }
-        ]
+        "token": "ITEMS",
+        "type": "pure-token"
       },
       {
         "name": "item",
@@ -300,24 +280,14 @@
       },
       {
         "name": "nocreate",
-        "type": "oneof",
-        "arguments": [
-          {
-            "name": "NOCREATE",
-            "type": "pure-token"
-          }
-        ],
+        "token": "NOCREATE",
+        "type": "pure-token",
         "optional": true
       },
       {
         "name": "items",
-        "type": "oneof",
-        "arguments": [
-          {
-            "name": "ITEMS",
-            "type": "pure-token"
-          }
-        ]
+        "token": "ITEMS",
+        "type": "pure-token"
       },
       {
         "name": "item",
@@ -344,24 +314,14 @@
       },
       {
         "name": "nocreate",
-        "type": "oneof",
-        "arguments": [
-          {
-            "name": "NOCREATE",
-            "type": "pure-token"
-          }
-        ],
+        "token": "NOCREATE",
+        "type": "pure-token",
         "optional": true
       },
       {
         "name": "items",
-        "type": "oneof",
-        "arguments": [
-          {
-            "name": "ITEMS",
-            "type": "pure-token"
-          }
-        ]
+        "token": "ITEMS",
+        "type": "pure-token"
       },
       {
         "name": "item",
@@ -593,13 +553,8 @@
         "arguments": [
           {
             "name": "weights",
-            "type": "oneof",
-            "arguments": [
-              {
-                "name": "WEIGHTS",
-                "type": "pure-token"
-              }
-            ]
+            "token": "WEIGHTS",
+            "type": "pure-token"
           },
           {
             "name": "weight",
@@ -751,13 +706,8 @@
       },
       {
         "name": "withcount",
-        "type": "oneof",
-        "arguments": [
-          {
-            "name": "WITHCOUNT",
-            "type": "pure-token"
-          }
-        ]
+        "token": "WITHCOUNT",
+        "type": "pure-token"
       }
     ],
     "since": "2.0.0",
