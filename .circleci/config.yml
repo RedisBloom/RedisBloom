@@ -260,6 +260,17 @@ jobs:
       - store_artifacts:
           path: /workspace/build
 
+  build-arm-platforms:
+    parameters:
+      platform:
+        type: string
+    machine:
+      image: ubuntu-2004:202101-01
+    resource_class: arm.medium
+    steps:
+      - platform-build-steps:
+          platform: <<parameters.platform>>
+
   package_release:
     docker:
       - image: 'redisfab/rmbuilder:6.2.3-x64-bionic'
@@ -343,7 +354,7 @@ jobs:
           name: build artifact
           command: make all
       - benchmark-steps
-  
+
   benchmark-bloom-oss-standalone-profiler:
     docker:
       - image: redisfab/rmbuilder:6.2.5-x64-bionic
@@ -355,7 +366,7 @@ jobs:
           command: make all
       - benchmark-steps:
           profile_env: "1"
-          triggering_env: "circleci.profilers" # results generated with profilers attached are not mixed with the ones without it 
+          triggering_env: "circleci.profilers" # results generated with profilers attached are not mixed with the ones without it
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
@@ -464,6 +475,12 @@ workflows:
           matrix:
             parameters:
               platform: [xenial, bionic, focal, buster, centos7, rocky8]
+      - platform_build_arm:
+          <<: *context
+          <<: *on-all-branches
+          matrix:
+            parameters:
+              platform: [bionic]
       - deploy_snapshots:
           context: common
           <<: *on-integ-branch
