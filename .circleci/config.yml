@@ -260,7 +260,7 @@ jobs:
       - store_artifacts:
           path: /workspace/build
 
-  build-arm-platforms:
+  platform_build_arm:
     parameters:
       platform:
         type: string
