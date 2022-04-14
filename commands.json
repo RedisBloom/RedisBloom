@@ -23,15 +23,13 @@
       },
       {
         "name": "nonscaling",
-        "type": "enum",
-        "enum": [
-          "NONSCALING"
-        ],
+        "type": "pure-token",
+        "token": "NONSCALING",
         "optional": true
       }
     ],
     "since": "1.0.0",
-    "group": "bloom"
+    "group": "bf"
   },
   "BF.ADD": {
     "summary": "Adds an item to a Bloom Filter",
@@ -47,7 +45,7 @@
       }
     ],
     "since": "1.0.0",
-    "group": "bloom"
+    "group": "bf"
   },
   "BF.MADD": {
     "summary": "Adds one or more items to a Bloom Filter. A filter will be created if it does not exist",
@@ -64,7 +62,7 @@
       }
     ],
     "since": "1.0.0",
-    "group": "bloom"
+    "group": "bf"
   },
   "BF.INSERT": {
     "summary": "Adds one or more items to a Bloom Filter. A filter will be created if it does not exist",
@@ -94,26 +92,20 @@
       },
       {
         "name": "nocreate",
-        "type": "enum",
-        "enum": [
-          "NOCREATE"
-        ],
+        "token": "NOCREATE",
+        "type": "pure-token",
         "optional": true
       },
       {
         "name": "nonscaling",
-        "type": "enum",
-        "enum": [
-          "NONSCALING"
-        ],
+        "token": "NONSCALING",
+        "type": "pure-token",
         "optional": true
       },
       {
         "name": "items",
-        "type": "enum",
-        "enum": [
-          "ITEMS"
-        ]
+        "token": "ITEMS",
+        "type": "pure-token"
       },
       {
         "name": "item",
@@ -122,7 +114,7 @@
       }
     ],
     "since": "1.0.0",
-    "group": "bloom"
+    "group": "bf"
   },
   "BF.EXISTS": {
     "summary": "Checks whether an item exists in a Bloom Filter",
@@ -138,7 +130,7 @@
       }
     ],
     "since": "1.0.0",
-    "group": "bloom"
+    "group": "bf"
   },
   "BF.MEXISTS": {
     "summary": "Checks whether one or more items exist in a Bloom Filter",
@@ -155,7 +147,7 @@
       }
     ],
     "since": "1.0.0",
-    "group": "bloom"
+    "group": "bf"
   },
   "BF.SCANDUMP": {
     "summary": "Begins an incremental save of the bloom filter",
@@ -171,7 +163,7 @@
       }
     ],
     "since": "1.0.0",
-    "group": "bloom"
+    "group": "bf"
   },
   "BF.LOADCHUNK": {
     "summary": "Restores a filter previously saved using SCANDUMP",
@@ -191,7 +183,7 @@
       }
     ],
     "since": "1.0.0",
-    "group": "bloom"
+    "group": "bf"
   },
   "BF.INFO": {
     "summary": "Returns information about a Bloom Filter",
@@ -203,10 +195,8 @@
       }
     ],
     "since": "1.0.0",
-    "group": "bloom"
+    "group": "bf"
   },
-
-
   "CF.RESERVE": {
     "summary": "Creates a new Cuckoo Filter",
     "complexity": "O(1)",
@@ -239,7 +229,7 @@
       }
     ],
     "since": "1.0.0",
-    "group": "cuckoo"
+    "group": "cf"
   },
   "CF.ADD": {
     "summary": "Adds an item to a Cuckoo Filter",
@@ -255,7 +245,7 @@
       }
     ],
     "since": "1.0.0",
-    "group": "cuckoo"
+    "group": "cf"
   },
   "CF.ADDNX": {
     "summary": "Adds an item to a Cuckoo Filter if the item did not exist previously.",
@@ -272,7 +262,7 @@
       }
     ],
     "since": "1.0.0",
-    "group": "cuckoo"
+    "group": "cf"
   },
   "CF.INSERT": {
     "summary": "Adds one or more items to a Cuckoo Filter. A filter will be created if it does not exist",
@@ -290,18 +280,14 @@
       },
       {
         "name": "nocreate",
-        "type": "enum",
-        "enum": [
-          "NOCREATE"
-        ],
+        "token": "NOCREATE",
+        "type": "pure-token",
         "optional": true
       },
       {
         "name": "items",
-        "type": "enum",
-        "enum": [
-          "ITEMS"
-        ]
+        "token": "ITEMS",
+        "type": "pure-token"
       },
       {
         "name": "item",
@@ -310,7 +296,7 @@
       }
     ],
     "since": "1.0.0",
-    "group": "cuckoo"
+    "group": "cf"
   },
   "CF.INSERTNX": {
     "summary": "Adds one or more items to a Cuckoo Filter if the items did not exist previously. A filter will be created if it does not exist",
@@ -328,18 +314,14 @@
       },
       {
         "name": "nocreate",
-        "type": "enum",
-        "enum": [
-          "NOCREATE"
-        ],
+        "token": "NOCREATE",
+        "type": "pure-token",
         "optional": true
       },
       {
         "name": "items",
-        "type": "enum",
-        "enum": [
-          "ITEMS"
-        ]
+        "token": "ITEMS",
+        "type": "pure-token"
       },
       {
         "name": "item",
@@ -348,7 +330,7 @@
       }
     ],
     "since": "1.0.0",
-    "group": "cuckoo"
+    "group": "cf"
   },
   "CF.EXISTS": {
     "summary": "Checks whether one or more items exist in a Cuckoo Filter",
@@ -364,8 +346,8 @@
       }
     ],
     "since": "1.0.0",
-    "group": "cuckoo"
-  }, 
+    "group": "cf"
+  },
   "CF.MEXISTS": {
     "summary": "Checks whether one or more items exist in a Cuckoo Filter",
     "complexity": "O(k * n), where k is the number of sub-filters and n is the number of items",
@@ -381,7 +363,7 @@
       }
     ],
     "since": "1.0.0",
-    "group": "cuckoo"
+    "group": "cf"
   },
   "CF.DEL": {
     "summary": "Deletes an item from a Cuckoo Filter",
@@ -397,7 +379,7 @@
       }
     ],
     "since": "1.0.0",
-    "group": "cuckoo"
+    "group": "cf"
   },
   "CF.COUNT": {
     "summary": "Return the number of times an item might be in a Cuckoo Filter",
@@ -413,7 +395,7 @@
       }
     ],
     "since": "1.0.0",
-    "group": "cuckoo"
+    "group": "cf"
   },
   "CF.SCANDUMP": {
     "summary": "Begins an incremental save of the bloom filter",
@@ -429,7 +411,7 @@
       }
     ],
     "since": "1.0.0",
-    "group": "cuckoo"
+    "group": "cf"
   },
   "CF.LOADCHUNK": {
     "summary": "Restores a filter previously saved using SCANDUMP",
@@ -449,7 +431,7 @@
       }
     ],
     "since": "1.0.0",
-    "group": "cuckoo"
+    "group": "cf"
   },
   "CF.INFO": {
     "summary": "Returns information about a Cuckoo Filter",
@@ -461,10 +443,8 @@
       }
     ],
     "since": "1.0.0",
-    "group": "cuckoo"
+    "group": "cf"
   },
-
-
   "CMS.INITBYDIM": {
     "summary": "Initializes a Count-Min Sketch to dimensions specified by user",
     "complexity": "O(1)",
@@ -517,9 +497,9 @@
         "name": "items",
         "type": "block",
         "multiple": true,
-        "block": [
+        "arguments": [
           {
-            "name": "item",          
+            "name": "item",
             "type": "string"
           },
           {
@@ -541,9 +521,9 @@
         "type": "key"
       },
       {
-        "name": "item",          
+        "name": "item",
         "type": "string",
-        "multiple": true        
+        "multiple": true
       }
     ],
     "since": "2.0.0",
@@ -562,21 +542,19 @@
         "type": "integer"
       },
       {
-        "name": "source",          
+        "name": "source",
         "type": "key",
-        "multiple": true        
+        "multiple": true
       },
       {
         "name": "weight",
         "type": "block",
         "optional": true,
-        "block": [
+        "arguments": [
           {
             "name": "weights",
-            "type": "enum",
-            "enum": [
-              "WEIGHTS"
-            ]
+            "token": "WEIGHTS",
+            "type": "pure-token"
           },
           {
             "name": "weight",
@@ -601,8 +579,6 @@
     "since": "2.0.0",
     "group": "cms"
   },
-
-
   "TOPK.RESERVE": {
     "summary": "Initializes a TopK with specified parameters",
     "complexity": "O(1)",
@@ -619,7 +595,7 @@
         "name": "params",
         "type": "block",
         "optional": true,
-        "block": [
+        "arguments": [
           {
             "name": "width",
             "type": "integer"
@@ -667,9 +643,9 @@
         "name": "items",
         "type": "block",
         "multiple": true,
-        "block": [
+        "arguments": [
           {
-            "name": "item",          
+            "name": "item",
             "type": "string"
           },
           {
@@ -691,9 +667,26 @@
         "type": "key"
       },
       {
-        "name": "item",          
+        "name": "item",
         "type": "string",
-        "multiple": true        
+        "multiple": true
+      }
+    ],
+    "since": "2.0.0",
+    "group": "topk"
+  },
+  "TOPK.Count": {
+    "summary": "Return the count for one or more items are in a sketch",
+    "complexity": "O(n) where n is the number of items",
+    "arguments": [
+      {
+        "name": "key",
+        "type": "key"
+      },
+      {
+        "name": "item",
+        "type": "string",
+        "multiple": true
       }
     ],
     "since": "2.0.0",
@@ -713,10 +706,8 @@
       },
       {
         "name": "withcount",
-        "type": "enum",
-        "enum": [
-          "WITHCOUNT"
-        ]
+        "token": "WITHCOUNT",
+        "type": "pure-token"
       }
     ],
     "since": "2.0.0",
@@ -734,8 +725,6 @@
     "since": "2.0.0",
     "group": "topk"
   },
-
-
   "TDIGEST.CREATE": {
     "summary": "Allocate the memory and initialize the t-digest",
     "complexity": "O(1)",
@@ -776,9 +765,9 @@
         "name": "values",
         "type": "block",
         "multiple": true,
-        "block": [
+        "arguments": [
           {
-            "name": "value",          
+            "name": "value",
             "type": "double"
           },
           {

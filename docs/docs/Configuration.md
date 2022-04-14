@@ -1,3 +1,11 @@
+---
+title: "Configuration"
+linkTitle: "Configuration"
+weight: 5
+description: >
+    RedisBloom supports a few run-time configuration options that can be defined when loading the module. In the future more options will be added.
+---
+
 # Run-time configuration
 
 RedisBloom supports a few run-time configuration options that should be determined when loading the module.
