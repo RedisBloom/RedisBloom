@@ -498,7 +498,7 @@ workflows:
               platform: [xenial, bionic, focal, buster, centos7, rocky8]
       - platform_build_arm:
           <<: *context
-          <<: *on-any-branch
+          <<: *on-integ-and-version-tags
           matrix:
             parameters:
               platform: [bionic]
