@@ -164,6 +164,27 @@ commands:
             - artifacts/snaphots/*.zip
             - artifacts/*.zip
 
+  arm-platform-build-steps:
+    parameters:
+      platform:
+        type: string
+    steps:
+      - early-returns
+      - checkout-all
+      - run:
+          name: Install dependencies
+          command: |
+            ./deps/readies/bin/getpy3
+      - run:
+          name: Build for platform (docker build)
+          command: |
+            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> ARTIFACTS=1 OFFICIAL=1 VERSION=$CIRCLE_TAG BRANCH=$CIRCLE_BRANCH SHOW=1 TEST=1
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - artifacts/snaphots/*.zip
+            - artifacts/*.zip
+
 jobs:
   lint:
     docker:
@@ -260,6 +281,17 @@ jobs:
       - store_artifacts:
           path: /workspace/build
 
+  platform_build_arm:
+    parameters:
+      platform:
+        type: string
+    machine:
+      image: ubuntu-2004:202101-01
+    resource_class: arm.medium
+    steps:
+      - arm-platform-build-steps:
+          platform: <<parameters.platform>>
+
   package_release:
     docker:
       - image: 'redisfab/rmbuilder:6.2.3-x64-bionic'
@@ -343,7 +375,7 @@ jobs:
           name: build artifact
           command: make all
       - benchmark-steps
-  
+
   benchmark-bloom-oss-standalone-profiler:
     docker:
       - image: redisfab/rmbuilder:6.2.5-x64-bionic
@@ -355,7 +387,7 @@ jobs:
           command: make all
       - benchmark-steps:
           profile_env: "1"
-          triggering_env: "circleci.profilers" # results generated with profilers attached are not mixed with the ones without it 
+          triggering_env: "circleci.profilers" # results generated with profilers attached are not mixed with the ones without it
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
@@ -464,17 +496,26 @@ workflows:
           matrix:
             parameters:
               platform: [xenial, bionic, focal, buster, centos7, rocky8]
+      - platform_build_arm:
+          <<: *context
+          <<: *on-integ-and-version-tags
+          matrix:
+            parameters:
+              platform: [bionic]
       - deploy_snapshots:
           context: common
           <<: *on-integ-branch
           requires:
             - platform_build
+            - platform_build_arm
             - build-macos
       - deploy_release:
           context: common
           <<: *on-version-tags
           requires:
             - platform_build
+            - platform_build_arm
+            - build-macos
       - release_automation:
           context: common
           <<: *on-version-tags
