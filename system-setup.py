@@ -11,11 +11,13 @@ import paella
 
 #----------------------------------------------------------------------------------------------
 
-class RedisTimeSeriesSetup(paella.Setup):
+class RedisBloomSetup(paella.Setup):
     def __init__(self, nop=False):
         paella.Setup.__init__(self, nop)
 
     def common_first(self):
+        if self.arch.find('arm') != -1:
+            self.install("python-dev")
         self.pip_install("wheel")
         self.pip_install("setuptools --upgrade")
 
