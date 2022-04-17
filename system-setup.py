@@ -11,11 +11,13 @@ import paella
 
 #----------------------------------------------------------------------------------------------
 
-class RedisTimeSeriesSetup(paella.Setup):
+class RedisBloomSetup(paella.Setup):
     def __init__(self, nop=False):
         paella.Setup.__init__(self, nop)
 
     def common_first(self):
+        if self.arch.find('arm') != -1:
+            self.install("python-dev")
         self.pip_install("wheel")
         self.pip_install("setuptools --upgrade")
 
@@ -50,4 +52,4 @@ parser = argparse.ArgumentParser(description='Set up system for build.')
 parser.add_argument('-n', '--nop', action="store_true", help='no operation')
 args = parser.parse_args()
 
-RedisTimeSeriesSetup(nop = args.nop).setup()
+RedisBloomSetup(nop = args.nop).setup()
