@@ -63,6 +63,26 @@ commands:
             - artifacts/snapshots/*.zip
             - artifacts/*.zip
 
+  arm-platform-build-steps:
+    parameters:
+      platform:
+        type: string
+    steps:
+      - checkout-all
+      - run:
+          name: Install dependencies
+          command: |
+            ./deps/readies/bin/getpy3
+      - run:
+          name: Build for platform (docker build)
+          command: |
+            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> ARTIFACTS=1 OFFICIAL=1 VERSION=$CIRCLE_TAG BRANCH=$CIRCLE_BRANCH SHOW=1 TEST=1
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - artifacts/snaphots/*.zip
+            - artifacts/*.zip
+
   benchmark-steps:
     parameters:
       github_actor:
@@ -199,6 +219,18 @@ jobs:
     steps:
       - platform-build-steps:
           platform: <<parameters.platform>>
+
+  platform_build_arm:
+    parameters:
+      platform:
+        type: string
+    machine:
+      image: ubuntu-2004:202101-01
+    resource_class: arm.medium
+    steps:
+      - arm-platform-build-steps:
+          platform: <<parameters.platform>>
+
 
   package_branch:
     docker:
@@ -402,12 +434,14 @@ workflows:
           <<: *on-integ-branch
           requires:
             - platform_build
+            - platform_build_arm
             - build-macos
       - deploy_release:
           context: common
           <<: *on-version-tags
           requires:
             - platform_build
+            - platform_build_arm
             - build-macos
       - platform_build:
           <<: *context
@@ -415,6 +449,12 @@ workflows:
           matrix:
             parameters:
               platform: [xenial, bionic, focal, buster, centos7, rocky8]
+      - platform_build_arm:
+          <<: *context
+          <<: *on-any-branch
+          matrix:
+            parameters:
+              platform: [bionic]
       - release_automation:
           context: common
           <<: *on-version-tags
