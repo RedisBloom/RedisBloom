@@ -507,12 +507,15 @@ workflows:
           <<: *on-integ-branch
           requires:
             - platform_build
+            - platform_build_arm
             - build-macos
       - deploy_release:
           context: common
           <<: *on-version-tags
           requires:
             - platform_build
+            - platform_build_arm
+            - build-macos
       - release_automation:
           context: common
           <<: *on-version-tags
