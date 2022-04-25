@@ -11,6 +11,7 @@ description: >
 
 | Project | Language | License | Author | URL |
 | ------- | -------- | ------- | ------ | --- |
+| Jedis | Java | MIT | [Redis](https://redis.com) | [GitHub](https://github.com/redis/jedis) |
 | redisbloom-py | Python | BSD | [Redis](https://redis.com) | [GitHub](https://github.com/RedisBloom/redisbloom-py) |
 | JRedisBloom | Java | BSD | [Redis](https://redis.com) | [GitHub](https://github.com/RedisBloom/JRedisBloom) |
 | node-redis | JavaScript | MIT | [Redis](https://redis.com) | [GitHub](https://github.com/redis/node-redis) |
