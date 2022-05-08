@@ -327,6 +327,7 @@ jobs:
           name: Deploy to S3
           command: |
             cd workspace/artifacts/
+            ls -lR
             for f in `ls *.zip`; do
               aws s3 cp $f s3://redismodules/redisbloom/snapshots/$path --acl public-read
             done
@@ -495,7 +496,7 @@ workflows:
           <<: *on-integ-and-version-tags
           matrix:
             parameters:
-              platform: [xenial, bionic, focal, buster, centos7, rocky8]
+              platform: [xenial, bionic, focal, buster, centos7, rocky8, jammy]
       - platform_build_arm:
           <<: *context
           <<: *on-integ-and-version-tags
