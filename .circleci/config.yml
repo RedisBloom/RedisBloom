@@ -501,7 +501,7 @@ workflows:
           <<: *on-integ-and-version-tags
           matrix:
             parameters:
-              platform: [bionic]
+              platform: [bionic, focal]
       - deploy_snapshots:
           context: common
           <<: *on-integ-branch
