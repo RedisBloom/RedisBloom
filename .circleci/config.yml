@@ -81,7 +81,7 @@ commands:
       - persist_to_workspace:
           root: bin
           paths:
-            - artifacts/snaphots/*.zip
+            - artifacts/snapshots/*.zip
             - artifacts/*.zip
 
   benchmark-steps:
