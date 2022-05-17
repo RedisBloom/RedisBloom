@@ -312,6 +312,50 @@ int TDigestSketch_Cdf(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 }
 
 /**
+ * Command: TDIGEST.TRIMMED_MEAN {key} {low_cut_percentile} {high_cut_percentile}
+ *
+ * Returns the trimmed mean ignoring values outside given cutoff upper and lower limits.
+ *
+ * @param ctx Context in which RedisTRIMMED_MEAN modules operate
+ * @param argv Redis command arguments, as an array of strings
+ * @param argc Redis command number of arguments
+ * @return REDISMODULE_OK on success, or REDISMODULE_ERR  if the command failed
+ */
+int TDigestSketch_TrimmedMean(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    if (argc != 4) {
+        return RedisModule_WrongArity(ctx);
+    }
+    RedisModuleString *keyName = argv[1];
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ);
+
+    if (_TDigest_KeyCheck(ctx, key) != REDISMODULE_OK)
+        return REDISMODULE_ERR;
+
+    td_histogram_t *tdigest = RedisModule_ModuleTypeGetValue(key);
+
+    double low_cut_percentile = 0.0;
+    double high_cut_percentile = 0.0;
+    if (RedisModule_StringToDouble(argv[2], &low_cut_percentile) != REDISMODULE_OK) {
+        RedisModule_CloseKey(key);
+        return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing low_cut_percentile");
+    }
+    if (RedisModule_StringToDouble(argv[3], &high_cut_percentile) != REDISMODULE_OK) {
+        RedisModule_CloseKey(key);
+        return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing high_cut_percentile");
+    }
+    if (low_cut_percentile < 0.0 || low_cut_percentile > 1.0 || high_cut_percentile < 0.0 ||
+        high_cut_percentile > 1.0) {
+        RedisModule_CloseKey(key);
+        return RedisModule_ReplyWithError(
+            ctx, "ERR T-Digest: low_cut_percentile and high_cut_percentile should be in [0,1]");
+    }
+    const double value = td_trimmed_mean(tdigest, low_cut_percentile, high_cut_percentile);
+    RedisModule_CloseKey(key);
+    RedisModule_ReplyWithDouble(ctx, value);
+    return REDISMODULE_OK;
+}
+
+/**
  * Command: TDIGEST.INFO {key}
  *
  * Returns compression, capacity, total merged and unmerged nodes, the total compressions
@@ -376,12 +420,12 @@ void TDigestRdbSave(RedisModuleIO *rdb, void *value) {
     RedisModule_SaveDouble(rdb, tdigest->unmerged_weight);
 
     for (size_t i = 0; i < tdigest->merged_nodes; i++) {
-        const node_t n = tdigest->nodes[i];
-        RedisModule_SaveDouble(rdb, n.mean);
+        const double mean = tdigest->nodes_mean[i];
+        RedisModule_SaveDouble(rdb, mean);
     }
     for (size_t i = 0; i < tdigest->merged_nodes; i++) {
-        const node_t n = tdigest->nodes[i];
-        RedisModule_SaveDouble(rdb, n.count);
+        const double count = tdigest->nodes_weight[i];
+        RedisModule_SaveDouble(rdb, count);
     }
 }
 
@@ -408,10 +452,10 @@ void *TDigestRdbLoad(RedisModuleIO *rdb, int encver) {
     tdigest->unmerged_weight = RedisModule_LoadDouble(rdb);
 
     for (size_t i = 0; i < tdigest->merged_nodes; i++) {
-        tdigest->nodes[i].mean = RedisModule_LoadDouble(rdb);
+        tdigest->nodes_mean[i] = RedisModule_LoadDouble(rdb);
     }
     for (size_t i = 0; i < tdigest->merged_nodes; i++) {
-        tdigest->nodes[i].count = RedisModule_LoadDouble(rdb);
+        tdigest->nodes_weight[i] = RedisModule_LoadDouble(rdb);
     }
     return tdigest;
 }
@@ -449,6 +493,7 @@ int TDigestModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     RMUtil_RegisterReadCmd(ctx, "tdigest.max", TDigestSketch_Max);
     RMUtil_RegisterReadCmd(ctx, "tdigest.quantile", TDigestSketch_Quantile);
     RMUtil_RegisterReadCmd(ctx, "tdigest.cdf", TDigestSketch_Cdf);
+    RMUtil_RegisterReadCmd(ctx, "tdigest.trimmed_mean", TDigestSketch_TrimmedMean);
     RMUtil_RegisterReadCmd(ctx, "tdigest.info", TDigestSketch_Info);
     return REDISMODULE_OK;
 }
