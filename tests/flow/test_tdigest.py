@@ -370,7 +370,7 @@ class testTDigest:
             9.5, float(self.cmd("tdigest.trimmed_mean", "tdigest", 0.0,1.0)), 0.01
         )
         self.assertAlmostEqual(
-            9.5, float(self.cmd("tdigest.trimmed_mean", "tdigest", 0.20,0.8)), 0.01
+            9.5, float(self.cmd("tdigest.trimmed_mean", "tdigest", 0.2,0.8)), 0.01
         )
 
     def test_negative_tdigest_trimmed_mean(self):
@@ -404,6 +404,10 @@ class testTDigest:
         # low_cut_percentile and high_cut_percentile should be in [0,1]
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.trimmed_mean", "tdigest", "10.0", "20.0"
+        )
+        # low_cut_percentile should be lower than high_cut_percentile
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.trimmed_mean", "tdigest", "0.9", "0.1"
         )
 
     def test_negative_tdigest_info(self):

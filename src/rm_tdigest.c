@@ -316,7 +316,7 @@ int TDigestSketch_Cdf(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
  *
  * Returns the trimmed mean ignoring values outside given cutoff upper and lower limits.
  *
- * @param ctx Context in which RedisTRIMMED_MEAN modules operate
+ * @param ctx Context in which Redis modules operate
  * @param argv Redis command arguments, as an array of strings
  * @param argc Redis command number of arguments
  * @return REDISMODULE_OK on success, or REDISMODULE_ERR  if the command failed
@@ -348,6 +348,11 @@ int TDigestSketch_TrimmedMean(RedisModuleCtx *ctx, RedisModuleString **argv, int
         RedisModule_CloseKey(key);
         return RedisModule_ReplyWithError(
             ctx, "ERR T-Digest: low_cut_percentile and high_cut_percentile should be in [0,1]");
+    }
+    if (low_cut_percentile > high_cut_percentile) {
+        RedisModule_CloseKey(key);
+        return RedisModule_ReplyWithError(
+            ctx, "ERR T-Digest: low_cut_percentile should be lower than high_cut_percentile");
     }
     const double value = td_trimmed_mean(tdigest, low_cut_percentile, high_cut_percentile);
     RedisModule_CloseKey(key);
