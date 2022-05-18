@@ -1,0 +1,27 @@
+version: 0.2
+name: "tdigest_trimmed_mean_1M_samples_comp100"
+description: "Benchmarking trimmed mean calculation of a data sketch with 1M elements.
+              The T-Digest sketch has a compression of 100.
+              The RDB was generated using python as follow:
+
+              import numpy as np
+              import redis
+              np.random.seed(12345)
+              conn = redis.StrictRedis()
+              conn.execute_command('TDIGEST.CREATE', 'tdigest', '100')
+              for x in np.random.zipf(1.1, size=1000000):
+                conn.execute_command('TDIGEST.ADD', 'tdigest', '{}'.format(x), '1.0')
+        "
+remote:
+ - type: oss-standalone
+ - setup: redisbloom-m5
+dbconfig:
+  - dataset: "https://s3.amazonaws.com/benchmarks.redislabs/redisbloom/datasets/tdigest_1M_samples_comp100_v2.4.0_dump.rdb"
+  - dataset_load_timeout_secs: 180
+  - check:
+      keyspacelen: 2
+
+clientconfig:
+  benchmark_type: "read-only"
+  tool: memtier_benchmark
+  arguments: "--test-time 180 -c 32 -t 1 --hide-histogram --command 'TDIGEST.TRIMMED_MEAN tdigest-0 0.1 0.9'"

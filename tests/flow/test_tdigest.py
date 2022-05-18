@@ -357,6 +357,59 @@ class testTDigest:
             redis.exceptions.ResponseError, self.cmd, "tdigest.cdf", "tdigest", "a"
         )
 
+    def test_tdigest_trimmed_mean(self):
+        self.assertOk(self.cmd("tdigest.create", "tdigest", 500))
+        # insert datapoints into sketch
+        for x in range(0, 20):
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1.0))
+
+        self.assertAlmostEqual(
+            9.5, float(self.cmd("tdigest.trimmed_mean", "tdigest", 0.1,0.9)), 0.01
+        )
+        self.assertAlmostEqual(
+            9.5, float(self.cmd("tdigest.trimmed_mean", "tdigest", 0.0,1.0)), 0.01
+        )
+        self.assertAlmostEqual(
+            9.5, float(self.cmd("tdigest.trimmed_mean", "tdigest", 0.2,0.8)), 0.01
+        )
+
+    def test_negative_tdigest_trimmed_mean(self):
+        self.cmd("SET", "tdigest", "B")
+        # WRONGTYPE
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.trimmed_mean", "tdigest", 0.9
+        )
+        # key does not exist
+        self.assertRaises(
+            ResponseError, self.cmd, "tdigest.trimmed_mean", "dont-exist", 0.9
+        )
+        self.cmd("DEL", "tdigest", "B")
+        self.assertOk(self.cmd("tdigest.create", "tdigest", 100))
+        # arity lower
+        self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.trimmed_mean")
+        # arity upper
+        self.assertRaises(
+            redis.exceptions.ResponseError,
+            self.cmd,
+            "tdigest.trimmed_mean",
+            "tdigest",
+            1,
+            1,
+            1,
+        )
+        # parsing
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.trimmed_mean", "tdigest", "a", "a"
+        )
+        # low_cut_percentile and high_cut_percentile should be in [0,1]
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.trimmed_mean", "tdigest", "10.0", "20.0"
+        )
+        # low_cut_percentile should be lower than high_cut_percentile
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.trimmed_mean", "tdigest", "0.9", "0.1"
+        )
+
     def test_negative_tdigest_info(self):
         self.cmd("SET", "tdigest", "B")
         # WRONGTYPE
