@@ -1,0 +1,18 @@
+version: 0.2
+name: "tdigest_quantile_p50_1M_samples_comp100"
+description: "Benchmarking p50 calculation of 1 t-digest data sketch with 1M elements.
+              The T-Digest sketch has a compression of 100.
+        "
+remote:
+ - type: oss-standalone
+ - setup: redisbloom-m5
+dbconfig:
+  - dataset: "https://s3.amazonaws.com/benchmarks.redislabs/redisbloom/datasets/tdigest_1M_samples_comp100_v2.4.0_dump.rdb"
+  - dataset_load_timeout_secs: 180
+  - check:
+      keyspacelen: 2
+
+clientconfig:
+  benchmark_type: "read-only"
+  tool: memtier_benchmark
+  arguments: "--test-time 180 -c 32 -t 1 --hide-histogram --command 'TDIGEST.QUANTILE tdigest-0 0.50'"
