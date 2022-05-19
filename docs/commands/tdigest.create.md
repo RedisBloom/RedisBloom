@@ -7,10 +7,7 @@ Allocate the memory and initialize the t-digest.
 
 
 **Further notes on compression vs accuracy:**
-Constructing a T-Digest requires a compression parameter which determines the size of the digest and accuracy of quantile estimation. 
-The scaling of accuracy versus the compression parameter is illustrated in the following figure retrieved from ["Ted Dunning, The t-digest: Efficient estimates of distributions, Software Impacts,Volume 7,2021"](https://www.sciencedirect.com/science/article/pii/S2665963820300403).
-
-<img src="images/tdigest-accuracy-vs-compression.jpg" alt="The scaling of accuracy versus the compression parameter"/>
+Constructing a T-Digest requires a compression parameter, which determines the size of the digest and accuracy of quantile estimation. For more information on scaling of accuracy versus the compression parameter see _The t-digest: Efficient estimates of distributions_](https://www.sciencedirect.com/science/article/pii/S2665963820300403).
 
 @return
 
