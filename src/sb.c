@@ -36,6 +36,23 @@ void SBChain_Free(SBChain *sb) {
     RedisModule_Free(sb);
 }
 
+void SBChain_Reset(SBChain *sb) {
+    // release subfilters. leave 1
+    for (size_t ii = 1; ii < sb->nfilters; ++ii) {
+        bloom_free(&sb->filters[ii].inner);
+    }
+    sb->filters = RedisModule_Realloc(sb->filters, sizeof(*sb->filters));
+    sb->nfilters = 1;
+
+    // clear remaining sub-filter
+    SBLink *link = sb->filters;
+    memset(link->inner.bf, 0, link->inner.bytes * sizeof(unsigned char));
+    link->size = 0;
+    
+    // reset counter
+    sb->size = 0;
+}
+
 static int SBChain_AddToLink(SBLink *lb, bloom_hashval hash) {
     if (!bloom_add_h(&lb->inner, hash)) {
         // Element not previously present?

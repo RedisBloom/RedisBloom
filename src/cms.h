@@ -45,6 +45,9 @@ size_t CMS_IncrBy(CMSketch *cms, const char *item, size_t strlen, size_t value);
 /* Returns an estimate counter for item */
 size_t CMS_Query(CMSketch *cms, const char *item, size_t strlen);
 
+/* Reset all buckets to 0 */
+void CMS_Reset(CMSketch *cms);
+
 /*  Merges multiple CMSketches into a single one.
     All sketches must have identical width and depth.
     dest must be already initialized.

@@ -78,6 +78,9 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
     Complexity - O(k) */
 bool TopK_Query(TopK *topk, const char *item, size_t itemlen);
 
+/*  Reset all buckets to 0 */
+void TopK_Reset(TopK *topk);
+
 /*  Returns count for an 'item' in 'topk' DS.
     This number can be significantly lower than real count.
     Complexity - O(k) */

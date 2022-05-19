@@ -302,6 +302,31 @@ class testRedisBloom():
         with self.assertResponseError():
             self.cmd('bf.info')
 
+    def test_reset(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '10'))
+        orig_info = self.cmd('bf.info bf')
+
+        for i in range(100):
+            self.cmd('bf.add', 'bf', str(i))
+
+        self.assertEqual(self.cmd('bf.info bf'), ['Capacity', 150,
+                                                  'Size', 888,
+                                                  'Number of filters', 4,
+                                                  'Number of items inserted', 100,
+                                                  'Expansion rate', 2])
+
+        self.assertOk(self.cmd('bf.reset', 'bf'))
+        self.assertEqual(self.cmd('bf.info', 'bf'), orig_info)
+
+        # test for errors
+        with self.assertResponseError():
+            self.cmd('bf.reset')
+        with self.assertResponseError():
+            self.cmd('bf.reset', 'bf', 'extra')
+        with self.assertResponseError():
+            self.cmd('bf.reset', 'not_exist')
+
     def test_no_1_error_rate(self):
         self.cmd('FLUSHALL')
         with self.assertResponseError():

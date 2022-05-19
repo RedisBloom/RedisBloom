@@ -167,6 +167,20 @@ static int TopK_Query_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
     return REDISMODULE_OK;
 }
 
+static int TopK_Reset_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    if (argc != 2)
+        return RedisModule_WrongArity(ctx);
+
+    TopK *topk;
+    if (GetTopKKey(ctx, argv[1], &topk, REDISMODULE_READ) != REDISMODULE_OK)
+        return REDISMODULE_ERR;
+
+    TopK_Reset(topk);
+
+    RedisModule_ReplyWithSimpleString(ctx, "OK");
+    return REDISMODULE_OK;
+}
+
 static int TopK_Count_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (argc < 3)
         return RedisModule_WrongArity(ctx);
@@ -320,6 +334,7 @@ int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RMUtil_RegisterWriteDenyOOMCmd(ctx, "topk.add", TopK_Add_Cmd);
     RMUtil_RegisterWriteDenyOOMCmd(ctx, "topk.incrby", TopK_Incrby_Cmd);
     RMUtil_RegisterReadCmd(ctx, "topk.query", TopK_Query_Cmd);
+    RMUtil_RegisterReadCmd(ctx, "topk.reset", TopK_Reset_Cmd);
     RMUtil_RegisterWriteCmd(ctx, "topk.count", TopK_Count_Cmd);
     RMUtil_RegisterReadCmd(ctx, "topk.list", TopK_List_Cmd);
     RMUtil_RegisterReadCmd(ctx, "topk.info", TopK_Info_Cmd);

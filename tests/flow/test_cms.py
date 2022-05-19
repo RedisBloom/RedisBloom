@@ -203,3 +203,21 @@ class testCMS():
         self.assertEqual(['width', 2, 'depth', 2, 'count', 52],
                          self.cmd('cms.info', 'cms1'))
         self.assertEqual([10, 42], self.cmd('cms.incrby', 'cms1', 'foo', '0', 'bar', '0'))
+
+    def test_reset(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd('cms.initbydim', 'cms1', '2', '2'))
+        self.assertEqual([10, 42], self.cmd('cms.incrby', 'cms1', 'foo', '10', 'bar', '42'))
+        self.assertEqual([10, 42], self.cmd('cms.query', 'cms1', 'foo', 'bar'))
+        self.assertEqual(['width', 2, 'depth', 2, 'count', 52],
+                         self.cmd('cms.info', 'cms1'))
+
+        self.assertOk(self.cmd('cms.reset', 'cms1'))
+
+        self.assertEqual([0, 0], self.cmd('cms.query', 'cms1', 'foo', 'bar'))
+        self.assertEqual(['width', 2, 'depth', 2, 'count', 0],
+                         self.cmd('cms.info', 'cms1'))
+
+        self.assertRaises(ResponseError, self.cmd, 'cms.initbydim')
+        self.assertRaises(ResponseError, self.cmd, 'cms.initbydim', 'no_exist')
+        self.assertRaises(ResponseError, self.cmd, 'cms.initbydim', 'cms1', 'extra')

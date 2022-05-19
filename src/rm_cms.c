@@ -170,6 +170,23 @@ int CMSketch_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     return REDISMODULE_OK;
 }
 
+int CMSketch_Reset(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+    if (argc != 2) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    CMSketch *cms = NULL;
+    if (GetCMSKey(ctx, argv[1], &cms, REDISMODULE_READ) != REDISMODULE_OK) {
+        return REDISMODULE_OK;
+    }
+
+    CMS_Reset(cms);
+
+    RedisModule_ReplyWithSimpleString(ctx, "OK");
+    return REDISMODULE_OK;
+}
+
 static int parseMergeArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
                           mergeParams *params) {
     long long numKeys = params->numKeys;
@@ -309,6 +326,7 @@ int CMSModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RMUtil_RegisterWriteDenyOOMCmd(ctx, "cms.initbyprob", CMSketch_Create);
     RMUtil_RegisterWriteDenyOOMCmd(ctx, "cms.incrby", CMSketch_IncrBy);
     RMUtil_RegisterReadCmd(ctx, "cms.query", CMSketch_Query);
+    RMUtil_RegisterWriteDenyOOMCmd(ctx, "cms.reset", CMSketch_Reset);
     RMUtil_RegisterWriteDenyOOMCmd(ctx, "cms.merge", CMSketch_Merge);
     RMUtil_RegisterReadCmd(ctx, "cms.info", CMSKetch_Info);
 

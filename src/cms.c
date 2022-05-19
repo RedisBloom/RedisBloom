@@ -74,6 +74,13 @@ size_t CMS_Query(CMSketch *cms, const char *item, size_t itemlen) {
     return minCount;
 }
 
+void CMS_Reset(CMSketch *cms) {
+    assert(cms);
+    memset(cms->array, 0, cms->width * cms->depth * sizeof(uint32_t));
+    cms->counter = 0;
+}
+
+
 void CMS_Merge(CMSketch *dest, size_t quantity, const CMSketch **src, const long long *weights) {
     assert(dest);
     assert(src);

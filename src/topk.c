@@ -186,6 +186,20 @@ bool TopK_Query(TopK *topk, const char *item, size_t itemlen) {
     return checkExistInHeap(topk, item, itemlen) != NULL;
 }
 
+void TopK_Reset(TopK *topk) {
+    assert(topk);
+
+    // clear sketch
+    memset(topk->data, 0, topk->depth * topk->depth * sizeof(Bucket));
+
+    // clear topk list
+    for (uint32_t i = 0; i < topk->k; ++i) {
+        TOPK_FREE(topk->heap[i].item);
+    }
+    memset(topk->heap, 0, topk->k * sizeof(HeapBucket));
+}
+
+
 size_t TopK_Count(TopK *topk, const char *item, size_t itemlen) {
     assert(topk);
     assert(item);

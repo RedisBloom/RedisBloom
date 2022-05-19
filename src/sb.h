@@ -55,6 +55,9 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len);
  */
 int SBChain_Check(const SBChain *sb, const void *data, size_t len);
 
+/* Reset filter */
+void SBChain_Reset(SBChain *sb);
+
 /**
  * Get an encoded header. This is the first step to serializing a bloom filter.
  * The length of the header will be written to in hdrlen.

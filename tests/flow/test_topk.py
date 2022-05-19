@@ -182,3 +182,21 @@ class testTopK():
         self.cmd('topk.add', 'topk', 'j', 'h', 'd', 'j', 'h', 'h', 'j', 'g', 'e', 'g', 'i', 'f', 'g', 'f', 'a', 'j', 'c', 'i', 'a', 'd')
         heapList = self.cmd('topk.list', 'topk')
         self.assertEqual(len(set(heapList)), len(heapList)) 
+
+
+    def test_reset(self):
+        self.cmd('FLUSHALL')
+        self.cmd('topk.reserve', 'topk', '10')
+        self.cmd('topk.add', 'topk', 'foo', 'bar', '42', 'foo')
+
+        self.assertEqual([1], self.cmd('topk.query', 'topk', 'bar'))
+        self.assertEqual([1], self.cmd('topk.query', 'topk', 'foo'))
+        heapList = self.cmd('topk.list', 'topk', 'WITHCOUNT')
+        self.assertEqual(['foo', 2, '42', 1, 'bar', 1], heapList)
+
+        self.assertOk(self.cmd('topk.reset', 'topk'))
+
+        self.assertEqual([0], self.cmd('topk.query', 'topk', 'bar'))
+        self.assertEqual([0], self.cmd('topk.query', 'topk', 'foo'))
+        heapList = self.cmd('topk.list', 'topk', 'WITHCOUNT')
+        self.assertEqual([], heapList)
