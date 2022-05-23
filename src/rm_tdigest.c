@@ -1,7 +1,6 @@
 #include <math.h>    // ceil, log10f
 #include <stdlib.h>  // malloc
 #include <strings.h> // strncasecmp
-#include <stdbool.h>
 
 #include "rm_tdigest.h"
 #include "rmutil/util.h"
@@ -280,7 +279,6 @@ int TDigestSketch_Quantile(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
     const size_t n_quantiles = argc - 2;
     double *quantiles = (double *)__td_calloc(n_quantiles, sizeof(double));
-    int sorted = 1;
 
     for (int i = 0; i < n_quantiles; ++i) {
         if (RedisModule_StringToDouble(argv[2 + i], &quantiles[i]) != REDISMODULE_OK) {
