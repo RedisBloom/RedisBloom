@@ -1,6 +1,7 @@
 #include <math.h>    // ceil, log10f
 #include <stdlib.h>  // malloc
 #include <strings.h> // strncasecmp
+#include <stdbool.h>
 
 #include "rm_tdigest.h"
 #include "rmutil/util.h"
@@ -219,7 +220,7 @@ int TDigestSketch_Min(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 /**
  * Command: TDIGEST.MAX {key}
  *
- * Get maximum value from the histogram.  Will return __DBL_MIN__ if the histogram is empty.
+ * Get maximum value from the histogram.  Will return -__DBL_MAX__ if the histogram is empty.
  *
  * @param ctx Context in which Redis modules operate
  * @param argv Redis command arguments, as an array of strings
@@ -243,11 +244,22 @@ int TDigestSketch_Max(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     return REDISMODULE_OK;
 }
 
+static int double_cmpfunc(const void *a, const void *b) {
+    if (*(double *)a > *(double *)b)
+        return 1;
+    else if (*(double *)a < *(double *)b)
+        return -1;
+    else
+        return 0;
+}
+
 /**
- * Command: TDIGEST.QUANTILE {key} {quantile}
+ * Command: TDIGEST.QUANTILE {key} {quantile} [{quantile2}...]
  *
  * Returns an estimate of the cutoff such that a specified fraction of the data
- * added to this TDigest would be less than or equal to the cutoff.
+ * added to this TDigest would be less than or equal to the cutoff quantiles.
+ * The command returns an array of results: each element of the returned array
+ * populated with quantile_1, cutoff_1, quantile_2, cutoff_2, ..., quantile_N, cutoff_N.
  *
  * @param ctx Context in which Redis modules operate
  * @param argv Redis command arguments, as an array of strings
@@ -255,7 +267,7 @@ int TDigestSketch_Max(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
  * @return REDISMODULE_OK on success, or REDISMODULE_ERR  if the command failed
  */
 int TDigestSketch_Quantile(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    if (argc != 3) {
+    if (argc < 3) {
         return RedisModule_WrongArity(ctx);
     }
     RedisModuleString *keyName = argv[1];
@@ -266,14 +278,28 @@ int TDigestSketch_Quantile(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
     td_histogram_t *tdigest = RedisModule_ModuleTypeGetValue(key);
 
-    double quantile = 0.0;
-    if (RedisModule_StringToDouble(argv[2], &quantile) != REDISMODULE_OK) {
-        RedisModule_CloseKey(key);
-        return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing quantile");
+    const size_t n_quantiles = argc - 2;
+    double *quantiles = (double *)__td_calloc(n_quantiles, sizeof(double));
+    int sorted = 1;
+
+    for (int i = 0; i < n_quantiles; ++i) {
+        if (RedisModule_StringToDouble(argv[2 + i], &quantiles[i]) != REDISMODULE_OK) {
+            RedisModule_CloseKey(key);
+            __td_free(quantiles);
+            return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing quantile");
+        }
     }
-    const double value = td_quantile(tdigest, quantile);
+    qsort(quantiles, n_quantiles, sizeof(double), double_cmpfunc);
+    double *values = (double *)__td_calloc(n_quantiles, sizeof(double));
+    td_quantiles(tdigest, quantiles, values, n_quantiles);
     RedisModule_CloseKey(key);
-    RedisModule_ReplyWithDouble(ctx, value);
+    RedisModule_ReplyWithArray(ctx, 2 * n_quantiles);
+    for (int i = 0; i < n_quantiles; ++i) {
+        RedisModule_ReplyWithDouble(ctx, quantiles[i]);
+        RedisModule_ReplyWithDouble(ctx, values[i]);
+    }
+    __td_free(values);
+    __td_free(quantiles);
     return REDISMODULE_OK;
 }
 

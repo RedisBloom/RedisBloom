@@ -821,7 +821,7 @@
     "group": "tdigest"
   },
   "TDIGEST.QUANTILE": {
-    "summary": "Returns an estimate of the cutoff",
+    "summary": "Returns an estimate of the cutoff such that a specified fraction of the data added to this TDigest would be less than or equal to the specified cutoffs. Multiple quantiles can be returned with one call.",
     "complexity": "O(1)",
     "arguments": [
       {
@@ -830,7 +830,8 @@
       },
       {
         "name": "quantile",
-        "type": "double"
+        "type": "double",
+        "multiple": true
       }
     ],
     "since": "2.4.0",
