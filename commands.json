@@ -852,6 +852,26 @@
     "since": "2.4.0",
     "group": "tdigest"
   },
+  "TDIGEST.TRIMMED_MEAN": {
+    "summary": "Returns the trimmed mean ignoring values outside given cutoff upper and lower limits",
+    "complexity": "O(n)",
+    "arguments": [
+      {
+        "name": "key",
+        "type": "key"
+      },
+      {
+        "name": "low_cut_percentile",
+        "type": "double"
+      },
+      {
+        "name": "high_cut_percentile",
+        "type": "double"
+      }
+    ],
+    "since": "2.4.0",
+    "group": "tdigest"
+  },
   "TDIGEST.INFO": {
     "summary": "Returns information about a sketch",
     "complexity": "O(1)",
