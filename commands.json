@@ -701,10 +701,6 @@
         "type": "key"
       },
       {
-        "name": "numKeys",
-        "type": "integer"
-      },
-      {
         "name": "withcount",
         "token": "WITHCOUNT",
         "type": "pure-token"
