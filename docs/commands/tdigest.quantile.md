@@ -16,14 +16,14 @@ Multiple quantiles can be returned with one call.
 @examples
 
 ```
-redis> TDIGEST.QUANTILE tdigest-0 0.5
+redis> TDIGEST.QUANTILE t-digest 0.5
 1) "0.5"
-2) "18200.224436313329"
+2) "100.42"
 ```
 ```
-redis> TDIGEST.QUANTILE tdigest-0 0.5 0.999
+redis> TDIGEST.QUANTILE t-digest 0.5 0.999
 1) "0.5"
-2) "18200.224436313329"
+2) "100.42"
 3) "0.999"
-4) "5.3830741444744448e+18"
+4) "190.01"
 ```
