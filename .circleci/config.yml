@@ -495,7 +495,7 @@ workflows:
           <<: *on-integ-and-version-tags
           matrix:
             parameters:
-              platform: [xenial, bionic, focal, buster, centos7, rocky8]
+              platform: [xenial, bionic, focal, bullseye, centos7, rocky8]
       - platform_build_arm:
           <<: *context
           <<: *on-integ-and-version-tags
