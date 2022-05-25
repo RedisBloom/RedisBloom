@@ -3,7 +3,6 @@ from rmtest import ModuleTestCase
 from redis import ResponseError
 import sys
 from random import randint
-import math
 
 if sys.version >= '3':
     xrange = range
@@ -84,6 +83,7 @@ class TopKTest(ModuleTestCase('../redisbloom.so')):
         self.assertEqual([3, 6, 10, 4, 0], self.cmd('topk.count', 'topk', 'bar', 'baz', '42', 'xyzzy', 4))
         self.assertRaises(ResponseError, self.cmd, 'topk.incrby')
         self.assertTrue(isinstance(self.cmd('topk.incrby', 'topk', 'foo', -5)[0], ResponseError))
+        self.assertTrue(isinstance(self.cmd('topk.incrby', 'topk', 'foo', 123456)[0], ResponseError))
 
     def test_lookup_table(self):
         self.assertOk(self.cmd('topk.reserve', 'topk', '1', '3', '3', '.9'))
