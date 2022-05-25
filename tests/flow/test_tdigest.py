@@ -234,7 +234,7 @@ class testTDigest:
         self.assertOk(self.cmd("tdigest.create", "tdigest", 100))
         # test for no datapoints first
         self.assertEqual(sys.float_info.max, float(self.cmd("tdigest.min", "tdigest")))
-        self.assertEqual(sys.float_info.min, float(self.cmd("tdigest.max", "tdigest")))
+        self.assertEqual(-sys.float_info.max, float(self.cmd("tdigest.max", "tdigest")))
         # insert datapoints into sketch
         for x in range(1, 101):
             self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1.0))
@@ -280,18 +280,33 @@ class testTDigest:
         # assert min min/max have same result as quantile 0 and 1
         self.assertEqual(
             float(self.cmd("tdigest.max", "tdigest")),
-            float(self.cmd("tdigest.quantile", "tdigest", 1.0)),
+            float(self.cmd("tdigest.quantile", "tdigest", 1.0)[1]),
         )
         self.assertEqual(
             float(self.cmd("tdigest.min", "tdigest")),
-            float(self.cmd("tdigest.quantile", "tdigest", 0.0)),
+            float(self.cmd("tdigest.quantile", "tdigest", 0.0)[1]),
         )
         self.assertAlmostEqual(
-            1.0, float(self.cmd("tdigest.quantile", "tdigest", 0.01)), 0.01
+            1.0, float(self.cmd("tdigest.quantile", "tdigest", 0.01)[1]), 0.01
         )
         self.assertAlmostEqual(
-            99.0, float(self.cmd("tdigest.quantile", "tdigest", 0.99)), 0.01
+            99.0, float(self.cmd("tdigest.quantile", "tdigest", 0.99)[1]), 0.01
         )
+        self.assertAlmostEqual(
+            99.0, float(self.cmd("tdigest.quantile", "tdigest", 0.01, 0.99)[3]), 0.01
+        )
+        expected = [0.01,1.0,0.50,50.0,0.95,95.0,0.99,99.0]
+        res = self.cmd("tdigest.quantile", "tdigest", 0.01, 0.5, 0.95, 0.99)
+        for pos, v in enumerate(res):
+            self.assertAlmostEqual(
+                expected[pos], float(v), 0.01
+            )
+        # the reply provides the output percentiles in ordered manner
+        res = self.cmd("tdigest.quantile", "tdigest", 0.95, 0.99, 0.01, 0.5)
+        for pos, v in enumerate(res):
+            self.assertAlmostEqual(
+                expected[pos], float(v), 0.01
+            )
 
     def test_negative_tdigest_quantile(self):
         self.cmd("SET", "tdigest", "B")
@@ -307,14 +322,14 @@ class testTDigest:
         self.assertOk(self.cmd("tdigest.create", "tdigest", 100))
         # arity lower
         self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.quantile")
-        # arity upper
+        # parsing
         self.assertRaises(
             redis.exceptions.ResponseError,
             self.cmd,
             "tdigest.quantile",
             "tdigest",
             1,
-            1,
+            "a",
         )
         # parsing
         self.assertRaises(
@@ -355,6 +370,59 @@ class testTDigest:
         # parsing
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.cdf", "tdigest", "a"
+        )
+
+    def test_tdigest_trimmed_mean(self):
+        self.assertOk(self.cmd("tdigest.create", "tdigest", 500))
+        # insert datapoints into sketch
+        for x in range(0, 20):
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1.0))
+
+        self.assertAlmostEqual(
+            9.5, float(self.cmd("tdigest.trimmed_mean", "tdigest", 0.1,0.9)), 0.01
+        )
+        self.assertAlmostEqual(
+            9.5, float(self.cmd("tdigest.trimmed_mean", "tdigest", 0.0,1.0)), 0.01
+        )
+        self.assertAlmostEqual(
+            9.5, float(self.cmd("tdigest.trimmed_mean", "tdigest", 0.2,0.8)), 0.01
+        )
+
+    def test_negative_tdigest_trimmed_mean(self):
+        self.cmd("SET", "tdigest", "B")
+        # WRONGTYPE
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.trimmed_mean", "tdigest", 0.9
+        )
+        # key does not exist
+        self.assertRaises(
+            ResponseError, self.cmd, "tdigest.trimmed_mean", "dont-exist", 0.9
+        )
+        self.cmd("DEL", "tdigest", "B")
+        self.assertOk(self.cmd("tdigest.create", "tdigest", 100))
+        # arity lower
+        self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.trimmed_mean")
+        # arity upper
+        self.assertRaises(
+            redis.exceptions.ResponseError,
+            self.cmd,
+            "tdigest.trimmed_mean",
+            "tdigest",
+            1,
+            1,
+            1,
+        )
+        # parsing
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.trimmed_mean", "tdigest", "a", "a"
+        )
+        # low_cut_percentile and high_cut_percentile should be in [0,1]
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.trimmed_mean", "tdigest", "10.0", "20.0"
+        )
+        # low_cut_percentile should be lower than high_cut_percentile
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.trimmed_mean", "tdigest", "0.9", "0.1"
         )
 
     def test_negative_tdigest_info(self):
