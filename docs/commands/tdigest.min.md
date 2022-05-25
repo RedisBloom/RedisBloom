@@ -1,4 +1,4 @@
-Get minimum value from the sketch. Will return __DBL_MAX__ if the sketch is empty.
+Get minimum value from the sketch. Will return __DBL_MIN__ if the sketch is empty.
 
 #### Parameters:
 
@@ -7,7 +7,7 @@ Get minimum value from the sketch. Will return __DBL_MAX__ if the sketch is empt
 @return
 
 @simple-string-reply of minimum value from the sketch.
-Will return __DBL_MAX__ if the sketch is empty.
+Will return __DBL_MIN__ if the sketch is empty.
 
 @examples
 
