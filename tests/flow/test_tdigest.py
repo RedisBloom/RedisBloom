@@ -234,7 +234,7 @@ class testTDigest:
         self.assertOk(self.cmd("tdigest.create", "tdigest", 100))
         # test for no datapoints first
         self.assertEqual(sys.float_info.max, float(self.cmd("tdigest.min", "tdigest")))
-        self.assertEqual(sys.float_info.min, float(self.cmd("tdigest.max", "tdigest")))
+        self.assertEqual(-sys.float_info.max, float(self.cmd("tdigest.max", "tdigest")))
         # insert datapoints into sketch
         for x in range(1, 101):
             self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1.0))
@@ -280,18 +280,33 @@ class testTDigest:
         # assert min min/max have same result as quantile 0 and 1
         self.assertEqual(
             float(self.cmd("tdigest.max", "tdigest")),
-            float(self.cmd("tdigest.quantile", "tdigest", 1.0)),
+            float(self.cmd("tdigest.quantile", "tdigest", 1.0)[1]),
         )
         self.assertEqual(
             float(self.cmd("tdigest.min", "tdigest")),
-            float(self.cmd("tdigest.quantile", "tdigest", 0.0)),
+            float(self.cmd("tdigest.quantile", "tdigest", 0.0)[1]),
         )
         self.assertAlmostEqual(
-            1.0, float(self.cmd("tdigest.quantile", "tdigest", 0.01)), 0.01
+            1.0, float(self.cmd("tdigest.quantile", "tdigest", 0.01)[1]), 0.01
         )
         self.assertAlmostEqual(
-            99.0, float(self.cmd("tdigest.quantile", "tdigest", 0.99)), 0.01
+            99.0, float(self.cmd("tdigest.quantile", "tdigest", 0.99)[1]), 0.01
         )
+        self.assertAlmostEqual(
+            99.0, float(self.cmd("tdigest.quantile", "tdigest", 0.01, 0.99)[3]), 0.01
+        )
+        expected = [0.01,1.0,0.50,50.0,0.95,95.0,0.99,99.0]
+        res = self.cmd("tdigest.quantile", "tdigest", 0.01, 0.5, 0.95, 0.99)
+        for pos, v in enumerate(res):
+            self.assertAlmostEqual(
+                expected[pos], float(v), 0.01
+            )
+        # the reply provides the output percentiles in ordered manner
+        res = self.cmd("tdigest.quantile", "tdigest", 0.95, 0.99, 0.01, 0.5)
+        for pos, v in enumerate(res):
+            self.assertAlmostEqual(
+                expected[pos], float(v), 0.01
+            )
 
     def test_negative_tdigest_quantile(self):
         self.cmd("SET", "tdigest", "B")
@@ -307,14 +322,14 @@ class testTDigest:
         self.assertOk(self.cmd("tdigest.create", "tdigest", 100))
         # arity lower
         self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.quantile")
-        # arity upper
+        # parsing
         self.assertRaises(
             redis.exceptions.ResponseError,
             self.cmd,
             "tdigest.quantile",
             "tdigest",
             1,
-            1,
+            "a",
         )
         # parsing
         self.assertRaises(

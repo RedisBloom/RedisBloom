@@ -155,6 +155,7 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
                         runner->fp = fp;
                         *countPtr = local_incr;
                         maxCount = max(maxCount, *countPtr);
+                        break;
                     }
                 }
             }
