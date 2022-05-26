@@ -257,8 +257,7 @@
       },
       {
         "name": "item",
-        "type": "string",
-        "multiple": true
+        "type": "string"
       }
     ],
     "since": "1.0.0",
