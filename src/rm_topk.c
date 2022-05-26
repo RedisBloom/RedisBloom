@@ -128,9 +128,11 @@ static int TopK_Incrby_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         size_t itemlen;
         const char *item = RedisModule_StringPtrLen(argv[2 + i * 2], &itemlen);
         long long increment;
-        if (RedisModule_StringToLongLong(argv[2 + i * 2 + 1], &increment) || increment < 0) {
-            RedisModule_ReplyWithError(ctx,
-                                       "TopK: increment must be an integer greater or equal to 0");
+        if (RedisModule_StringToLongLong(argv[2 + i * 2 + 1], &increment) || increment < 0 ||
+            increment > 100000) {
+            RedisModule_ReplyWithError(
+                ctx, "TopK: increment must be an integer greater or equal to 0    \
+                        and smaller or equal to 100,000");
             goto final;
         }
         char *expelledItem = TopK_Add(topk, item, itemlen, (uint32_t)increment);
