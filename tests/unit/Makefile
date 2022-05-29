@@ -7,8 +7,9 @@ test: test-basic test-cuckoo
 perf: test-perf
 	time ./test-perf
 
-CPPFLAGS:=$(CPPFLAGS)
-CFLAGS:=$(CFLAGS)
+CFLAGS += -I../../src -I../../contrib -I../..
+CPPFLAGS += -I../../src -I../../contrib -I../..
+LDFLAGS += ../../redisbloom.so
 
 test-basic: test-basic.o $(DEPS_TEST)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS)

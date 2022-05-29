@@ -58,7 +58,6 @@ commands:
             git submodule update --init deps/readies
             ./deps/readies/bin/getpy2
 
-
   ci_steps:
     parameters:
       platform:
@@ -145,9 +144,11 @@ jobs:
       - image: redisbench/infer-linux64:1.0.0
     steps:
       - checkout-all
+      - 
       - run:
           name: run fbinfer
           command: |
+            make setup
             CC=clang INFER=infer make static-analysis
 
   valgrind:

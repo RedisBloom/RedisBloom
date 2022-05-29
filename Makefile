@@ -26,8 +26,8 @@ else
 	SHOBJ_LDFLAGS ?= -dylib -exported_symbol _RedisModule_OnLoad -macosx_version_min 10.6
 endif
 
-ROOT=$(shell pwd)
-# Flags for preprocessor
+ROOT:=$(realpath $(PWD))
+
 LDFLAGS = -lm -lc
 
 CPPFLAGS += -I$(ROOT) -I$(ROOT)/contrib
@@ -51,19 +51,21 @@ CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -fprofile-arcs
 endif
 
-all: $(MODULE_SO)
+all: build
 
 $(MODULE_SO): $(MODULE_OBJ) $(DEPS)
 	$(LD) $^ -o $@ $(SHOBJ_LDFLAGS) $(LDFLAGS)
 
-build: all
-	$(MAKE) -C tests build-test
+build: $(MODULE_SO)
+	$(MAKE) -C tests/unit build-test
 
 test: $(MODULE_SO)
-	$(MAKE) -C tests test
-
-build-test: $(MODULE_SO)
-	$(MAKE) -C tests build-test
+	$(MAKE) -C tests/unit test
+	MODULE=$(realpath $(MODULE_SO)) \
+	CLUSTER=$(CLUSTER) \
+	GEN=$(GEN) AOF=$(AOF) SLAVES=$(SLAVES) \
+	VALGRIND=$(VALGRIND) \
+	$(ROOT)/tests/flow/tests.sh
 
 perf:
 	$(MAKE) -C tests perf
