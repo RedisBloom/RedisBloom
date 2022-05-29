@@ -3,6 +3,7 @@ ROOT=../..
 MK.pyver:=3
 include $(ROOT)/deps/readies/mk/main
 
+REDIS_VERSION=6.2.7
 REPO=rebloom
 
 REDIS_VERSION=6.2.6

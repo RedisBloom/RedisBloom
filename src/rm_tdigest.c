@@ -219,7 +219,7 @@ int TDigestSketch_Min(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 /**
  * Command: TDIGEST.MAX {key}
  *
- * Get maximum value from the histogram.  Will return __DBL_MIN__ if the histogram is empty.
+ * Get maximum value from the histogram.  Will return -__DBL_MAX__ if the histogram is empty.
  *
  * @param ctx Context in which Redis modules operate
  * @param argv Redis command arguments, as an array of strings
@@ -243,11 +243,22 @@ int TDigestSketch_Max(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     return REDISMODULE_OK;
 }
 
+static int double_cmpfunc(const void *a, const void *b) {
+    if (*(double *)a > *(double *)b)
+        return 1;
+    else if (*(double *)a < *(double *)b)
+        return -1;
+    else
+        return 0;
+}
+
 /**
- * Command: TDIGEST.QUANTILE {key} {quantile}
+ * Command: TDIGEST.QUANTILE {key} {quantile} [{quantile2}...]
  *
  * Returns an estimate of the cutoff such that a specified fraction of the data
- * added to this TDigest would be less than or equal to the cutoff.
+ * added to this TDigest would be less than or equal to the cutoff quantiles.
+ * The command returns an array of results: each element of the returned array
+ * populated with quantile_1, cutoff_1, quantile_2, cutoff_2, ..., quantile_N, cutoff_N.
  *
  * @param ctx Context in which Redis modules operate
  * @param argv Redis command arguments, as an array of strings
@@ -255,7 +266,7 @@ int TDigestSketch_Max(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
  * @return REDISMODULE_OK on success, or REDISMODULE_ERR  if the command failed
  */
 int TDigestSketch_Quantile(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    if (argc != 3) {
+    if (argc < 3) {
         return RedisModule_WrongArity(ctx);
     }
     RedisModuleString *keyName = argv[1];
@@ -266,14 +277,27 @@ int TDigestSketch_Quantile(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
     td_histogram_t *tdigest = RedisModule_ModuleTypeGetValue(key);
 
-    double quantile = 0.0;
-    if (RedisModule_StringToDouble(argv[2], &quantile) != REDISMODULE_OK) {
-        RedisModule_CloseKey(key);
-        return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing quantile");
+    const size_t n_quantiles = argc - 2;
+    double *quantiles = (double *)__td_calloc(n_quantiles, sizeof(double));
+
+    for (int i = 0; i < n_quantiles; ++i) {
+        if (RedisModule_StringToDouble(argv[2 + i], &quantiles[i]) != REDISMODULE_OK) {
+            RedisModule_CloseKey(key);
+            __td_free(quantiles);
+            return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing quantile");
+        }
     }
-    const double value = td_quantile(tdigest, quantile);
+    qsort(quantiles, n_quantiles, sizeof(double), double_cmpfunc);
+    double *values = (double *)__td_calloc(n_quantiles, sizeof(double));
+    td_quantiles(tdigest, quantiles, values, n_quantiles);
     RedisModule_CloseKey(key);
-    RedisModule_ReplyWithDouble(ctx, value);
+    RedisModule_ReplyWithArray(ctx, 2 * n_quantiles);
+    for (int i = 0; i < n_quantiles; ++i) {
+        RedisModule_ReplyWithDouble(ctx, quantiles[i]);
+        RedisModule_ReplyWithDouble(ctx, values[i]);
+    }
+    __td_free(values);
+    __td_free(quantiles);
     return REDISMODULE_OK;
 }
 
@@ -306,6 +330,55 @@ int TDigestSketch_Cdf(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     }
 
     const double value = td_cdf(tdigest, cdf);
+    RedisModule_CloseKey(key);
+    RedisModule_ReplyWithDouble(ctx, value);
+    return REDISMODULE_OK;
+}
+
+/**
+ * Command: TDIGEST.TRIMMED_MEAN {key} {low_cut_percentile} {high_cut_percentile}
+ *
+ * Returns the trimmed mean ignoring values outside given cutoff upper and lower limits.
+ *
+ * @param ctx Context in which Redis modules operate
+ * @param argv Redis command arguments, as an array of strings
+ * @param argc Redis command number of arguments
+ * @return REDISMODULE_OK on success, or REDISMODULE_ERR  if the command failed
+ */
+int TDigestSketch_TrimmedMean(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    if (argc != 4) {
+        return RedisModule_WrongArity(ctx);
+    }
+    RedisModuleString *keyName = argv[1];
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ);
+
+    if (_TDigest_KeyCheck(ctx, key) != REDISMODULE_OK)
+        return REDISMODULE_ERR;
+
+    td_histogram_t *tdigest = RedisModule_ModuleTypeGetValue(key);
+
+    double low_cut_percentile = 0.0;
+    double high_cut_percentile = 0.0;
+    if (RedisModule_StringToDouble(argv[2], &low_cut_percentile) != REDISMODULE_OK) {
+        RedisModule_CloseKey(key);
+        return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing low_cut_percentile");
+    }
+    if (RedisModule_StringToDouble(argv[3], &high_cut_percentile) != REDISMODULE_OK) {
+        RedisModule_CloseKey(key);
+        return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing high_cut_percentile");
+    }
+    if (low_cut_percentile < 0.0 || low_cut_percentile > 1.0 || high_cut_percentile < 0.0 ||
+        high_cut_percentile > 1.0) {
+        RedisModule_CloseKey(key);
+        return RedisModule_ReplyWithError(
+            ctx, "ERR T-Digest: low_cut_percentile and high_cut_percentile should be in [0,1]");
+    }
+    if (low_cut_percentile > high_cut_percentile) {
+        RedisModule_CloseKey(key);
+        return RedisModule_ReplyWithError(
+            ctx, "ERR T-Digest: low_cut_percentile should be lower than high_cut_percentile");
+    }
+    const double value = td_trimmed_mean(tdigest, low_cut_percentile, high_cut_percentile);
     RedisModule_CloseKey(key);
     RedisModule_ReplyWithDouble(ctx, value);
     return REDISMODULE_OK;
@@ -376,12 +449,12 @@ void TDigestRdbSave(RedisModuleIO *rdb, void *value) {
     RedisModule_SaveDouble(rdb, tdigest->unmerged_weight);
 
     for (size_t i = 0; i < tdigest->merged_nodes; i++) {
-        const node_t n = tdigest->nodes[i];
-        RedisModule_SaveDouble(rdb, n.mean);
+        const double mean = tdigest->nodes_mean[i];
+        RedisModule_SaveDouble(rdb, mean);
     }
     for (size_t i = 0; i < tdigest->merged_nodes; i++) {
-        const node_t n = tdigest->nodes[i];
-        RedisModule_SaveDouble(rdb, n.count);
+        const double count = tdigest->nodes_weight[i];
+        RedisModule_SaveDouble(rdb, count);
     }
 }
 
@@ -408,10 +481,10 @@ void *TDigestRdbLoad(RedisModuleIO *rdb, int encver) {
     tdigest->unmerged_weight = RedisModule_LoadDouble(rdb);
 
     for (size_t i = 0; i < tdigest->merged_nodes; i++) {
-        tdigest->nodes[i].mean = RedisModule_LoadDouble(rdb);
+        tdigest->nodes_mean[i] = RedisModule_LoadDouble(rdb);
     }
     for (size_t i = 0; i < tdigest->merged_nodes; i++) {
-        tdigest->nodes[i].count = RedisModule_LoadDouble(rdb);
+        tdigest->nodes_weight[i] = RedisModule_LoadDouble(rdb);
     }
     return tdigest;
 }
@@ -449,6 +522,7 @@ int TDigestModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     RMUtil_RegisterReadCmd(ctx, "tdigest.max", TDigestSketch_Max);
     RMUtil_RegisterReadCmd(ctx, "tdigest.quantile", TDigestSketch_Quantile);
     RMUtil_RegisterReadCmd(ctx, "tdigest.cdf", TDigestSketch_Cdf);
+    RMUtil_RegisterReadCmd(ctx, "tdigest.trimmed_mean", TDigestSketch_TrimmedMean);
     RMUtil_RegisterReadCmd(ctx, "tdigest.info", TDigestSketch_Info);
     return REDISMODULE_OK;
 }

@@ -1,3 +1,10 @@
+---
+title: "Quick start"
+linkTitle: "Quick start"
+weight: 3
+description: >
+    "Quick start guide"
+---
 
 # Quick Start Guide for RedisBloom
 
