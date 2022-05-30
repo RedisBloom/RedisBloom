@@ -11,7 +11,7 @@ endif
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 username := $(shell sh -c 'id -u')
 usergroup := $(shell sh -c 'id -g')
-CPPFLAGS =  -Wall -Wno-unused-function $(DEBUGFLAGS) -fPIC -std=gnu99 -D_GNU_SOURCE
+CPPFLAGS =  -Wall -Wno-unused-function $(DEBUGFLAGS) -fPIC -std=gnu99 -D_GNU_SOURCE -fcommon
 # CC:=$(shell sh -c 'type $(CC) >/dev/null 2>/dev/null && echo $(CC) || echo gcc')
 
 # Compile flags for linux / osx
@@ -20,10 +20,15 @@ ifeq ($(uname_S),Linux)
 	SHOBJ_CFLAGS ?=  -fno-common -g -ggdb
 	SHOBJ_LDFLAGS ?= -shared -Wl,-Bsymbolic,-Bsymbolic-functions
 else
+	# version 10.15 changed SDK dir
+	# https://stackoverflow.com/questions/58278260/cant-compile-a-c-program-on-a-mac-after-upgrading-to-catalina-10-15
+	MACOS_VERSION = $(shell sh -c 'sw_vers -productVersion 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' ' )
+	ifeq ($(shell expr $(MACOS_VERSION) \>= 10.15), 1)
+		SHOBJ_LDFLAGS ?= -syslibroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+	endif
 	CC=clang
-	CFLAGS += -mmacosx-version-min=10.6
 	SHOBJ_CFLAGS ?= -dynamic -fno-common -g -ggdb
-	SHOBJ_LDFLAGS ?= -dylib -exported_symbol _RedisModule_OnLoad -macosx_version_min 10.6
+	SHOBJ_LDFLAGS += -dylib -exported_symbol _RedisModule_OnLoad
 endif
 
 ROOT:=$(realpath $(PWD))
@@ -42,9 +47,9 @@ DEPS = $(ROOT)/contrib/MurmurHash2.o \
 	   $(SRCDIR)/rm_topk.o \
 	   $(SRCDIR)/topk.o \
 	   $(SRCDIR)/rm_cms.o \
-	   $(SRCDIR)/cms.o 
+	   $(SRCDIR)/cms.o
 
-export 
+export
 
 ifeq ($(COV),1)
 CFLAGS += -fprofile-arcs -ftest-coverage
@@ -83,18 +88,17 @@ static-analysis-docker:
 static-analysis:
 	$(MAKE) clean
 	$(INFER) run --fail-on-issue --biabduction --skip-analysis-in-path ".*rmutil.*" -- $(MAKE)
-	
+
 format:
 	clang-format -style=file -i $(SRCDIR)/*
 
-package: $(MODULE_SO)
+pack: $(MODULE_SO)
 	mkdir -p $(ROOT)/build
-	ramp-packer -vvv -m ramp.yml -o "$(ROOT)/build/rebloom.{os}-{architecture}.latest.zip" "$(MODULE_SO)"
+	$(ROOT)/pack.sh
 
 clean:
 	$(RM) $(MODULE_OBJ) $(MODULE_SO) $(DEPS)
 	$(RM) -f print_version
-	$(RM) -rf build
 	$(RM) -rf infer-out
 	$(RM) -rf tmp
 	find . -name '*.gcov' -delete
@@ -127,3 +131,21 @@ cov coverage:
 	lcov -r $(COV_DIR)/gcov.info "*test*" "*contrib*" "*redismodule.h" "*util.c*" -o $(COV_DIR)/gcov.info > /dev/null 2>&1
 	lcov -l $(COV_DIR)/gcov.info
 	genhtml --legend -o $(COV_DIR)/report $(COV_DIR)/gcov.info > /dev/null 2>&1
+
+ifneq ($(REMOTE),)
+BENCHMARK_ARGS = run-remote
+else
+BENCHMARK_ARGS = run-local
+endif
+
+BENCHMARK_ARGS += --module_path $(realpath $(MODULE_SO)) --required-module bf
+
+ifneq ($(BENCHMARK),)
+BENCHMARK_ARGS += --test $(BENCHMARK)
+endif
+
+bench benchmark: $(MODULE_SO)
+	cd ./tests/benchmarks ;\
+	redisbench-admin $(BENCHMARK_ARGS)
+
+.PHONY: bench benchmark

@@ -184,12 +184,13 @@ TOPK.COUNT test foo 42 nonexist
 Return full list of items in Top K list.
 
 ```
-TOPK.LIST {key}
+TOPK.LIST {key} [WITHCOUNT]
 ```
 
 ### Parameters
 
 * **key**: Name of sketch where item is counted.
+* **WITHCOUNT**: Count of each element is returned.  
 
 ### Complexity
 

@@ -13,7 +13,7 @@ CMS.INITBYDIM {key} {width} {depth}
 ### Parameters:
 
 * **key**: The name of the sketch.
-* **width**: Number of counter in each array. Reduces the error size.
+* **width**: Number of counters in each array. Reduces the error size.
 * **depth**: Number of counter-arrays. Reduces the probability for an
     error of a certain size (percentage of total count).
     
@@ -33,7 +33,7 @@ CMS.INITBYDIM test 2000 5
 
 ### CMS.INITBYPROB
 
-Initializes a Count-Min Sketch to accommodate requested capacity.
+Initializes a Count-Min Sketch to accommodate requested tolerances.
 
 ```
 CMS.INITBYPROB {key} {error} {probability}
@@ -77,8 +77,8 @@ CMS.INCRBY {key} {item} {increment} [{item} {increment} ...]
 ### Parameters:
 
 * **key**: The name of the sketch.
-* **item**: The item which counter to be increased.
-* **increment**: Counter to be increased by this integer.
+* **item**: The item which counter is to be increased.
+* **increment**: Amount by which the item counter is to be increased.
 
 ### Complexity
 
@@ -98,7 +98,7 @@ CMS.INCRBY test foo 10 bar 42
 
 ### CMS.QUERY
 
-Returns count for item. Multiple items can be queried with one call. 
+Returns the count for one or more items in a sketch.
 
 ```
 CMS.QUERY {key} {item ...}
@@ -107,8 +107,7 @@ CMS.QUERY {key} {item ...}
 ### Parameters:
 
 * **key**: The name of the sketch.
-* **item**: The item which counter to be increased.
-* **increment**: Counter to be increased by this integer.
+* **item**: One or more items for which to return the count.
 
 ### Complexity
 

@@ -14,7 +14,7 @@ commands:
               circleci step halt
             fi
 
-  early_returns:
+  early-returns:
     steps:
       - run:
           name: Early return if this is a docs build
@@ -56,7 +56,7 @@ commands:
           name: Setup automation
           command: |
             git submodule update --init deps/readies
-            ./deps/readies/bin/getpy2
+            ./deps/readies/bin/getpy3
 
   ci_steps:
     parameters:
@@ -88,6 +88,49 @@ commands:
             mkdir -p ~/workspace/tests
             make test TEST_REPORT_DIR=$HOME/workspace/tests <<parameters.test_params>> SHOW=1
 
+  platform-build-steps:
+    parameters:
+      platform:
+        type: string
+    steps:
+      - setup-executor
+      - checkout-all
+      - run:
+          name: Install dependencies
+          command: |
+            ./deps/readies/bin/getpy2
+            ./deps/readies/bin/getpy3
+      - run:
+          name: Build for platform (docker build)
+          command: |
+            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> ARTIFACTS=1 OFFICIAL=1 VERSION=$CIRCLE_TAG BRANCH=$CIRCLE_BRANCH SHOW=1 TEST=1
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - artifacts/snapshots/*.zip
+            - artifacts/*.zip
+
+  arm-platform-build-steps:
+    parameters:
+      platform:
+        type: string
+    steps:
+      - checkout-all
+      - run:
+          name: Install dependencies
+          command: |
+            ./deps/readies/bin/getpy2
+            ./deps/readies/bin/getpy3
+      - run:
+          name: Build for platform (docker build)
+          command: |
+            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> ARTIFACTS=1 OFFICIAL=1 VERSION=$CIRCLE_TAG BRANCH=$CIRCLE_BRANCH SHOW=1 TEST=1
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - artifacts/snapshots/*.zip
+            - artifacts/*.zip
+
   benchmark-steps:
     parameters:
       github_actor:
@@ -114,7 +157,6 @@ commands:
             export AWS_SECRET_ACCESS_KEY=$PERFORMANCE_EC2_SECRET_KEY
             export AWS_DEFAULT_REGION=$PERFORMANCE_EC2_REGION
             export EC2_PRIVATE_PEM=$PERFORMANCE_EC2_PRIVATE_PEM
-
             redisbench-admin run-remote \
               --required-module bf \
               --module_path << parameters.module_path >> \
@@ -144,7 +186,6 @@ jobs:
       - image: redisbench/infer-linux64:1.0.0
     steps:
       - checkout-all
-      - 
       - run:
           name: run fbinfer
           command: |
@@ -153,7 +194,7 @@ jobs:
 
   valgrind:
     docker:
-      - image: redisfab/rmbuilder:6.0.9-x64-buster
+      - image: redisfab/rmbuilder:6.2.7-x64-buster
     steps:
       - ci_steps:
           platform: debian
@@ -180,20 +221,76 @@ jobs:
             apt-get install -y lcov curl
             make coverage
             bash <(curl -s https://codecov.io/bash)
-      - early_return_for_forked_pull_requests
+      - early-returns
       - run:
           name: Persist Artifacts
           command: |
             mkdir -p /workspace/build
             cp $MODULE_ARTIFACT /workspace/
             cp ramp.yml /workspace
-      - early_return_for_forked_pull_requests
       - persist_to_workspace:
           root: /workspace
           paths:
             - '*.so'
             - ramp.yml
             - build
+
+  build-macos:
+    macos:
+      xcode: 11.6.0
+    steps:
+      - checkout-all
+      - run:
+          name: Fix macOS setup
+          command: |
+            # brew update || true
+            # workaround for ramp pack failure
+            sudo mkdir -p /var/opt/redislabs
+            sudo chmod 777 /var/opt/redislabs
+      - run:
+          name: Install dependencies
+          command: |
+            ./deps/readies/bin/getpy2
+            ./system-setup.py
+      - run:
+          name: Build for mac
+          command: |
+            bash -l -c "make all"
+      - run:
+          name: Create RAMP
+          command: |
+            bash -l -c "make pack"
+      - run:
+          name: Run tests
+          command: |
+            bash -l -c "TEST= make test"
+      - persist_to_workspace:
+          root: bin
+          paths:
+            - artifacts/snaphots/*.zip
+            - artifacts/*.zip
+
+  platform_build:
+    parameters:
+      platform:
+        type: string
+    docker:
+      - image: debian:bullseye
+    steps:
+      - platform-build-steps:
+          platform: <<parameters.platform>>
+
+  platform_build_arm:
+    parameters:
+      platform:
+        type: string
+    machine:
+      image: ubuntu-2004:202101-01
+    resource_class: arm.medium
+    steps:
+      - arm-platform-build-steps:
+          platform: <<parameters.platform>>
+
 
   package_branch:
     docker:
@@ -203,10 +300,9 @@ jobs:
           at: /workspace
       - run:
           name: Package
-          environment:
-            - LC_ALL=C.UTF-8
-            - LANG=C.UTF-8
           command: |
+            export LC_ALL=C.UTF-8
+            export LANG=C.UTF-8
             python -m RAMP.ramp pack -m /workspace/ramp.yml -o /workspace/build/$PACKAGE_NAME.{os}-{architecture}.$CIRCLE_BRANCH.zip /workspace/$MODULE_ARTIFACT
       - persist_to_workspace:
           root: /workspace
@@ -214,6 +310,7 @@ jobs:
             - build
       - store_artifacts:
           path: /workspace/build
+
   package_release:
     docker:
       - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
@@ -238,34 +335,40 @@ jobs:
             - build
       - store_artifacts:
           path: /workspace/build
-  deploy_branch:
+
+  deploy_snapshots:
     docker:
-      - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
+      - image: redisfab/rmbuilder:6.2.7-x64-bullseye
     steps:
       - attach_workspace:
-          at: /workspace
+          at: workspace
       - run:
           name: Deploy to S3
-          command: >-
-            aws s3 cp /workspace/build/ s3://redismodules/$PACKAGE_NAME/ --acl
-            public-read --recursive --exclude "*" --include "*.zip"
+          command: |
+            cd workspace/artifacts/snapshots
+            for f in `ls *.zip *.tgz`; do
+              aws s3 cp $f s3://redismodules/redisbloom/snapshots/$path --acl public-read
+            done
+
   deploy_release:
     docker:
-      - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
+      - image: redisfab/rmbuilder:6.2.7-x64-bullseye
     steps:
       - attach_workspace:
-          at: /workspace
+          at: workspace
       - run:
           name: Deploy to S3
-          command: >-
-            aws s3 cp /workspace/build/ s3://redismodules/$PACKAGE_NAME/ --acl
-            public-read --recursive --exclude "*" --include "*.zip"
+          command: |
+            cd workspace/artifacts/
+            for f in `ls *.zip *.tgz`; do
+              aws s3 cp $f s3://redismodules/redisbloom/$path --acl public-read
+            done
 
   release_automation:
     docker:
       - image: redisfab/rmbuilder:6.0.9-x64-buster
     steps:
-      - checkout
+      - checkout-all
       - setup-automation
       - run:
           name: Run QA Automation
@@ -285,13 +388,14 @@ jobs:
     docker:
       - image: redisfab/rmbuilder:6.2.3-x64-bionic
     steps:
-      - checkout
+      - checkout-all
       - setup-automation
       - run:
           name: build artifact
           command: make build
       - benchmark-steps
 
+#----------------------------------------------------------------------------------------------------------------------------------
 
 on-any-branch: &on-any-branch
   filters:
@@ -311,19 +415,33 @@ on-master: &on-master
   filters:
     branches:
       only: master
+    tags:
+      ignore: /.*/
+
+on-integ-branch: &on-integ-branch
+  filters:
+    branches:
+      only:
+        - master
+        - /^\d+\.\d+.*$/
+        - /^feature-.*$/
+    tags:
+      ignore: /.*/
+
+not-on-integ-branch: &not-on-integ-branch
+  filters:
+    branches:
+      ignore:
+        - master
+        - /^\d+\.\d+.*$/
+        - /^feature-.*$/
+    tags:
+      ignore: /.*/
 
 on-version-tags: &on-version-tags
   filters:
     branches:
       ignore: /.*/
-    tags:
-      only: /^v[0-9].*/
-
-on-master-and-version-tags: &on-master-and-version-tags
-  filters:
-    branches:
-      only:
-        - master
     tags:
       only: /^v[0-9].*/
 
@@ -338,16 +456,33 @@ on-integ-and-version-tags: &on-integ-and-version-tags
     tags:
       only: /^v[0-9].*/
 
+on-integ-and-version-tags: &on-integ-and-version-tags
+  filters:
+    branches:
+      only:
+        - master
+        - /^\d+\.\d+.*$/
+        - /^feature-.*$/
+        - /^perf-.*$/
+    tags:
+      only: /^v[0-9].*/
+
+#----------------------------------------------------------------------------------------------------------------------------------
+
 workflows:
   version: 2
   build_and_package:
     jobs:
-      - lint
-      - static-analysis-infer
+      - lint:
+          <<: *on-any-branch
+      - static-analysis-infer:
+          <<: *on-any-branch
       - build:
           <<: *on-any-branch
           requires:
             - lint
+      - build-macos:
+          <<: *on-integ-and-version-tags
       - valgrind:
           <<: *on-any-branch
           requires:
@@ -358,7 +493,7 @@ workflows:
 #            - lint
 #          context: common
       - package_branch:
-          <<: *on-master
+          <<: *on-integ-branch
           requires:
             - build
       - package_release:
@@ -371,12 +506,33 @@ workflows:
             - package_branch
       - release_automation:
           requires:
-            - deploy_branch
+            - platform_build
+            - platform_build_arm
+            - build-macos
       - deploy_release:
           context: common
           <<: *on-version-tags
           requires:
-            - package_release
+            - platform_build
+            - platform_build_arm
+            - build-macos
+      - platform_build:
+          context: common
+          <<: *on-integ-and-version-tags
+          matrix:
+            parameters:
+              platform: [xenial, bionic, focal, buster, centos7, rocky8]
+      - platform_build_arm:
+          context: common
+          <<: *on-integ-and-version-tags
+          matrix:
+            parameters:
+              platform: [bionic]
+      - release_automation:
+          context: common
+          <<: *on-version-tags
+          requires:
+            - deploy_release
 
 #  nightly:
 #    triggers:

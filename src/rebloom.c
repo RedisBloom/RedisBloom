@@ -398,7 +398,7 @@ static int BFDebug_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     return REDISMODULE_OK;
 }
 
-#define MAX_SCANDUMP_SIZE 535822336 // 511MB
+#define MAX_SCANDUMP_SIZE (1024 * 1024 * 16)
 
 /**
  * BF.SCANDUMP <KEY> <ITER>
@@ -467,6 +467,7 @@ static int BFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             return RedisModule_ReplyWithError(ctx, errmsg);
         } else {
             RedisModule_ModuleTypeSetValue(key, BFType, sb);
+            RedisModule_ReplicateVerbatim(ctx);
             return RedisModule_ReplyWithSimpleString(ctx, "OK");
         }
     } else if (status != SB_OK) {
@@ -762,7 +763,7 @@ static int CFCompact_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     if (status != SB_OK) {
         return RedisModule_ReplyWithError(ctx, "Cuckoo filter was not found");
     }
-    CuckooFilter_Compact(cf);
+    CuckooFilter_Compact(cf, true);
     RedisModule_ReplicateVerbatim(ctx);
     return RedisModule_ReplyWithSimpleString(ctx, "OK");
 }
@@ -802,7 +803,7 @@ static int CFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
         return REDISMODULE_OK;
     }
 
-    size_t chunkLen;
+    size_t chunkLen = 0;
     const char *chunk = CF_GetEncodedChunk(cf, &pos, &chunkLen, MAX_SCANDUMP_SIZE);
     if (chunk == NULL) {
         RedisModule_ReplyWithLongLong(ctx, 0);
@@ -845,6 +846,7 @@ static int CFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             return RedisModule_ReplyWithError(ctx, "Couldn't create filter!");
         }
         RedisModule_ModuleTypeSetValue(key, CFType, cf);
+        RedisModule_ReplicateVerbatim(ctx);
         return RedisModule_ReplyWithSimpleString(ctx, "OK");
     }
 
@@ -1058,7 +1060,7 @@ static void BFAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value
     SBChain *sb = value;
     size_t len;
     char *hdr = SBChain_GetEncodedHeader(sb, &len);
-    RedisModule_EmitAOF(aof, "BF.LOADCHUNK", "slb", key, 0, hdr, len);
+    RedisModule_EmitAOF(aof, "BF.LOADCHUNK", "slb", key, 1, hdr, len);
     SB_FreeEncodedHeader(hdr);
 
     long long iter = SB_CHUNKITER_INIT;
@@ -1230,13 +1232,17 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
                 BAIL("Invalid argument for 'ERROR_RATE'", NULL);
             } else if (d <= 0) {
                 BAIL("ERROR_RATE must be > 0", NULL);
+            } else if (d >= 1) {
+                BAIL("ERROR_RATE must be < 1", NULL);
             } else {
                 BFDefaultErrorRate = d;
             }
         } else if (!rsStrcasecmp(argv[ii], "cf_max_expansions")) {
             long long l;
-            if (RedisModule_StringToLongLong(argv[ii + 1], &l) == REDISMODULE_ERR || l <= 0) {
+            if (RedisModule_StringToLongLong(argv[ii + 1], &l) == REDISMODULE_ERR) {
                 BAIL("Invalid argument for 'CF_MAX_EXPANSIONS'", NULL);
+            } else if (l < 1) {
+                BAIL("CF_MAX_EXPANSIONS must be an integer >= 1", NULL);
             }
             CFMaxExpansions = l;
         } else {

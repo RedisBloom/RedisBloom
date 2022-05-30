@@ -1,0 +1,21 @@
+version: 0.2
+name: "cms_add_err0.001_prob0.01"
+description: "Benchmarking adding an item to the Count Min Sketch, 
+              with an desired error rate of 0.001%, and a desired
+              error probability of 0.01"
+remote:
+ - type: oss-standalone
+ - setup: redisbloom-m5
+dbconfig:
+  - init_commands:
+    - 'CMS.INITBYPROB cms 0.001 0.01'
+clientconfig:
+  - tool: redis-benchmark
+  - min-tool-version: "6.2.0"
+  - parameters:
+    - clients: 16
+    - requests: 10000000
+    - threads: 2
+    - pipeline: 1
+    - keyspacelen: 10000000
+    - command: 'CMS.INCRBY cms __rand_int__ 1'
