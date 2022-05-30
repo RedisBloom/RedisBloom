@@ -1,14 +1,9 @@
-#!/usr/bin/env python3
-import os
-from random import randint
-from RLTest import Env
-from redis import ResponseError
-import redis
-import sys
-import random
-import math
 
-is_valgrind = True if ("VGD" in os.environ or "VALGRIND" in os.environ) else False
+from common import *
+import redis
+import math
+import random
+from random import randint
 
 
 def parse_tdigest_info(array_reply):

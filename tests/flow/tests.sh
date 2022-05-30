@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# [[ $VERBOSE == 1 ]] && set -x
-
 PROGNAME="${BASH_SOURCE[0]}"
 HERE="$(cd "$(dirname "$PROGNAME")" &>/dev/null && pwd)"
 export ROOT=$(cd $HERE/../.. && pwd)
@@ -29,7 +27,7 @@ help() {
 		AOF=1            Tests with --test-aof
 		SLAVES=1         Tests with --test-slaves
 		CLUSTER=1        Test with OSS cluster, one shard
-		SIMPLE=1         Run general tests only
+		QUICK=1          Run general tests only
 		
 		VALGRIND|VG=1    Run with Valgrind
 		SAN=type         Use LLVM sanitizer (type=address|memory|leak|thread) 
@@ -208,9 +206,9 @@ OP=""
 [[ $VG == 1 ]] && VALGRIND=1
 [[ $SAN == addr ]] && SAN=address
 [[ $SAN == mem ]] && SAN=memory
-[[ -n $SAN ]] && SIMPLE=1
+[[ -n $SAN ]] && QUICK=1
 
-if [[ $SIMPLE == 1 ]]; then
+if [[ $QUICK == 1 ]]; then
 	GEN=${GEN:-1}
 	SLAVES=${SLAVES:-0}
 	AOF=${AOF:-0}

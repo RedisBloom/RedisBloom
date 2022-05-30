@@ -298,7 +298,7 @@ commands:
 jobs:
   valgrind:
     docker:
-      - image: redisfab/rmbuilder:6.2.5-x64-bullseye
+      - image: redisfab/rmbuilder:6.2.7-x64-bullseye
     steps:
       - build-steps:
           build_params: VALGRIND=1
@@ -327,7 +327,7 @@ jobs:
 
   build:
     docker:
-      - image: redisfab/rmbuilder:6.2.5-x64-bullseye
+      - image: redisfab/rmbuilder:6.2.7-x64-bullseye
     parameters:
       redis_version:
         type: string
@@ -388,7 +388,7 @@ jobs:
 
   coverage:
     docker:
-      - image: redisfab/rmbuilder:6.2.5-x64-bullseye
+      - image: redisfab/rmbuilder:6.2.7-x64-bullseye
     steps:
       - early-returns
       - checkout-all
@@ -408,7 +408,7 @@ jobs:
         type: string
         default: "0"
     docker:
-      - image: redisfab/rmbuilder:6.2.5-x64-bullseye
+      - image: redisfab/rmbuilder:6.2.7-x64-bullseye
     steps:
       - early-returns
       - early-return-for-forked-pull-requests
@@ -429,7 +429,7 @@ jobs:
 
   release-qa-tests:
     docker:
-      - image: redisfab/rmbuilder:6.2.5-x64-bullseye
+      - image: redisfab/rmbuilder:6.2.7-x64-bullseye
     steps:
       - early-returns
       - early-return-for-forked-pull-requests
@@ -441,14 +441,14 @@ jobs:
 
   benchmark-bloom-oss-standalone:
     docker:
-      - image: redisfab/rmbuilder:6.2.5-x64-bionic
+      - image: redisfab/rmbuilder:6.2.7-x64-bionic
     steps:
       - build-steps
       - benchmark-steps
 
   benchmark-bloom-oss-standalone-profiler:
     docker:
-      - image: redisfab/rmbuilder:6.2.5-x64-bionic
+      - image: redisfab/rmbuilder:6.2.7-x64-bionic
     steps:
       - checkout-all
       - setup-automation
@@ -555,10 +555,12 @@ workflows:
             parameters:
               redis_version: ["6.0", "6.2", "7", "unstable"]
       - build-platforms:
+          #@@<<: *on-integ-and-version-tags
+          <<: *on-any-branch
           context: common
           matrix:
             parameters:
-              platform: [focal, bionic, xenial, rocky8, centos7, bullseye]
+              platform: [jammy, focal, bionic, xenial, rocky8, centos7, bullseye]
       - build-arm-platforms:
           <<: *on-integ-and-version-tags
           context: common

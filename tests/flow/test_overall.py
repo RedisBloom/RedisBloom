@@ -1,18 +1,10 @@
-#!/usr/bin/env python3
-import os
 
-from RLTest import Env
-from redis import ResponseError
-
-xrange = range
+from common import *
 
 
 def ConvertInfo(lst):
     res_dct = {lst[i]: lst[i + 1] for i in range(0, len(lst), 2)}
     return res_dct
-
-
-is_valgrind = True if ('VGD' in os.environ or 'VALGRIND' in os.environ) else False
 
 
 class testRedisBloom():
@@ -128,7 +120,7 @@ class testRedisBloom():
         # certain to not break anything
         def do_verify(add):
             false_positives = 0.0
-            for x in xrange(quantity):
+            for x in range(quantity):
                 if add:
                     self.cmd('bf.add', 'myBloom', x)
                 rv = self.cmd('bf.exists', 'myBloom', x)
@@ -228,11 +220,11 @@ class testRedisBloom():
     def test_mem_usage(self):
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd('bf.reserve', 'bf', '0.05', '1000'))
-        if is_valgrind is False:
+        if not VALGRIND:
             self.assertEqual(1088, self.cmd('MEMORY USAGE', 'bf'))
         self.assertEqual([1, 1, 1], self.cmd(
             'bf.madd', 'bf', 'foo', 'bar', 'baz'))
-        if is_valgrind is False:
+        if not VALGRIND:
             self.assertEqual(1088, self.cmd('MEMORY USAGE', 'bf'))
         with self.assertResponseError():
             self.cmd('bf.debug', 'bf', 'noexist')
@@ -381,9 +373,9 @@ class testRedisBloomNoCodec():
         self.cmd('FLUSHALL')
         maxrange = 500
         self.cmd('bf.reserve', 'bf', 0.01, int(maxrange / 8))
-        for x in xrange(maxrange):
+        for x in range(maxrange):
             self.cmd('bf.add', 'bf', str(x))
-        for x in xrange(maxrange):
+        for x in range(maxrange):
             self.assertEqual(1, self.cmd('bf.exists', 'bf', str(x)))
         # Start with scandump
         self.assertRaises(ResponseError, self.cmd, 'bf.scandump', 'bf')
@@ -403,7 +395,7 @@ class testRedisBloomNoCodec():
         for chunk in chunks:
             print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
             self.cmd('bf.loadchunk', 'bf', *chunk)
-        for x in xrange(maxrange):
+        for x in range(maxrange):
             self.assertEqual(1, self.cmd('bf.exists', 'bf', str(x)))
 
     def test_scandump_with_expansion(self):
@@ -411,9 +403,9 @@ class testRedisBloomNoCodec():
         maxrange = 500
     
         self.cmd('bf.reserve', 'bf', 0.01, int(maxrange / 8), 'expansion', '2')
-        for x in xrange(maxrange):
+        for x in range(maxrange):
             self.cmd('bf.add', 'bf', str(x))
-        for x in xrange(maxrange):
+        for x in range(maxrange):
             self.assertEqual(1, self.cmd('bf.exists', 'bf', str(x)))
 
         chunks = []
@@ -434,16 +426,16 @@ class testRedisBloomNoCodec():
             print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
             self.cmd('bf.loadchunk', 'bf', *chunk)
         # check loaded filter
-        for x in xrange(maxrange):
+        for x in range(maxrange):
             self.assertEqual(1, self.cmd('bf.exists', 'bf', str(x)))
     
     def test_scandump_huge(self):
         self.cmd('FLUSHALL')
     
         self.cmd('bf.reserve', 'bf', 0.01, 1024 * 1024 * 64)
-        for x in xrange(6):
+        for x in range(6):
             self.cmd('bf.add', 'bf', 'foo')
-        for x in xrange(6):
+        for x in range(6):
             self.assertEqual(1, self.cmd('bf.exists', 'bf', 'foo'))
 
         chunks = []
@@ -464,5 +456,5 @@ class testRedisBloomNoCodec():
             print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
             self.cmd('bf.loadchunk', 'bf', *chunk)
         # check loaded filter
-        for x in xrange(6):
+        for x in range(6):
             self.assertEqual(1, self.cmd('bf.exists', 'bf', 'foo'))

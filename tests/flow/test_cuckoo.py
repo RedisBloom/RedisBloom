@@ -1,12 +1,5 @@
-#!/usr/bin/env python3
-import os
 
-from RLTest import Env
-from redis import ResponseError
-
-xrange = range
-
-is_valgrind = True if ('VGD' in os.environ or 'VALGRIND' in os.environ) else False
+from common import *
 
 
 class testCuckoo():
@@ -49,15 +42,15 @@ class testCuckoo():
         self.assertRaises(ResponseError, self.cmd, 'cf.del', 'cf')
         self.assertRaises(ResponseError, self.cmd, 'cf.del', 'bf', 'k1')
 
-        for x in xrange(100):
+        for x in range(100):
             self.cmd('cf.add', 'nums', str(x))
 
-        for x in xrange(100):
+        for x in range(100):
             self.assertEqual(1, self.cmd('cf.exists', 'nums', str(x)))
 
         # TODO: re-enable this portion after RLTest migration
         # for _ in self.retry_with_rdb_reload():
-        #     for x in xrange(100):
+        #     for x in range(100):
         #         self.assertEqual(1, self.cmd('cf.exists', 'nums', str(x)))
 
     # TODO: re-enable this portion after RLTest migration
@@ -65,26 +58,26 @@ class testCuckoo():
     #     self.cmd('FLUSHALL')
     #     # Ensure we have a pretty small filter
     #     self.cmd('cf.reserve', 'smallCF', 4)
-    #     for x in xrange(100):
+    #     for x in range(100):
     #         self.cmd('cf.add', 'smallCF', str(x))
     #     # Sanity check
-    #     for x in xrange(100):
+    #     for x in range(100):
     #         self.assertEqual(1, self.cmd('cf.exists', 'smallCF', str(x)))
 
     #     self.restart_and_reload()
-    #     for x in xrange(100):
+    #     for x in range(100):
     #         self.assertEqual(1, self.cmd('cf.exists', 'smallCF', str(x)))
 
     #     self.cmd('cf.reserve', 'smallCF2', 4, 'expansion', 2)
-    #     for x in xrange(100):
+    #     for x in range(100):
     #         self.cmd('cf.add', 'smallCF2', str(x))
     #     # Sanity check
-    #     for x in xrange(100):
+    #     for x in range(100):
     #         self.assertEqual(1, self.cmd('cf.exists', 'smallCF2', str(x)))
 
     # TODO: re-enable this portion after RLTest migration
     # self.restart_and_reload()
-    # for x in xrange(100):
+    # for x in range(100):
     #     self.assertEqual(1, self.cmd('cf.exists', 'smallCF2', str(x)))
     # self.assertEqual(580, self.cmd('MEMORY USAGE', 'smallCF'))
     # self.assertEqual(284, self.cmd('MEMORY USAGE', 'smallCF2'))
@@ -152,10 +145,10 @@ class testCuckoo():
     def test_mem_usage(self):
         self.cmd('FLUSHALL')
         self.cmd('CF.RESERVE', 'cf', '1000')
-        if is_valgrind is False:
+        if not VALGRIND:
             self.assertEqual(1112, self.cmd('MEMORY USAGE', 'cf'))
         self.cmd('cf.insert', 'cf', 'nocreate', 'items', 'foo')
-        if is_valgrind is False:
+        if not VALGRIND:
             self.assertEqual(1112, self.cmd('MEMORY USAGE', 'cf'))
 
     def test_max_iterations(self):
@@ -187,10 +180,10 @@ class testCuckoo():
         q = 100
         self.cmd('CF.RESERVE cf 8 MAXITERATIONS 50')
 
-        for x in xrange(q):
+        for x in range(q):
             self.cmd('cf.add cf', str(x))
 
-        for x in xrange(q):
+        for x in range(q):
             self.assertEqual(1, self.cmd('cf.exists cf', str(x)))
 
         str1 = self.cmd('cf.debug cf')[49:52]
@@ -210,10 +203,10 @@ class testCuckoo():
         q = 100
         self.cmd('CF.RESERVE cf 8 MAXITERATIONS 50')
 
-        for x in xrange(q):
+        for x in range(q):
             self.cmd('cf.add cf', str(x))
 
-        for x in xrange(q):
+        for x in range(q):
             self.assertEqual(1, self.cmd('cf.exists cf', str(x)))
 
         str1 = self.cmd('cf.debug cf')[49:52]
@@ -322,9 +315,9 @@ class testCuckooNoCodec():
         maxrange = 500
         self.cmd('cf.reserve', 'cf', int(maxrange / 8))
         self.assertEqual([0, None], self.cmd('cf.scandump', 'cf', '0'))
-        for x in xrange(maxrange):
+        for x in range(maxrange):
             self.cmd('cf.add', 'cf', str(x))
-        for x in xrange(maxrange):
+        for x in range(maxrange):
             self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
         # Start with scandump
         self.assertRaises(ResponseError, self.cmd, 'cf.scandump', 'cf')
@@ -344,7 +337,7 @@ class testCuckooNoCodec():
         for chunk in chunks:
             print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
             self.cmd('cf.loadchunk', 'cf', *chunk)
-        for x in xrange(maxrange):
+        for x in range(maxrange):
             self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
 
     def test_scandump_with_expansion(self):
@@ -353,9 +346,9 @@ class testCuckooNoCodec():
     
         self.cmd('cf.reserve', 'cf', int(maxrange / 8), 'expansion', '2')
         self.assertEqual([0, None], self.cmd('cf.scandump', 'cf', '0'))
-        for x in xrange(maxrange):
+        for x in range(maxrange):
             self.cmd('cf.add', 'cf', str(x))
-        for x in xrange(maxrange):
+        for x in range(maxrange):
             self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
 
         chunks = []
@@ -376,7 +369,7 @@ class testCuckooNoCodec():
             print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
             self.cmd('cf.loadchunk', 'cf', *chunk)
         # check loaded filter
-        for x in xrange(maxrange):
+        for x in range(maxrange):
             self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
     
     def test_scandump_huge(self):
@@ -384,9 +377,9 @@ class testCuckooNoCodec():
     
         self.cmd('cf.reserve', 'cf', 1024 * 1024 * 64)
         self.assertEqual([0, None], self.cmd('cf.scandump', 'cf', '0'))
-        for x in xrange(6):
+        for x in range(6):
             self.cmd('cf.add', 'cf', 'foo')
-        for x in xrange(6):
+        for x in range(6):
             self.assertEqual(1, self.cmd('cf.exists', 'cf', 'foo'))
 
         chunks = []
@@ -407,5 +400,5 @@ class testCuckooNoCodec():
             print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
             self.cmd('cf.loadchunk', 'cf', *chunk)
         # check loaded filter
-        for x in xrange(6):
+        for x in range(6):
             self.assertEqual(1, self.cmd('cf.exists', 'cf', 'foo'))

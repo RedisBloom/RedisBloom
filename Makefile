@@ -53,7 +53,7 @@ make unit_tests    # run unit tests
 make flow_tests    # run tests
   TEST=name        # run test matching 'name'
   TEST_ARGS="..."  # RLTest arguments
-  SIMPLE=1         # shortcut for GEN=1 AOF=0 SLAVES=0 OSS_CLUSTER=0
+  QUICK=1          # shortcut for GEN=1 AOF=0 SLAVES=0 OSS_CLUSTER=0
   GEN=1            # run general tests on a standalone Redis topology
   AOF=1            # run AOF persistency tests on a standalone Redis topology
   SLAVES=1         # run replication tests on standalone Redis topology
@@ -282,7 +282,7 @@ unit_tests: $(TARGET)
 
 #----------------------------------------------------------------------------------------------
 
-ifeq ($(SIMPLE),1)
+ifeq ($(QUICK),1)
 export GEN=1
 export SLAVES=0
 export AOF=0
