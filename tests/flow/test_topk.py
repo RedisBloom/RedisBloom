@@ -152,7 +152,7 @@ class testTopK():
 
         heapList = self.cmd('topk.list', 'topk')
         self.assertEqual(100, len(heapList))
-        res = sum(1 for i in range((len(heapList)) if int(heapList[i]) % 100 == 0)
+        res = sum(1 for i in range(len(heapList)) if int(heapList[i]) % 100 == 0)
         self.assertGreater(res, 45)
 
     def test_no_init_params(self):
@@ -182,4 +182,4 @@ class testTopK():
         self.cmd('topk.reserve', 'topk', '10', '8', '7', '1')
         self.cmd('topk.add', 'topk', 'j', 'h', 'd', 'j', 'h', 'h', 'j', 'g', 'e', 'g', 'i', 'f', 'g', 'f', 'a', 'j', 'c', 'i', 'a', 'd')
         heapList = self.cmd('topk.list', 'topk')
-        self.assertEqual(len(set(heapList)), len(heapList)) 
+        self.assertEqual(len(set(heapList)), len(heapList))
