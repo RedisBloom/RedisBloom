@@ -138,21 +138,21 @@ class testTopK():
         self.cmd('FLUSHALL')
         self.cmd('topk.reserve', 'topk', '100', '1000', '5', '0.9')
 
-        for _ in xrange(10):
-            for i in xrange(50):
+        for _ in range(10):
+            for i in range(50):
                 self.cmd('topk.add', 'topk', i * 100)
 
-        for _ in xrange(5):
-            for i in xrange(5000):
+        for _ in range(5):
+            for i in range(5000):
                 self.cmd('topk.add', 'topk', i)
 
-        for _ in xrange(5):
-            for i in xrange(100):
+        for _ in range(5):
+            for i in range(100):
                 self.cmd('topk.add', 'topk', i * 50)
 
         heapList = self.cmd('topk.list', 'topk')
         self.assertEqual(100, len(heapList))
-        res = sum(1 for i in range(len(heapList)) if int(heapList[i]) % 100 == 0)
+        res = sum(1 for i in range(len(heapList)) if (int(heapList[i]) % 100 == 0))
         self.assertGreater(res, 45)
 
     def test_no_init_params(self):
