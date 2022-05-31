@@ -857,11 +857,11 @@
         "type": "key"
       },
       {
-        "name": "low_cut_percentile",
+        "name": "low_cut_quantile",
         "type": "double"
       },
       {
-        "name": "high_cut_percentile",
+        "name": "high_cut_quantile",
         "type": "double"
       }
     ],
