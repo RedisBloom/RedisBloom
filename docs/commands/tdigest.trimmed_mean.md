@@ -1,4 +1,4 @@
-Get the mean value from the sketch, excluding observation values outside the low and high cutoff quantiles.
+Estimate the mean value from the sketch, excluding observation values outside the low and high cutoff quantiles.
 
 #### Parameters:
 
@@ -8,7 +8,7 @@ Get the mean value from the sketch, excluding observation values outside the low
 
 @return
 
-@simple-string-reply of mean value from the sketch.
+@simple-string-reply estimation of the mean value.
 Will return __DBL_MAX__ if the sketch is empty.
 
 @examples
