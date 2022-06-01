@@ -1,13 +1,13 @@
-Returns the fraction of all points added which are <= value.
+Returns the fraction of all observations added which are <= value.
 
 #### Parameters:
 
-* **key**: The name of the sketch.
-* **quantile**: upper limit for which the fraction of all points added which are <= value.
+* **key**: The name of the sketch (a t-digest data structure)
+* **value**: upper limit of observation value, for which the fraction of all observations added which are <= value
 
 @return
 
-@double-reply - fraction of all points added which are <= value.
+@double-reply - fraction of all observations added which are <= value
 
 @examples
 
