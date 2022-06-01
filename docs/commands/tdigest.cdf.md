@@ -1,4 +1,4 @@
-Returns the fraction of all observations added which are <= value.
+Estimate the fraction of all observations added which are <= value.
 
 #### Parameters:
 
@@ -7,7 +7,7 @@ Returns the fraction of all observations added which are <= value.
 
 @return
 
-@double-reply - fraction of all observations added which are <= value
+@double-reply - estimation of the fraction of all observations added which are <= value
 
 @examples
 
