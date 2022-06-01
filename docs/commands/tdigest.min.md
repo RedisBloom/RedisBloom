@@ -1,13 +1,13 @@
-Get minimum value from the sketch. Will return __DBL_MAX__ if the sketch is empty.
+Get the minimum observation value from the sketch.
 
 #### Parameters:
 
-* **key**: The name of the sketch.
+* **key**: The name of the sketch (a t-digest data structure)
 
 @return
 
-@simple-string-reply of minimum value from the sketch.
-Will return __DBL_MAX__ if the sketch is empty.
+@simple-string-reply of minimum observation value from the sketch.
+Return __DBL_MAX__ if the sketch is empty.
 
 @examples
 
