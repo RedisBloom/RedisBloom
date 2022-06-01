@@ -1,10 +1,10 @@
-Get the mean value from the sketch, excluding values outside the low and high cutoff quantiles.
+Get the mean value from the sketch, excluding observation values outside the low and high cutoff quantiles.
 
 #### Parameters:
 
-* **key**: The name of the sketch.
-* **low_cut_quantile**: Exclude values lower than this quantile.
-* **high_cut_quantile**: Exclude values higher than this quantile.
+* **key**: The name of the sketch (a t-digest data structure)
+* **low_cut_quantile**: Exclude observation values lower than this quantile
+* **high_cut_quantile**: Exclude observation values higher than this quantile
 
 @return
 
