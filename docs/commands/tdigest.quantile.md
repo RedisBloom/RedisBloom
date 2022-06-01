@@ -13,6 +13,8 @@ Multiple quantiles can be returned with one call.
 
 @array-reply - the command returns an array of results populated with quantile_1, cutoff_1, quantile_2, cutoff_2, ..., quantile_N, cutoff_N.
 
+The returned array of results will be ordered in ascending order by quantile.
+
 @examples
 
 ```
