@@ -257,6 +257,55 @@ class CuckooTestCase(ModuleTestCase('../redisbloom.so')):
         with self.assertResponseError():
             self.cmd('cf.info')
 
+    def test_params(self):
+        self.cmd('FLUSHALL')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err')
+        self.cmd('CF.RESERVE err 1000')
+
+        self.assertRaises(ResponseError, self.cmd, 'CF.ADD')
+        self.assertRaises(ResponseError, self.cmd, 'CF.ADD err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.ADDNX')
+        self.assertRaises(ResponseError, self.cmd, 'CF.ADDNX err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERT')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERT err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERT err element') # W/O ITEMS keyword
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERTNX')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERTNX err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERTNX err element') # W/O ITEMS keyword
+
+        self.assertRaises(ResponseError, self.cmd, 'CF.DEL')
+        self.assertRaises(ResponseError, self.cmd, 'CF.DEL err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.EXISTS')
+        self.assertRaises(ResponseError, self.cmd, 'CF.EXISTS err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.MEXISTS')
+        self.assertRaises(ResponseError, self.cmd, 'CF.MEXISTS err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.COUNT')
+        self.assertRaises(ResponseError, self.cmd, 'CF.COUNT err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INFO')
+
+        self.assertRaises(ResponseError, self.cmd, 'CF.LOADCHUNK')
+        self.assertRaises(ResponseError, self.cmd, 'CF.LOADCHUNK err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.LOADCHUNK err iterator') # missing data
+        self.assertRaises(ResponseError, self.cmd, 'CF.SCANDUMP')
+        self.assertRaises(ResponseError, self.cmd, 'CF.SCANDUMP err')
+
+class testCuckooNoCodec():
+    def __init__(self):
+        self.env = Env(decodeResponses=False)
+        self.assertOk = self.env.assertTrue
+        self.cmd = self.env.cmd
+        self.assertEqual = self.env.assertEqual
+        self.assertRaises = self.env.assertRaises
+        self.assertTrue = self.env.assertTrue
+        self.assertAlmostEqual = self.env.assertAlmostEqual
+        self.assertGreater = self.env.assertGreater
+        self.restart_and_reload = self.env.restartAndReload
+        self.assertResponseError = self.env.assertResponseError
+        self.retry_with_rdb_reload = self.env.dumpAndReload
+        self.assertNotEqual = self.env.assertNotEqual
+        self.assertGreaterEqual = self.env.assertGreaterEqual
+
     def test_scandump(self):
         self.cmd('FLUSHALL')
         maxrange = 500
