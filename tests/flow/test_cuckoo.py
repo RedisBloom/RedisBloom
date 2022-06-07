@@ -304,6 +304,36 @@ class testCuckoo():
         with self.assertResponseError():
             self.cmd('cf.info')
 
+    def test_params(self):
+        self.cmd('FLUSHALL')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err')
+        self.cmd('CF.RESERVE err 1000')
+
+        self.assertRaises(ResponseError, self.cmd, 'CF.ADD')
+        self.assertRaises(ResponseError, self.cmd, 'CF.ADD err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.ADDNX')
+        self.assertRaises(ResponseError, self.cmd, 'CF.ADDNX err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERT')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERT err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERT err element') # W/O ITEMS keyword
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERTNX')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERTNX err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERTNX err element') # W/O ITEMS keyword
+
+        self.assertRaises(ResponseError, self.cmd, 'CF.DEL')
+        self.assertRaises(ResponseError, self.cmd, 'CF.DEL err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.EXISTS')
+        self.assertRaises(ResponseError, self.cmd, 'CF.EXISTS err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.MEXISTS')
+        self.assertRaises(ResponseError, self.cmd, 'CF.MEXISTS err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.COUNT')
+        self.assertRaises(ResponseError, self.cmd, 'CF.COUNT err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INFO')
+
+        self.assertRaises(ResponseError, self.cmd, 'CF.LOADCHUNK err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.LOADCHUNK err iterator') # missing data
+        self.assertRaises(ResponseError, self.cmd, 'CF.SCANDUMP err')
 
 class testCuckooNoCodec():
     def __init__(self):

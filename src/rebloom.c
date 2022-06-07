@@ -493,8 +493,8 @@ static int BFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **arg
 /** CF.RESERVE <KEY> <CAPACITY> [BUCKETSIZE] [MAXITERATIONS] [EXPANSION] */
 static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    //
-    if (argc != 3 && (argc % 2) == 0) {
+
+    if (argc < 3 || (argc % 2) == 0) {
         return RedisModule_WrongArity(ctx);
     }
 
