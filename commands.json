@@ -18,7 +18,7 @@
       {
         "name": "expansion",
         "type": "integer",
-        "command": "EXPANSION",
+        "token": "EXPANSION",
         "optional": true
       },
       {
@@ -75,19 +75,19 @@
       {
         "name": "capacity",
         "type": "integer",
-        "command": "CAPACITY",
+        "token": "CAPACITY",
         "optional": true
       },
       {
         "name": "error",
         "type": "double",
-        "command": "ERROR",
+        "token": "ERROR",
         "optional": true
       },
       {
         "name": "expansion",
         "type": "integer",
-        "command": "EXPANSION",
+        "token": "EXPANSION",
         "optional": true
       },
       {
@@ -212,19 +212,19 @@
       {
         "name": "bucketsize",
         "type": "integer",
-        "command": "BUCKETSIZE",
+        "token": "BUCKETSIZE",
         "optional": true
       },
       {
         "name": "maxiterations",
         "type": "integer",
-        "command": "MAXITERATIONS",
+        "token": "MAXITERATIONS",
         "optional": true
       },
       {
         "name": "expansion",
         "type": "integer",
-        "command": "EXPANSION",
+        "token": "EXPANSION",
         "optional": true
       }
     ],
@@ -274,7 +274,7 @@
       {
         "name": "capacity",
         "type": "integer",
-        "command": "CAPACITY",
+        "token": "CAPACITY",
         "optional": true
       },
       {
@@ -308,7 +308,7 @@
       {
         "name": "capacity",
         "type": "integer",
-        "command": "CAPACITY",
+        "token": "CAPACITY",
         "optional": true
       },
       {
