@@ -351,6 +351,7 @@ static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
             return RedisModule_ReplyWithError(ctx, "Unknown argument received");
         }
     }
+
     if (items_index < 0 || items_index == argc) {
         return RedisModule_WrongArity(ctx);
     }
@@ -359,6 +360,7 @@ static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
         options.expansion < 1) {
         return RedisModule_ReplyWithError(ctx, "Bad argument received");
     }
+
     return bfInsertCommon(ctx, argv[1], argv + items_index, argc - items_index, &options);
 }
 
@@ -491,8 +493,8 @@ static int BFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **arg
 /** CF.RESERVE <KEY> <CAPACITY> [BUCKETSIZE] [MAXITERATIONS] [EXPANSION] */
 static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    //
-    if (argc != 3 && (argc % 2) == 0) {
+
+    if (argc < 3 || (argc % 2) == 0) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -659,6 +661,10 @@ static int CFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
                 REDISMODULE_OK) {
                 return RedisModule_ReplyWithError(ctx, "Bad capacity");
             }
+            if (2 * CF_DEFAULT_BUCKETSIZE > options.capacity) {
+                return RedisModule_ReplyWithError(ctx,
+                                                  "Capacity must be at least (BucketSize * 2)");
+            }
             break;
         case 'i':
             // Begin item list
@@ -676,6 +682,7 @@ static int CFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     if (items_pos < 0 || items_pos == argc) {
         return RedisModule_WrongArity(ctx);
     }
+
     return cfInsertCommon(ctx, argv[1], argv + items_pos, argc - items_pos, &options);
 }
 

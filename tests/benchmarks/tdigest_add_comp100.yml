@@ -1,5 +1,5 @@
 version: 0.2
-name: "tdigest_incrby_cap10M_comp100"
+name: "tdigest_add_comp100"
 description: "Benchmarking adding an item to the t-Digest sketch, 
               with an desired compression of 100"
 remote:

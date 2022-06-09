@@ -18,7 +18,7 @@
       {
         "name": "expansion",
         "type": "integer",
-        "command": "EXPANSION",
+        "token": "EXPANSION",
         "optional": true
       },
       {
@@ -75,19 +75,19 @@
       {
         "name": "capacity",
         "type": "integer",
-        "command": "CAPACITY",
+        "token": "CAPACITY",
         "optional": true
       },
       {
         "name": "error",
         "type": "double",
-        "command": "ERROR",
+        "token": "ERROR",
         "optional": true
       },
       {
         "name": "expansion",
         "type": "integer",
-        "command": "EXPANSION",
+        "token": "EXPANSION",
         "optional": true
       },
       {
@@ -212,19 +212,19 @@
       {
         "name": "bucketsize",
         "type": "integer",
-        "command": "BUCKETSIZE",
+        "token": "BUCKETSIZE",
         "optional": true
       },
       {
         "name": "maxiterations",
         "type": "integer",
-        "command": "MAXITERATIONS",
+        "token": "MAXITERATIONS",
         "optional": true
       },
       {
         "name": "expansion",
         "type": "integer",
-        "command": "EXPANSION",
+        "token": "EXPANSION",
         "optional": true
       }
     ],
@@ -257,8 +257,7 @@
       },
       {
         "name": "item",
-        "type": "string",
-        "multiple": true
+        "type": "string"
       }
     ],
     "since": "1.0.0",
@@ -275,7 +274,7 @@
       {
         "name": "capacity",
         "type": "integer",
-        "command": "CAPACITY",
+        "token": "CAPACITY",
         "optional": true
       },
       {
@@ -309,7 +308,7 @@
       {
         "name": "capacity",
         "type": "integer",
-        "command": "CAPACITY",
+        "token": "CAPACITY",
         "optional": true
       },
       {
@@ -701,10 +700,6 @@
         "type": "key"
       },
       {
-        "name": "numKeys",
-        "type": "integer"
-      },
-      {
         "name": "withcount",
         "token": "WITHCOUNT",
         "type": "pure-token"
@@ -821,7 +816,7 @@
     "group": "tdigest"
   },
   "TDIGEST.QUANTILE": {
-    "summary": "Returns an estimate of the cutoff",
+    "summary": "Returns an estimate of the cutoff such that a specified fraction of the data added to this TDigest would be less than or equal to the specified cutoffs. Multiple quantiles can be returned with one call.",
     "complexity": "O(1)",
     "arguments": [
       {
@@ -830,7 +825,8 @@
       },
       {
         "name": "quantile",
-        "type": "double"
+        "type": "double",
+        "multiple": true
       }
     ],
     "since": "2.4.0",
@@ -846,6 +842,26 @@
       },
       {
         "name": "value",
+        "type": "double"
+      }
+    ],
+    "since": "2.4.0",
+    "group": "tdigest"
+  },
+  "TDIGEST.TRIMMED_MEAN": {
+    "summary": "Returns the trimmed mean ignoring values outside given cutoff upper and lower limits",
+    "complexity": "O(n)",
+    "arguments": [
+      {
+        "name": "key",
+        "type": "key"
+      },
+      {
+        "name": "low_cut_quantile",
+        "type": "double"
+      },
+      {
+        "name": "high_cut_quantile",
         "type": "double"
       }
     ],

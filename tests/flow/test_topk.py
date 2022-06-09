@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from RLTest import Env
 from redis import ResponseError
+import time
 
 
 class testTopK():
@@ -93,6 +94,7 @@ class testTopK():
         self.assertEqual([3, 6, 10, 4, 0], self.cmd('topk.count', 'topk', 'bar', 'baz', '42', 'xyzzy', 4))
         self.assertRaises(ResponseError, self.cmd, 'topk.incrby')
         self.assertTrue(isinstance(self.cmd('topk.incrby', 'topk', 'foo', -5)[0], ResponseError))
+        self.assertTrue(isinstance(self.cmd('topk.incrby', 'topk', 'foo', 123456)[0], ResponseError))
 
     def test_lookup_table(self):
         self.cmd('FLUSHALL')
