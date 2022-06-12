@@ -6,7 +6,7 @@ description: >
     RedisBloom supports multiple module configuration parameters. All of these parameters can only be set at load-time.
 ---
 
-## Setting load-time configuration parameters on module load
+## Setting configuration parameters on module load
 
 Setting configuration parameters at load-time is done by appending arguments after the `--loadmodule` argument when starting a server from the command line or after the `loadmodule` directive in a Redis config file. For example:
 
