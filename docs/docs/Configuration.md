@@ -16,7 +16,7 @@ In [redis.conf](https://redis.io/docs/manual/config/):
 loadmodule ./redisbloom.so [OPT VAL]...
 ```
 
-From The [Redis CLI](https://redis.io/docs/manual/cli/), using the [MODULE LOAD](https://redis.io/commands/module-load/) command:
+From the [Redis CLI](https://redis.io/docs/manual/cli/), using the [MODULE LOAD](https://redis.io/commands/module-load/) command:
 
 ```
 127.0.0.6379> MODULE LOAD redisbloom.so [OPT VAL]...
