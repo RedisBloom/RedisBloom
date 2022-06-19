@@ -878,15 +878,7 @@ uint64_t BFCapacity(SBChain *bf) {
     return capacity;
 }
 
-uint64_t BFSize(SBChain *bf) {
-    uint64_t bytes = 0;
-    for (size_t ii = 0; ii < bf->nfilters; ++ii) {
-        bytes += bf->filters[ii].inner.bytes; // * sizeof(unsigned char);
-    }
-
-    return sizeof(*bf) + sizeof(*bf->filters) * bf->nfilters + sizeof(struct bloom) * bf->nfilters +
-           bytes;
-}
+static size_t BFMemUsage(const void *value);
 
 static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
@@ -905,7 +897,7 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     RedisModule_ReplyWithSimpleString(ctx, "Capacity");
     RedisModule_ReplyWithLongLong(ctx, BFCapacity(bf));
     RedisModule_ReplyWithSimpleString(ctx, "Size");
-    RedisModule_ReplyWithLongLong(ctx, BFSize(bf));
+    RedisModule_ReplyWithLongLong(ctx, BFMemUsage(bf));
     RedisModule_ReplyWithSimpleString(ctx, "Number of filters");
     RedisModule_ReplyWithLongLong(ctx, bf->nfilters);
     RedisModule_ReplyWithSimpleString(ctx, "Number of items inserted");
