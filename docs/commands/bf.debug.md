@@ -16,7 +16,6 @@ BF.DEBUG return more information about the bloom filter `key`.
 * **ratio**: The error ratio of filter.
 
 @examples
-
 ```
 redis> BF.DEBUG newFilter1
 (error) ERR not found
