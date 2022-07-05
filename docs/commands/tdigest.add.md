@@ -1,10 +1,10 @@
-Adds one or more samples to a sketch.
+Adds one or more observations to a t-digest sketch.
 
 #### Parameters:
 
-* **key**: The name of the sketch.
-* **val**: The value to add.
-* **weight**: The weight of this point.
+* **key**: The name of the sketch (a t-digest data structure)
+* **val**: The value of the observation (floating-point)
+* **weight**: The weight of this observation (floating-point, >0). **weight** can indicate the number of observations with such value
 
 @return
 
