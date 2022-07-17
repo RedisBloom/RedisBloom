@@ -1,8 +1,8 @@
-Reset the sketch to zero - empty out the sketch and re-initialize it.
+Reset the sketch - empty the sketch and re-initialize it.
 
 #### Parameters:
 
-* **key**: The name of the sketch.
+* **key**: The name of the sketch (a t-digest data structure)
 
 @return
 
