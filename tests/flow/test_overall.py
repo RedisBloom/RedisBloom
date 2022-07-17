@@ -292,7 +292,7 @@ class testRedisBloom():
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '100'))
         self.assertEqual(self.cmd('bf.info bf'), ['Capacity', 100,
-                                                  'Size', 352,
+                                                  'Size', 296,
                                                   'Number of filters', 1,
                                                   'Number of items inserted', 0,
                                                   'Expansion rate', 2])
@@ -345,7 +345,7 @@ class testRedisBloom():
         self.assertEqual([0, 0, 0, ], resp[:3])
         self.assertEqual('non scaling filter is full', str(resp[3]))
         info_actual = self.cmd('BF.INFO nonscaling_err')
-        info_expected = ['Capacity', 3, 'Size', 160, 'Number of filters', 1,
+        info_expected = ['Capacity', 3, 'Size', 104, 'Number of filters', 1,
                          'Number of items inserted', 3, 'Expansion rate', None]
         self.assertEqual(info_actual, info_expected)
 
@@ -356,7 +356,7 @@ class testRedisBloom():
         self.assertOk(self.cmd('bf.reserve bf', error_rate, capacity))
         info = ConvertInfo(self.cmd('bf.info bf'))
         self.assertEqual(info["Capacity"], 300000000)
-        self.assertEqual(info["Size"], 1132420288)
+        self.assertEqual(info["Size"], 1132420232)
 
 class testRedisBloomNoCodec():
     def __init__(self):
