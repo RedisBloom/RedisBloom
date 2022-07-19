@@ -52,7 +52,7 @@ values for each element are:
 
 * `> 0` if the item was successfully inserted
 * `0` if the item already existed *and* `INSERTNX` is used.
-* `<0` if an error ocurred
+* `<0` if an error occurred
 
 Note that for `CF.INSERT`, the return value is always be an array of `>0` values,
 unless an error occurs.
