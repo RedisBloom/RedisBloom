@@ -1,36 +1,43 @@
 ---
-title: "Configuration"
+title: "Configuration Parameters"
 linkTitle: "Configuration"
 weight: 5
 description: >
-    RedisBloom supports a few run-time configuration options that can be defined when loading the module. In the future more options will be added.
+    RedisBloom supports multiple module configuration parameters. All of these parameters can only be set at load-time.
 ---
 
-# Run-time configuration
+## Setting configuration parameters on module load
 
-RedisBloom supports a few run-time configuration options that should be determined when loading the module.
+Setting configuration parameters at load-time is done by appending arguments after the `--loadmodule` argument when starting a server from the command line or after the `loadmodule` directive in a Redis config file. For example:
 
-## Passing Configuration Options During Loading
+In [redis.conf](/docs/manual/config/):
 
-In general, passing configuration options is done by appending arguments after the `--loadmodule` argument in the command line, `loadmodule` configuration directive in a Redis config file, or the `MODULE LOAD` command. For example:
-
-In redis.conf:
-
-```
-loadmodule redisbloom.so OPT1 OPT2
+```sh
+loadmodule ./redisbloom.so [OPT VAL]...
 ```
 
-From redis-cli:
+From the [Redis CLI](/docs/manual/cli/), using the [MODULE LOAD](/commands/module-load/) command:
 
 ```
-127.0.0.6379> MODULE load redisbloom.so OPT1 OPT2
+127.0.0.6379> MODULE LOAD redisbloom.so [OPT VAL]...
 ```
 
-From command line:
+From the command line:
 
+```sh
+$ redis-server --loadmodule ./redisbloom.so [OPT VAL]...
 ```
-$ redis-server --loadmodule ./redisbloom.so OPT1 OPT2
-```
+
+## RedisBloom configuration parameters
+
+The following table summerizes which configuration parameters can be set at module load-time and which can be set on run-time:
+
+| Configuration Parameter                 | Load-time          | Run-time             |
+| :-------                                | :-----             | :-----------         |
+| [ERROR_RATE](#error_rate)               | :white_check_mark: | :white_large_square: |
+| [INITIAL_SIZE](#initial_size)           | :white_check_mark: | :white_large_square: |
+| [CF_MAX_EXPANSIONS](#cf_max_expansions) | :white_check_mark: | :white_large_square: |
+
 
 ## Default parameters
 
@@ -39,17 +46,44 @@ $ redis-server --loadmodule ./redisbloom.so OPT1 OPT2
     Using the `INSERT` family commands with the default values should be used in cases where many small filter exist and the expectation is most will remain at about that size.
     Not optimizing a filter for its intended use will result in degradation of performance and memory efficiency.
 
-### Error rate and Initial Size for Bloom Filter
-You can adjust the default error ratio and the initial filter size (for bloom filters)
-using the `ERROR_RATE` and `INITIAL_SIZE` options respectively when loading the
-module, e.g.
+### ERROR_RATE
+
+Default error ratio for Bloom filters.
+
+#### Default
+
+`0.01`
+
+#### Example
 
 ```
-$ redis-server --loadmodule /path/to/redisbloom.so INITIAL_SIZE 400 ERROR_RATE 0.004
+$ redis-server --loadmodule /path/to/redisbloom.so ERROR_RATE 0.004
 ```
 
-The default error rate is `0.01` and the default initial capacity is `100`.
+### INITIAL_SIZE
 
-### Initial Size for Cuckoo Filter
+Default initial capacity for Bloom filters.
 
-For Cuckoo filter, the default capacity is 1024.
+#### Default
+
+`100`
+
+#### Example
+
+```
+$ redis-server --loadmodule /path/to/redisbloom.so INITIAL_SIZE 400
+```
+
+### CF_MAX_EXPANSIONS
+
+Default maximum expansions for Cuckoo filters.
+
+#### Default
+
+`32`
+
+#### Example
+
+```
+$ redis-server --loadmodule /path/to/redisbloom.so CF_MAX_EXPANSIONS 16
+```

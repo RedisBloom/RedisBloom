@@ -351,6 +351,7 @@ static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
             return RedisModule_ReplyWithError(ctx, "Unknown argument received");
         }
     }
+
     if (items_index < 0 || items_index == argc) {
         return RedisModule_WrongArity(ctx);
     }
@@ -359,6 +360,7 @@ static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
         options.expansion < 1) {
         return RedisModule_ReplyWithError(ctx, "Bad argument received");
     }
+
     return bfInsertCommon(ctx, argv[1], argv + items_index, argc - items_index, &options);
 }
 
@@ -659,6 +661,10 @@ static int CFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
                 REDISMODULE_OK) {
                 return RedisModule_ReplyWithError(ctx, "Bad capacity");
             }
+            if (2 * CF_DEFAULT_BUCKETSIZE > options.capacity) {
+                return RedisModule_ReplyWithError(ctx,
+                                                  "Capacity must be at least (BucketSize * 2)");
+            }
             break;
         case 'i':
             // Begin item list
@@ -676,6 +682,7 @@ static int CFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
     if (items_pos < 0 || items_pos == argc) {
         return RedisModule_WrongArity(ctx);
     }
+
     return cfInsertCommon(ctx, argv[1], argv + items_pos, argc - items_pos, &options);
 }
 
@@ -871,15 +878,7 @@ uint64_t BFCapacity(SBChain *bf) {
     return capacity;
 }
 
-uint64_t BFSize(SBChain *bf) {
-    uint64_t bytes = 0;
-    for (size_t ii = 0; ii < bf->nfilters; ++ii) {
-        bytes += bf->filters[ii].inner.bytes; // * sizeof(unsigned char);
-    }
-
-    return sizeof(*bf) + sizeof(*bf->filters) * bf->nfilters + sizeof(struct bloom) * bf->nfilters +
-           bytes;
-}
+static size_t BFMemUsage(const void *value);
 
 static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
@@ -898,7 +897,7 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     RedisModule_ReplyWithSimpleString(ctx, "Capacity");
     RedisModule_ReplyWithLongLong(ctx, BFCapacity(bf));
     RedisModule_ReplyWithSimpleString(ctx, "Size");
-    RedisModule_ReplyWithLongLong(ctx, BFSize(bf));
+    RedisModule_ReplyWithLongLong(ctx, BFMemUsage(bf));
     RedisModule_ReplyWithSimpleString(ctx, "Number of filters");
     RedisModule_ReplyWithLongLong(ctx, bf->nfilters);
     RedisModule_ReplyWithSimpleString(ctx, "Number of items inserted");

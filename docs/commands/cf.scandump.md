@@ -1,5 +1,5 @@
 Begins an incremental save of the cuckoo filter. This is useful for large cuckoo
-filters which cannot fit into the normal `SAVE` and `RESTORE` model.
+filters which cannot fit into the normal `DUMP` and `RESTORE` model.
 
 The first time this command is called, the value of `iter` should be 0. This
 command returns successive `(iter, data)` pairs until `(0, NULL)`

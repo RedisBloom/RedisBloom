@@ -1,13 +1,12 @@
-Returns an estimate of the cutoff such that a specified fraction of the data
-added to this TDigest would be less than or equal to the specified cutoffs.
+Returns estimates of one or more cutoffs such that a specified fraction of the observations
+added to this t-digest would be less than or equal to each of the specified cutoffs.
 
 Multiple quantiles can be returned with one call.
 
-
 #### Parameters:
 
-* **key**: The name of the sketch.
-* **quantile**: The desired fraction ( between 0 and 1 inclusively ).
+* **key**: The name of the sketch (a t-digest data structure)
+* **quantile**: The desired fraction (between 0 and 1 inclusively)
 
 @return
 

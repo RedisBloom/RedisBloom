@@ -60,11 +60,11 @@ redis> BF.RESERVE bf 0.01 1000
 ```
 
 ```
-redis> BF.RESERVE bf_exp 1000 EXPANSION 2
+redis> BF.RESERVE bf_exp 0.01 1000 EXPANSION 2
 OK
 ```
 
 ```
-redis> BF.RESERVE bf_exp 1000 NONSCALING
+redis> BF.RESERVE bf_non 0.01 1000 NONSCALING
 OK
 ```

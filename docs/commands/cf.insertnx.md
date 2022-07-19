@@ -16,7 +16,7 @@ CF.INSERTNX {key} [CAPACITY {capacity}] [NOCREATE] ITEMS {item ...}
 Adds one or more items to a cuckoo filter, allowing the filter to be created
 with a custom capacity if it does not exist yet.
 
-This command is equivalent to a `CF.CHECK` + `CF.ADD` command. It does not
+This command is equivalent to a `CF.EXISTS` + `CF.ADD` command. It does not
 insert an element into the filter if its fingerprint already exists and
 therefore better utilizes the available capacity. However, if you delete
 elements it might introduce **false negative** error rate!
@@ -52,7 +52,7 @@ values for each element are:
 
 * `> 0` if the item was successfully inserted
 * `0` if the item already existed *and* `INSERTNX` is used.
-* `<0` if an error ocurred
+* `<0` if an error occurred
 
 Note that for `CF.INSERT`, the return value is always be an array of `>0` values,
 unless an error occurs.
