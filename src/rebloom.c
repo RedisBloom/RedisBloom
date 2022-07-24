@@ -505,6 +505,9 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     if (mi_loc != -1) {
         if (RedisModule_StringToLongLong(argv[mi_loc + 1], &maxIterations) != REDISMODULE_OK) {
             return RedisModule_ReplyWithError(ctx, "Couldn't parse MAXITERATIONS");
+        } else if (maxIterations <= 0) {
+            return RedisModule_ReplyWithError(
+                ctx, "MAXITERATIONS parameter needs to be a positive integer");
         }
     }
 
@@ -513,6 +516,9 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     if (bs_loc != -1) {
         if (RedisModule_StringToLongLong(argv[bs_loc + 1], &bucketSize) != REDISMODULE_OK) {
             return RedisModule_ReplyWithError(ctx, "Couldn't parse BUCKETSIZE");
+        } else if (bucketSize <= 0) {
+            return RedisModule_ReplyWithError(
+                ctx, "BUCKETSIZE parameter needs to be a positive integer");
         }
     }
 
@@ -521,6 +527,9 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     if (ex_loc != -1) {
         if (RedisModule_StringToLongLong(argv[ex_loc + 1], &expansion) != REDISMODULE_OK) {
             return RedisModule_ReplyWithError(ctx, "Couldn't parse EXPANSION");
+        } else if (expansion < 0) {
+            return RedisModule_ReplyWithError(
+                ctx, "EXPANSION parameter needs to be a non-negative integer");
         }
     }
 
@@ -601,6 +610,7 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
             } else {
                 RedisModule_ReplyWithLongLong(ctx, -1);
             }
+            break;
         case CuckooInsert_MemAllocFailed:
             RedisModule_ReplyWithError(ctx, "Memory allocation failure"); // LCOV_EXCL_LINE
             break;
