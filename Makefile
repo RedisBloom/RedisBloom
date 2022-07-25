@@ -11,7 +11,7 @@ endif
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 username := $(shell sh -c 'id -u')
 usergroup := $(shell sh -c 'id -g')
-CPPFLAGS =  -Wall -Wno-unused-function $(DEBUGFLAGS) -fPIC -D_GNU_SOURCE
+CPPFLAGS =  -Wall -Wno-unused-function $(DEBUGFLAGS) -fPIC -D_GNU_SOURCE -DREDISBLOOM_GIT_SHA=\"$(REDISBLOOM_GIT_SHA)\"
 # CC:=$(shell sh -c 'type $(CC) >/dev/null 2>/dev/null && echo $(CC) || echo gcc')
 
 # Compile flags for linux / osx
@@ -40,6 +40,7 @@ MODULE_OBJ = $(SRCDIR)/rebloom.o
 MODULE_SO = $(ROOT)/redisbloom.so
 LIBTDIGEST_LIBDIR = $(ROOT)/deps/t-digest-c/build/src
 LIBTDIGEST = $(LIBTDIGEST_LIBDIR)/libtdigest_static.a
+REDISBLOOM_GIT_SHA := $(shell git rev-parse --short HEAD)
 
 # Flags for preprocessor
 MODULE_LDFLAGS = -lm -lc -L$(LIBTDIGEST_LIBDIR) -ltdigest_static
