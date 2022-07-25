@@ -11,6 +11,10 @@
 #include <string.h>
 #include <ctype.h>
 
+#ifndef REDISBLOOM_GIT_SHA
+#define REDISBLOOM_GIT_SHA "unknown"
+#endif
+
 #define CF_MAX_ITERATIONS 20
 #define CF_DEFAULT_BUCKETSIZE 2
 #define CF_DEFAULT_EXPANSION 1
@@ -1217,6 +1221,10 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         REDISMODULE_OK) {
         return REDISMODULE_ERR;
     }
+
+    // Print version string!
+    RedisModule_Log(ctx, "notice", "RedisBloom version %d.%d.%d (Git=%s)", REBLOOM_VERSION_MAJOR,
+                    REBLOOM_VERSION_MINOR, REBLOOM_VERSION_PATCH, REDISBLOOM_GIT_SHA);
 
     if (argc == 1) {
         RedisModule_Log(ctx, "notice", "Found empty string. Assuming ramp-packer validation");
