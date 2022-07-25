@@ -1207,11 +1207,11 @@ static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2) {
         return REDISMODULE_ERR;                                                                    \
     } while (0);
 
-static inline const char* git_GetExtraVersion() {
+static inline const char *git_GetExtraVersion() {
 #ifdef GIT_VERSPEC
-  return GIT_VERSPEC;
+    return GIT_VERSPEC;
 #else
-  return "";
+    return "";
 #endif
 }
 
@@ -1222,9 +1222,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     }
 
     // Print version string!
-    RedisModule_Log(ctx, "notice", "RedisBloom version %d.%d.%d (Git=%s)",
-        REBLOOM_VERSION_MAJOR, REBLOOM_VERSION_MINOR, REBLOOM_VERSION_PATCH,
-        git_GetExtraVersion());
+    RedisModule_Log(ctx, "notice", "RedisBloom version %d.%d.%d (Git=%s)", REBLOOM_VERSION_MAJOR,
+                    REBLOOM_VERSION_MINOR, REBLOOM_VERSION_PATCH, git_GetExtraVersion());
 
     if (argc == 1) {
         RedisModule_Log(ctx, "notice", "Found empty string. Assuming ramp-packer validation");
