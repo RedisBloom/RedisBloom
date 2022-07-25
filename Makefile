@@ -11,7 +11,7 @@ endif
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
 username := $(shell sh -c 'id -u')
 usergroup := $(shell sh -c 'id -g')
-CPPFLAGS =  -Wall -Wno-unused-function $(DEBUGFLAGS) -fPIC -std=gnu99 -D_GNU_SOURCE -fcommon
+CPPFLAGS =  -Wall -Wno-unused-function $(DEBUGFLAGS) -fPIC -std=gnu99 -D_GNU_SOURCE -fcommon -D_GNU_SOURCE -DREDISBLOOM_GIT_SHA=\"$(REDISBLOOM_GIT_SHA)\"
 # CC:=$(shell sh -c 'type $(CC) >/dev/null 2>/dev/null && echo $(CC) || echo gcc')
 
 # Compile flags for linux / osx
@@ -39,6 +39,7 @@ CPPFLAGS += -I$(ROOT) -I$(ROOT)/contrib
 SRCDIR := $(ROOT)/src
 MODULE_OBJ = $(SRCDIR)/rebloom.o
 MODULE_SO = $(ROOT)/redisbloom.so
+REDISBLOOM_GIT_SHA := $(shell git rev-parse --short HEAD)
 
 DEPS = $(ROOT)/contrib/MurmurHash2.o \
 	   $(ROOT)/rmutil/util.o \
