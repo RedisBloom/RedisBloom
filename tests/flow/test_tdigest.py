@@ -207,15 +207,22 @@ class testTDigest:
         # merge to a t-digest with default compression
         self.assertOk(self.cmd("tdigest.mergestore", "to-tdigest-100", "2","from-1", "from-2"))
         # assert we have same merged weight on both histograms ( given the to-histogram was empty )
-        from_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest-100"))
-        total_weight_to = float(from_info["Merged weight"]) + float(
-            from_info["Unmerged weight"]
+        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest-100"))
+        # ensure tha the destination t-digest has the largest compression of all input t-digests
+        compression = int(to_info["Compression"])
+        self.assertEqual(200, compression)
+        total_weight_to = float(to_info["Merged weight"]) + float(
+            to_info["Unmerged weight"]
         )
         total_weight_from = 10.0 + 1.0
         self.assertEqual(total_weight_from, total_weight_to)
 
-        # merge to a t-digest with default compression
-        self.assertOk(self.cmd("tdigest.mergestore", "to-tdigest-100", "2","from-1", "from-2", "COMPRESSION", "200"))
+        # merge to a t-digest with non-default compression
+        self.assertOk(self.cmd("tdigest.mergestore", "to-tdigest-50", "2","from-1", "from-2", "COMPRESSION", "50"))
+        # ensure tha the destination t-digest has the passed compression
+        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest-50"))
+        compression = int(to_info["Compression"])
+        self.assertEqual(50, compression)
 
     def test_tdigest_mergestore_percentile(self):
         self.cmd("FLUSHALL")

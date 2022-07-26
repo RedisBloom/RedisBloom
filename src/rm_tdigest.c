@@ -1,6 +1,7 @@
 #include <math.h>    // ceil, log10f
 #include <stdlib.h>  // malloc
 #include <strings.h> // strncasecmp
+#include <stdbool.h> // bool
 
 #include "rm_tdigest.h"
 #include "rmutil/util.h"
@@ -223,58 +224,81 @@ int TDigestSketch_MergeStore(RedisModuleCtx *ctx, RedisModuleString **argv, int 
     }
     RedisModuleString *keyNameDestination = argv[1];
     td_histogram_t *tdigestTo = NULL;
+    int current_pos = 0;
+    int res = REDISMODULE_ERR;
+    td_histogram_t **from_tdigests = NULL;
+    RedisModuleKey **from_keys = NULL;
     RedisModuleKey *keyDestination =
         RedisModule_OpenKey(ctx, keyNameDestination, REDISMODULE_READ | REDISMODULE_WRITE);
     // check if key existed already. If so, confirm it's of the proper type
     if (RedisModule_KeyType(keyDestination) != REDISMODULE_KEYTYPE_EMPTY) {
         if (RedisModule_ModuleTypeGetType(keyDestination) != TDigestSketchType) {
-            RedisModule_CloseKey(keyDestination);
             RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
-            return REDISMODULE_ERR;
+            goto cleanup;
         }
     }
     // parse numkeys
     long long numkeys = 1;
     if (RedisModule_StringToLongLong(argv[2], &numkeys) != REDISMODULE_OK) {
-        return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing numkeys");
+        RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing numkeys");
+        goto cleanup;
     }
     if (numkeys > (argc - 3)) {
-        RedisModule_CloseKey(keyDestination);
-        return RedisModule_WrongArity(ctx);
+        RedisModule_WrongArity(ctx);
+        goto cleanup;
     }
-    long long compression = TD_DEFAULT_COMPRESSION;
+    long long compression = 0;
+    bool use_max_compression = true;
     const int start_remaining_args = numkeys + 3;
-    if (start_remaining_args + 3 < argc) {
+    if (start_remaining_args + 2 == argc) {
         int compression_loc = RMUtil_ArgIndex("COMPRESSION", argv + start_remaining_args, argc);
         if (_TDigest_ParseCompressionParameter(ctx,
                                                argv[start_remaining_args + compression_loc + 1],
                                                &compression) == REDISMODULE_ERR) {
-            RedisModule_CloseKey(keyDestination);
-            return REDISMODULE_ERR;
+            goto cleanup;
+        }
+        use_max_compression = false;
+    }
+    from_tdigests = (td_histogram_t **)__td_calloc(numkeys, sizeof(td_histogram_t *));
+    from_keys = (RedisModuleKey **)__td_calloc(numkeys, sizeof(RedisModuleKey *));
+    for (current_pos = 0; current_pos < numkeys; current_pos++) {
+        RedisModuleString *keyNameFrom = argv[current_pos + 3];
+        from_keys[current_pos] = RedisModule_OpenKey(ctx, keyNameFrom, REDISMODULE_READ);
+        if (_TDigest_KeyCheck(ctx, from_keys[current_pos])) {
+            goto cleanup;
+        }
+        from_tdigests[current_pos] = RedisModule_ModuleTypeGetValue(from_keys[current_pos]);
+        // if we haven't specified the COMPRESSION parameter we will use the
+        // highest possible compression
+        if (use_max_compression) {
+            const long long td_compression = from_tdigests[current_pos]->compression;
+            compression = td_compression > compression ? td_compression : compression;
         }
     }
     tdigestTo = td_new(compression);
 
     for (long long i = 0; i < numkeys; i++) {
-        RedisModuleString *keyNameFrom = argv[i + 3];
-        RedisModuleKey *keyFrom = RedisModule_OpenKey(ctx, keyNameFrom, REDISMODULE_READ);
-        if (_TDigest_KeyCheck(ctx, keyFrom)) {
-            RedisModule_CloseKey(keyDestination);
-            return REDISMODULE_ERR;
-        }
-        td_histogram_t *tdigestFrom = RedisModule_ModuleTypeGetValue(keyFrom);
-        td_merge(tdigestTo, tdigestFrom);
-        RedisModule_CloseKey(keyFrom);
+        td_merge(tdigestTo, from_tdigests[i]);
     }
     if (RedisModule_ModuleTypeSetValue(keyDestination, TDigestSketchType, tdigestTo) !=
         REDISMODULE_OK) {
-        RedisModule_CloseKey(keyDestination);
-        return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error setting value");
+        RedisModule_ReplyWithError(ctx, "ERR T-Digest: error setting value");
+        goto cleanup;
     }
-    RedisModule_CloseKey(keyDestination);
+    res = REDISMODULE_OK;
     RedisModule_ReplicateVerbatim(ctx);
     RedisModule_ReplyWithSimpleString(ctx, "OK");
-    return REDISMODULE_OK;
+cleanup:
+    RedisModule_CloseKey(keyDestination);
+    for (size_t i = 0; i < current_pos; i++) {
+        RedisModule_CloseKey(from_keys[i]);
+    }
+    if (from_tdigests)
+        __td_free(from_tdigests);
+    if (from_keys)
+        __td_free(from_keys);
+
+    return res;
 }
 
 /**
