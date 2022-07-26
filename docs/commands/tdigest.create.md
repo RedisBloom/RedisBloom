@@ -7,7 +7,8 @@ Allocate memory and initialize a t-digest sketch.
 
 Optional parameters:
 
-* **COMPRESSION**: The compression parameter. 100 is a common value for normal uses. 1000 is extremely large. If no value value is passed by default the compression will be 100. See the further notes bellow.
+* **COMPRESSION**: The compression parameter. 100 is a common value for normal uses. 1000 is extremely large.
+If no value is passed by default the compression will be 100. See the further notes bellow.
 
 
 
