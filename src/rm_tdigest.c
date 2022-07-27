@@ -251,7 +251,8 @@ int TDigestSketch_MergeStore(RedisModuleCtx *ctx, RedisModuleString **argv, int 
         goto cleanup;
     }
     long long compression = 0;
-    // If no compression value is passed, the used compression will the maximal value amongst all inputs.
+    // If no compression value is passed, the used compression will the maximal value amongst all
+    // inputs.
     bool use_max_compression = true;
     const int start_remaining_args = numkeys + 3;
     if (start_remaining_args + 2 == argc) {
