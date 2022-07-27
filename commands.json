@@ -777,15 +777,15 @@
     "group": "tdigest"
   },
   "TDIGEST.MERGE": {
-    "summary": "Merges all of the values from 'from' keys to 'this' sketch",
+    "summary": "Merges all of the values from 'source-key' keys to 'destination-key' sketch",
     "complexity": "O(N), where N is the number of centroids",
     "arguments": [
       {
-        "name": "to-key",
+        "name": "destination-key",
         "type": "key"
       },
       {
-        "name": "from-key",
+        "name": "source-key",
         "type": "key",
         "multiple": true
       }
@@ -794,7 +794,7 @@
     "group": "tdigest"
   },
   "TDIGEST.MERGESTORE": {
-    "summary": "Merges all of the values from 'from' keys to 'destination-key' sketch",
+    "summary": "Merges all of the values from 'source-key' keys to 'destination-key' sketch",
     "complexity": "O(N*K), where N is the number of centroids and K being the number of input sketches",
     "arguments": [
       {
@@ -807,7 +807,7 @@
         "type": "integer"
       },
       {
-        "name": "from-key",
+        "name": "source-key",
         "type": "key",
         "multiple": true
       },

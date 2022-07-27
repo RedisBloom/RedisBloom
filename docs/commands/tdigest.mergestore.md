@@ -7,8 +7,8 @@ If destination already exists, it is overwritten.
 #### Parameters:
 
 * **destination-key**: Sketch to copy observation values to (a t-digest data structure)
-* **numkeys**: Sketch(es) to copy observation values from (a t-digest data structure)
-* **from**: Sketch(es) to copy observation values from (a t-digest data structure)
+* **numkeys**: Number of sketch(es) to copy observation values from
+* **source-key**: Sketch(es) to copy observation values from (a t-digest data structure)
 
 
 Optional parameters:
