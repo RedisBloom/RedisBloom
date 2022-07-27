@@ -296,10 +296,18 @@ class testTDigest:
     def test_negative_tdigest_mergestore(self):
         self.cmd("SET", "to-tdigest", "B")
         self.cmd("SET", "from-tdigest", "B")
+        self.assertOk(self.cmd("tdigest.create", "from-1", 100))
 
         # WRONGTYPE
         self.assertRaises(
             ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest", "1", "from-tdigest"
+        )
+        # WRONGTYPE in the one of the inputs
+        self.assertRaises(
+            ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest", "2", "from-1", "from-tdigest"
+        )
+        self.assertRaises(
+            ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest", "2", "from-tdigest", "from-1"
         )
         self.cmd("DEL", "to-tdigest")
         # arity lower
