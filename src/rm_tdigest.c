@@ -39,6 +39,9 @@ static int _TDigest_KeyCheck(RedisModuleCtx *ctx, RedisModuleKey *key) {
     return REDISMODULE_OK;
 }
 
+/**
+ * Helper method to parse compression parameter.
+ */
 static int _TDigest_ParseCompressionParameter(RedisModuleCtx *ctx, const RedisModuleString *param,
                                               long long *compression) {
     if (RedisModule_StringToLongLong(param, compression) != REDISMODULE_OK) {
@@ -78,14 +81,10 @@ int TDigestSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     long long compression = TD_DEFAULT_COMPRESSION;
     // if argc is 3 we have the compression parameter defined
     // otherwise we use the default value
-    if (argc == 3 && RedisModule_StringToLongLong(argv[2], &compression) != REDISMODULE_OK) {
+    if (argc == 3 &&
+        _TDigest_ParseCompressionParameter(ctx, argv[2], &compression) != REDISMODULE_OK) {
         RedisModule_CloseKey(key);
-        return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing compression parameter");
-    }
-    if (compression <= 0) {
-        RedisModule_CloseKey(key);
-        return RedisModule_ReplyWithError(
-            ctx, "ERR T-Digest: compression parameter needs to be a positive integer");
+        return REDISMODULE_ERR;
     }
     tdigest = td_new(compression);
     if (RedisModule_ModuleTypeSetValue(key, TDigestSketchType, tdigest) != REDISMODULE_OK) {
@@ -241,6 +240,10 @@ int TDigestSketch_MergeStore(RedisModuleCtx *ctx, RedisModuleString **argv, int 
     long long numkeys = 1;
     if (RedisModule_StringToLongLong(argv[2], &numkeys) != REDISMODULE_OK) {
         RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing numkeys");
+        goto cleanup;
+    }
+    if (numkeys <= 0) {
+        RedisModule_ReplyWithError(ctx, "ERR T-Digest: numkeys needs to be a positive integer");
         goto cleanup;
     }
     if (numkeys > (argc - 3)) {

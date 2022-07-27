@@ -322,6 +322,14 @@ class testTDigest:
             "from-tdigest",
             "extra-arg",
         )
+        # numkeys needs to be a positive integer
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest", "-1", "from-tdigest"
+        )
+        # numkeys needs to be a positive integer
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest", "0", "from-tdigest"
+        )
 
     def test_tdigest_min_max(self):
         self.assertOk(self.cmd("tdigest.create", "tdigest", 100))
