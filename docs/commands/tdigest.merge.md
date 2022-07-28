@@ -2,8 +2,8 @@ Merges all the observation values from the 'from' sketch to the 'to' sketch.
 
 #### Parameters:
 
-* **to-key**: Sketch to copy observation values to (a t-digest data structure)
-* **from-key**: Sketch to copy observation values from (a t-digest data structure)
+* **destination-key**: Sketch to copy observation values to (a t-digest data structure)
+* **source-key**: Sketch to copy observation values from (a t-digest data structure)
 
 @return
 

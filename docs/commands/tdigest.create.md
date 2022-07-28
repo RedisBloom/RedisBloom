@@ -3,7 +3,12 @@ Allocate memory and initialize a t-digest sketch.
 #### Parameters:
 
 * **key**: The name of the sketch (a t-digest data structure)
-* **compression**: The compression parameter. 100 is a common value for normal uses. 1000 is extremely large. See the further notes bellow
+
+
+Optional parameters:
+
+* **COMPRESSION**: The compression parameter. 100 is a common value for normal uses. 1000 is extremely large.
+If no value is passed by default the compression will be 100. Further notes bellow.
 
 
 **Further notes on compression vs accuracy:**

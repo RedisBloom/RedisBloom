@@ -730,7 +730,8 @@
       },
       {
         "name": "compression",
-        "type": "integer"
+        "type": "integer",
+        "optional": true
       }
     ],
     "since": "2.4.0",
@@ -776,16 +777,55 @@
     "group": "tdigest"
   },
   "TDIGEST.MERGE": {
-    "summary": "Merges all of the values from 'from' to 'this' sketch",
+    "summary": "Merges all of the values from 'source-key' keys to 'destination-key' sketch",
     "complexity": "O(N), where N is the number of centroids",
     "arguments": [
       {
-        "name": "to-key",
+        "name": "destination-key",
         "type": "key"
       },
       {
-        "name": "from-key",
+        "name": "source-key",
+        "type": "key",
+        "multiple": true
+      }
+    ],
+    "since": "2.4.0",
+    "group": "tdigest"
+  },
+  "TDIGEST.MERGESTORE": {
+    "summary": "Merges all of the values from 'source-key' keys to 'destination-key' sketch",
+    "complexity": "O(N*K), where N is the number of centroids and K being the number of input sketches",
+    "arguments": [
+      {
+        "name": "destination-key",
         "type": "key"
+      }
+      ,
+      {
+        "name": "numkeys",
+        "type": "integer"
+      },
+      {
+        "name": "source-key",
+        "type": "key",
+        "multiple": true
+      },
+      {
+        "name": "config",
+        "type": "block",
+        "optional": true,
+        "arguments": [
+          {
+            "name": "compression",
+            "token": "COMPRESSION",
+            "type": "pure-token"
+          },
+          {
+            "name": "compression",
+            "type": "integer"
+          }
+        ]
       }
     ],
     "since": "2.4.0",
