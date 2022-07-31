@@ -6,7 +6,7 @@ type: docs
 ---
 
 [![Discord](https://img.shields.io/discord/697882427875393627?style=flat-square)](https://discord.gg/wXhwjCQ)
-[![Github](https://img.shields.io/static/v1?label=&message=repository&color=5961FF&logo=github)](https://github.com/RedisBloom/RedisBloom/)
+[![GitHub](https://img.shields.io/static/v1?label=&message=repository&color=5961FF&logo=github)](https://github.com/RedisBloom/RedisBloom/)
 
 RedisBloom adds four probabilistic data structures to Redis: a scalable **Bloom filter**, a **cuckoo filter**, a **count-min sketch**, and a **top-k**. These data structures trade perfect accuracy for extreme memory efficiency, so they're especially useful for big data and streaming applications.
 

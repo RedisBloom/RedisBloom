@@ -6,7 +6,7 @@ If an item enters the Top-K list, the item which is expelled is returned.
 
 * **key**: Name of sketch where item is added.
 * **item**: Item/s to be added.
-* **increment**: increment to current item score. Increment must be greater or equal to 1. Incerement is limited to 100,000 to avoid server freeze.
+* **increment**: increment to current item score. Increment must be greater or equal to 1. Increment is limited to 100,000 to avoid server freeze.
 
 @return
 

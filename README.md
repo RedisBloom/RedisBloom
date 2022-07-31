@@ -87,6 +87,7 @@ $ redis-server --loadmodule /path/to/redisbloom.so
 | redis-modules-sdk | TypeScript | BSD-3-Clause | [Dani Tseitlin](https://github.com/danitseitlin) | [GitHub](https://github.com/danitseitlin/redis-modules-sdk) |
 | redis-modules-java | Java | Apache License 2.0 | [dengliming](https://github.com/dengliming) | [GitHub](https://github.com/dengliming/redis-modules-java) |
 | NRedisBloom | .NET | MIT | [yadazula](https://github.com/yadazula) | [GitHub](https://github.com/yadazula/NRedisBloom) |
+| vertx-redis-client | Java | Apache License 2.0 | [Eclipse Vert.x](https://github.com/vert-x3) | [GitHub](https://github.com/vert-x3/vertx-redis-client) |
 
 ## Documentation
 Documentation and full command reference at [redisbloom.io](http://redisbloom.io).

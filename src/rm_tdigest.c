@@ -1,6 +1,7 @@
 #include <math.h>    // ceil, log10f
 #include <stdlib.h>  // malloc
 #include <strings.h> // strncasecmp
+#include <stdbool.h> // bool
 
 #include "rm_tdigest.h"
 #include "rmutil/util.h"
@@ -15,6 +16,7 @@
 #define __td_calloc RedisModule_Calloc
 #define __td_realloc RedisModule_Realloc
 #define __td_free RedisModule_Free
+#define TD_DEFAULT_COMPRESSION 100
 
 #include "tdigest.h"
 
@@ -38,7 +40,22 @@ static int _TDigest_KeyCheck(RedisModuleCtx *ctx, RedisModuleKey *key) {
 }
 
 /**
- * Command: TDIGEST.CREATE {key} {compression}
+ * Helper method to parse compression parameter.
+ */
+static int _TDigest_ParseCompressionParameter(RedisModuleCtx *ctx, const RedisModuleString *param,
+                                              long long *compression) {
+    if (RedisModule_StringToLongLong(param, compression) != REDISMODULE_OK) {
+        return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing compression parameter");
+    }
+    if (*compression <= 0) {
+        return RedisModule_ReplyWithError(
+            ctx, "ERR T-Digest: compression parameter needs to be a positive integer");
+    }
+    return REDISMODULE_OK;
+}
+
+/**
+ * Command: TDIGEST.CREATE {key} [{compression}]
  *
  * Allocate the memory and initialize the t-digest.
  *
@@ -48,12 +65,12 @@ static int _TDigest_KeyCheck(RedisModuleCtx *ctx, RedisModuleKey *key) {
  * @return REDISMODULE_OK on success, or REDISMODULE_ERR  if the command failed
  */
 int TDigestSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    if (argc != 3) {
+    if (argc < 2 || argc > 3) {
         return RedisModule_WrongArity(ctx);
     }
 
-    long long compression = 0;
     RedisModuleString *keyName = argv[1];
+    td_histogram_t *tdigest = NULL;
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ | REDISMODULE_WRITE);
     if (RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_EMPTY &&
         RedisModule_ModuleTypeGetType(key) != TDigestSketchType) {
@@ -61,18 +78,15 @@ int TDigestSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
         RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
         return REDISMODULE_ERR;
     }
-
-    if (RedisModule_StringToLongLong(argv[2], &compression) != REDISMODULE_OK) {
+    long long compression = TD_DEFAULT_COMPRESSION;
+    // if argc is 3 we have the compression parameter defined
+    // otherwise we use the default value
+    if (argc == 3 &&
+        _TDigest_ParseCompressionParameter(ctx, argv[2], &compression) != REDISMODULE_OK) {
         RedisModule_CloseKey(key);
-        return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing compression parameter");
+        return REDISMODULE_ERR;
     }
-    if (compression <= 0) {
-        RedisModule_CloseKey(key);
-        return RedisModule_ReplyWithError(
-            ctx, "ERR T-Digest: compression parameter needs to be a positive integer");
-    }
-    td_histogram_t *tdigest = td_new(compression);
-    ;
+    tdigest = td_new(compression);
     if (RedisModule_ModuleTypeSetValue(key, TDigestSketchType, tdigest) != REDISMODULE_OK) {
         RedisModule_CloseKey(key);
         return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error setting value");
@@ -187,6 +201,109 @@ int TDigestSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModule_ReplicateVerbatim(ctx);
     RedisModule_ReplyWithSimpleString(ctx, "OK");
     return REDISMODULE_OK;
+}
+
+/**
+ * Command: TDIGEST.MERGESTORE {destination} numkeys from-key [from-key ...] [COMPRESSION
+ * compression]
+ *
+ * Merges all of the values from 'from' keys to 'destination-key' sketch.
+ * It is mandatory to provide the number of input keys (numkeys) before
+ * passing the input keys and the other (optional) arguments.
+ * If destination already exists, it is overwritten.
+ *
+ * @param ctx Context in which Redis modules operate
+ * @param argv Redis command arguments, as an array of strings
+ * @param argc Redis command number of arguments
+ * @return REDISMODULE_OK on success, or REDISMODULE_ERR  if the command failed
+ */
+int TDigestSketch_MergeStore(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    if (argc < 4) {
+        return RedisModule_WrongArity(ctx);
+    }
+    RedisModuleString *keyNameDestination = argv[1];
+    td_histogram_t *tdigestTo = NULL;
+    int current_pos = 0;
+    int res = REDISMODULE_ERR;
+    td_histogram_t **from_tdigests = NULL;
+    RedisModuleKey **from_keys = NULL;
+    RedisModuleKey *keyDestination =
+        RedisModule_OpenKey(ctx, keyNameDestination, REDISMODULE_READ | REDISMODULE_WRITE);
+    // check if key existed already. If so, confirm it's of the proper type
+    if (RedisModule_KeyType(keyDestination) != REDISMODULE_KEYTYPE_EMPTY) {
+        if (RedisModule_ModuleTypeGetType(keyDestination) != TDigestSketchType) {
+            RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+            goto cleanup;
+        }
+    }
+    // parse numkeys
+    long long numkeys = 1;
+    if (RedisModule_StringToLongLong(argv[2], &numkeys) != REDISMODULE_OK) {
+        RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing numkeys");
+        goto cleanup;
+    }
+    if (numkeys <= 0) {
+        RedisModule_ReplyWithError(ctx, "ERR T-Digest: numkeys needs to be a positive integer");
+        goto cleanup;
+    }
+    if (numkeys > (argc - 3)) {
+        RedisModule_WrongArity(ctx);
+        goto cleanup;
+    }
+    long long compression = 0;
+    // If no compression value is passed, the used compression will the maximal value amongst all
+    // inputs.
+    bool use_max_compression = true;
+    const int start_remaining_args = numkeys + 3;
+    if (start_remaining_args + 2 == argc) {
+        int compression_loc = RMUtil_ArgIndex("COMPRESSION", argv + start_remaining_args, argc);
+        if (_TDigest_ParseCompressionParameter(ctx,
+                                               argv[start_remaining_args + compression_loc + 1],
+                                               &compression) == REDISMODULE_ERR) {
+            goto cleanup;
+        }
+        use_max_compression = false;
+    }
+    from_tdigests = (td_histogram_t **)__td_calloc(numkeys, sizeof(td_histogram_t *));
+    from_keys = (RedisModuleKey **)__td_calloc(numkeys, sizeof(RedisModuleKey *));
+    for (current_pos = 0; current_pos < numkeys; current_pos++) {
+        RedisModuleString *keyNameFrom = argv[current_pos + 3];
+        from_keys[current_pos] = RedisModule_OpenKey(ctx, keyNameFrom, REDISMODULE_READ);
+        if (_TDigest_KeyCheck(ctx, from_keys[current_pos])) {
+            goto cleanup;
+        }
+        from_tdigests[current_pos] = RedisModule_ModuleTypeGetValue(from_keys[current_pos]);
+        // if we haven't specified the COMPRESSION parameter we will use the
+        // highest possible compression
+        if (use_max_compression) {
+            const long long td_compression = from_tdigests[current_pos]->compression;
+            compression = td_compression > compression ? td_compression : compression;
+        }
+    }
+    tdigestTo = td_new(compression);
+
+    for (long long i = 0; i < numkeys; i++) {
+        td_merge(tdigestTo, from_tdigests[i]);
+    }
+    if (RedisModule_ModuleTypeSetValue(keyDestination, TDigestSketchType, tdigestTo) !=
+        REDISMODULE_OK) {
+        RedisModule_ReplyWithError(ctx, "ERR T-Digest: error setting value");
+        goto cleanup;
+    }
+    res = REDISMODULE_OK;
+    RedisModule_ReplicateVerbatim(ctx);
+    RedisModule_ReplyWithSimpleString(ctx, "OK");
+cleanup:
+    RedisModule_CloseKey(keyDestination);
+    for (size_t i = 0; i < current_pos; i++) {
+        RedisModule_CloseKey(from_keys[i]);
+    }
+    if (from_tdigests)
+        __td_free(from_tdigests);
+    if (from_keys)
+        __td_free(from_keys);
+
+    return res;
 }
 
 /**
@@ -518,6 +635,7 @@ int TDigestModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     RMUtil_RegisterWriteDenyOOMCmd(ctx, "tdigest.add", TDigestSketch_Add);
     RMUtil_RegisterWriteDenyOOMCmd(ctx, "tdigest.reset", TDigestSketch_Reset);
     RMUtil_RegisterWriteDenyOOMCmd(ctx, "tdigest.merge", TDigestSketch_Merge);
+    RMUtil_RegisterWriteDenyOOMCmd(ctx, "tdigest.mergestore", TDigestSketch_MergeStore);
     RMUtil_RegisterReadCmd(ctx, "tdigest.min", TDigestSketch_Min);
     RMUtil_RegisterReadCmd(ctx, "tdigest.max", TDigestSketch_Max);
     RMUtil_RegisterReadCmd(ctx, "tdigest.quantile", TDigestSketch_Quantile);
