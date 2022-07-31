@@ -22,9 +22,9 @@ A **top-k** maintains a list of _k_ most frequently seen items.
 
 Note: You can also [build and load the module](#building-and-loading-redisbloom) yourself.
 
-### 1. Launch RedisBloom with Docker
+### 1. Launch with Docker
 ```
-docker run -p 6379:6379 --name redis-redisbloom redislabs/rebloom:latest
+docker run -d --name redis-stack-server -p 6379:6379 redis/redis-stack-server:latest
 ```
 
 ### 2. Use RedisBloom with `redis-cli`
