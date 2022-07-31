@@ -24,7 +24,7 @@ Note: You can also [build and load the module](#building-and-loading-redisbloom)
 
 ### 1. Launch with Docker
 ```
-docker run -p 6379:6379 --rm --name redis-stack redis/redis-stack-server:latest
+docker run -d --name redis-stack-server -p 6379:6379 redis/redis-stack-server:latest
 ```
 
 ### 2. Use RedisBloom with `redis-cli`
