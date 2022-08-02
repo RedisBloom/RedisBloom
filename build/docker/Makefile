@@ -7,6 +7,6 @@ REDIS_VERSION=6.2.6
 REPO=rebloom
 
 OSNICK ?= buster
-OSNICK.official ?= buster
+OSNICK.official ?= bullseye
 
 include ${MK}/module.docker.rules
