@@ -674,7 +674,7 @@
     "since": "2.0.0",
     "group": "topk"
   },
-  "TOPK.Count": {
+  "TOPK.COUNT": {
     "summary": "Return the count for one or more items are in a sketch",
     "complexity": "O(n) where n is the number of items",
     "arguments": [
