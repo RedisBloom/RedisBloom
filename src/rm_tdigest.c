@@ -410,13 +410,18 @@ int TDigestSketch_Quantile(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing quantile");
         }
     }
-    qsort(quantiles, n_quantiles, sizeof(double), double_cmpfunc);
     double *values = (double *)__td_calloc(n_quantiles, sizeof(double));
-    td_quantiles(tdigest, quantiles, values, n_quantiles);
+    for (int i = 0; i < n_quantiles; ++i) {
+        int start = i;
+        while (quantiles[i] < quantiles[i + 1] && i < n_quantiles) {
+            ++i;
+        }
+        td_quantiles(tdigest, quantiles + start, values + start, i - start + 1);
+    }
     RedisModule_CloseKey(key);
     RedisModule_ReplyWithArray(ctx, 2 * n_quantiles);
     for (int i = 0; i < n_quantiles; ++i) {
-        RedisModule_ReplyWithDouble(ctx, quantiles[i]);
+        RedisModule_ReplyWithString(ctx, argv[2 + i]);
         RedisModule_ReplyWithDouble(ctx, values[i]);
     }
     __td_free(values);
