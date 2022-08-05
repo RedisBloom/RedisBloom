@@ -74,10 +74,14 @@ int TDigestSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     RedisModuleString *keyName = argv[1];
     td_histogram_t *tdigest = NULL;
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ | REDISMODULE_WRITE);
-    if (RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_EMPTY &&
-        RedisModule_ModuleTypeGetType(key) != TDigestSketchType) {
-        RedisModule_CloseKey(key);
-        RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+    if (RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_EMPTY) {
+        if (RedisModule_ModuleTypeGetType(key) == TDigestSketchType) {
+            RedisModule_CloseKey(key);
+            RedisModule_ReplyWithError(ctx, "ERR T-Digest: key already exists");
+        } else {
+            RedisModule_CloseKey(key);
+            RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+        }
         return REDISMODULE_ERR;
     }
     long long compression = TD_DEFAULT_COMPRESSION;
