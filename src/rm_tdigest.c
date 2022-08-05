@@ -413,7 +413,7 @@ int TDigestSketch_Quantile(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     double *values = (double *)__td_calloc(n_quantiles, sizeof(double));
     for (int i = 0; i < n_quantiles; ++i) {
         int start = i;
-        while (quantiles[i] < quantiles[i + 1] && i < n_quantiles) {
+        while (i < n_quantiles - 1 && quantiles[i] < quantiles[i + 1]) {
             ++i;
         }
         td_quantiles(tdigest, quantiles + start, values + start, i - start + 1);
