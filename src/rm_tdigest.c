@@ -45,11 +45,13 @@ static int _TDigest_KeyCheck(RedisModuleCtx *ctx, RedisModuleKey *key) {
 static int _TDigest_ParseCompressionParameter(RedisModuleCtx *ctx, const RedisModuleString *param,
                                               long long *compression) {
     if (RedisModule_StringToLongLong(param, compression) != REDISMODULE_OK) {
-        return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing compression parameter");
+        RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing compression parameter");
+        return REDISMODULE_ERR;
     }
     if (*compression <= 0) {
-        return RedisModule_ReplyWithError(
+        RedisModule_ReplyWithError(
             ctx, "ERR T-Digest: compression parameter needs to be a positive integer");
+        return REDISMODULE_ERR;
     }
     return REDISMODULE_OK;
 }
