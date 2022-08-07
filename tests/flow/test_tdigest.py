@@ -429,6 +429,7 @@ class testTDigest:
                 expected[pos], float(v), 0.01
             )
         # the reply provides the output percentiles in ordered manner
+        expected = [0.95,95.0,0.99,99.0,0.01,1.0,0.50,50.0]
         res = self.cmd("tdigest.quantile", "tdigest", 0.95, 0.99, 0.01, 0.5)
         for pos, v in enumerate(res):
             self.assertAlmostEqual(
