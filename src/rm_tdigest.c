@@ -45,11 +45,13 @@ static int _TDigest_KeyCheck(RedisModuleCtx *ctx, RedisModuleKey *key) {
 static int _TDigest_ParseCompressionParameter(RedisModuleCtx *ctx, const RedisModuleString *param,
                                               long long *compression) {
     if (RedisModule_StringToLongLong(param, compression) != REDISMODULE_OK) {
-        return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing compression parameter");
+        RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing compression parameter");
+        return REDISMODULE_ERR;
     }
     if (*compression <= 0) {
-        return RedisModule_ReplyWithError(
+        RedisModule_ReplyWithError(
             ctx, "ERR T-Digest: compression parameter needs to be a positive integer");
+        return REDISMODULE_ERR;
     }
     return REDISMODULE_OK;
 }
@@ -72,10 +74,14 @@ int TDigestSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     RedisModuleString *keyName = argv[1];
     td_histogram_t *tdigest = NULL;
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ | REDISMODULE_WRITE);
-    if (RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_EMPTY &&
-        RedisModule_ModuleTypeGetType(key) != TDigestSketchType) {
-        RedisModule_CloseKey(key);
-        RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+    if (RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_EMPTY) {
+        if (RedisModule_ModuleTypeGetType(key) == TDigestSketchType) {
+            RedisModule_CloseKey(key);
+            RedisModule_ReplyWithError(ctx, "ERR T-Digest: key already exists");
+        } else {
+            RedisModule_CloseKey(key);
+            RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+        }
         return REDISMODULE_ERR;
     }
     long long compression = TD_DEFAULT_COMPRESSION;
@@ -404,13 +410,18 @@ int TDigestSketch_Quantile(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing quantile");
         }
     }
-    qsort(quantiles, n_quantiles, sizeof(double), double_cmpfunc);
     double *values = (double *)__td_calloc(n_quantiles, sizeof(double));
-    td_quantiles(tdigest, quantiles, values, n_quantiles);
+    for (int i = 0; i < n_quantiles; ++i) {
+        int start = i;
+        while (i < n_quantiles - 1 && quantiles[i] <= quantiles[i + 1]) {
+            ++i;
+        }
+        td_quantiles(tdigest, quantiles + start, values + start, i - start + 1);
+    }
     RedisModule_CloseKey(key);
     RedisModule_ReplyWithArray(ctx, 2 * n_quantiles);
     for (int i = 0; i < n_quantiles; ++i) {
-        RedisModule_ReplyWithDouble(ctx, quantiles[i]);
+        RedisModule_ReplyWithString(ctx, argv[2 + i]);
         RedisModule_ReplyWithDouble(ctx, values[i]);
     }
     __td_free(values);
