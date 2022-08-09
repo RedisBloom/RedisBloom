@@ -703,6 +703,7 @@
         "name": "withcount",
         "token": "WITHCOUNT",
         "type": "pure-token"
+        "optional": true
       }
     ],
     "since": "2.0.0",
