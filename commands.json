@@ -702,7 +702,7 @@
       {
         "name": "withcount",
         "token": "WITHCOUNT",
-        "type": "pure-token"
+        "type": "pure-token",
         "optional": true
       }
     ],
