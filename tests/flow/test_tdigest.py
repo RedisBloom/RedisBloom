@@ -248,27 +248,26 @@ class testTDigest:
         # assert min min/max have same result as quantile 0 and 1
         self.assertEqual(
             float(self.cmd("tdigest.max", "to-tdigest-500")),
-            float(self.cmd("tdigest.quantile", "to-tdigest-500", 1.0)[1]),
+            float(self.cmd("tdigest.quantile", "to-tdigest-500", 1.0)[0]),
         )
         self.assertEqual(
             float(self.cmd("tdigest.min", "to-tdigest-500")),
-            float(self.cmd("tdigest.quantile", "to-tdigest-500", 0.0)[1]),
+            float(self.cmd("tdigest.quantile", "to-tdigest-500", 0.0)[0]),
         )
         self.assertAlmostEqual(
-            1.0, float(self.cmd("tdigest.quantile", "to-tdigest-500", 0.01)[1]), 0.01
+            1.0, float(self.cmd("tdigest.quantile", "to-tdigest-500", 0.01)[0]), 0.01
         )
         self.assertAlmostEqual(
-            99.0, float(self.cmd("tdigest.quantile", "to-tdigest-500", 0.99)[1]), 0.01
+            99.0, float(self.cmd("tdigest.quantile", "to-tdigest-500", 0.99)[0]), 0.01
         )
         self.assertAlmostEqual(
-            99.0, float(self.cmd("tdigest.quantile", "to-tdigest-500", 0.01, 0.99)[3]), 0.01
+            99.0, float(self.cmd("tdigest.quantile", "to-tdigest-500", 0.01, 0.99)[1]), 0.01
         )
-        expected = [0.01,1.0,0.50,50.0,0.95,95.0,0.99,99.0]
+        expected = [1,50,95,99]
         res = self.cmd("tdigest.quantile", "to-tdigest-500", 0.01, 0.5, 0.95, 0.99)
-        for pos, v in enumerate(res):
-            self.assertAlmostEqual(
-                expected[pos], float(v), 0.01
-            )
+        print (res)
+        for i in range(len(res)):
+            self.assertAlmostEqual(expected[i], float(res[i]), 0.01)
 
     def test_negative_tdigest_merge(self):
         self.cmd('FLUSHALL')
@@ -407,33 +406,33 @@ class testTDigest:
         # assert min min/max have same result as quantile 0 and 1
         self.assertEqual(
             float(self.cmd("tdigest.max", "tdigest")),
-            float(self.cmd("tdigest.quantile", "tdigest", 1.0)[1]),
+            float(self.cmd("tdigest.quantile", "tdigest", 1.0)[0]),
         )
         self.assertEqual(
             float(self.cmd("tdigest.min", "tdigest")),
-            float(self.cmd("tdigest.quantile", "tdigest", 0.0)[1]),
+            float(self.cmd("tdigest.quantile", "tdigest", 0.0)[0]),
         )
         self.assertAlmostEqual(
-            1.0, float(self.cmd("tdigest.quantile", "tdigest", 0.01)[1]), 0.01
+            1.0, float(self.cmd("tdigest.quantile", "tdigest", 0.01)[0]), 0.01
         )
         self.assertAlmostEqual(
-            99.0, float(self.cmd("tdigest.quantile", "tdigest", 0.99)[1]), 0.01
+            99.0, float(self.cmd("tdigest.quantile", "tdigest", 0.99)[0]), 0.01
         )
         self.assertAlmostEqual(
-            99.0, float(self.cmd("tdigest.quantile", "tdigest", 0.01, 0.99)[3]), 0.01
+            99.0, float(self.cmd("tdigest.quantile", "tdigest", 0.01, 0.99)[1]), 0.01
         )
-        expected = [0.01,1.0,0.50,50.0,0.95,95.0,0.99,99.0]
+        expected = [1.0,50.0,95.0,99.0]
         res = self.cmd("tdigest.quantile", "tdigest", 0.01, 0.5, 0.95, 0.99)
-        for pos, v in enumerate(res):
+        for i in range(len(res)):
             self.assertAlmostEqual(
-                expected[pos], float(v), 0.01
+                expected[i], float(res[i]), 0.01
             )
         # the reply provides the output percentiles in ordered manner
-        expected = [0.95,95.0,0.99,99.0,0.01,1.0,0.50,50.0]
+        expected = [95.0,99.0,1.0,50.0]
         res = self.cmd("tdigest.quantile", "tdigest", 0.95, 0.99, 0.01, 0.5)
-        for pos, v in enumerate(res):
+        for i in range(len(res)):
             self.assertAlmostEqual(
-                expected[pos], float(v), 0.01
+                expected[i], float(res[i]), 0.01
             )
 
     def test_negative_tdigest_quantile(self):
