@@ -419,9 +419,8 @@ int TDigestSketch_Quantile(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         td_quantiles(tdigest, quantiles + start, values + start, i - start + 1);
     }
     RedisModule_CloseKey(key);
-    RedisModule_ReplyWithArray(ctx, 2 * n_quantiles);
+    RedisModule_ReplyWithArray(ctx, n_quantiles);
     for (int i = 0; i < n_quantiles; ++i) {
-        RedisModule_ReplyWithString(ctx, argv[2 + i]);
         RedisModule_ReplyWithDouble(ctx, values[i]);
     }
     __td_free(values);
