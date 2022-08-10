@@ -220,7 +220,7 @@ jobs:
 
   build-macos:
     macos:
-      xcode: 12.5.1
+      xcode: 11.7.0
     steps:
       - checkout-all
       - run:
