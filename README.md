@@ -58,7 +58,7 @@ A value `0` means that `bar` is definitely not in the set. Bloom filters do not 
 
 ## Building and Loading RedisBloom
 
-To build RedisBloom, ensure you have the proper submodules, and afterwards run `make` in the project's directory.
+To build RedisBloom, ensure you have the proper git submodules, and afterwards run `make` in the project's directory.
 
 ```
 git submodule update --init --recursive
