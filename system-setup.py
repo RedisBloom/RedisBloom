@@ -41,7 +41,6 @@ class RedisTimeSeriesSetup(paella.Setup):
             self.install("lcov-git", aur=True)
         else:
             self.install("lcov")
-        self.run("python3 %s/bin/getrmpytools" % READIES)
         self.run("python3 {READIES}/bin/getcmake".format(READIES=READIES))
         self.pip_install("-r tests/flow/requirements.txt")
 
