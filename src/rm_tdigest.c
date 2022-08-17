@@ -67,7 +67,7 @@ static int _TDigest_ParseCompressionParameter(RedisModuleCtx *ctx, const RedisMo
  * @return REDISMODULE_OK on success, or REDISMODULE_ERR  if the command failed
  */
 int TDigestSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    if (argc < 2 || argc > 3) {
+    if (argc != 2 && argc != 4) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -87,10 +87,16 @@ int TDigestSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     long long compression = TD_DEFAULT_COMPRESSION;
     // if argc is 3 we have the compression parameter defined
     // otherwise we use the default value
-    if (argc == 3 &&
-        _TDigest_ParseCompressionParameter(ctx, argv[2], &compression) != REDISMODULE_OK) {
-        RedisModule_CloseKey(key);
-        return REDISMODULE_ERR;
+    if (argc == 4) {
+        int compression_loc = RMUtil_ArgIndex("COMPRESSION", argv + 2, argc - 2);
+        if (compression_loc == -1) {
+            RedisModule_ReplyWithError(ctx, "ERR T-Digest: wrong keyword");
+            return REDISMODULE_ERR;
+        }
+        if (_TDigest_ParseCompressionParameter(ctx, argv[3], &compression) != REDISMODULE_OK) {
+            RedisModule_CloseKey(key);
+            return REDISMODULE_ERR;
+        }
     }
     tdigest = td_new(compression);
     if (RedisModule_ModuleTypeSetValue(key, TDigestSketchType, tdigest) != REDISMODULE_OK) {
@@ -262,7 +268,12 @@ int TDigestSketch_MergeStore(RedisModuleCtx *ctx, RedisModuleString **argv, int 
     bool use_max_compression = true;
     const int start_remaining_args = numkeys + 3;
     if (start_remaining_args + 2 == argc) {
-        int compression_loc = RMUtil_ArgIndex("COMPRESSION", argv + start_remaining_args, argc);
+        int compression_loc = RMUtil_ArgIndex("COMPRESSION", argv + start_remaining_args,
+                                              argc - start_remaining_args);
+        if (compression_loc == -1) {
+            RedisModule_ReplyWithError(ctx, "ERR T-Digest: wrong keyword");
+            return REDISMODULE_ERR;
+        }
         if (_TDigest_ParseCompressionParameter(ctx,
                                                argv[start_remaining_args + compression_loc + 1],
                                                &compression) == REDISMODULE_ERR) {
