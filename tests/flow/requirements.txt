@@ -1,4 +1,2 @@
-redis==3.5.3
-pytest==4.6.11
+rltest==0.5.4
 requests==2.25.1
-rmtest==0.7.0

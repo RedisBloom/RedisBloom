@@ -7,7 +7,7 @@ remote:
  - setup: redisbloom-m5
 dbconfig:
   - init_commands:
-    - 'TDIGEST.CREATE t-digest 100
+    - 'TDIGEST.CREATE t-digest
 '
 clientconfig:
   - tool: redis-benchmark
