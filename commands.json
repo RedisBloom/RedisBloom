@@ -732,6 +732,7 @@
       {
         "name": "compression",
         "type": "integer",
+        "token": "COMPRESSION",
         "optional": true
       }
     ],
