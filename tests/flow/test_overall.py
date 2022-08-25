@@ -302,6 +302,39 @@ class testRedisBloom():
         with self.assertResponseError():
             self.cmd('bf.info')
 
+    def test_info_capacity(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '100'))
+        self.assertEqual(self.cmd('bf.info bf'), 100)
+
+    def test_info_size(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '100'))
+        self.assertEqual(self.cmd('bf.info bf size'), 296)
+
+    def test_info_filters(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '100'))
+        self.assertEqual(self.cmd('bf.info bf filters'), 1)
+
+    def test_info_items(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '100'))
+        self.assertEqual(self.cmd('bf.info bf items'), 0)
+
+    def test_info_erate(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '100'))
+        self.assertEqual(self.cmd('bf.info bf erate'), 2)
+
+    def test_info_errors(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '100'))
+        with self.assertResponseError():
+            self.cmd('bf.info', 'bf', 'capacity', 'size')
+        with self.assertResponseError():
+            self.cmd('bf.info', 'bf', 'wrong_value')
+
     def test_no_1_error_rate(self):
         self.cmd('FLUSHALL')
         with self.assertResponseError():
