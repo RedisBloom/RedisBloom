@@ -923,7 +923,7 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         } else if (!rsStrcasecmp(argv[2], "erate")) {
             RedisModule_ReplyWithArray(ctx, 1);
             bf->options &BLOOM_OPT_NO_SCALING ? RedisModule_ReplyWithNull(ctx)
-                                            : RedisModule_ReplyWithLongLong(ctx, bf->growth);
+                                              : RedisModule_ReplyWithLongLong(ctx, bf->growth);
         } else {
             return RedisModule_ReplyWithError(ctx, "Invalid information value");
         }
