@@ -145,8 +145,8 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
                 } else {
                     //  using precalculate lookup table to save cpu
                     decay = pow(topk->lookupTable[TOPK_DECAY_LOOKUP_TABLE - 1],
-                                (*countPtr / TOPK_DECAY_LOOKUP_TABLE) *
-                                    topk->lookupTable[*countPtr % TOPK_DECAY_LOOKUP_TABLE]);
+                                (*countPtr / (TOPK_DECAY_LOOKUP_TABLE - 1))) *
+                            topk->lookupTable[*countPtr % (TOPK_DECAY_LOOKUP_TABLE - 1)];
                 }
                 double chance = rand() / (double)RAND_MAX;
                 if (chance < decay) {
