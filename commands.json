@@ -677,6 +677,7 @@
   "TOPK.COUNT": {
     "summary": "Return the count for one or more items are in a sketch",
     "complexity": "O(n) where n is the number of items",
+    "deprecated_since": "2.4",
     "arguments": [
       {
         "name": "key",
