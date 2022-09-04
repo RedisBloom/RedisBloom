@@ -9,7 +9,7 @@ Optional parameters:
 * **SIZE** Size
 * **FILTERS** Number of filters
 * **ITEMS** Numner of items inserted
-* **ERATE** Expansion rate
+* **EXPANSION** Expansion rate
 
 @return
 

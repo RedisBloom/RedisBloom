@@ -219,9 +219,9 @@
               "token": "ITEMS"
             },
             {
-              "name": "erate",
+              "name": "expansion",
               "type": "pure-token",
-              "token": "ERATE"
+              "token": "EXPANSION"
             }
         ]
       }

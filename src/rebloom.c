@@ -920,7 +920,7 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         } else if (!rsStrcasecmp(argv[2], "items")) {
             RedisModule_ReplyWithArray(ctx, 1);
             RedisModule_ReplyWithLongLong(ctx, bf->size);
-        } else if (!rsStrcasecmp(argv[2], "erate")) {
+        } else if (!rsStrcasecmp(argv[2], "expansion")) {
             RedisModule_ReplyWithArray(ctx, 1);
             bf->options &BLOOM_OPT_NO_SCALING ? RedisModule_ReplyWithNull(ctx)
                                               : RedisModule_ReplyWithLongLong(ctx, bf->growth);

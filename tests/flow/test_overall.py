@@ -322,10 +322,10 @@ class testRedisBloom():
         self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '100'))
         self.assertEqual(self.cmd('bf.info bf items'), [0])
 
-    def test_info_erate(self):
+    def test_info_expansion(self):
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '100'))
-        self.assertEqual(self.cmd('bf.info bf erate'), [2])
+        self.assertEqual(self.cmd('bf.info bf expansion'), [2])
 
     def test_info_errors(self):
         self.cmd('FLUSHALL')
