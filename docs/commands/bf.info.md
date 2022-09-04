@@ -8,7 +8,7 @@ Optional parameters:
 * **CAPACITY** Capacity
 * **SIZE** Size
 * **FILTERS** Number of filters
-* **ITEMS** Numner of items inserted
+* **ITEMS** Number of items inserted
 * **EXPANSION** Expansion rate
 
 @return
