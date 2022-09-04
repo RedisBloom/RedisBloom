@@ -392,7 +392,7 @@ static int double_cmpfunc(const void *a, const void *b) {
  * Returns an estimate of the cutoff such that a specified fraction of the data
  * added to this TDigest would be less than or equal to the cutoff quantiles.
  * The command returns an array of results: each element of the returned array
- * populated with quantile_1, cutoff_1, quantile_2, cutoff_2, ..., quantile_N, cutoff_N.
+ * populated with cutoff_1, cutoff_2, ..., cutoff_N.
  *
  * @param ctx Context in which Redis modules operate
  * @param argv Redis command arguments, as an array of strings
@@ -441,9 +441,11 @@ int TDigestSketch_Quantile(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 }
 
 /**
- * Command: TDIGEST.CDF {key} {value}
+ * Command: TDIGEST.CDF {key} {value} [{value}...]
  *
  * Returns the fraction of all points added which are <= value.
+ * The command returns an array of results: each element of the returned array
+ * populated with fraction_1, fraction_2,..., fraction_N.
  *
  * @param ctx Context in which Redis modules operate
  * @param argv Redis command arguments, as an array of strings
