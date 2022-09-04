@@ -480,10 +480,16 @@ class testTDigest:
             self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1.0))
 
         self.assertAlmostEqual(
-            0.01, float(self.cmd("tdigest.cdf", "tdigest", 1.0)), 0.01
+            0.01, float(self.cmd("tdigest.cdf", "tdigest", 1.0)[0]), 0.01
         )
         self.assertAlmostEqual(
-            0.99, float(self.cmd("tdigest.cdf", "tdigest", 99.0)), 0.01
+            0.99, float(self.cmd("tdigest.cdf", "tdigest", 99.0)[0]), 0.01
+        )
+        self.assertAlmostEqual(
+            0.99, float(self.cmd("tdigest.cdf", "tdigest", 1.0, 99.0)[1]), 0.01
+        )
+        self.assertAlmostEqual(
+            0.01, float(self.cmd("tdigest.cdf", "tdigest", 99.0, 1.0)[1]), 0.01
         )
 
     def test_negative_tdigest_cdf(self):
@@ -501,10 +507,6 @@ class testTDigest:
         self.assertOk(self.cmd("tdigest.create", "tdigest"))
         # arity lower
         self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.cdf")
-        # arity upper
-        self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.cdf", "tdigest", 1, 1
-        )
         # parsing
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.cdf", "tdigest", "a"
