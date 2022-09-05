@@ -283,7 +283,7 @@ class testRedisBloom():
         env.cmd('FLUSHALL')
         env.assertOk(env.cmd('bf.reserve', 'bf', '0.001', '100'))
         env.assertEqual(env.cmd('bf.info bf'), ['Capacity', 100,
-                                                  'Size', 352,
+                                                  'Size', 296,
                                                   'Number of filters', 1,
                                                   'Number of items inserted', 0,
                                                   'Expansion rate', 2])
@@ -340,7 +340,7 @@ class testRedisBloom():
         env.assertEqual([0, 0, 0, ], resp[:3])
         env.assertEqual('non scaling filter is full', str(resp[3]))
         info_actual = env.cmd('BF.INFO nonscaling_err')
-        info_expected = ['Capacity', 3, 'Size', 160, 'Number of filters', 1,
+        info_expected = ['Capacity', 3, 'Size', 104, 'Number of filters', 1,
                          'Number of items inserted', 3, 'Expansion rate', None]
         env.assertEqual(info_actual, info_expected)
 
@@ -352,7 +352,7 @@ class testRedisBloom():
         env.assertOk(env.cmd('bf.reserve bf', error_rate, capacity))
         info = ConvertInfo(env.cmd('bf.info bf'))
         env.assertEqual(info["Capacity"], 300000000)
-        env.assertEqual(info["Size"], 1132420288)
+        env.assertEqual(info["Size"], 1132420232)
 
 class testRedisBloomNoCodec():
     def __init__(self):
@@ -392,7 +392,7 @@ class testRedisBloomNoCodec():
         env = self.env
         env.cmd('FLUSHALL')
         maxrange = 500
-    
+
         env.cmd('bf.reserve', 'bf', 0.01, int(maxrange / 8), 'expansion', '2')
         for x in range(maxrange):
             env.cmd('bf.add', 'bf', str(x))
@@ -419,11 +419,11 @@ class testRedisBloomNoCodec():
         # check loaded filter
         for x in range(maxrange):
             env.assertEqual(1, env.cmd('bf.exists', 'bf', str(x)))
-    
+
     def test_scandump_huge(self):
         env = self.env
         env.cmd('FLUSHALL')
-    
+
         env.cmd('bf.reserve', 'bf', 0.01, 1024 * 1024 * 64)
         for x in range(6):
             env.cmd('bf.add', 'bf', 'foo')

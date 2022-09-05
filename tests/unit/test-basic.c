@@ -10,7 +10,7 @@
 
 TEST_DEFINE_GLOBALS();
 
-TEST_CLASS(basic);
+TEST_CLASS(basic)
 
 static void *calloc_wrap(size_t a, size_t b) { return calloc(a, b); }
 static void free_wrap(void *p) { free(p); }

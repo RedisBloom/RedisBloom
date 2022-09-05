@@ -3,11 +3,11 @@ made up to date on that key, and merged and unmerged weight.
 
 ### Parameters:
 
-* **key**: The name of the sketch.
+* **key**: The name of the sketch (a t-digest data structure)
 
 @return
 
-@array-reply with information of the sketch.
+@array-reply with information about the sketch.
 
 @examples
 

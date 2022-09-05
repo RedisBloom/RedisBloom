@@ -29,48 +29,62 @@ class testTDigest:
         self.restart_and_reload = self.env.restartAndReload
 
     def test_tdigest_create(self):
+        self.cmd('FLUSHALL')
         for compression in range(100, 1000, 100):
-            self.assertOk(self.cmd("tdigest.create", "tdigest", compression))
+            self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", compression))
             self.assertEqual(
                 compression,
                 parse_tdigest_info(self.cmd("tdigest.info", "tdigest"))["Compression"],
             )
+            self.assertOk(self.cmd("del", "tdigest"))
+        self.assertOk(self.cmd("tdigest.create", "tdigest-default-compression"))
+        self.assertEqual(
+                100,
+                parse_tdigest_info(self.cmd("tdigest.info", "tdigest-default-compression"))["Compression"],
+            )
+
+    def test_tdigest_create_twice(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd("tdigest.create", "tdigest"))
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest")
 
     def test_negative_tdigest_create(self):
+        self.cmd('FLUSHALL')
         self.cmd("SET", "tdigest", "B")
         # WRONGTYPE
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest", 100
+            redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest", "compression", 100
         )
         self.cmd("DEL", "tdigest")
-        # arity lower
-        self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest"
-        )
         # arity upper
         self.assertRaises(
-            redis.exceptions.ResponseError,
-            self.cmd,
-            "tdigest.create",
-            "tdigest",
-            100,
-            5,
+            redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest", 100, 5,
+        )
+        # missing
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest", "compression"
         )
         # parsing
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest", "a"
+            redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest", "compression", "a"
         )
         # compression negative/zero value
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest", 0
+            redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest", "compression", 0
         )
         # compression negative/zero value
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest", -1
+            redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest", "compression", -1
+        )
+        # wrong keyword
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest", "string", 100
         )
 
     def test_tdigest_reset(self):
-        self.assertOk(self.cmd("tdigest.create", "tdigest", 100))
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 100))
         # reset on empty histogram
         self.assertOk(self.cmd("tdigest.reset", "tdigest"))
         # insert datapoints into sketch
@@ -91,6 +105,7 @@ class testTDigest:
         )
 
     def test_negative_tdigest_reset(self):
+        self.cmd('FLUSHALL')
         self.cmd("SET", "tdigest", "B")
         # WRONGTYPE
         self.assertRaises(
@@ -102,7 +117,7 @@ class testTDigest:
             redis.exceptions.ResponseError, self.cmd, "tdigest.reset", "tdigest"
         )
 
-        self.assertOk(self.cmd("tdigest.create", "tdigest", 100))
+        self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 100))
         # arity lower
         self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.reset")
         # arity upper
@@ -111,7 +126,8 @@ class testTDigest:
         )
 
     def test_tdigest_add(self):
-        self.assertOk(self.cmd("tdigest.create", "tdigest", 100))
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 100))
         # reset on empty histogram
         self.assertOk(self.cmd("tdigest.reset", "tdigest"))
         # insert datapoints into sketch
@@ -126,13 +142,14 @@ class testTDigest:
             )
 
     def test_negative_tdigest_add(self):
+        self.cmd('FLUSHALL')
         self.cmd("SET", "tdigest", "B")
         # WRONGTYPE
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 100, 100
         )
         self.cmd("DEL", "tdigest")
-        self.assertOk(self.cmd("tdigest.create", "tdigest", 100))
+        self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 100))
         # arity lower
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest"
@@ -154,8 +171,9 @@ class testTDigest:
         )
 
     def test_tdigest_merge(self):
-        self.assertOk(self.cmd("tdigest.create", "to-tdigest", 100))
-        self.assertOk(self.cmd("tdigest.create", "from-tdigest", 100))
+        self.cmd("FLUSHALL")
+        self.assertOk(self.cmd("tdigest.create", "to-tdigest", "compression", 100))
+        self.assertOk(self.cmd("tdigest.create", "from-tdigest", "compression", 100))
         # insert datapoints into sketch
         for _ in range(100):
             self.assertOk(self.cmd("tdigest.add", "from-tdigest", 1.0, 1.0))
@@ -171,8 +189,9 @@ class testTDigest:
         self.assertEqual(1100, total_weight_to)
 
     def test_tdigest_merge_to_empty(self):
-        self.assertOk(self.cmd("tdigest.create", "to-tdigest", 100))
-        self.assertOk(self.cmd("tdigest.create", "from-tdigest", 100))
+        self.cmd("FLUSHALL")
+        self.assertOk(self.cmd("tdigest.create", "to-tdigest", "compression", 100))
+        self.assertOk(self.cmd("tdigest.create", "from-tdigest", "compression", 100))
         # insert datapoints into sketch
         for _ in range(100):
             self.assertOk(self.cmd("tdigest.add", "from-tdigest", 1.0, 1.0))
@@ -189,7 +208,67 @@ class testTDigest:
         )
         self.assertEqual(total_weight_from, total_weight_to)
 
+    def test_tdigest_mergestore(self):
+        self.cmd("FLUSHALL")
+        self.assertOk(self.cmd("tdigest.create", "from-1", "compression", 100))
+        self.assertOk(self.cmd("tdigest.create", "from-2", "compression", 200))
+        # insert datapoints into sketch
+        self.assertOk(self.cmd("tdigest.add", "from-1", 1.0, 1.0))
+        self.assertOk(self.cmd("tdigest.add", "from-2", 1.0, 10.0))
+        # merge to a t-digest with default compression
+        self.assertOk(self.cmd("tdigest.mergestore", "to-tdigest-100", "2","from-1", "from-2"))
+        # assert we have same merged weight on both histograms ( given the to-histogram was empty )
+        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest-100"))
+        # ensure tha the destination t-digest has the largest compression of all input t-digests
+        compression = int(to_info["Compression"])
+        self.assertEqual(200, compression)
+        total_weight_to = float(to_info["Merged weight"]) + float(
+            to_info["Unmerged weight"]
+        )
+        total_weight_from = 10.0 + 1.0
+        self.assertEqual(total_weight_from, total_weight_to)
+
+        # merge to a t-digest with non-default compression
+        self.assertOk(self.cmd("tdigest.mergestore", "to-tdigest-50", "2","from-1", "from-2", "COMPRESSION", "50"))
+        # ensure tha the destination t-digest has the passed compression
+        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest-50"))
+        compression = int(to_info["Compression"])
+        self.assertEqual(50, compression)
+
+    def test_tdigest_mergestore_percentile(self):
+        self.cmd("FLUSHALL")
+        self.assertOk(self.cmd("tdigest.create", "from-1", "compression", 500))
+        # insert datapoints into sketch
+        for x in range(1, 10000):
+            self.assertOk(self.cmd("tdigest.add", "from-1", x * 0.01, 1.0))
+        # merge to a t-digest with default compression
+        self.assertOk(self.cmd("tdigest.mergestore", "to-tdigest-500", "1","from-1", "COMPRESSION", "500"))
+        # assert min min/max have same result as quantile 0 and 1
+        self.assertEqual(
+            float(self.cmd("tdigest.max", "to-tdigest-500")),
+            float(self.cmd("tdigest.quantile", "to-tdigest-500", 1.0)[0]),
+        )
+        self.assertEqual(
+            float(self.cmd("tdigest.min", "to-tdigest-500")),
+            float(self.cmd("tdigest.quantile", "to-tdigest-500", 0.0)[0]),
+        )
+        self.assertAlmostEqual(
+            1.0, float(self.cmd("tdigest.quantile", "to-tdigest-500", 0.01)[0]), 0.01
+        )
+        self.assertAlmostEqual(
+            99.0, float(self.cmd("tdigest.quantile", "to-tdigest-500", 0.99)[0]), 0.01
+        )
+        self.assertAlmostEqual(
+            99.0, float(self.cmd("tdigest.quantile", "to-tdigest-500", 0.01, 0.99)[1]), 0.01
+        )
+        expected = [1,50,95,99]
+        res = self.cmd("tdigest.quantile", "to-tdigest-500", 0.01, 0.5, 0.95, 0.99)
+        print (res)
+        for i in range(len(res)):
+            self.assertAlmostEqual(expected[i], float(res[i]), 0.01)
+
     def test_negative_tdigest_merge(self):
+        self.cmd('FLUSHALL')
         self.cmd("SET", "to-tdigest", "B")
         self.cmd("SET", "from-tdigest", "B")
 
@@ -198,12 +277,12 @@ class testTDigest:
             ResponseError, self.cmd, "tdigest.merge", "to-tdigest", "from-tdigest"
         )
         self.cmd("DEL", "to-tdigest")
-        self.assertOk(self.cmd("tdigest.create", "to-tdigest", 100))
+        self.assertOk(self.cmd("tdigest.create", "to-tdigest"))
         self.assertRaises(
             ResponseError, self.cmd, "tdigest.merge", "to-tdigest", "from-tdigest"
         )
         self.cmd("DEL", "from-tdigest")
-        self.assertOk(self.cmd("tdigest.create", "from-tdigest", 100))
+        self.assertOk(self.cmd("tdigest.create", "from-tdigest"))
         # arity lower
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.merge", "to-tdigest"
@@ -225,8 +304,61 @@ class testTDigest:
             ResponseError, self.cmd, "tdigest.merge", "to-tdigest", "dont-exist"
         )
 
+    def test_negative_tdigest_mergestore(self):
+        self.cmd('FLUSHALL')
+        self.cmd("SET", "to-tdigest", "B")
+        self.cmd("SET", "from-tdigest", "B")
+        self.assertOk(self.cmd("tdigest.create", "from-1"))
+
+        # WRONGTYPE
+        self.assertRaises(
+            ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest", "1", "from-tdigest"
+        )
+        # WRONGTYPE in the one of the inputs
+        self.assertRaises(
+            ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest", "2", "from-1", "from-tdigest"
+        )
+        self.assertRaises(
+            ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest", "2", "from-tdigest", "from-1"
+        )
+        self.cmd("DEL", "to-tdigest")
+        # arity lower
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.mergestore"
+        )
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest"
+        )
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest", "1"
+        )
+        # arity upper
+        self.assertRaises(
+            ResponseError,
+            self.cmd,
+            "tdigest.mergestore",
+            "to-tdigest",
+            "1",
+            "from-tdigest",
+            "extra-arg",
+        )
+        # numkeys needs to be a positive integer
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest", "-1", "from-tdigest"
+        )
+        # numkeys needs to be a positive integer
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest", "0", "from-tdigest"
+        )
+        # bad keyword
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest-500", "1","from-1",
+                                                      "bad_keyword", "500"
+        ) 
+
     def test_tdigest_min_max(self):
-        self.assertOk(self.cmd("tdigest.create", "tdigest", 100))
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd("tdigest.create", "tdigest"))
         # test for no datapoints first
         self.assertEqual(sys.float_info.max, float(self.cmd("tdigest.min", "tdigest")))
         self.assertEqual(-sys.float_info.max, float(self.cmd("tdigest.max", "tdigest")))
@@ -238,6 +370,7 @@ class testTDigest:
         self.assertEqual(1, float(self.cmd("tdigest.min", "tdigest")))
 
     def test_negative_tdigest_min_max(self):
+        self.cmd('FLUSHALL')
         self.cmd("SET", "tdigest", "B")
         # WRONGTYPE
         self.assertRaises(
@@ -255,7 +388,7 @@ class testTDigest:
         )
 
         self.cmd("DEL", "tdigest", "B")
-        self.assertOk(self.cmd("tdigest.create", "tdigest", 100))
+        self.assertOk(self.cmd("tdigest.create", "tdigest"))
         # arity lower
         self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.min")
         self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.max")
@@ -268,42 +401,45 @@ class testTDigest:
         )
 
     def test_tdigest_quantile(self):
-        self.assertOk(self.cmd("tdigest.create", "tdigest", 500))
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
         # insert datapoints into sketch
         for x in range(1, 10000):
             self.assertOk(self.cmd("tdigest.add", "tdigest", x * 0.01, 1.0))
         # assert min min/max have same result as quantile 0 and 1
         self.assertEqual(
             float(self.cmd("tdigest.max", "tdigest")),
-            float(self.cmd("tdigest.quantile", "tdigest", 1.0)[1]),
+            float(self.cmd("tdigest.quantile", "tdigest", 1.0)[0]),
         )
         self.assertEqual(
             float(self.cmd("tdigest.min", "tdigest")),
-            float(self.cmd("tdigest.quantile", "tdigest", 0.0)[1]),
+            float(self.cmd("tdigest.quantile", "tdigest", 0.0)[0]),
         )
         self.assertAlmostEqual(
-            1.0, float(self.cmd("tdigest.quantile", "tdigest", 0.01)[1]), 0.01
+            1.0, float(self.cmd("tdigest.quantile", "tdigest", 0.01)[0]), 0.01
         )
         self.assertAlmostEqual(
-            99.0, float(self.cmd("tdigest.quantile", "tdigest", 0.99)[1]), 0.01
+            99.0, float(self.cmd("tdigest.quantile", "tdigest", 0.99)[0]), 0.01
         )
         self.assertAlmostEqual(
-            99.0, float(self.cmd("tdigest.quantile", "tdigest", 0.01, 0.99)[3]), 0.01
+            99.0, float(self.cmd("tdigest.quantile", "tdigest", 0.01, 0.99)[1]), 0.01
         )
-        expected = [0.01,1.0,0.50,50.0,0.95,95.0,0.99,99.0]
+        expected = [1.0,50.0,95.0,99.0]
         res = self.cmd("tdigest.quantile", "tdigest", 0.01, 0.5, 0.95, 0.99)
-        for pos, v in enumerate(res):
+        for i in range(len(res)):
             self.assertAlmostEqual(
-                expected[pos], float(v), 0.01
+                expected[i], float(res[i]), 0.01
             )
         # the reply provides the output percentiles in ordered manner
+        expected = [95.0,99.0,1.0,50.0]
         res = self.cmd("tdigest.quantile", "tdigest", 0.95, 0.99, 0.01, 0.5)
-        for pos, v in enumerate(res):
+        for i in range(len(res)):
             self.assertAlmostEqual(
-                expected[pos], float(v), 0.01
+                expected[i], float(res[i]), 0.01
             )
 
     def test_negative_tdigest_quantile(self):
+        self.cmd('FLUSHALL')
         self.cmd("SET", "tdigest", "B")
         # WRONGTYPE
         self.assertRaises(
@@ -314,7 +450,7 @@ class testTDigest:
             ResponseError, self.cmd, "tdigest.quantile", "dont-exist", 0.9
         )
         self.cmd("DEL", "tdigest", "B")
-        self.assertOk(self.cmd("tdigest.create", "tdigest", 100))
+        self.assertOk(self.cmd("tdigest.create", "tdigest"))
         # arity lower
         self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.quantile")
         # parsing
@@ -332,7 +468,8 @@ class testTDigest:
         )
 
     def test_tdigest_cdf(self):
-        self.assertOk(self.cmd("tdigest.create", "tdigest", 500))
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
         # insert datapoints into sketch
         for x in range(1, 100):
             self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1.0))
@@ -345,6 +482,7 @@ class testTDigest:
         )
 
     def test_negative_tdigest_cdf(self):
+        self.cmd('FLUSHALL')
         self.cmd("SET", "tdigest", "B")
         # WRONGTYPE
         self.assertRaises(
@@ -355,7 +493,7 @@ class testTDigest:
             redis.exceptions.ResponseError, self.cmd, "tdigest.cdf", "dont-exist", 0.9
         )
         self.cmd("DEL", "tdigest", "B")
-        self.assertOk(self.cmd("tdigest.create", "tdigest", 100))
+        self.assertOk(self.cmd("tdigest.create", "tdigest"))
         # arity lower
         self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.cdf")
         # arity upper
@@ -368,7 +506,8 @@ class testTDigest:
         )
 
     def test_tdigest_trimmed_mean(self):
-        self.assertOk(self.cmd("tdigest.create", "tdigest", 500))
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
         # insert datapoints into sketch
         for x in range(0, 20):
             self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1.0))
@@ -384,6 +523,7 @@ class testTDigest:
         )
 
     def test_negative_tdigest_trimmed_mean(self):
+        self.cmd('FLUSHALL')
         self.cmd("SET", "tdigest", "B")
         # WRONGTYPE
         self.assertRaises(
@@ -394,7 +534,7 @@ class testTDigest:
             ResponseError, self.cmd, "tdigest.trimmed_mean", "dont-exist", 0.9
         )
         self.cmd("DEL", "tdigest", "B")
-        self.assertOk(self.cmd("tdigest.create", "tdigest", 100))
+        self.assertOk(self.cmd("tdigest.create", "tdigest"))
         # arity lower
         self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.trimmed_mean")
         # arity upper
@@ -421,6 +561,7 @@ class testTDigest:
         )
 
     def test_negative_tdigest_info(self):
+        self.cmd('FLUSHALL')
         self.cmd("SET", "tdigest", "B")
         # WRONGTYPE
         self.assertRaises(
@@ -431,7 +572,7 @@ class testTDigest:
             redis.exceptions.ResponseError, self.cmd, "tdigest.info", "dont-exist"
         )
         self.cmd("DEL", "tdigest", "B")
-        self.assertOk(self.cmd("tdigest.create", "tdigest", 100))
+        self.assertOk(self.cmd("tdigest.create", "tdigest"))
         # arity lower
         self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.info")
         # arity upper
@@ -440,7 +581,8 @@ class testTDigest:
         )
 
     def test_save_load(self):
-        self.assertOk(self.cmd("tdigest.create", "tdigest", 500))
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd("tdigest.create", "tdigest"))
         # insert datapoints into sketch
         for _ in range(1, 101):
             self.assertOk(self.cmd("tdigest.add", "tdigest", 1.0, 1.0))

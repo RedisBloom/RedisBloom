@@ -26,6 +26,10 @@ class testCuckoo():
         self.cmd('CF.RESERVE', 'cf', '1000')
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE', 'cf', '1000')
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE', 'tooSmall', '1')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERT', 'cf', 'CAPACITY', '-1', 'ITEMS', 'k0')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERT', 'cf', 'CAPACITY', '3', 'ITEMS', 'k0')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERTNX', 'cf', 'CAPACITY', '-1', 'ITEMS', 'k0')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERTNX', 'cf', 'CAPACITY', '3', 'ITEMS', 'k0')
         self.assertEqual(0, self.cmd('cf.exists', 'cf', 'k1'))
         self.assertEqual(1, self.cmd('cf.add', 'cf', 'k1'))
         self.assertEqual(1, self.cmd('cf.add', 'cf', 'k1'))
@@ -276,6 +280,16 @@ class testCuckoo():
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 EXPANSION')
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 EXPANSION string')
 
+    def test_expansion_0(self):
+        self.cmd('FLUSHALL')
+        self.cmd('CF.RESERVE a 4 EXPANSION 0')
+        self.assertEqual(self.cmd('CF.ADD a 1'), 1)
+        self.assertEqual(self.cmd('CF.ADD a 2'), 1)
+        self.assertEqual(self.cmd('CF.ADD a 3'), 1)
+        self.assertEqual(self.cmd('CF.ADD a 4'), 1)
+        self.assertEqual(self.cmd('CF.INSERT a ITEMS 5 6'), [-1, -1])
+        self.assertRaises(ResponseError, self.cmd, 'Filter is full')
+
     def test_info(self):
         self.cmd('FLUSHALL')
         self.cmd('CF.RESERVE a 1000')
@@ -293,6 +307,41 @@ class testCuckoo():
         with self.assertResponseError():
             self.cmd('cf.info')
 
+    def test_params(self):
+        self.cmd('FLUSHALL')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 EXPANSION -1')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 BUCKETSIZE 0')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 BUCKETSIZE -1')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 MAXITERATIONS 0')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 MAXITERATIONS -1')        
+        self.cmd('CF.RESERVE err 1000')
+
+        self.assertRaises(ResponseError, self.cmd, 'CF.ADD')
+        self.assertRaises(ResponseError, self.cmd, 'CF.ADD err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.ADDNX')
+        self.assertRaises(ResponseError, self.cmd, 'CF.ADDNX err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERT')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERT err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERT err element') # W/O ITEMS keyword
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERTNX')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERTNX err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERTNX err element') # W/O ITEMS keyword
+
+        self.assertRaises(ResponseError, self.cmd, 'CF.DEL')
+        self.assertRaises(ResponseError, self.cmd, 'CF.DEL err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.EXISTS')
+        self.assertRaises(ResponseError, self.cmd, 'CF.EXISTS err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.MEXISTS')
+        self.assertRaises(ResponseError, self.cmd, 'CF.MEXISTS err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.COUNT')
+        self.assertRaises(ResponseError, self.cmd, 'CF.COUNT err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INFO')
+
+        self.assertRaises(ResponseError, self.cmd, 'CF.LOADCHUNK err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.LOADCHUNK err iterator') # missing data
+        self.assertRaises(ResponseError, self.cmd, 'CF.SCANDUMP err')
 
 class testCuckooNoCodec():
     def __init__(self):

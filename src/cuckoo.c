@@ -238,6 +238,10 @@ static CuckooInsertStatus CuckooFilter_InsertFP(CuckooFilter *filter, const Look
         return CuckooInsert_Inserted;
     }
 
+    if (filter->expansion == 0) {
+        return CuckooInsert_NoSpace;
+    }
+
     if (CuckooFilter_Grow(filter) != 0) {
         return CuckooInsert_MemAllocFailed;
     }

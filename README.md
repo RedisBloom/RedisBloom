@@ -22,9 +22,9 @@ A **top-k** maintains a list of _k_ most frequently seen items.
 
 Note: You can also [build and load the module](#building-and-loading-redisbloom) yourself.
 
-### 1. Launch RedisBloom with Docker
+### 1. Launch with Docker
 ```
-docker run -p 6379:6379 --name redis-redisbloom redislabs/rebloom:latest
+docker run -d --name redis-stack-server -p 6379:6379 redis/redis-stack-server:latest
 ```
 
 ### 2. Use RedisBloom with `redis-cli`
@@ -58,7 +58,7 @@ A value `0` means that `bar` is definitely not in the set. Bloom filters do not 
 
 ## Building and Loading RedisBloom
 
-To build RedisBloom, ensure you have the proper submodules, and afterwards run `make` in the project's directory.
+To build RedisBloom, ensure you have the proper git submodules, and afterwards run `make` in the project's directory.
 
 ```
 git submodule update --init --recursive
@@ -87,6 +87,7 @@ $ redis-server --loadmodule /path/to/redisbloom.so
 | redis-modules-sdk | TypeScript | BSD-3-Clause | [Dani Tseitlin](https://github.com/danitseitlin) | [GitHub](https://github.com/danitseitlin/redis-modules-sdk) |
 | redis-modules-java | Java | Apache License 2.0 | [dengliming](https://github.com/dengliming) | [GitHub](https://github.com/dengliming/redis-modules-java) |
 | NRedisBloom | .NET | MIT | [yadazula](https://github.com/yadazula) | [GitHub](https://github.com/yadazula/NRedisBloom) |
+| vertx-redis-client | Java | Apache License 2.0 | [Eclipse Vert.x](https://github.com/vert-x3) | [GitHub](https://github.com/vert-x3/vertx-redis-client) |
 
 ## Documentation
 Documentation and full command reference at [redisbloom.io](http://redisbloom.io).

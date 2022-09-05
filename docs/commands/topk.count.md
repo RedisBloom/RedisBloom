@@ -2,6 +2,9 @@ Returns count for an item.
 Multiple items can be requested at once.
 Please note this number will never be higher than the real count and likely to be lower.
 
+This command has been deprecated. The count value is not a representative of
+the number of appearances of an item.
+
 ### Parameters
 
 * **key**: Name of sketch where item is counted.

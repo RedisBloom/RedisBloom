@@ -18,7 +18,7 @@
       {
         "name": "expansion",
         "type": "integer",
-        "command": "EXPANSION",
+        "token": "EXPANSION",
         "optional": true
       },
       {
@@ -75,19 +75,19 @@
       {
         "name": "capacity",
         "type": "integer",
-        "command": "CAPACITY",
+        "token": "CAPACITY",
         "optional": true
       },
       {
         "name": "error",
         "type": "double",
-        "command": "ERROR",
+        "token": "ERROR",
         "optional": true
       },
       {
         "name": "expansion",
         "type": "integer",
-        "command": "EXPANSION",
+        "token": "EXPANSION",
         "optional": true
       },
       {
@@ -212,19 +212,19 @@
       {
         "name": "bucketsize",
         "type": "integer",
-        "command": "BUCKETSIZE",
+        "token": "BUCKETSIZE",
         "optional": true
       },
       {
         "name": "maxiterations",
         "type": "integer",
-        "command": "MAXITERATIONS",
+        "token": "MAXITERATIONS",
         "optional": true
       },
       {
         "name": "expansion",
         "type": "integer",
-        "command": "EXPANSION",
+        "token": "EXPANSION",
         "optional": true
       }
     ],
@@ -274,7 +274,7 @@
       {
         "name": "capacity",
         "type": "integer",
-        "command": "CAPACITY",
+        "token": "CAPACITY",
         "optional": true
       },
       {
@@ -308,7 +308,7 @@
       {
         "name": "capacity",
         "type": "integer",
-        "command": "CAPACITY",
+        "token": "CAPACITY",
         "optional": true
       },
       {
@@ -674,9 +674,10 @@
     "since": "2.0.0",
     "group": "topk"
   },
-  "TOPK.Count": {
+  "TOPK.COUNT": {
     "summary": "Return the count for one or more items are in a sketch",
     "complexity": "O(n) where n is the number of items",
+    "deprecated_since": "2.4",
     "arguments": [
       {
         "name": "key",
@@ -702,7 +703,8 @@
       {
         "name": "withcount",
         "token": "WITHCOUNT",
-        "type": "pure-token"
+        "type": "pure-token",
+        "optional": true
       }
     ],
     "since": "2.0.0",
@@ -730,7 +732,9 @@
       },
       {
         "name": "compression",
-        "type": "integer"
+        "type": "integer",
+        "token": "COMPRESSION",
+        "optional": true
       }
     ],
     "since": "2.4.0",
@@ -776,16 +780,55 @@
     "group": "tdigest"
   },
   "TDIGEST.MERGE": {
-    "summary": "Merges all of the values from 'from' to 'this' sketch",
+    "summary": "Merges all of the values from 'source-key' keys to 'destination-key' sketch",
     "complexity": "O(N), where N is the number of centroids",
     "arguments": [
       {
-        "name": "to-key",
+        "name": "destination-key",
         "type": "key"
       },
       {
-        "name": "from-key",
+        "name": "source-key",
+        "type": "key",
+        "multiple": true
+      }
+    ],
+    "since": "2.4.0",
+    "group": "tdigest"
+  },
+  "TDIGEST.MERGESTORE": {
+    "summary": "Merges all of the values from 'source-key' keys to 'destination-key' sketch",
+    "complexity": "O(N*K), where N is the number of centroids and K being the number of input sketches",
+    "arguments": [
+      {
+        "name": "destination-key",
         "type": "key"
+      }
+      ,
+      {
+        "name": "numkeys",
+        "type": "integer"
+      },
+      {
+        "name": "source-key",
+        "type": "key",
+        "multiple": true
+      },
+      {
+        "name": "config",
+        "type": "block",
+        "optional": true,
+        "arguments": [
+          {
+            "name": "compression",
+            "token": "COMPRESSION",
+            "type": "pure-token"
+          },
+          {
+            "name": "compression",
+            "type": "integer"
+          }
+        ]
       }
     ],
     "since": "2.4.0",
@@ -857,11 +900,11 @@
         "type": "key"
       },
       {
-        "name": "low_cut_percentile",
+        "name": "low_cut_quantile",
         "type": "double"
       },
       {
-        "name": "high_cut_percentile",
+        "name": "high_cut_quantile",
         "type": "double"
       }
     ],
