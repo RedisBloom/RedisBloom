@@ -1,12 +1,13 @@
-#include <math.h>    // ceil, log10f
-#include <stdlib.h>  // malloc
-#include <strings.h> // strncasecmp
+
+#include "cms.h"
+#include "rm_cms.h"
 
 #include "rmutil/util.h"
 #include "version.h"
 
-#include "cms.h"
-#include "rm_cms.h"
+#include <math.h>
+#include <stdlib.h>
+#include <strings.h>
 
 // clang-format off
 #define INNER_ERROR(x) \

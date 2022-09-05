@@ -9,14 +9,14 @@
  * Implementation by Ariel Shtul
  */
 
-#include <assert.h>  // assert
-#include <math.h>    // q, ceil
-#include <stdio.h>   // printf
-#include <stdlib.h>  // malloc
-#include <stdbool.h> // bool
-
 #include "topk.h"
 #include "murmur2/murmurhash2.h"
+
+#include <assert.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
 #define TOPK_HASH(item, itemlen, i) MurmurHash2(item, itemlen, i)
 #define GA 1919

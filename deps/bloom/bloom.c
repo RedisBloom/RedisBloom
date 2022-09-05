@@ -26,10 +26,15 @@
 #define MAKESTRING(n) STRING(n)
 #define STRING(n) #n
 
+#define BLOOM_CALLOC RedisModule_Calloc
+#define BLOOM_FREE RedisModule_Free
+
+/*
 #ifndef BLOOM_CALLOC
 #define BLOOM_CALLOC calloc
 #define BLOOM_FREE free
 #endif
+*/
 
 #define MODE_READ 0
 #define MODE_WRITE 1

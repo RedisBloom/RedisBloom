@@ -448,6 +448,7 @@ static int BFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
  * Incrementally loads a bloom filter.
  */
 static int BFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    BB;
     RedisModule_AutoMemory(ctx);
 
     if (argc != 4) {
@@ -1208,6 +1209,7 @@ static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2) {
     } while (0)
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    BB;
     if (RedisModule_Init(ctx, "bf", REBLOOM_MODULE_VERSION, REDISMODULE_APIVER_1) !=
         REDISMODULE_OK) {
         return REDISMODULE_ERR;

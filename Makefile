@@ -110,6 +110,9 @@ CC=gcc
 
 CC_FLAGS = \
 	-D_GNU_SOURCE \
+	-DREDIS_MODULE_TARGET \
+	-DREDISMODULE_EXPERIMENTAL_API \
+	-include $(SRCDIR)/src/common.h \
 	-I. \
 	-Isrc \
 	-I$(ROOT)/deps \
@@ -120,16 +123,18 @@ CC_FLAGS = \
 	-pedantic \
 	-std=gnu99 \
 	-MMD -MF $(@:.o=.d) \
-	-include $(SRCDIR)/src/common.h \
-	-DREDISMODULE_EXPERIMENTAL_API
+	-g -ggdb
 
-LD_FLAGS += 
+#	-fno-common
+
+LD_FLAGS += -g
 LD_LIBS += \
 	  $(T_DIGEST_C) \
 	  -lc -lm -lpthread
 
 ifeq ($(OS),linux)
-SO_LD_FLAGS += -shared -Bsymbolic $(LD_FLAGS)
+# SO_LD_FLAGS += -shared -Bsymbolic $(LD_FLAGS)
+SO_LD_FLAGS += -shared -Wl,-Bsymbolic,-Bsymbolic-functions  $(LD_FLAGS)
 endif
 
 ifeq ($(OS),macos)
@@ -138,12 +143,12 @@ DYLIB_LD_FLAGS += -dynamiclib $(LD_FLAGS)
 endif
 
 ifeq ($(PROFILE),1)
-CC_FLAGS += -g -ggdb -fno-omit-frame-pointer
+CC_FLAGS += -fno-omit-frame-pointer
 endif
 
 ifeq ($(DEBUG),1)
-CC_FLAGS += -g -ggdb -O0 -DDEBUG -D_DEBUG
-LD_FLAGS += -g
+CC_FLAGS += -O0 -DDEBUG -D_DEBUG
+LD_FLAGS +=
 
 ifeq ($(VALGRIND),1)
 CC_FLAGS += -D_VALGRIND
@@ -169,6 +174,10 @@ _SOURCES=\
 	src/topk.c \
 	src/rm_cms.c \
 	src/cms.c
+
+ifeq ($(DEBUG),1)
+_SOURCES += deps/readies/cetara/diag/gdb.c
+endif
 
 SOURCES=$(addprefix $(SRCDIR)/,$(_SOURCES))
 HEADERS=$(sort $(wildcard src/*.h $(patsubst %.c,%.h,$(SOURCES))))

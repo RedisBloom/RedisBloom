@@ -1,10 +1,11 @@
-#include <assert.h> // assert
-#include <math.h>   // q, ceil
-#include <stdio.h>  // printf
-#include <stdlib.h> // malloc
 
 #include "cms.h"
 #include "murmur2/murmurhash2.h"
+
+#include <assert.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 

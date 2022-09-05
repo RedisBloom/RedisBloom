@@ -1,12 +1,8 @@
-#ifndef TOPK_MODULE_H
-#define TOPK_MODULE_H
 
-#define REDISMODULE_MAIN
+#pragma once
+
 #include "redismodule.h"
 
 #define TOPK_ENC_VER 0
-#define REDIS_MODULE_TARGET
 
 int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
-
-#endif

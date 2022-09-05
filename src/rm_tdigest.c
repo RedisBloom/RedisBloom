@@ -1,12 +1,13 @@
-#include <math.h>    // ceil, log10f
-#include <stdlib.h>  // malloc
-#include <strings.h> // strncasecmp
 
 #include "rm_tdigest.h"
 #include "rmutil/util.h"
 #include "version.h"
 
 #include "redismodule.h"
+
+#include <math.h>
+#include <stdlib.h>
+#include <strings.h>
 
 // defining TD_ALLOC_H is used to change the t-digest allocator at compile time
 // The define should be placed before including "tdigest.h" for the first time
