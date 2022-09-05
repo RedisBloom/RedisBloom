@@ -133,8 +133,7 @@ LD_LIBS += \
 	  -lc -lm -lpthread
 
 ifeq ($(OS),linux)
-# SO_LD_FLAGS += -shared -Bsymbolic $(LD_FLAGS)
-SO_LD_FLAGS += -shared -Wl,-Bsymbolic,-Bsymbolic-functions  $(LD_FLAGS)
+SO_LD_FLAGS += -shared -Wl,-Bsymbolic,-Bsymbolic-functions $(LD_FLAGS)
 endif
 
 ifeq ($(OS),macos)
@@ -155,8 +154,10 @@ CC_FLAGS += -D_VALGRIND
 endif
 else ifeq ($(PROFILE),1)
 CC_FLAGS += -O2
+SO_LD_FLAGS += -flto
 else
 CC_FLAGS += -O3
+SO_LD_FLAGS += -flto
 endif
 
 CC_FLAGS += $(CC_FLAGS.coverage)
