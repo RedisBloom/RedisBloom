@@ -58,6 +58,8 @@ commands:
             git submodule update --init deps/readies
             ./deps/readies/bin/getpy3
             ./deps/readies/bin/getaws
+            python3 --version
+            python3 -m pip list
 
   install-prerequisites:
     parameters:
@@ -83,10 +85,7 @@ commands:
       - run:
           name: Cleanup test log dir
           command: |
-            if [[ -d tests/flow/logs ]]; then
-              cd tests/flow/logs
-              rm -f *.aof *.rdb
-            fi
+            rm -f tests/flow/logs/*.{aof,rdb}
           when: always
       - store_artifacts:
           path: tests/flow/logs
@@ -137,7 +136,9 @@ commands:
       - run:
           name: Tests
           shell: /bin/bash -l -eo pipefail
-          command: make test <<parameters.test_params>> SHOW=1
+          command: |
+            python3 -m RLTest --version
+            make test <<parameters.test_params>> SHOW=1
       - save-tests-logs
 
   build-platforms-steps:
@@ -148,14 +149,13 @@ commands:
       - early-returns
       - setup-executor
       - checkout-all
-      - setup-automation
       - install-prerequisites
       - run:
           name: Build for platform
           command: |
             ROOT=$PWD
             cd build/docker
-            make build OSNICK=<<parameters.platform>> VERSION="$CIRCLE_TAG" BRANCH="$CIRCLE_BRANCH" TEST=1 OFFICIAL=1 SHOW=1 VERBOSE=1
+            make build OSNICK=<<parameters.platform>> VERSION="$CIRCLE_TAG" BRANCH="$CIRCLE_BRANCH" TEST=1 OFFICIAL=1 SHOW=1
             cd $ROOT
             mkdir -p tests/flow/logs
             tar -C tests/flow/logs -xzf bin/artifacts/tests-flow-logs*.tgz
@@ -175,7 +175,7 @@ commands:
           command: |
             docker login -u redisfab -p $DOCKER_REDISFAB_PWD
             cd build/docker
-            make publish OSNICK=<<parameters.platform>> VERSION="$CIRCLE_TAG" BRANCH="$CIRCLE_BRANCH" OFFICIAL=1 SHOW=1 VERBOSE=1
+            make publish OSNICK=<<parameters.platform>> VERSION="$CIRCLE_TAG" BRANCH="$CIRCLE_BRANCH" OFFICIAL=1 SHOW=1
       - persist-artifacts
 
   vm-build-platforms-steps:
@@ -195,7 +195,7 @@ commands:
           command: |
             ROOT=$PWD
             cd build/docker
-            make build OSNICK=<<parameters.platform>> VERSION="$CIRCLE_TAG" BRANCH="$CIRCLE_BRANCH" TEST=1 OFFICIAL=1 SHOW=1 VERBOSE=1
+            make build OSNICK=<<parameters.platform>> VERSION="$CIRCLE_TAG" BRANCH="$CIRCLE_BRANCH" TEST=1 OFFICIAL=1 SHOW=1
             cd $ROOT
             mkdir -p tests/flow/logs
             tar -C tests/flow/logs -xzf bin/artifacts/tests-flow-logs*.tgz
@@ -213,7 +213,7 @@ commands:
           command: |
             docker login -u redisfab -p $DOCKER_REDISFAB_PWD
             cd build/docker
-            make publish OSNICK=<<parameters.platform>> VERSION="$CIRCLE_TAG" BRANCH="$CIRCLE_BRANCH" OFFICIAL=1 SHOW=1 VERBOSE=1
+            make publish OSNICK=<<parameters.platform>> VERSION="$CIRCLE_TAG" BRANCH="$CIRCLE_BRANCH" OFFICIAL=1 SHOW=1
       - persist-artifacts
 
   benchmark-steps:
@@ -271,60 +271,7 @@ commands:
               --push_results_redistimeseries \
               --allowed-envs << parameters.allowed_envs >>
 
-  platform-build-steps:
-    parameters:
-      platform:
-        type: string
-    steps:
-      - early-returns
-      - setup-executor
-      - checkout-all
-      - run:
-          name: Install dependencies
-          command: |
-            ./deps/readies/bin/getpy3
-      - run:
-          name: Build for platform (docker build)
-          command: |
-            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> ARTIFACTS=1 OFFICIAL=1 VERSION=$CIRCLE_TAG BRANCH=$CIRCLE_BRANCH SHOW=1 TEST=1
-            docker login -u redisfab -p $DOCKER_REDISFAB_PWD
-            make -C build/docker publish DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> ARTIFACTS=1 OFFICIAL=1 VERSION=$CIRCLE_TAG BRANCH=$CIRCLE_BRANCH SHOW=1 TEST=1
-      - persist_to_workspace:
-          root: bin
-          paths:
-            - artifacts/snaphots/*.zip
-            - artifacts/*.zip
-
-  arm-platform-build-steps:
-    parameters:
-      platform:
-        type: string
-    steps:
-      - early-returns
-      - checkout-all
-      - run:
-          name: Install dependencies
-          command: |
-            ./deps/readies/bin/getpy3
-      - run:
-          name: Build for platform (docker build)
-          command: |
-            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> ARTIFACTS=1 OFFICIAL=1 VERSION=$CIRCLE_TAG BRANCH=$CIRCLE_BRANCH SHOW=1 TEST=1
-      - persist_to_workspace:
-          root: bin
-          paths:
-            - artifacts/snaphots/*.zip
-            - artifacts/*.zip
-
 jobs:
-  valgrind:
-    docker:
-      - image: redisfab/rmbuilder:6.2.7-x64-bullseye
-    steps:
-      - build-steps:
-          build_params: VALGRIND=1
-          test_params: VALGRIND=1 SIMPLE=1
-
   lint:
     docker:
       - image: redislabsmodules/llvm-toolset:latest
@@ -336,15 +283,6 @@ jobs:
           name: lint
           shell: /bin/bash -l -eo pipefail
           command: make lint
-
-  static-analysis-infer:
-    docker:
-      - image: redisbench/infer-linux64:1.0.0
-    steps:
-      - checkout-all
-      - run:
-          name: run fbinfer
-          command: make static-analysis
 
   build:
     docker:
@@ -396,13 +334,17 @@ jobs:
     macos:
       xcode: 11.7.0
     resource_class: macos.x86.medium.gen2
+    parameters:
+      upload:
+        type: string
+        default: "yes"
     steps:
       - early-returns
       - build-steps
       - run:
           name: Upload artifacts to S3
           command: |
-            if [[ -n $CIRCLE_BRANCH ]]; then
+            if [[ -n $CIRCLE_BRANCH && "<<parameters.upload>>" == "yes" ]]; then
                 make upload-artifacts SHOW=1
             fi
       - persist-artifacts
@@ -422,6 +364,23 @@ jobs:
             make upload-cov SHOW=1
           no_output_timeout: 30m
       - save-tests-logs
+
+  valgrind:
+    docker:
+      - image: redisfab/rmbuilder:6.2.7-x64-bullseye
+    steps:
+      - build-steps:
+          build_params: VALGRIND=1
+          test_params: VALGRIND=1 SIMPLE=1
+
+  static-analysis-infer:
+    docker:
+      - image: redisbench/infer-linux64:1.0.0
+    steps:
+      - checkout-all
+      - run:
+          name: run fbinfer
+          command: make static-analysis
 
   upload-artifacts:
     parameters:
