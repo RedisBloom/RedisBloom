@@ -120,11 +120,11 @@ CC_FLAGS = \
 	-I$(ROOT)/deps/t-digest-c/src \
 	-Wall \
 	-fPIC \
-	-pedantic \
 	-std=gnu99 \
 	-MMD -MF $(@:.o=.d) \
 	-g -ggdb
 
+#	-pedantic
 #	-fno-common
 
 LD_FLAGS += -g

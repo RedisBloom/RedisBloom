@@ -26,6 +26,9 @@
 #define MAKESTRING(n) STRING(n)
 #define STRING(n) #n
 
+extern void (*RedisModule_Free)(void *ptr);
+extern void * (*RedisModule_Calloc)(size_t nmemb, size_t size);
+
 #define BLOOM_CALLOC RedisModule_Calloc
 #define BLOOM_FREE RedisModule_Free
 
