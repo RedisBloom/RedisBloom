@@ -120,7 +120,7 @@ static inline void test__runtests() {
 #define TEST_DEFINE_GLOBALS() test__master_list tests__alltests_g = {.classes = NULL, .nclasses = 0}
 
 #define TEST_CLASS(n)                                                                              \
-    static void __attribute__((constructor(100))) test__initclass_##n(void) { test__addclass(#n); }
+    static void __attribute__((constructor(101))) test__initclass_##n(void) { test__addclass(#n); }
 
 #define TEST_F(cls, name)                                                                          \
     static void test__##cls##__##name(void);                                                       \
