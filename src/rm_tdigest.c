@@ -8,6 +8,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <stdbool.h>
 
 // defining TD_ALLOC_H is used to change the t-digest allocator at compile time
 // The define should be placed before including "tdigest.h" for the first time
