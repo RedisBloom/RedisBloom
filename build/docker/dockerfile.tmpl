@@ -14,8 +14,7 @@ COPY --from=redis /usr/local/ /usr/local/
 ADD . /build
 
 RUN ./deps/readies/bin/getupdates
-RUN ./deps/readies/bin/getpy3
-RUN ./sbin/system-setup.py
+RUN ./sbin/setup
 
 RUN /usr/local/bin/redis-server --version
 
@@ -32,9 +31,9 @@ RUN set -e ;\
 {% if TEST == "1" %}
 RUN TEST='' make test
 RUN set -e ;\
-	cd /build/tests/pytest/logs ;\
+	cd /build/tests/flow/logs ;\
     rm -f *.aof *.rdb ;\
-    tar -czf /build/bin/artifacts/pytest-logs-{{ARCH}}-{{OSNICK}}.tgz .
+    tar -czf /build/bin/artifacts/tests-flow-logs-{{ARCH}}-{{OSNICK}}.tgz .
 {% endif %}
 
 #----------------------------------------------------------------------------------------------
