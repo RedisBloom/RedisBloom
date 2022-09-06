@@ -77,12 +77,11 @@ int TDigestSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ | REDISMODULE_WRITE);
     if (RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_EMPTY) {
         if (RedisModule_ModuleTypeGetType(key) == TDigestSketchType) {
-            RedisModule_CloseKey(key);
             RedisModule_ReplyWithError(ctx, "ERR T-Digest: key already exists");
         } else {
-            RedisModule_CloseKey(key);
             RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
         }
+        RedisModule_CloseKey(key);
         return REDISMODULE_ERR;
     }
     long long compression = TD_DEFAULT_COMPRESSION;
@@ -92,6 +91,7 @@ int TDigestSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
         int compression_loc = RMUtil_ArgIndex("COMPRESSION", argv + 2, argc - 2);
         if (compression_loc == -1) {
             RedisModule_ReplyWithError(ctx, "ERR T-Digest: wrong keyword");
+            RedisModule_CloseKey(key);
             return REDISMODULE_ERR;
         }
         if (_TDigest_ParseCompressionParameter(ctx, argv[3], &compression) != REDISMODULE_OK) {
@@ -273,7 +273,7 @@ int TDigestSketch_MergeStore(RedisModuleCtx *ctx, RedisModuleString **argv, int 
                                               argc - start_remaining_args);
         if (compression_loc == -1) {
             RedisModule_ReplyWithError(ctx, "ERR T-Digest: wrong keyword");
-            return REDISMODULE_ERR;
+            goto cleanup;
         }
         if (_TDigest_ParseCompressionParameter(ctx,
                                                argv[start_remaining_args + compression_loc + 1],
