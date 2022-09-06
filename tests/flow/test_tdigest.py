@@ -1,14 +1,9 @@
-#!/usr/bin/env python3
-import os
-from random import randint
-from RLTest import Env
-from redis import ResponseError
-import redis
-import sys
-import random
-import math
 
-is_valgrind = True if ("VGD" in os.environ or "VALGRIND" in os.environ) else False
+from common import *
+import redis
+import math
+import random
+from random import randint
 
 
 def parse_tdigest_info(array_reply):
@@ -392,7 +387,7 @@ class testTDigest:
             redis.exceptions.ResponseError, self.cmd, "tdigest.max", "dont-exist"
         )
 
-        self.cmd("DEL", "tdigest", "B")
+        self.cmd("DEL", "tdigest")
         self.assertOk(self.cmd("tdigest.create", "tdigest"))
         # arity lower
         self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.min")
@@ -454,7 +449,7 @@ class testTDigest:
         self.assertRaises(
             ResponseError, self.cmd, "tdigest.quantile", "dont-exist", 0.9
         )
-        self.cmd("DEL", "tdigest", "B")
+        self.cmd("DEL", "tdigest")
         self.assertOk(self.cmd("tdigest.create", "tdigest"))
         # arity lower
         self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.quantile")
@@ -503,7 +498,7 @@ class testTDigest:
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.cdf", "dont-exist", 0.9
         )
-        self.cmd("DEL", "tdigest", "B")
+        self.cmd("DEL", "tdigest")
         self.assertOk(self.cmd("tdigest.create", "tdigest"))
         # arity lower
         self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.cdf")
@@ -540,7 +535,7 @@ class testTDigest:
         self.assertRaises(
             ResponseError, self.cmd, "tdigest.trimmed_mean", "dont-exist", 0.9
         )
-        self.cmd("DEL", "tdigest", "B")
+        self.cmd("DEL", "tdigest")
         self.assertOk(self.cmd("tdigest.create", "tdigest"))
         # arity lower
         self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.trimmed_mean")
@@ -578,7 +573,7 @@ class testTDigest:
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.info", "dont-exist"
         )
-        self.cmd("DEL", "tdigest", "B")
+        self.cmd("DEL", "tdigest")
         self.assertOk(self.cmd("tdigest.create", "tdigest"))
         # arity lower
         self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.info")

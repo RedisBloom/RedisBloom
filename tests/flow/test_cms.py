@@ -1,11 +1,6 @@
-#!/usr/bin/env python3
-import os
+
+from common import *
 from random import randint
-
-from RLTest import Env
-from redis import ResponseError
-
-is_valgrind = True if ('VGD' in os.environ or 'VALGRIND' in os.environ) else False
 
 
 class testCMS():
@@ -32,7 +27,7 @@ class testCMS():
         self.assertEqual([5], self.cmd('cms.query', 'cms2', 'a'))
         self.assertEqual(['width', 2000, 'depth', 7, 'count', 5],
                          self.cmd('cms.info', 'cms2'))
-        if is_valgrind is False:
+        if not VALGRIND:
             self.assertEqual(840, self.cmd('MEMORY USAGE', 'cms1'))
 
     def test_validation(self):
