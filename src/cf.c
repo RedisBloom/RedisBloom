@@ -1,11 +1,14 @@
-#define REDISMODULE_MAIN
+
 #include "redismodule.h"
+
 #define CUCKOO_MALLOC RedisModule_Alloc
 #define CUCKOO_CALLOC RedisModule_Calloc
 #define CUCKOO_REALLOC RedisModule_Realloc
 #define CUCKOO_FREE RedisModule_Free
 #include "cuckoo.c"
 #include "cf.h"
+
+#if 0 // unused
 
 // Get the bucket corresponding to the given position. 'offset' is modified to be the
 // actual position (beginning of bucket) where `pos` is mapped to, with respect to
@@ -31,6 +34,8 @@ static uint8_t *getBucketPos(const CuckooFilter *cf, long long pos, size_t *offs
     }
     return cf->filters[filterIx].data + *offset;
 }
+
+#endif // 0
 
 const char *CF_GetEncodedChunk(const CuckooFilter *cf, long long *pos, size_t *buflen,
                                size_t bytelimit) {

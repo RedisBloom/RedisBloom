@@ -1,0 +1,4 @@
+
+T_DIGEST_C=$(T_DIGEST_C_BINDIR)/src/libtdigest_static.a
+
+T_DIGEST_C_LIBS=$(T_DIGEST_C)
