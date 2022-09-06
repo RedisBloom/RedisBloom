@@ -1,17 +1,15 @@
-#ifndef RM_CMS_H
-#define RM_CMS_H
+
+#pragma once
 
 #include <stdint.h> // uint32_t
 
-#define REDISMODULE_MAIN
-#define REDIS_MODULE_TARGET
 #ifdef REDIS_MODULE_TARGET
 #include "redismodule.h"
 #define CMS_CALLOC(count, size) RedisModule_Calloc(count, size)
 #define CMS_FREE(ptr) RedisModule_Free(ptr)
 #else
-#define CMS_CALLOC(count, size) calloc(count, size)
-#define CMS_FREE(ptr) free(ptr)
+//#define CMS_CALLOC(count, size) calloc(count, size)
+//#define CMS_FREE(ptr) free(ptr)
 #endif
 
 typedef struct CMS {
@@ -54,5 +52,3 @@ void CMS_MergeParams(mergeParams params);
 
 /* Help function */
 void CMS_Print(const CMSketch *cms);
-
-#endif

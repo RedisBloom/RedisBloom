@@ -1,13 +1,14 @@
-#include <math.h>    // ceil, log10f
-#include <stdlib.h>  // malloc
-#include <strings.h> // strncasecmp
-#include <stdbool.h> // bool
 
 #include "rm_tdigest.h"
 #include "rmutil/util.h"
 #include "version.h"
-#define REDISMODULE_MAIN
+
 #include "redismodule.h"
+
+#include <math.h>
+#include <stdlib.h>
+#include <strings.h>
+#include <stdbool.h>
 
 // defining TD_ALLOC_H is used to change the t-digest allocator at compile time
 // The define should be placed before including "tdigest.h" for the first time
@@ -360,6 +361,7 @@ int TDigestSketch_Max(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     return REDISMODULE_OK;
 }
 
+#if 1 // unused
 static int double_cmpfunc(const void *a, const void *b) {
     if (*(double *)a > *(double *)b)
         return 1;
@@ -368,6 +370,7 @@ static int double_cmpfunc(const void *a, const void *b) {
     else
         return 0;
 }
+#endif
 
 /**
  * Command: TDIGEST.QUANTILE {key} {quantile} [{quantile2}...]

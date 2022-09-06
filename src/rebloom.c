@@ -1,5 +1,7 @@
+
 #define REDISMODULE_MAIN
 #include "redismodule.h"
+
 #include "sb.h"
 #include "cf.h"
 #include "rm_cms.h"
@@ -1204,12 +1206,19 @@ static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2) {
     }
     return strncasecmp(s1, s2, n1);
 }
-
+/*
 #define BAIL(s, ...)                                                                               \
     do {                                                                                           \
         RedisModule_Log(ctx, "warning", s, ##__VA_ARGS__);                                         \
         return REDISMODULE_ERR;                                                                    \
-    } while (0);
+    } while (0)
+*/
+
+#define BAIL(s)                                                                                    \
+    do {                                                                                           \
+        RedisModule_Log(ctx, "warning", s);                                                        \
+        return REDISMODULE_ERR;                                                                    \
+    } while (0)
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (RedisModule_Init(ctx, "bf", REBLOOM_MODULE_VERSION, REDISMODULE_APIVER_1) !=
