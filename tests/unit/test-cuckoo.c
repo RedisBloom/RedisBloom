@@ -1,7 +1,9 @@
+
 #include "cuckoo.h"
 #include "test.h"
-#include "murmurhash2.h"
+#include "murmur2/murmurhash2.h"
 #include "redismodule.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>

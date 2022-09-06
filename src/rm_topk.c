@@ -1,5 +1,4 @@
-//#include <math.h>     ceil, log10f
-//#include <strings.h>  strncasecmp
+
 #include <assert.h>
 
 #include "version.h"
@@ -8,9 +7,13 @@
 #include "topk.h"
 #include "rm_topk.h"
 
-#define INNER_ERROR(x)                                                                             \
-    RedisModule_ReplyWithError(ctx, x);                                                            \
-    return REDISMODULE_ERR;
+// clang-format off
+#define INNER_ERROR(x) \
+    do { \
+        RedisModule_ReplyWithError(ctx, x); \
+        return REDISMODULE_ERR; \
+    } while(0)
+// clang-format on
 
 RedisModuleType *TopKType;
 
