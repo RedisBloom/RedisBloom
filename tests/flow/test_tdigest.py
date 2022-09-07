@@ -506,6 +506,10 @@ class testTDigest:
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.cdf", "tdigest", "a"
         )
+        # error with multi values
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.cdf", "tdigest", 1.0, 'foo'
+        )
 
     def test_tdigest_trimmed_mean(self):
         self.cmd('FLUSHALL')
