@@ -22,11 +22,11 @@ class RedisBloomSetup(paella.Setup):
         self.install("git jq")
 
     def debian_compat(self):
-        self.run("%s/bin/getgcc" % READIES)
+        self.run("%s/bin/getgcc --modern" % READIES)
 
     def redhat_compat(self):
         self.run("%s/bin/getepel" % READIES)
-        self.run("%s/bin/getgcc" % READIES)
+        self.run("%s/bin/getgcc --modern" % READIES)
 
     def linux_last(self):
         self.install("valgrind")

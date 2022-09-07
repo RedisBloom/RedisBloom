@@ -137,8 +137,9 @@ SO_LD_FLAGS += -shared -Wl,-Bsymbolic,-Bsymbolic-functions $(LD_FLAGS)
 endif
 
 ifeq ($(OS),macos)
-SO_LD_FLAGS += -bundle -undefined dynamic_lookup $(LD_FLAGS)
-DYLIB_LD_FLAGS += -dynamiclib $(LD_FLAGS)
+# SO_LD_FLAGS += -bundle -undefined dynamic_lookup $(LD_FLAGS)
+# DYLIB_LD_FLAGS += -dynamiclib $(LD_FLAGS)
+SO_LD_FLAGS += -shared $(LD_FLAGS)
 endif
 
 ifeq ($(PROFILE),1)
@@ -259,9 +260,9 @@ $(BINDIR)/%.o: $(SRCDIR)/%.c
 $(TARGET): $(BIN_DIRS) $(MISSING_DEPS) $(OBJECTS)
 	@echo Linking $@...
 	$(SHOW)$(CC) $(SO_LD_FLAGS) -o $@ $(OBJECTS) $(LD_LIBS)
-ifeq ($(OS),macos)
-	$(SHOW)$(CC) $(SO_LD_FLAGS) -o $(patsubst %.so,%.dylib,$@) $(OBJECTS) $(LD_LIBS)
-endif
+#ifeq ($(OS),macos)
+#	$(SHOW)$(CC) $(SO_LD_FLAGS) -o $(patsubst %.so,%.dylib,$@) $(OBJECTS) $(LD_LIBS)
+#endif
 
 #----------------------------------------------------------------------------------------------
 
