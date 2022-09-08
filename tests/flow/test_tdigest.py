@@ -505,6 +505,20 @@ class testTDigest:
             redis.exceptions.ResponseError, self.cmd, "tdigest.cdf", "tdigest", "a"
         )
 
+    def test_tdigest_rank(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
+        # insert datapoints into sketch
+        for x in range(0, 20):
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1.0))
+
+
+        self.assertEqual(-1, self.cmd("tdigest.rank", "tdigest", -1))
+        self.assertEqual(0, self.cmd("tdigest.rank", "tdigest", 0))
+        self.assertEqual(1, self.cmd("tdigest.rank", "tdigest", 0))
+        self.assertEqual(20, self.cmd("tdigest.rank", "tdigest", 20))
+        self.assertEqual(18, self.cmd("tdigest.rank", "tdigest", 18))
+
     def test_tdigest_trimmed_mean(self):
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
