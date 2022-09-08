@@ -15,7 +15,7 @@ print
 'add'
 batches = 100
 for i in range(batches):
-    for x in xrange(q / batches):
+    for x in range(q / batches):
         redis_pipe.execute_command('cf.add cf ' + str(x + q / batches * i))
     redis_pipe.execute()
 
@@ -23,7 +23,7 @@ print("--- %s seconds to add ---" % (time.time() - start_time))
 start_time = time.time()
 '''
 print 'check'
-for x in xrange(q):
+for x in range(q):
   redis_pipe.execute_command('cf.exists cf', str(x))
 responses = redis_pipe.execute()
 for response in responses:

@@ -1,16 +1,21 @@
-#include <math.h>    // ceil, log10f
-#include <stdlib.h>  // malloc
-#include <strings.h> // strncasecmp
-
-#include "rmutil/util.h"
-#include "version.h"
 
 #include "cms.h"
 #include "rm_cms.h"
 
-#define INNER_ERROR(x)                                                                             \
-    RedisModule_ReplyWithError(ctx, x);                                                            \
-    return REDISMODULE_ERR;
+#include "rmutil/util.h"
+#include "version.h"
+
+#include <math.h>
+#include <stdlib.h>
+#include <strings.h>
+
+// clang-format off
+#define INNER_ERROR(x) \
+    do { \
+        RedisModule_ReplyWithError(ctx, x); \
+        return REDISMODULE_ERR; \
+    } while(0)
+// clang-format on
 
 RedisModuleType *CMSketchType;
 
@@ -133,7 +138,11 @@ int CMSketch_IncrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_ReplyWithArray(ctx, pairCount);
     for (int i = 0; i < pairCount; ++i) {
         size_t count = CMS_IncrBy(cms, pairArray[i].key, pairArray[i].keylen, pairArray[i].value);
-        RedisModule_ReplyWithLongLong(ctx, (long long)count);
+        if (count != UINT32_MAX) {
+            RedisModule_ReplyWithLongLong(ctx, (long long)count);
+        } else {
+            RedisModule_ReplyWithError(ctx, "CMS: INCRBY overflow");
+        }
     }
     RedisModule_ReplicateVerbatim(ctx);
 

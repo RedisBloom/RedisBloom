@@ -1,11 +1,6 @@
-#!/usr/bin/env python3
-import os
+
+from common import *
 from random import randint
-
-from RLTest import Env
-from redis import ResponseError
-
-is_valgrind = True if ('VGD' in os.environ or 'VALGRIND' in os.environ) else False
 
 
 class testCMS():
@@ -32,7 +27,7 @@ class testCMS():
         self.assertEqual([5], self.cmd('cms.query', 'cms2', 'a'))
         self.assertEqual(['width', 2000, 'depth', 7, 'count', 5],
                          self.cmd('cms.info', 'cms2'))
-        if is_valgrind is False:
+        if not VALGRIND:
             self.assertEqual(840, self.cmd('MEMORY USAGE', 'cms1'))
 
     def test_validation(self):
@@ -176,6 +171,24 @@ class testCMS():
             itemsB.append(randint(0, 100))
             self.cmd('cms.incrby', 'B', str(i), itemsB[i])
         self.assertOk(self.cmd('cms.merge', 'C', 2, 'A', 'B'))
+
+    def test_overflow(self):
+        large_val = 1024*1024*1024*2 - 1
+        
+        self.cmd('FLUSHALL')
+        self.cmd('cms.initbydim', 'cms', '5', '2')
+        self.assertEqual([large_val, 10, 17, 5], self.cmd('cms.incrby', 'cms', 'a', large_val, 'b', 10, 'c', 7, 'd', 5))
+        self.assertEqual([large_val, 17, 17, 5], self.cmd('cms.query', 'cms', 'a', 'b', 'c', 'd'))
+        self.assertEqual([large_val * 2, 27, 34, 10], self.cmd('cms.incrby', 'cms', 'a', large_val, 'b', 10, 'c', 7, 'd', 5))
+        self.assertEqual([large_val * 2, 34, 34, 10], self.cmd('cms.query', 'cms', 'a', 'b', 'c', 'd'))
+        
+        # overflow as result > UNIT32_MAX
+        res = self.cmd('cms.incrby', 'cms', 'a', large_val, 'b', 10, 'c', 7, 'd', 5)
+        # result of insert is an error message
+        self.env.assertResponseError(res[0], contained='CMS: INCRBY overflow')
+        self.assertEqual(res[1:], [44, 51, 15])
+        # result of query in UINT32_MAX (large_val * 2 + 1)
+        self.assertEqual([large_val * 2 + 1, 51, 51, 15], self.cmd('cms.query', 'cms', 'a', 'b', 'c', 'd'))
 
     def test_smallset(self):
         self.cmd('FLUSHALL')

@@ -1,12 +1,5 @@
-#!/usr/bin/env python3
-import os
 
-from RLTest import Env
-from redis import ResponseError
-
-xrange = range
-
-is_valgrind = True if ('VGD' in os.environ or 'VALGRIND' in os.environ) else False
+from common import *
 
 
 class testCuckoo():
@@ -33,6 +26,10 @@ class testCuckoo():
         self.cmd('CF.RESERVE', 'cf', '1000')
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE', 'cf', '1000')
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE', 'tooSmall', '1')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERT', 'cf', 'CAPACITY', '-1', 'ITEMS', 'k0')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERT', 'cf', 'CAPACITY', '3', 'ITEMS', 'k0')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERTNX', 'cf', 'CAPACITY', '-1', 'ITEMS', 'k0')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERTNX', 'cf', 'CAPACITY', '3', 'ITEMS', 'k0')
         self.assertEqual(0, self.cmd('cf.exists', 'cf', 'k1'))
         self.assertEqual(1, self.cmd('cf.add', 'cf', 'k1'))
         self.assertEqual(1, self.cmd('cf.add', 'cf', 'k1'))
@@ -49,15 +46,15 @@ class testCuckoo():
         self.assertRaises(ResponseError, self.cmd, 'cf.del', 'cf')
         self.assertRaises(ResponseError, self.cmd, 'cf.del', 'bf', 'k1')
 
-        for x in xrange(100):
+        for x in range(100):
             self.cmd('cf.add', 'nums', str(x))
 
-        for x in xrange(100):
+        for x in range(100):
             self.assertEqual(1, self.cmd('cf.exists', 'nums', str(x)))
 
         # TODO: re-enable this portion after RLTest migration
         # for _ in self.retry_with_rdb_reload():
-        #     for x in xrange(100):
+        #     for x in range(100):
         #         self.assertEqual(1, self.cmd('cf.exists', 'nums', str(x)))
 
     # TODO: re-enable this portion after RLTest migration
@@ -65,26 +62,26 @@ class testCuckoo():
     #     self.cmd('FLUSHALL')
     #     # Ensure we have a pretty small filter
     #     self.cmd('cf.reserve', 'smallCF', 4)
-    #     for x in xrange(100):
+    #     for x in range(100):
     #         self.cmd('cf.add', 'smallCF', str(x))
     #     # Sanity check
-    #     for x in xrange(100):
+    #     for x in range(100):
     #         self.assertEqual(1, self.cmd('cf.exists', 'smallCF', str(x)))
 
     #     self.restart_and_reload()
-    #     for x in xrange(100):
+    #     for x in range(100):
     #         self.assertEqual(1, self.cmd('cf.exists', 'smallCF', str(x)))
 
     #     self.cmd('cf.reserve', 'smallCF2', 4, 'expansion', 2)
-    #     for x in xrange(100):
+    #     for x in range(100):
     #         self.cmd('cf.add', 'smallCF2', str(x))
     #     # Sanity check
-    #     for x in xrange(100):
+    #     for x in range(100):
     #         self.assertEqual(1, self.cmd('cf.exists', 'smallCF2', str(x)))
 
     # TODO: re-enable this portion after RLTest migration
     # self.restart_and_reload()
-    # for x in xrange(100):
+    # for x in range(100):
     #     self.assertEqual(1, self.cmd('cf.exists', 'smallCF2', str(x)))
     # self.assertEqual(580, self.cmd('MEMORY USAGE', 'smallCF'))
     # self.assertEqual(284, self.cmd('MEMORY USAGE', 'smallCF2'))
@@ -96,41 +93,6 @@ class testCuckoo():
         self.assertEqual(1, self.cmd('cf.count', 'cf', 'k1'))
         self.assertEqual(1, self.cmd('cf.add', 'cf', 'k1'))
         self.assertEqual(2, self.cmd('cf.count', 'cf', 'k1'))
-
-    def test_scandump(self):
-        self.cmd('FLUSHALL')
-        maxrange = 500
-        self.cmd('cf.reserve', 'cf', int(maxrange / 4))
-        self.cmd('cf.scandump', 'cf', '0')
-        for x in xrange(maxrange):
-            self.cmd('cf.add', 'cf', str(x))
-        for x in xrange(maxrange):
-            self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
-
-        # Start with scandump
-        self.assertRaises(ResponseError, self.cmd, 'cf.scandump', 'cf')
-        self.assertRaises(ResponseError, self.cmd, 'cf.scandump', 'cf', 'str')
-        self.assertRaises(ResponseError, self.cmd, 'cf.scandump', 'noexist', '0')
-        # TODO: re-enable this portion after RLTest migration
-        # chunks = []
-        # while True:
-        #     last_pos = chunks[-1][0] if chunks else 0
-        #     chunk = self.cmd('cf.scandump', 'cf', last_pos)
-        #     if not chunk[0]:
-        #         break
-        #     chunks.append(chunk)
-        #     # print("Scaning chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
-
-        # self.cmd('del', 'cf')
-        # self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf')
-        # self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf', 'str')
-        # for chunk in chunks:
-        #     print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
-        #     self.cmd('cf.loadchunk', 'cf', *chunk)
-
-        # for x in xrange(maxrange):
-        #     self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
-        # self.env = Env(decodeResponses=True)
 
     def test_insert(self):
         self.cmd('FLUSHALL')
@@ -187,10 +149,10 @@ class testCuckoo():
     def test_mem_usage(self):
         self.cmd('FLUSHALL')
         self.cmd('CF.RESERVE', 'cf', '1000')
-        if is_valgrind is False:
+        if not VALGRIND:
             self.assertEqual(1112, self.cmd('MEMORY USAGE', 'cf'))
         self.cmd('cf.insert', 'cf', 'nocreate', 'items', 'foo')
-        if is_valgrind is False:
+        if not VALGRIND:
             self.assertEqual(1112, self.cmd('MEMORY USAGE', 'cf'))
 
     def test_max_iterations(self):
@@ -207,8 +169,8 @@ class testCuckoo():
 
     def test_num_deletes(self):
         self.cmd('FLUSHALL')
-        self.cmd('cf.add', 'nums', 'RedisLabs')
-        self.cmd('cf.del', 'nums', 'RedisLabs')
+        self.cmd('cf.add', 'nums', 'Redis')
+        self.cmd('cf.del', 'nums', 'Redis')
         d1 = self.cmd('cf.debug', 'nums')
         self.env.dumpAndReload()
         # for _ in self.client.retry_with_rdb_reload():   
@@ -222,10 +184,10 @@ class testCuckoo():
         q = 100
         self.cmd('CF.RESERVE cf 8 MAXITERATIONS 50')
 
-        for x in xrange(q):
+        for x in range(q):
             self.cmd('cf.add cf', str(x))
 
-        for x in xrange(q):
+        for x in range(q):
             self.assertEqual(1, self.cmd('cf.exists cf', str(x)))
 
         str1 = self.cmd('cf.debug cf')[49:52]
@@ -237,6 +199,30 @@ class testCuckoo():
         self.assertRaises(ResponseError, self.cmd, 'CF.COMPACT a')
         self.assertRaises(ResponseError, self.cmd, 'CF.COMPACT a b')
         self.env = Env(decodeResponses=True)
+
+
+    def test_compact(self):
+        self.env = Env()
+        self.cmd('FLUSHALL')
+        q = 100
+        self.cmd('CF.RESERVE cf 8 MAXITERATIONS 50')
+
+        for x in range(q):
+            self.cmd('cf.add cf', str(x))
+
+        for x in range(q):
+            self.assertEqual(1, self.cmd('cf.exists cf', str(x)))
+
+        str1 = self.cmd('cf.debug cf')[49:52]
+        self.assertGreaterEqual(str1, "130")  # In experiments was larger than 130
+        self.assertEqual(self.cmd('cf.compact cf'), 'OK')
+        str2 = self.cmd('cf.debug cf')[49:52]
+        self.assertGreaterEqual(str1, str2)  # Expect to see reduction after compaction
+
+        self.assertRaises(ResponseError, self.cmd, 'CF.COMPACT a')
+        self.assertRaises(ResponseError, self.cmd, 'CF.COMPACT a b')
+        self.env = Env(decodeResponses=True)
+
 
     def test_max_expansions(self):
         self.cmd('FLUSHALL')
@@ -294,6 +280,16 @@ class testCuckoo():
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 EXPANSION')
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 EXPANSION string')
 
+    def test_expansion_0(self):
+        self.cmd('FLUSHALL')
+        self.cmd('CF.RESERVE a 4 EXPANSION 0')
+        self.assertEqual(self.cmd('CF.ADD a 1'), 1)
+        self.assertEqual(self.cmd('CF.ADD a 2'), 1)
+        self.assertEqual(self.cmd('CF.ADD a 3'), 1)
+        self.assertEqual(self.cmd('CF.ADD a 4'), 1)
+        self.assertEqual(self.cmd('CF.INSERT a ITEMS 5 6'), [-1, -1])
+        self.assertRaises(ResponseError, self.cmd, 'Filter is full')
+
     def test_info(self):
         self.cmd('FLUSHALL')
         self.cmd('CF.RESERVE a 1000')
@@ -310,3 +306,148 @@ class testCuckoo():
             self.cmd('cf.info', 'bf')
         with self.assertResponseError():
             self.cmd('cf.info')
+
+    def test_params(self):
+        self.cmd('FLUSHALL')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 EXPANSION -1')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 BUCKETSIZE 0')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 BUCKETSIZE -1')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 MAXITERATIONS 0')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 MAXITERATIONS -1')        
+        self.cmd('CF.RESERVE err 1000')
+
+        self.assertRaises(ResponseError, self.cmd, 'CF.ADD')
+        self.assertRaises(ResponseError, self.cmd, 'CF.ADD err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.ADDNX')
+        self.assertRaises(ResponseError, self.cmd, 'CF.ADDNX err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERT')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERT err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERT err element') # W/O ITEMS keyword
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERTNX')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERTNX err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INSERTNX err element') # W/O ITEMS keyword
+
+        self.assertRaises(ResponseError, self.cmd, 'CF.DEL')
+        self.assertRaises(ResponseError, self.cmd, 'CF.DEL err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.EXISTS')
+        self.assertRaises(ResponseError, self.cmd, 'CF.EXISTS err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.MEXISTS')
+        self.assertRaises(ResponseError, self.cmd, 'CF.MEXISTS err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.COUNT')
+        self.assertRaises(ResponseError, self.cmd, 'CF.COUNT err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.INFO')
+
+        self.assertRaises(ResponseError, self.cmd, 'CF.LOADCHUNK err')
+        self.assertRaises(ResponseError, self.cmd, 'CF.LOADCHUNK err iterator') # missing data
+        self.assertRaises(ResponseError, self.cmd, 'CF.SCANDUMP err')
+
+class testCuckooNoCodec():
+    def __init__(self):
+        self.env = Env(decodeResponses=False)
+        self.assertOk = self.env.assertTrue
+        self.cmd = self.env.cmd
+        self.assertEqual = self.env.assertEqual
+        self.assertRaises = self.env.assertRaises
+        self.assertTrue = self.env.assertTrue
+        self.assertAlmostEqual = self.env.assertAlmostEqual
+        self.assertGreater = self.env.assertGreater
+        self.restart_and_reload = self.env.restartAndReload
+        self.assertResponseError = self.env.assertResponseError
+        self.retry_with_rdb_reload = self.env.dumpAndReload
+        self.assertNotEqual = self.env.assertNotEqual
+        self.assertGreaterEqual = self.env.assertGreaterEqual
+
+    def test_scandump(self):
+        self.cmd('FLUSHALL')
+        maxrange = 500
+        self.cmd('cf.reserve', 'cf', int(maxrange / 8))
+        self.assertEqual([0, None], self.cmd('cf.scandump', 'cf', '0'))
+        for x in range(maxrange):
+            self.cmd('cf.add', 'cf', str(x))
+        for x in range(maxrange):
+            self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
+        # Start with scandump
+        self.assertRaises(ResponseError, self.cmd, 'cf.scandump', 'cf')
+        self.assertRaises(ResponseError, self.cmd, 'cf.scandump', 'cf', 'str')
+        self.assertRaises(ResponseError, self.cmd, 'cf.scandump', 'noexist', '0')
+        chunks = []
+        while True:
+            last_pos = chunks[-1][0] if chunks else 0
+            chunk = self.cmd('cf.scandump', 'cf', last_pos)
+            if not chunk[0]:
+                break
+            chunks.append(chunk)
+            # print("Scaning chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+        self.cmd('del', 'cf')
+        self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf')
+        self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf', 'str')
+        for chunk in chunks:
+            print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            self.cmd('cf.loadchunk', 'cf', *chunk)
+        for x in range(maxrange):
+            self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
+
+    def test_scandump_with_expansion(self):
+        self.cmd('FLUSHALL')
+        maxrange = 500
+    
+        self.cmd('cf.reserve', 'cf', int(maxrange / 8), 'expansion', '2')
+        self.assertEqual([0, None], self.cmd('cf.scandump', 'cf', '0'))
+        for x in range(maxrange):
+            self.cmd('cf.add', 'cf', str(x))
+        for x in range(maxrange):
+            self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
+
+        chunks = []
+        while True:
+            i = 0
+            last_pos = chunks[-1][0] if chunks else 0
+            chunk = self.cmd('cf.scandump', 'cf', last_pos)
+            if not chunk[0]:
+                break
+            chunks.append(chunk)
+            print("Scaning chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+        # delete filter
+        self.cmd('del', 'cf')
+
+        self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf')
+        self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf', 'str')
+        for chunk in chunks:
+            print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            self.cmd('cf.loadchunk', 'cf', *chunk)
+        # check loaded filter
+        for x in range(maxrange):
+            self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
+    
+    def test_scandump_huge(self):
+        self.cmd('FLUSHALL')
+    
+        self.cmd('cf.reserve', 'cf', 1024 * 1024 * 64)
+        self.assertEqual([0, None], self.cmd('cf.scandump', 'cf', '0'))
+        for x in range(6):
+            self.cmd('cf.add', 'cf', 'foo')
+        for x in range(6):
+            self.assertEqual(1, self.cmd('cf.exists', 'cf', 'foo'))
+
+        chunks = []
+        while True:
+            i = 0
+            last_pos = chunks[-1][0] if chunks else 0
+            chunk = self.cmd('cf.scandump', 'cf', last_pos)
+            if not chunk[0]:
+                break
+            chunks.append(chunk)
+            print("Scaning chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+        # delete filter
+        self.cmd('del', 'cf')
+
+        self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf')
+        self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf', 'str')
+        for chunk in chunks:
+            print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            self.cmd('cf.loadchunk', 'cf', *chunk)
+        # check loaded filter
+        for x in range(6):
+            self.assertEqual(1, self.cmd('cf.exists', 'cf', 'foo'))

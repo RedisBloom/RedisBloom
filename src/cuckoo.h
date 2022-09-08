@@ -1,9 +1,11 @@
-#ifndef CUCKOO_H
-#define CUCKOO_H
 
+#pragma once
+
+#include "murmur2/murmurhash2.h"
+
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include "murmurhash2.h"
 
 // Defines whether 32bit or 64bit hash function will be used.
 // It will be deprecated in RedisBloom 3.0.
@@ -63,6 +65,5 @@ CuckooInsertStatus CuckooFilter_Insert(CuckooFilter *filter, CuckooHash hash);
 int CuckooFilter_Delete(CuckooFilter *filter, CuckooHash hash);
 int CuckooFilter_Check(const CuckooFilter *filter, CuckooHash hash);
 uint64_t CuckooFilter_Count(const CuckooFilter *filter, CuckooHash);
-uint64_t CuckooFilter_Compact(CuckooFilter *filter);
+void CuckooFilter_Compact(CuckooFilter *filter, bool cont);
 void CuckooFilter_GetInfo(const CuckooFilter *cf, CuckooHash hash, CuckooKey *out);
-#endif

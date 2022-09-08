@@ -1,7 +1,7 @@
 /*
- * Copyright 2019 Redis Labs Ltd. and Contributors
+ * Copyright 2019 Redis Ltd. and Contributors
  *
- * This file is available under the Redis Labs Source Available License Agreement
+ * This file is available under the Redis Source Available License Agreement
  *
  * This Top-K Data Type is based on Heavy Keeper algorithm. The paper can be found
  * at https://www.usenix.org/system/files/conference/atc18/atc18-gong.pdf
@@ -9,23 +9,22 @@
  * Implementation by Ariel Shtul
  */
 
-#ifndef RM_TOPK_H
-#define RM_TOPK_H
+#pragma once
 
-#include <stdint.h>  //  uint32_t
-#include <stddef.h>  //  size_t
-#include <stdbool.h> //  bool
-#include <string.h>  //  memcpy
-#include <stdlib.h>  //  calloc
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
+#include <string.h>
+#include <stdlib.h>
 
-#define REDIS_MODULE_TARGET
 #ifdef REDIS_MODULE_TARGET
 #include "redismodule.h"
+
 #define TOPK_CALLOC(count, size) RedisModule_Calloc(count, size)
 #define TOPK_FREE(ptr) RedisModule_Free(ptr)
 #else
-#define TOPK_CALLOC(count, size) calloc(count, size)
-#define TOPK_FREE(ptr) free(ptr)
+//#define TOPK_CALLOC(count, size) calloc(count, size)
+//#define TOPK_FREE(ptr) free(ptr)
 #endif
 
 #define TOPK_DECAY_LOOKUP_TABLE 256
@@ -82,6 +81,4 @@ bool TopK_Query(TopK *topk, const char *item, size_t itemlen);
 size_t TopK_Count(TopK *topk, const char *item, size_t itemlen);
 
 /*  Returns full 'heapList' of items in 'topk' DS. */
-void TopK_List(TopK *topk, char **heapList);
-
-#endif
+HeapBucket *TopK_List(TopK *topk);
