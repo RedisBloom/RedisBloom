@@ -160,17 +160,23 @@ int TDigestSketch_Add(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_ERR;
 
     td_histogram_t *tdigest = RedisModule_ModuleTypeGetValue(key);
-    double val = 0.0, weight = 0.0;
+    double val = 0.0;
+    long long weight = 1;
     for (int i = 2; i < argc; i += 2) {
         if (RedisModule_StringToDouble(argv[i], &val) != REDISMODULE_OK) {
             RedisModule_CloseKey(key);
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing val parameter");
         }
-        if (RedisModule_StringToDouble(argv[i + 1], &weight) != REDISMODULE_OK) {
+        if (RedisModule_StringToLongLong(argv[i + 1], &weight) != REDISMODULE_OK) {
             RedisModule_CloseKey(key);
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing weight parameter");
         }
-        td_add(tdigest, val, weight);
+        if (weight < 1) {
+            RedisModule_CloseKey(key);
+            return RedisModule_ReplyWithError(
+                ctx, "ERR T-Digest: weight parameter needs to be a positive integer");
+        }
+        td_add(tdigest, val, (double)weight);
     }
     RedisModule_CloseKey(key);
     RedisModule_ReplicateVerbatim(ctx);
