@@ -2,7 +2,7 @@ Merges all of the values from 'from' keys to 'destination-key' sketch.
 
 It is mandatory to provide the number of input keys (numkeys) before passing the input keys and the other (optional) arguments.
 
-If destination already exists, it is overwritten.
+If destination already exists its values are merged with the input keys. If you wish to override the destination key contents use the `OVERRIDE` parameter.
 
 #### Parameters:
 
