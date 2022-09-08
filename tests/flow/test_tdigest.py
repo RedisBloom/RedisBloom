@@ -447,7 +447,7 @@ class testTDigest:
         )
         # key does not exist
         self.assertRaises(
-            ResponseError, self.cmd, "tdigest.quantile", "dont-exist", 0.9
+            redis.exceptions.ResponseError, self.cmd, "tdigest.quantile", "dont-exist", 0.9
         )
         self.cmd("DEL", "tdigest")
         self.assertOk(self.cmd("tdigest.create", "tdigest"))
@@ -461,6 +461,22 @@ class testTDigest:
             "tdigest",
             1,
             "a",
+        )
+        # parsing quantile needs to be between [0,1]
+        self.assertRaises(
+            redis.exceptions.ResponseError,
+            self.cmd,
+            "tdigest.quantile",
+            "tdigest",
+            -0.5,
+        )
+        # parsing quantile needs to be between [0,1]
+        self.assertRaises(
+            redis.exceptions.ResponseError,
+            self.cmd,
+            "tdigest.quantile",
+            "tdigest",
+            1.1,
         )
         # parsing
         self.assertRaises(
