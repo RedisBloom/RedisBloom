@@ -167,6 +167,11 @@ int TDigestSketch_Add(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
             RedisModule_CloseKey(key);
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing val parameter");
         }
+        if (val < -__DBL_MAX__ || val > __DBL_MAX__) {
+            RedisModule_CloseKey(key);
+            return RedisModule_ReplyWithError(
+                ctx, "ERR T-Digest: val parameter needs to be a finite number");
+        }
         if (RedisModule_StringToLongLong(argv[i + 1], &weight) != REDISMODULE_OK) {
             RedisModule_CloseKey(key);
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing weight parameter");

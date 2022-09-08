@@ -169,7 +169,20 @@ class testTDigest:
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, "a"
         )
+        # val parameter needs to be a finite number
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, "-inf"
+        )
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, "+inf"
+        )
         # weight parameter needs to be a positive integer
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, 0
+        )
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, -10
+        )
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, 5.95
         )
