@@ -179,46 +179,8 @@ int TDigestSketch_Add(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 }
 
 /**
- * Command: TDIGEST.MERGE {to-key} {from-key}
- *
- * Merges all of the values from 'from' to 'this' histogram.
- *
- * @param ctx Context in which Redis modules operate
- * @param argv Redis command arguments, as an array of strings
- * @param argc Redis command number of arguments
- * @return REDISMODULE_OK on success, or REDISMODULE_ERR  if the command failed
- */
-int TDigestSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    if (argc != 3) {
-        return RedisModule_WrongArity(ctx);
-    }
-    RedisModuleString *keyNameTo = argv[1];
-    RedisModuleKey *keyTo =
-        RedisModule_OpenKey(ctx, keyNameTo, REDISMODULE_READ | REDISMODULE_WRITE);
-
-    if (_TDigest_KeyCheck(ctx, keyTo))
-        return REDISMODULE_ERR;
-
-    td_histogram_t *tdigestTo = RedisModule_ModuleTypeGetValue(keyTo);
-
-    RedisModuleString *keyNameFrom = argv[2];
-    RedisModuleKey *keyFrom = RedisModule_OpenKey(ctx, keyNameFrom, REDISMODULE_READ);
-    if (_TDigest_KeyCheck(ctx, keyFrom)) {
-        RedisModule_CloseKey(keyTo);
-        return REDISMODULE_ERR;
-    }
-    td_histogram_t *tdigestFrom = RedisModule_ModuleTypeGetValue(keyFrom);
-    td_merge(tdigestTo, tdigestFrom);
-    RedisModule_CloseKey(keyTo);
-    RedisModule_CloseKey(keyFrom);
-    RedisModule_ReplicateVerbatim(ctx);
-    RedisModule_ReplyWithSimpleString(ctx, "OK");
-    return REDISMODULE_OK;
-}
-
-/**
- * Command: TDIGEST.MERGESTORE {destination} numkeys from-key [from-key ...] [COMPRESSION
- * compression]
+ * Command: TDIGEST.MERGE {destination} numkeys from-key [from-key ...] [COMPRESSION
+ * compression] [OVERRIDE]
  *
  * Merges all of the values from 'from' keys to 'destination-key' sketch.
  * It is mandatory to provide the number of input keys (numkeys) before
@@ -230,16 +192,18 @@ int TDigestSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
  * @param argc Redis command number of arguments
  * @return REDISMODULE_OK on success, or REDISMODULE_ERR  if the command failed
  */
-int TDigestSketch_MergeStore(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+int TDigestSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (argc < 4) {
         return RedisModule_WrongArity(ctx);
     }
     RedisModuleString *keyNameDestination = argv[1];
     td_histogram_t *tdigestTo = NULL;
+    td_histogram_t *tdigestToStart = NULL;
     int current_pos = 0;
     int res = REDISMODULE_ERR;
     td_histogram_t **from_tdigests = NULL;
     RedisModuleKey **from_keys = NULL;
+    bool to_exists = false;
     RedisModuleKey *keyDestination =
         RedisModule_OpenKey(ctx, keyNameDestination, REDISMODULE_READ | REDISMODULE_WRITE);
     // check if key existed already. If so, confirm it's of the proper type
@@ -248,6 +212,8 @@ int TDigestSketch_MergeStore(RedisModuleCtx *ctx, RedisModuleString **argv, int 
             RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
             goto cleanup;
         }
+        tdigestToStart = RedisModule_ModuleTypeGetValue(keyDestination);
+        to_exists = true;
     }
     // parse numkeys
     long long numkeys = 1;
@@ -264,23 +230,44 @@ int TDigestSketch_MergeStore(RedisModuleCtx *ctx, RedisModuleString **argv, int 
         goto cleanup;
     }
     long long compression = 0;
-    // If no compression value is passed, the used compression will the maximal value amongst all
-    // inputs.
-    bool use_max_compression = true;
+    if (to_exists) {
+        compression = tdigestToStart->compression;
+    }
+    // If no compression value is passed and the origin key does not exist,
+    // the used compression will the maximal value amongst all inputs.
+    bool use_max_compression = to_exists ? false : true;
+    bool override = false;
     const int start_remaining_args = numkeys + 3;
-    if (start_remaining_args + 2 == argc) {
+    if (start_remaining_args < argc) {
         int compression_loc = RMUtil_ArgIndex("COMPRESSION", argv + start_remaining_args,
                                               argc - start_remaining_args);
-        if (compression_loc == -1) {
+        if (compression_loc > -1) {
+            use_max_compression = false;
+            if (start_remaining_args + compression_loc + 1 >= argc) {
+                RedisModule_WrongArity(ctx);
+                goto cleanup;
+            }
+            if (_TDigest_ParseCompressionParameter(ctx,
+                                                   argv[start_remaining_args + compression_loc + 1],
+                                                   &compression) == REDISMODULE_ERR) {
+                goto cleanup;
+            }
+        }
+        int override_loc =
+            RMUtil_ArgIndex("OVERRIDE", argv + start_remaining_args, argc - start_remaining_args);
+        if (override_loc > -1) {
+            override = true;
+            // in the case of OVERRIDE being present but compression not implicity specified we
+            // default to the rule of max of inputs
+            if (compression_loc == -1) {
+                use_max_compression = true;
+                compression = 0;
+            }
+        }
+        if (compression_loc == -1 && override_loc == -1) {
             RedisModule_ReplyWithError(ctx, "ERR T-Digest: wrong keyword");
             goto cleanup;
         }
-        if (_TDigest_ParseCompressionParameter(ctx,
-                                               argv[start_remaining_args + compression_loc + 1],
-                                               &compression) == REDISMODULE_ERR) {
-            goto cleanup;
-        }
-        use_max_compression = false;
     }
     from_tdigests = (td_histogram_t **)__td_calloc(numkeys, sizeof(td_histogram_t *));
     from_keys = (RedisModuleKey **)__td_calloc(numkeys, sizeof(RedisModuleKey *));
@@ -299,6 +286,9 @@ int TDigestSketch_MergeStore(RedisModuleCtx *ctx, RedisModuleString **argv, int 
         }
     }
     tdigestTo = td_new(compression);
+    if (tdigestToStart != NULL && override == false) {
+        td_merge(tdigestTo, tdigestToStart);
+    }
 
     for (long long i = 0; i < numkeys; i++) {
         td_merge(tdigestTo, from_tdigests[i]);
@@ -604,7 +594,7 @@ void *TDigestRdbLoad(RedisModuleIO *rdb, int encver) {
     const double compression = RedisModule_LoadDouble(rdb);
     td_histogram_t *tdigest = td_new(compression);
     tdigest->min = RedisModule_LoadDouble(rdb);
-    tdigest->min = RedisModule_LoadDouble(rdb);
+    tdigest->max = RedisModule_LoadDouble(rdb);
 
     // cap is the total size of nodes
     tdigest->cap = RedisModule_LoadSigned(rdb);
@@ -659,7 +649,6 @@ int TDigestModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     RMUtil_RegisterWriteDenyOOMCmd(ctx, "tdigest.add", TDigestSketch_Add);
     RMUtil_RegisterWriteDenyOOMCmd(ctx, "tdigest.reset", TDigestSketch_Reset);
     RMUtil_RegisterWriteDenyOOMCmd(ctx, "tdigest.merge", TDigestSketch_Merge);
-    RMUtil_RegisterWriteDenyOOMCmd(ctx, "tdigest.mergestore", TDigestSketch_MergeStore);
     RMUtil_RegisterReadCmd(ctx, "tdigest.min", TDigestSketch_Min);
     RMUtil_RegisterReadCmd(ctx, "tdigest.max", TDigestSketch_Max);
     RMUtil_RegisterReadCmd(ctx, "tdigest.quantile", TDigestSketch_Quantile);
