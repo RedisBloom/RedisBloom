@@ -305,7 +305,11 @@ int TDigestSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 cleanup:
     RedisModule_CloseKey(keyDestination);
     for (size_t i = 0; i < current_pos; i++) {
-        RedisModule_CloseKey(from_keys[i]);
+        RedisModuleString *keyNameFrom = argv[i + 3];
+        // If the key is not the same as the destination key, close it
+        if (RedisModule_StringCompare(keyNameDestination, keyNameFrom) != 0) {
+            RedisModule_CloseKey(from_keys[i]);
+        }
     }
     if (from_tdigests)
         __td_free(from_tdigests);
