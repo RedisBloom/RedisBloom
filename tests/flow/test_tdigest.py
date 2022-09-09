@@ -171,10 +171,10 @@ class testTDigest:
         )
         # val parameter needs to be a finite number
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, "-inf"
+            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", "-inf", 5, 
         )
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, "+inf"
+            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", "+inf", 5,
         )
         # weight parameter needs to be a positive integer
         self.assertRaises(
@@ -188,6 +188,12 @@ class testTDigest:
         )
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, -10.0
+        )
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, "-inf"
+        )
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, "+inf"
         )
 
     def test_tdigest_merge(self):
