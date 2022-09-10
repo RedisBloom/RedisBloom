@@ -25,6 +25,10 @@ redis> tdigest.info t-digest
 10) "120"
 11) Unmerged weight
 12) "1000"
-13) Total compressions
-14) (integer) 1
+13) Sum weights
+14) "10"
+15) Total compressions
+16) (integer) 1
+17) Memory usage
+18) (integer) 96168
 ```
