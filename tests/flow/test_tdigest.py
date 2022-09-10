@@ -328,6 +328,9 @@ class testTDigest:
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.merge", "to-tdigest", "2", "from-tdigest", "from-1"
         )
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.merge", "to-tdigest", "1", "from-tdigest", "COMPRESSION", "a"
+        )
         self.cmd("DEL", "to-tdigest")
         # arity lower
         self.assertRaises(
@@ -338,6 +341,9 @@ class testTDigest:
         )
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.merge", "to-tdigest", "1"
+        )
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.merge", "to-tdigest", "1", "from-tdigest", "COMPRESSION"
         )
         # wrong keyword
         self.assertRaises(
