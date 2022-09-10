@@ -274,11 +274,18 @@ int TDigestSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     from_keys = (RedisModuleKey **)__td_calloc(numkeys, sizeof(RedisModuleKey *));
     for (current_pos = 0; current_pos < numkeys; current_pos++) {
         RedisModuleString *keyNameFrom = argv[current_pos + 3];
-        from_keys[current_pos] = RedisModule_OpenKey(ctx, keyNameFrom, REDISMODULE_READ);
+        // If the key is not the same as the destination key, open it
+        // otherwise the key was already open
+        if (RedisModule_StringCompare(keyNameDestination, keyNameFrom) != 0) {
+            from_keys[current_pos] = RedisModule_OpenKey(ctx, keyNameFrom, REDISMODULE_READ);
+            from_tdigests[current_pos] = RedisModule_ModuleTypeGetValue(from_keys[current_pos]);
+        } else {
+            from_keys[current_pos] = keyDestination;
+            from_tdigests[current_pos] = tdigestToStart;
+        }
         if (_TDigest_KeyCheck(ctx, from_keys[current_pos])) {
             goto cleanup;
         }
-        from_tdigests[current_pos] = RedisModule_ModuleTypeGetValue(from_keys[current_pos]);
         // if we haven't specified the COMPRESSION parameter we will use the
         // highest possible compression
         if (use_max_compression) {
