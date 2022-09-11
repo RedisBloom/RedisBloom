@@ -231,9 +231,7 @@ int TDigestSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         goto cleanup;
     }
     long long compression = 0;
-    if (to_exists) {
-        compression = tdigestToStart->compression;
-    }
+    long long compression = to_exists ? tdigestToStart->compression : 0;
     // If no compression value is passed and the origin key does not exist,
     // the used compression will the maximal value amongst all inputs.
     bool use_max_compression = to_exists ? false : true;
