@@ -169,6 +169,11 @@ class testTDigest:
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, "a"
         )
+        # double-precision overflow detected
+        self.assertOk(self.cmd("tdigest.add", "tdigest", 5.0, 1e308))
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, 1e308
+        )
 
     def test_tdigest_merge(self):
         self.cmd("FLUSHALL")
