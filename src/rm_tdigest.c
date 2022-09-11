@@ -395,7 +395,7 @@ static int double_cmpfunc(const void *a, const void *b) {
  * Returns an estimate of the cutoff such that a specified fraction of the data
  * added to this TDigest would be less than or equal to the cutoff quantiles.
  * The command returns an array of results: each element of the returned array
- * populated with quantile_1, cutoff_1, quantile_2, cutoff_2, ..., quantile_N, cutoff_N.
+ * populated with cutoff_1, cutoff_2, ..., cutoff_N.
  *
  * @param ctx Context in which Redis modules operate
  * @param argv Redis command arguments, as an array of strings
@@ -415,7 +415,7 @@ int TDigestSketch_Quantile(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     td_histogram_t *tdigest = RedisModule_ModuleTypeGetValue(key);
 
     const size_t n_quantiles = argc - 2;
-    double *quantiles = (double *)__td_calloc(n_quantiles, sizeof(double));
+    double *quantiles = (double *)__td_malloc(n_quantiles * sizeof(double));
 
     for (int i = 0; i < n_quantiles; ++i) {
         if (RedisModule_StringToDouble(argv[2 + i], &quantiles[i]) != REDISMODULE_OK) {
@@ -429,7 +429,7 @@ int TDigestSketch_Quantile(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: quantile should be in [0,1]");
         }
     }
-    double *values = (double *)__td_calloc(n_quantiles, sizeof(double));
+    double *values = (double *)__td_malloc(n_quantiles * sizeof(double));
     for (int i = 0; i < n_quantiles; ++i) {
         int start = i;
         while (i < n_quantiles - 1 && quantiles[i] <= quantiles[i + 1]) {
@@ -442,15 +442,18 @@ int TDigestSketch_Quantile(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     for (int i = 0; i < n_quantiles; ++i) {
         RedisModule_ReplyWithDouble(ctx, values[i]);
     }
+
     __td_free(values);
     __td_free(quantiles);
     return REDISMODULE_OK;
 }
 
 /**
- * Command: TDIGEST.CDF {key} {value}
+ * Command: TDIGEST.CDF {key} {value} [{value}...]
  *
  * Returns the fraction of all points added which are <= value.
+ * The command returns an array of results: each element of the returned array
+ * populated with fraction_1, fraction_2,..., fraction_N.
  *
  * @param ctx Context in which Redis modules operate
  * @param argv Redis command arguments, as an array of strings
@@ -458,7 +461,7 @@ int TDigestSketch_Quantile(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
  * @return REDISMODULE_OK on success, or REDISMODULE_ERR  if the command failed
  */
 int TDigestSketch_Cdf(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    if (argc != 3) {
+    if (argc < 3) {
         return RedisModule_WrongArity(ctx);
     }
     RedisModuleString *keyName = argv[1];
@@ -469,15 +472,28 @@ int TDigestSketch_Cdf(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
     td_histogram_t *tdigest = RedisModule_ModuleTypeGetValue(key);
 
-    double cdf = 0.0;
-    if (RedisModule_StringToDouble(argv[2], &cdf) != REDISMODULE_OK) {
-        RedisModule_CloseKey(key);
-        return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing cdf value");
+    const size_t n_cdfs = argc - 2;
+    double *cdfs = (double *)__td_malloc(n_cdfs * sizeof(double));
+
+    for (int i = 0; i < n_cdfs; ++i) {
+        if (RedisModule_StringToDouble(argv[2 + i], &cdfs[i]) != REDISMODULE_OK) {
+            RedisModule_CloseKey(key);
+            __td_free(cdfs);
+            return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing cdf");
+        }
+    }
+    double *values = (double *)__td_malloc(n_cdfs * sizeof(double));
+    for (int i = 0; i < n_cdfs; ++i) {
+        values[i] = td_cdf(tdigest, cdfs[i]);
+    }
+    RedisModule_CloseKey(key);
+    RedisModule_ReplyWithArray(ctx, n_cdfs);
+    for (int i = 0; i < n_cdfs; ++i) {
+        RedisModule_ReplyWithDouble(ctx, values[i]);
     }
 
-    const double value = td_cdf(tdigest, cdf);
-    RedisModule_CloseKey(key);
-    RedisModule_ReplyWithDouble(ctx, value);
+    __td_free(cdfs);
+    __td_free(values);
     return REDISMODULE_OK;
 }
 
