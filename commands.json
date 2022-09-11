@@ -865,7 +865,7 @@
     "group": "tdigest"
   },
   "TDIGEST.CDF": {
-    "summary": "Returns the fraction of all points added which are <= value",
+    "summary": "Returns the fraction of all points added which are <= value. Multiple fractions can be returned with one call.",
     "complexity": "O(1)",
     "arguments": [
       {
@@ -874,7 +874,8 @@
       },
       {
         "name": "value",
-        "type": "double"
+        "type": "double",
+        "multiple": true
       }
     ],
     "since": "2.4.0",
