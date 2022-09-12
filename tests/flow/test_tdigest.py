@@ -1,5 +1,6 @@
 
 from common import *
+from numpy import NaN
 import redis
 import math
 import random
@@ -551,6 +552,72 @@ class testTDigest:
         # error with multi values
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.cdf", "tdigest", 1.0, 'foo'
+        )
+
+    def test_tdigest_byrank(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
+        # insert datapoints into sketch
+        for x in range(1, 11):
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
+
+        # rank 0 is precise ( equal to minimum )
+        self.assertEqual(1, float(self.cmd("tdigest.byrank", "tdigest", 0)[0]))
+        # rank of N
+        self.assertEqual("inf", self.cmd("tdigest.byrank", "tdigest", 10)[0])
+        # rank larger than total count
+        self.assertEqual("inf", self.cmd("tdigest.byrank", "tdigest", 100)[0])
+        # inverse rank of N-1: [1,10]
+        self.assertEqual(10, float(self.cmd("tdigest.byrank", "tdigest", 9)[0]))
+        
+    def test_tdigest_byrevrank(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
+        # insert datapoints into sketch
+        for x in range(1, 11):
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
+
+        # inverse rank 0
+        self.assertEqual(10, float(self.cmd("tdigest.byrevrank", "tdigest", 0)[0]))
+        # inverse rank of N
+        self.assertEqual("-inf", self.cmd("tdigest.byrevrank", "tdigest", 10)[0])
+        # inverse rank larger than total count
+        self.assertEqual("-inf", self.cmd("tdigest.byrevrank", "tdigest", 100)[0])
+        # inverse rank of N-1
+        self.assertEqual(2, float(self.cmd("tdigest.byrevrank", "tdigest", 9)[0]))
+
+    def test_negative_tdigest_byrank(self):
+        self.cmd('FLUSHALL')
+        self.cmd("SET", "tdigest", "B")
+        # WRONGTYPE
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.byrank", "tdigest", 0.9
+        )
+        # key does not exist
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.byrank", "dont-exist", 0.9
+        )
+        self.cmd("DEL", "tdigest")
+        self.assertOk(self.cmd("tdigest.create", "tdigest"))
+        # arity lower
+        self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.byrank")
+        # Error if rank is negative
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.byrank", "tdigest", -1
+        )
+        # Error if rank is not an integer
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.byrank", "tdigest", 0.5
+        )
+        # parsing
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.byrank", "tdigest", NaN
+        )
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.byrank", "tdigest", "a", 0.9
+        )
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.byrank", "tdigest", 1.5, "a"
         )
 
     def test_tdigest_trimmed_mean(self):
