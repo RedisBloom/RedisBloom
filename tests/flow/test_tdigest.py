@@ -555,7 +555,7 @@ class testTDigest:
 
     def test_tdigest_trimmed_mean(self):
         self.cmd('FLUSHALL')
-        self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 1000))
+        self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
         # insert datapoints into sketch
         for x in range(0, 20):
             self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
@@ -577,7 +577,7 @@ class testTDigest:
         # given a high number of datapoints, the trimmed mean between a range on those datapoints
         # is approximate to the precise mean of the interval range
         for x in range(1, 10001):
-            self.assertOk(self.cmd("tdigest.add", "tdigest", float(x)/1000.0, 1.0))
+            self.assertOk(self.cmd("tdigest.add", "tdigest", float(x)/1000.0, 1))
         for x in range(1, 10):
             low_cut = float(x)/10.0
             high_cut = low_cut + 0.1
