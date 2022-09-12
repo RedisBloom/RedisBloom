@@ -1,5 +1,6 @@
 
 from common import *
+from numpy import NaN
 import redis
 import math
 import random
@@ -590,6 +591,9 @@ class testTDigest:
         # arity lower
         self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.rank")
         # parsing
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.rank", "tdigest", NaN
+        )
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.rank", "tdigest", "a", 0.9
         )

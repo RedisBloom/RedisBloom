@@ -912,6 +912,23 @@
     "since": "2.4.0",
     "group": "tdigest"
   },
+  "TDIGEST.RANK": {
+    "summary": "Retrieve the estimated rank of value (the number of observations in the sketch that are smaller than value + half the number of observations that are equal to value). Multiple ranks can be returned with one call.",
+    "complexity": "O(1)",
+    "arguments": [
+      {
+        "name": "key",
+        "type": "key"
+      },
+      {
+        "name": "value",
+        "type": "double",
+        "multiple": true
+      }
+    ],
+    "since": "2.4.0",
+    "group": "tdigest"
+  },
   "TDIGEST.INFO": {
     "summary": "Returns information about a sketch",
     "complexity": "O(1)",
