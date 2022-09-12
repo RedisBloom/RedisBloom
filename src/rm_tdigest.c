@@ -423,37 +423,33 @@ int TDigestSketch_Rank(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     if (_TDigest_KeyCheck(ctx, key) != REDISMODULE_OK)
         return REDISMODULE_ERR;
 
-    td_histogram_t *tdigest = RedisModule_ModuleTypeGetValue(key);
-    if(td_size(tdigest) == 0) {
-        RedisModule_ReplyWithArray(ctx, 1);
-        RedisModule_ReplyWithDouble(ctx, NAN);
-        RedisModule_CloseKey(key);
-        return;
-    }
-
     const size_t n_values = argc - 2;
     double *vals = (double *)__td_calloc(n_values, sizeof(double));
 
     for (int i = 0; i < n_values; ++i) {
-        if ((RedisModule_StringToLongLong(argv[2 + i], &vals[i]) != REDISMODULE_OK) || isnan(vals[i])) {
+        if ((RedisModule_StringToDouble(argv[2 + i], &vals[i]) != REDISMODULE_OK) ||
+            isnan(vals[i])) {
             RedisModule_CloseKey(key);
             __td_free(vals);
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing value");
         }
     }
 
-    int *ranks = (int *)__td_calloc(n_values, sizeof(int));
+    td_histogram_t *tdigest = RedisModule_ModuleTypeGetValue(key);
+    double *ranks = (double *)__td_calloc(n_values, sizeof(double));
 
-    double size = td_size(tdigest);
-    double min = td_min(tdigest);
-    double max = td_min(tdigest);
+    const double size = td_size(tdigest);
+    const double min = td_min(tdigest);
+    const double max = td_max(tdigest);
     for (int i = 0; i < n_values; ++i) {
-        if(vals[i] < min) {
+        if (size == 0) {
+            ranks[i] = NAN;
+        } else if (vals[i] < min) {
             ranks[i] = -1;
         } else if (vals[i] > max) {
-            ranks[i] = td_size(tdigest);
+            ranks[i] = size;
         } else {
-            ranks[i] = round(td_cdf(tdigest, vals[i])*size);
+            ranks[i] = round(td_cdf(tdigest, vals[i]) * size);
         }
     }
 
