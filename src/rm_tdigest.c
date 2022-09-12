@@ -630,7 +630,7 @@ void *TDigestRdbLoad(RedisModuleIO *rdb, int encver) {
     const double compression = RedisModule_LoadDouble(rdb);
     td_histogram_t *tdigest = td_new(compression);
     tdigest->min = RedisModule_LoadDouble(rdb);
-    tdigest->max = RedisModule_LoadDouble(rdb);
+    tdigest->min = RedisModule_LoadDouble(rdb);
 
     // cap is the total size of nodes
     tdigest->cap = RedisModule_LoadSigned(rdb);
