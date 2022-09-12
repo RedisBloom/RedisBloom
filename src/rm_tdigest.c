@@ -401,18 +401,10 @@ static int double_cmpfunc(const void *a, const void *b) {
 #endif
 
 /**
- * Command: TDIGEST.RANK {key} {value} [{value}...]
- *
- * Retrieve the estimated rank of value
- * (the number of observations in the sketch that are smaller than value +
- * half the number of observations that are equal to value)
- *
- * @param ctx Context in which Redis modules operate
- * @param argv Redis command arguments, as an array of strings
- * @param argc Redis command number of arguments
- * @return REDISMODULE_OK on success, or REDISMODULE_ERR  if the command failed
+ * Helper method to utilize TDIGEST.RANK and TDIGEST.REVRANK common logic.
  */
-int TDigestSketch_Rank(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+static int _TDigest_Rank(RedisModuleCtx *ctx, RedisModuleString *const *argv, int argc,
+                         int reverse) {
     if (argc < 3) {
         return RedisModule_WrongArity(ctx);
     }
@@ -442,14 +434,22 @@ int TDigestSketch_Rank(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     const double min = td_min(tdigest);
     const double max = td_max(tdigest);
     for (int i = 0; i < n_values; ++i) {
+        // Nan if the sketch is empty
         if (size == 0) {
             ranks[i] = NAN;
+            // when value < value of the smallest observation:
+            // n if reverse
+            // -1 if !reverse
         } else if (vals[i] < min) {
-            ranks[i] = -1;
+            ranks[i] = reverse ? size : -1;
+            // when value > value of the largest observation:
+            // -1 if reverse
+            // n if !reverse
         } else if (vals[i] > max) {
-            ranks[i] = size;
+            ranks[i] = reverse ? -1 : size;
         } else {
-            ranks[i] = round(td_cdf(tdigest, vals[i]) * size);
+            const double cdf_value = td_cdf(tdigest, vals[i]);
+            ranks[i] = round(reverse ? ((1 - cdf_value) * size) : (cdf_value * size));
         }
     }
 
@@ -461,6 +461,38 @@ int TDigestSketch_Rank(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     __td_free(vals);
     __td_free(ranks);
     return REDISMODULE_OK;
+}
+
+/**
+ * Command: TDIGEST.RANK {key} {value} [{value}...]
+ *
+ * Retrieve the estimated rank of value
+ * (the number of observations in the sketch that are smaller than value +
+ * half the number of observations that are equal to value)
+ *
+ * @param ctx Context in which Redis modules operate
+ * @param argv Redis command arguments, as an array of strings
+ * @param argc Redis command number of arguments
+ * @return REDISMODULE_OK on success, or REDISMODULE_ERR  if the command failed
+ */
+int TDigestSketch_Rank(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    return _TDigest_Rank(ctx, argv, argc, false);
+}
+
+/**
+ * Command: TDIGEST.REVRANK {key} {value} [{value}...]
+ *
+ * Retrieve the estimated rank of value
+ * (the number of observations in the sketch that are larger than value +
+ * half the number of observations that are equal to value)
+ *
+ * @param ctx Context in which Redis modules operate
+ * @param argv Redis command arguments, as an array of strings
+ * @param argc Redis command number of arguments
+ * @return REDISMODULE_OK on success, or REDISMODULE_ERR  if the command failed
+ */
+int TDigestSketch_RevRank(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    return _TDigest_Rank(ctx, argv, argc, true);
 }
 
 /**
@@ -759,6 +791,7 @@ int TDigestModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     RMUtil_RegisterReadCmd(ctx, "tdigest.max", TDigestSketch_Max);
     RMUtil_RegisterReadCmd(ctx, "tdigest.quantile", TDigestSketch_Quantile);
     RMUtil_RegisterReadCmd(ctx, "tdigest.rank", TDigestSketch_Rank);
+    RMUtil_RegisterReadCmd(ctx, "tdigest.revrank", TDigestSketch_RevRank);
     RMUtil_RegisterReadCmd(ctx, "tdigest.cdf", TDigestSketch_Cdf);
     RMUtil_RegisterReadCmd(ctx, "tdigest.trimmed_mean", TDigestSketch_TrimmedMean);
     RMUtil_RegisterReadCmd(ctx, "tdigest.info", TDigestSketch_Info);

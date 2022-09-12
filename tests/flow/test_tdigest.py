@@ -561,6 +561,7 @@ class testTDigest:
         for x in range(0, 20):
             self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
 
+        # -1 when value < value of the smallest observation
         self.assertEqual(-1, float(self.cmd("tdigest.rank", "tdigest", -1)[0]))
         # rank from cdf of min
         self.assertEqual(1, float(self.cmd("tdigest.rank", "tdigest", 0)[0]))
@@ -574,6 +575,28 @@ class testTDigest:
         self.assertEqual(2, float(self.cmd("tdigest.rank", "tdigest", 1)[0]))
         # multiple inputs test
         self.assertEqual(["-1","20","10"], self.cmd("tdigest.rank", "tdigest", -20, 20, 9))
+
+    def test_tdigest_revrank(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
+        # insert datapoints into sketch
+        for x in range(0, 20):
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
+
+        # -1 when value > value of the largest observation
+        self.assertEqual(-1, float(self.cmd("tdigest.revrank", "tdigest", 20)[0]))
+        # rank from cdf of min
+        self.assertEqual(20, float(self.cmd("tdigest.revrank", "tdigest", 0)[0]))
+        # rank from cdf of max
+        self.assertEqual(1, float(self.cmd("tdigest.revrank", "tdigest", 19)[0]))
+        # rank from cdf above max
+        self.assertEqual(-1, float(self.cmd("tdigest.revrank", "tdigest", 50)[0]))
+        # rank within [min,max]
+        self.assertEqual(1, float(self.cmd("tdigest.revrank", "tdigest", 18)[0]))
+        self.assertEqual(10, float(self.cmd("tdigest.revrank", "tdigest", 10)[0]))
+        self.assertEqual(19, float(self.cmd("tdigest.revrank", "tdigest", 1)[0]))
+        # multiple inputs test
+        self.assertEqual(["-1","20","10"], self.cmd("tdigest.revrank", "tdigest", 21, 0, 10))
 
     def test_negative_tdigest_rank(self):
         self.cmd('FLUSHALL')
