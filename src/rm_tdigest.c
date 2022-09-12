@@ -434,6 +434,11 @@ int TDigestSketch_Quantile(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
             __td_free(quantiles);
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing quantile");
         }
+        if (quantiles[i] < 0 || quantiles[i] > 1.0) {
+            RedisModule_CloseKey(key);
+            __td_free(quantiles);
+            return RedisModule_ReplyWithError(ctx, "ERR T-Digest: quantile should be in [0,1]");
+        }
     }
     double *values = (double *)__td_malloc(n_quantiles * sizeof(double));
     for (int i = 0; i < n_quantiles; ++i) {
