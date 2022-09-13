@@ -7,7 +7,7 @@ Get the maximum observation value from the sketch.
 @return
 
 @simple-string-reply of the maximum observation value from the sketch.
-Return __DBL_MIN__ if the sketch is empty.
+Return 'nan' if the sketch is empty.
 
 @examples
 
