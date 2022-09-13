@@ -404,6 +404,101 @@ static int double_cmpfunc(const void *a, const void *b) {
 #endif
 
 /**
+ * Helper method to utilize TDIGEST.RANK and TDIGEST.REVRANK common logic.
+ */
+static int _TDigest_Rank(RedisModuleCtx *ctx, RedisModuleString *const *argv, int argc,
+                         int reverse) {
+    if (argc < 3) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    RedisModuleString *keyName = argv[1];
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ);
+
+    if (_TDigest_KeyCheck(ctx, key) != REDISMODULE_OK)
+        return REDISMODULE_ERR;
+
+    const size_t n_values = argc - 2;
+    double *vals = (double *)__td_calloc(n_values, sizeof(double));
+
+    for (int i = 0; i < n_values; ++i) {
+        if ((RedisModule_StringToDouble(argv[2 + i], &vals[i]) != REDISMODULE_OK) ||
+            isnan(vals[i])) {
+            RedisModule_CloseKey(key);
+            __td_free(vals);
+            return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing value");
+        }
+    }
+
+    td_histogram_t *tdigest = RedisModule_ModuleTypeGetValue(key);
+    double *ranks = (double *)__td_calloc(n_values, sizeof(double));
+
+    const double size = td_size(tdigest);
+    const double min = td_min(tdigest);
+    const double max = td_max(tdigest);
+    for (int i = 0; i < n_values; ++i) {
+        // Nan if the sketch is empty
+        if (size == 0) {
+            ranks[i] = NAN;
+            // when value < value of the smallest observation:
+            // n if reverse
+            // -1 if !reverse
+        } else if (vals[i] < min) {
+            ranks[i] = reverse ? size : -1;
+            // when value > value of the largest observation:
+            // -1 if reverse
+            // n if !reverse
+        } else if (vals[i] > max) {
+            ranks[i] = reverse ? -1 : size;
+        } else {
+            const double cdf_value = td_cdf(tdigest, vals[i]);
+            ranks[i] = round(reverse ? ((1 - cdf_value) * size) : (cdf_value * size));
+        }
+    }
+
+    RedisModule_CloseKey(key);
+    RedisModule_ReplyWithArray(ctx, n_values);
+    for (int i = 0; i < n_values; ++i) {
+        RedisModule_ReplyWithDouble(ctx, ranks[i]);
+    }
+    __td_free(vals);
+    __td_free(ranks);
+    return REDISMODULE_OK;
+}
+
+/**
+ * Command: TDIGEST.RANK {key} {value} [{value}...]
+ *
+ * Retrieve the estimated rank of value
+ * (the number of observations in the sketch that are smaller than value +
+ * half the number of observations that are equal to value)
+ *
+ * @param ctx Context in which Redis modules operate
+ * @param argv Redis command arguments, as an array of strings
+ * @param argc Redis command number of arguments
+ * @return REDISMODULE_OK on success, or REDISMODULE_ERR  if the command failed
+ */
+int TDigestSketch_Rank(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    return _TDigest_Rank(ctx, argv, argc, false);
+}
+
+/**
+ * Command: TDIGEST.REVRANK {key} {value} [{value}...]
+ *
+ * Retrieve the estimated rank of value
+ * (the number of observations in the sketch that are larger than value +
+ * half the number of observations that are equal to value)
+ *
+ * @param ctx Context in which Redis modules operate
+ * @param argv Redis command arguments, as an array of strings
+ * @param argc Redis command number of arguments
+ * @return REDISMODULE_OK on success, or REDISMODULE_ERR  if the command failed
+ */
+int TDigestSketch_RevRank(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    return _TDigest_Rank(ctx, argv, argc, true);
+}
+
+/**
  * Command: TDIGEST.QUANTILE {key} {quantile} [{quantile2}...]
  *
  * Returns an estimate of the cutoff such that a specified fraction of the data
@@ -697,6 +792,8 @@ int TDigestModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     RMUtil_RegisterReadCmd(ctx, "tdigest.min", TDigestSketch_Min);
     RMUtil_RegisterReadCmd(ctx, "tdigest.max", TDigestSketch_Max);
     RMUtil_RegisterReadCmd(ctx, "tdigest.quantile", TDigestSketch_Quantile);
+    RMUtil_RegisterReadCmd(ctx, "tdigest.rank", TDigestSketch_Rank);
+    RMUtil_RegisterReadCmd(ctx, "tdigest.revrank", TDigestSketch_RevRank);
     RMUtil_RegisterReadCmd(ctx, "tdigest.cdf", TDigestSketch_Cdf);
     RMUtil_RegisterReadCmd(ctx, "tdigest.trimmed_mean", TDigestSketch_TrimmedMean);
     RMUtil_RegisterReadCmd(ctx, "tdigest.info", TDigestSketch_Info);

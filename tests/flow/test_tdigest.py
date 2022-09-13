@@ -1,5 +1,6 @@
 
 from common import *
+from numpy import NaN
 import redis
 import math
 import random
@@ -575,6 +576,76 @@ class testTDigest:
         # error with multi values
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.cdf", "tdigest", 1.0, 'foo'
+        )
+
+    def test_tdigest_rank(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
+        # insert datapoints into sketch
+        for x in range(0, 20):
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
+
+        # -1 when value < value of the smallest observation
+        self.assertEqual(-1, float(self.cmd("tdigest.rank", "tdigest", -1)[0]))
+        # rank from cdf of min
+        self.assertEqual(1, float(self.cmd("tdigest.rank", "tdigest", 0)[0]))
+        # rank from cdf of max
+        self.assertEqual(20, float(self.cmd("tdigest.rank", "tdigest", 19)[0]))
+        # rank from cdf above max
+        self.assertEqual(20, float(self.cmd("tdigest.rank", "tdigest", 20)[0]))
+        # rank within [min,max]
+        self.assertEqual(19, float(self.cmd("tdigest.rank", "tdigest", 18)[0]))
+        self.assertEqual(11, float(self.cmd("tdigest.rank", "tdigest", 10)[0]))
+        self.assertEqual(2, float(self.cmd("tdigest.rank", "tdigest", 1)[0]))
+        # multiple inputs test
+        self.assertEqual(["-1","20","10"], self.cmd("tdigest.rank", "tdigest", -20, 20, 9))
+
+    def test_tdigest_revrank(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
+        # insert datapoints into sketch
+        for x in range(0, 20):
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
+
+        # -1 when value > value of the largest observation
+        self.assertEqual(-1, float(self.cmd("tdigest.revrank", "tdigest", 20)[0]))
+        # rank from cdf of min
+        self.assertEqual(20, float(self.cmd("tdigest.revrank", "tdigest", 0)[0]))
+        # rank from cdf of max
+        self.assertEqual(1, float(self.cmd("tdigest.revrank", "tdigest", 19)[0]))
+        # rank from cdf above max
+        self.assertEqual(-1, float(self.cmd("tdigest.revrank", "tdigest", 50)[0]))
+        # rank within [min,max]
+        self.assertEqual(1, float(self.cmd("tdigest.revrank", "tdigest", 18)[0]))
+        self.assertEqual(10, float(self.cmd("tdigest.revrank", "tdigest", 10)[0]))
+        self.assertEqual(19, float(self.cmd("tdigest.revrank", "tdigest", 1)[0]))
+        # multiple inputs test
+        self.assertEqual(["-1","20","10"], self.cmd("tdigest.revrank", "tdigest", 21, 0, 10))
+
+    def test_negative_tdigest_rank(self):
+        self.cmd('FLUSHALL')
+        self.cmd("SET", "tdigest", "B")
+        # WRONGTYPE
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.rank", "tdigest", 0.9
+        )
+        # key does not exist
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.rank", "dont-exist", 0.9
+        )
+        self.cmd("DEL", "tdigest")
+        self.assertOk(self.cmd("tdigest.create", "tdigest"))
+        # arity lower
+        self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.rank")
+        # parsing
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.rank", "tdigest", NaN
+        )
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.rank", "tdigest", "a", 0.9
+        )
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.rank", "tdigest", 1.5, "a"
         )
 
     def test_tdigest_trimmed_mean(self):
