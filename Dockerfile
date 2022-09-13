@@ -1,6 +1,6 @@
 # BUILD redisfab/redistimeseries:${VERSION}-${ARCH}-${OSNICK}
 
-ARG REDIS_VER=6.2.4
+ARG REDIS_VER=6.2.7
 
 # stretch|bionic|buster
 ARG OSNICK=buster

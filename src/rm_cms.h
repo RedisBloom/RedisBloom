@@ -1,7 +1,6 @@
-#ifndef CMS_MODULE_H
-#define CMS_MODULE_H
 
-#define REDISMODULE_MAIN
+#pragma once
+
 #include "redismodule.h"
 
 #define DEFAULT_WIDTH 2.7
@@ -10,5 +9,3 @@
 #define CMS_ENC_VER 0
 
 int CMSModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc);
-
-#endif

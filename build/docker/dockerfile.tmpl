@@ -1,42 +1,58 @@
-ARG REDIS_VER={{REDIS_VERSION}}
-
-# stretch|bionic|buster
-ARG OSNICK={{OSNICK}}
-
-# ARCH=x64|arm64v8|arm32v7
-ARG ARCH=x64
 
 #----------------------------------------------------------------------------------------------
-FROM redisfab/redis:{{REDIS_VERSION}}-{{ARCH}}-{{OSNICK}} AS builder
+FROM redisfab/redis:{{REDIS_VERSION}}-{{ARCH}}-{{OSNICK}} AS redis
+FROM {{OS}} AS builder
 
-ADD ./ /build
+RUN if [ -f /root/.profile ]; then sed -ie 's/mesg n/tty -s \&\& mesg -n/g' /root/.profile; fi
+SHELL ["/bin/bash", "-l", "-c"]
+
+RUN echo "Building for {{OSNICK}} ({{OS}}) for {{ARCH}} [with Redis {{REDIS_VERSION}}]"
+
 WORKDIR /build
+COPY --from=redis /usr/local/ /usr/local/
 
-RUN ./deps/readies/bin/getpy3
+ADD . /build
+
 RUN ./deps/readies/bin/getupdates
-RUN ./system-setup.py
+RUN ./deps/readies/bin/getpy3
+RUN ./sbin/system-setup.py
 
-RUN bash -l -c "make all"
+RUN /usr/local/bin/redis-server --version
+
+RUN make build SHOW=1
 
 {% if PACK == "1" %}
-RUN bash -l -c "make pack"
+RUN mkdir -p bin/artifacts
+RUN make pack
+RUN set -e ;\
+    echo "Artifacts:" ;\
+    du -ah --apparent-size /build/bin/artifacts
 {% endif %}
 
 {% if TEST == "1" %}
-RUN bash -l -c "TEST= make test"
+RUN TEST='' make test
+RUN set -e ;\
+	cd /build/tests/pytest/logs ;\
+    rm -f *.aof *.rdb ;\
+    tar -czf /build/bin/artifacts/pytest-logs-{{ARCH}}-{{OSNICK}}.tgz .
 {% endif %}
 
 #----------------------------------------------------------------------------------------------
+# FROM redisfab/redisearch:{{REDISEARCH_VERSION}}-{{ARCH}}-{{OSNICK}} AS search
 FROM redisfab/redis:{{REDIS_VERSION}}-{{ARCH}}-{{OSNICK}}
 
-ARG REDIS_VER
-ENV LIBDIR /usr/lib/redis/modules
 WORKDIR /data
-RUN mkdir -p "$LIBDIR" /var/opt/redislabs/artifacts
-RUN chown -R redis:redis /var/opt/redislabs/
 
-COPY --from=builder /build/bin/artifacts/ /var/opt/redislabs/artifacts
-COPY --from=builder /build/redisbloom.so "$LIBDIR"
+RUN mkdir -p "{{MODULES_DIR}}"
 
-EXPOSE 6379
-CMD ["redis-server", "--loadmodule", "/usr/lib/redis/modules/redisbloom.so"]
+COPY --from=builder /build/bin/linux-{{ARCH}}-release/redisbloom.so* "{{MODULES_DIR}}/"
+
+{% if ARTIFACTS == "1" %}
+RUN mkdir -p /var/opt/redislabs/artifacts
+RUN chown -R redis:redis /var/opt/redislabs
+COPY --from=builder /build/bin/artifacts/ /var/opt/redislabs/artifacts/
+{% endif %}
+
+RUN chown -R redis:redis {{MODULES_DIR}}
+
+CMD ["redis-server", "--loadmodule", "{{MODULES_DIR}}/redisbloom.so"]
