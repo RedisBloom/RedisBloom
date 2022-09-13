@@ -156,7 +156,7 @@ class testTDigest:
         )
         # arity upper
         self.assertRaises(
-            ResponseError, self.cmd, "tdigest.add", "tdigest", 100, 5, 100.0
+            ResponseError, self.cmd, "tdigest.add", "tdigest", 100, 5, 100
         )
         # key does not exist
         self.assertRaises(
@@ -593,6 +593,45 @@ class testTDigest:
         self.assertAlmostEqual(
             9.5, float(self.cmd("tdigest.trimmed_mean", "tdigest", 0.2,0.8)), 0.01
         )
+        self.assertOk(self.cmd("tdigest.reset", "tdigest"))
+        self.assertEqual(
+            "nan", self.cmd("tdigest.trimmed_mean", "tdigest", 0.2,0.8)
+        )
+        # insert datapoints into sketch
+        # given a high number of datapoints, the trimmed mean between a range on those datapoints
+        # is approximate to the precise mean of the interval range
+        for x in range(1, 10001):
+            self.assertOk(self.cmd("tdigest.add", "tdigest", float(x)/1000.0, 1))
+        for x in range(1, 10):
+            low_cut = float(x)/10.0
+            high_cut = low_cut + 0.1
+            self.assertAlmostEqual(
+                x+0.5, float(self.cmd("tdigest.trimmed_mean", "tdigest", low_cut, high_cut)), 0.01
+            )
+        # simple confirmation that the when having:
+        #   9 observations of value 1
+        #   1 observation of value 5
+        # and comparing vs sheets
+        #      TRIMMEAN(G2:G11,0.2) we get 1.0
+        #      TRIMMEAN(G2:G11,0.19) we get 1.4
+        #      TRIMMEAN(G2:G11,0.10) we get 1.4
+        #      TRIMMEAN(G2:G11,0.02) we get 1.4
+        # if we replicate this on our trimmed_mean implementation we get the same results
+        self.assertOk(self.cmd("tdigest.reset", "tdigest"))
+        self.assertOk(self.cmd("tdigest.add", "tdigest", 1.0, 9))
+        self.assertOk(self.cmd("tdigest.add", "tdigest", 5.0, 1))
+        self.assertAlmostEqual(
+                1.0, float(self.cmd("tdigest.trimmed_mean", "tdigest", 0.10, 0.90)), 0.01
+            )
+        self.assertAlmostEqual(
+                1.4, float(self.cmd("tdigest.trimmed_mean", "tdigest", 0.095, 0.905)), 0.01
+            )
+        self.assertAlmostEqual(
+                1.4, float(self.cmd("tdigest.trimmed_mean", "tdigest", 0.05, 0.95)), 0.01
+            )
+        self.assertAlmostEqual(
+                1.4, float(self.cmd("tdigest.trimmed_mean", "tdigest", 0.01, 0.99)), 0.01
+            )
 
     def test_negative_tdigest_trimmed_mean(self):
         self.cmd('FLUSHALL')
@@ -603,7 +642,7 @@ class testTDigest:
         )
         # key does not exist
         self.assertRaises(
-            ResponseError, self.cmd, "tdigest.trimmed_mean", "dont-exist", 0.9
+            redis.exceptions.ResponseError, self.cmd, "tdigest.trimmed_mean", "dont-exist", 0.9
         )
         self.cmd("DEL", "tdigest")
         self.assertOk(self.cmd("tdigest.create", "tdigest"))
@@ -630,6 +669,9 @@ class testTDigest:
         # low_cut_percentile should be lower than high_cut_percentile
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.trimmed_mean", "tdigest", "0.9", "0.1"
+        )
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.trimmed_mean", "tdigest", "0.1", "0.1"
         )
 
     def test_negative_tdigest_info(self):
