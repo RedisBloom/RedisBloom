@@ -342,7 +342,7 @@ cleanup:
 /**
  * Command: TDIGEST.MIN {key}
  *
- * Get minimum value from the histogram.  Will return __DBL_MAX__ if the histogram is empty.
+ * Get minimum value from the histogram.  Will return nan if the histogram is empty.
  *
  * @param ctx Context in which Redis modules operate
  * @param argv Redis command arguments, as an array of strings
@@ -360,7 +360,7 @@ int TDigestSketch_Min(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_ERR;
 
     td_histogram_t *tdigest = RedisModule_ModuleTypeGetValue(key);
-    const double min = td_min(tdigest);
+    const double min = (td_size(tdigest) > 0) ? td_min(tdigest) : NAN;
     RedisModule_CloseKey(key);
     RedisModule_ReplyWithDouble(ctx, min);
     return REDISMODULE_OK;
@@ -369,7 +369,7 @@ int TDigestSketch_Min(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 /**
  * Command: TDIGEST.MAX {key}
  *
- * Get maximum value from the histogram.  Will return -__DBL_MAX__ if the histogram is empty.
+ * Get maximum value from the histogram.  Will return nan if the histogram is empty.
  *
  * @param ctx Context in which Redis modules operate
  * @param argv Redis command arguments, as an array of strings
@@ -387,7 +387,7 @@ int TDigestSketch_Max(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_ERR;
 
     td_histogram_t *tdigest = RedisModule_ModuleTypeGetValue(key);
-    const double max = td_max(tdigest);
+    const double max = (td_size(tdigest) > 0) ? td_max(tdigest) : NAN;
     RedisModule_CloseKey(key);
     RedisModule_ReplyWithDouble(ctx, max);
     return REDISMODULE_OK;

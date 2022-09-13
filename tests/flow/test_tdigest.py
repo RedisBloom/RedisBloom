@@ -386,8 +386,8 @@ class testTDigest:
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "tdigest"))
         # test for no datapoints first
-        self.assertEqual(sys.float_info.max, float(self.cmd("tdigest.min", "tdigest")))
-        self.assertEqual(-sys.float_info.max, float(self.cmd("tdigest.max", "tdigest")))
+        self.assertEqual('nan', self.cmd("tdigest.min", "tdigest"))
+        self.assertEqual('nan', self.cmd("tdigest.max", "tdigest"))
         # insert datapoints into sketch
         for x in range(1, 101):
             self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
