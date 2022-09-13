@@ -813,23 +813,6 @@
   },
   "TDIGEST.MERGE": {
     "summary": "Merges all of the values from 'source-key' keys to 'destination-key' sketch",
-    "complexity": "O(N), where N is the number of centroids",
-    "arguments": [
-      {
-        "name": "destination-key",
-        "type": "key"
-      },
-      {
-        "name": "source-key",
-        "type": "key",
-        "multiple": true
-      }
-    ],
-    "since": "2.4.0",
-    "group": "tdigest"
-  },
-  "TDIGEST.MERGESTORE": {
-    "summary": "Merges all of the values from 'source-key' keys to 'destination-key' sketch",
     "complexity": "O(N*K), where N is the number of centroids and K being the number of input sketches",
     "arguments": [
       {
@@ -861,6 +844,12 @@
             "type": "integer"
           }
         ]
+      },
+      {
+        "name": "override",
+        "type": "pure-token",
+        "token": "OVERRIDE",
+        "optional": true
       }
     ],
     "since": "2.4.0",
