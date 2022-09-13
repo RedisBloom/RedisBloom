@@ -181,7 +181,11 @@ int TDigestSketch_Add(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
             return RedisModule_ReplyWithError(
                 ctx, "ERR T-Digest: weight parameter needs to be a positive integer");
         }
-        td_add(tdigest, val, (double)weight);
+        if (td_add(tdigest, val, (double)weight) != 0) {
+            RedisModule_CloseKey(key);
+            return RedisModule_ReplyWithError(ctx,
+                                              "ERR T-Digest: double-precision overflow detected");
+        }
     }
     RedisModule_CloseKey(key);
     RedisModule_ReplicateVerbatim(ctx);

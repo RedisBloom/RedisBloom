@@ -156,7 +156,7 @@ class testTDigest:
         )
         # arity upper
         self.assertRaises(
-            ResponseError, self.cmd, "tdigest.add", "tdigest", 100, 5, 100.0
+            ResponseError, self.cmd, "tdigest.add", "tdigest", 100, 5, 100
         )
         # key does not exist
         self.assertRaises(
@@ -618,7 +618,7 @@ class testTDigest:
         )
         # key does not exist
         self.assertRaises(
-            ResponseError, self.cmd, "tdigest.trimmed_mean", "dont-exist", 0.9
+            redis.exceptions.ResponseError, self.cmd, "tdigest.trimmed_mean", "dont-exist", 0.9
         )
         self.cmd("DEL", "tdigest")
         self.assertOk(self.cmd("tdigest.create", "tdigest"))
