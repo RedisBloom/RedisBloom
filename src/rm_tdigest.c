@@ -550,7 +550,7 @@ int TDigestSketch_TrimmedMean(RedisModuleCtx *ctx, RedisModuleString **argv, int
         return RedisModule_ReplyWithError(
             ctx, "ERR T-Digest: low_cut_percentile and high_cut_percentile should be in [0,1]");
     }
-    if (low_cut_percentile > high_cut_percentile) {
+    if (low_cut_percentile >= high_cut_percentile) {
         RedisModule_CloseKey(key);
         return RedisModule_ReplyWithError(
             ctx, "ERR T-Digest: low_cut_percentile should be lower than high_cut_percentile");
