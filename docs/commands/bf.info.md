@@ -4,11 +4,18 @@ Return information about `key` filter.
 
 * **key**: Name of the key to return information about
 
+Optional parameters:
+* **CAPACITY** Capacity
+* **SIZE** Size
+* **FILTERS** Number of filters
+* **ITEMS** Number of items inserted
+* **EXPANSION** Expansion rate
+
 @return
 
 @array-reply with information of the filter.
 
-@example
+@examples
 
 ```sql
 redis> BF.ADD key item
@@ -24,4 +31,6 @@ redis> BF.INFO key
  8) (integer) 1
  9) Expansion rate
 10) (integer) 2
+redis> BF.INFO key CAPACITY
+1) (integer) 100
 ```
