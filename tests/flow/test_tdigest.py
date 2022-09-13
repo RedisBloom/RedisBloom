@@ -1,5 +1,6 @@
 
 from common import *
+from numpy import NaN
 import redis
 import math
 import random
@@ -196,24 +197,6 @@ class testTDigest:
             redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, "+inf"
         )
 
-    def test_tdigest_merge(self):
-        self.cmd("FLUSHALL")
-        self.assertOk(self.cmd("tdigest.create", "to-tdigest", "compression", 100))
-        self.assertOk(self.cmd("tdigest.create", "from-tdigest", "compression", 100))
-        # insert datapoints into sketch
-        for _ in range(100):
-            self.assertOk(self.cmd("tdigest.add", "from-tdigest", 1.0, 1))
-        for _ in range(100):
-            self.assertOk(self.cmd("tdigest.add", "to-tdigest", 1.0, 10))
-        # merge from-tdigest into to-tdigest
-        self.assertOk(self.cmd("tdigest.merge", "to-tdigest", "from-tdigest"))
-        # we should now have 1100 weight on to-histogram
-        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest"))
-        total_weight_to = float(to_info["Merged weight"]) + float(
-            to_info["Unmerged weight"]
-        )
-        self.assertEqual(1100, total_weight_to)
-
     def test_tdigest_merge_to_empty(self):
         self.cmd("FLUSHALL")
         self.assertOk(self.cmd("tdigest.create", "to-tdigest", "compression", 100))
@@ -222,7 +205,7 @@ class testTDigest:
         for _ in range(100):
             self.assertOk(self.cmd("tdigest.add", "from-tdigest", 1.0, 1))
         # merge from-tdigest into to-tdigest
-        self.assertOk(self.cmd("tdigest.merge", "to-tdigest", "from-tdigest"))
+        self.assertOk(self.cmd("tdigest.merge", "to-tdigest", 1 ,"from-tdigest"))
         # assert we have same merged weight on both histograms ( given the to-histogram was empty )
         from_info = parse_tdigest_info(self.cmd("tdigest.info", "from-tdigest"))
         total_weight_from = float(from_info["Merged weight"]) + float(
@@ -234,41 +217,103 @@ class testTDigest:
         )
         self.assertEqual(total_weight_from, total_weight_to)
 
-    def test_tdigest_mergestore(self):
+    def test_tdigest_merge_itself(self):
         self.cmd("FLUSHALL")
+        self.assertOk(self.cmd("tdigest.create", "to-tdigest", "compression", 100))
+        # insert datapoints into sketch
+        for _ in range(100):
+            self.assertOk(self.cmd("tdigest.add", "to-tdigest", 1.0, 1))
+        # we should now have 100 weight on to-histogram
+        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest"))
+        total_weight_to = float(to_info["Merged weight"]) + float(
+            to_info["Unmerged weight"]
+        )
+        self.assertEqual(100, total_weight_to)
+        previous_weight = total_weight_to
+        for iteration in range(5):
+            self.assertOk(self.cmd("tdigest.merge", "to-tdigest", 1, "to-tdigest"))
+            # we should now have ( iteration + 1 ) * 100 weight on to-histogram
+            to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest"))
+            total_weight_to = float(to_info["Merged weight"]) + float(
+                to_info["Unmerged weight"]
+            )
+            self.assertEqual(previous_weight * 2, total_weight_to)
+            previous_weight = total_weight_to
+
+    def test_tdigest_merge(self):
+        self.cmd("FLUSHALL")
+        self.assertOk(self.cmd("tdigest.create", "to-tdigest", "compression", 100))
+        self.assertOk(self.cmd("tdigest.create", "from-tdigest", "compression", 100))
+        # insert datapoints into sketch
+        for _ in range(100):
+            self.assertOk(self.cmd("tdigest.add", "from-tdigest", 1.0, 1))
+        for _ in range(100):
+            self.assertOk(self.cmd("tdigest.add", "to-tdigest", 1.0, 10))
+        # merge from-tdigest into to-tdigest
+        self.assertOk(self.cmd("tdigest.merge", "to-tdigest", 1, "from-tdigest"))
+        # we should now have 1100 weight on to-histogram
+        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest"))
+        total_weight_to = float(to_info["Merged weight"]) + float(
+            to_info["Unmerged weight"]
+        )
+        self.assertEqual(1100, total_weight_to)
+        self.cmd("FLUSHALL")
+        self.assertOk(self.cmd("tdigest.create", "to-1", "compression", 55))
         self.assertOk(self.cmd("tdigest.create", "from-1", "compression", 100))
         self.assertOk(self.cmd("tdigest.create", "from-2", "compression", 200))
+        self.assertOk(self.cmd("tdigest.create", "from-3", "compression", 300))
         # insert datapoints into sketch
         self.assertOk(self.cmd("tdigest.add", "from-1", 1.0, 1))
         self.assertOk(self.cmd("tdigest.add", "from-2", 1.0, 10))
-        # merge to a t-digest with default compression
-        self.assertOk(self.cmd("tdigest.mergestore", "to-tdigest-100", "2","from-1", "from-2"))
-        # assert we have same merged weight on both histograms ( given the to-histogram was empty )
+        # merge to a t-digest with max compression of all inputs which is 200
+        self.assertOk(self.cmd("tdigest.merge", "to-tdigest-100", "2", "from-1", "from-2"))
         to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest-100"))
         # ensure tha the destination t-digest has the largest compression of all input t-digests
         compression = int(to_info["Compression"])
         self.assertEqual(200, compression)
+        # assert we have same merged weight on both histograms ( given the to-histogram was empty )
         total_weight_to = float(to_info["Merged weight"]) + float(
             to_info["Unmerged weight"]
         )
         total_weight_from = 10.0 + 1.0
         self.assertEqual(total_weight_from, total_weight_to)
 
+        # merge to a t-digest that already exists so we will preserve its compression
+        self.assertOk(self.cmd("tdigest.merge", "to-1", "2", "from-1", "from-2"))
+        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-1"))
+        # ensure tha the destination t-digest has the largest compression of all input t-digests
+        compression = int(to_info["Compression"])
+        self.assertEqual(55, compression)
+
         # merge to a t-digest with non-default compression
-        self.assertOk(self.cmd("tdigest.mergestore", "to-tdigest-50", "2","from-1", "from-2", "COMPRESSION", "50"))
+        self.assertOk(self.cmd("tdigest.merge", "to-tdigest-50", "2","from-1", "from-2", "COMPRESSION", "50"))
         # ensure tha the destination t-digest has the passed compression
         to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest-50"))
         compression = int(to_info["Compression"])
         self.assertEqual(50, compression)
 
-    def test_tdigest_mergestore_percentile(self):
+        # merge to a t-digest that already exists with non-default compression
+        self.assertOk(self.cmd("tdigest.merge", "to-tdigest-50", "2","from-1", "from-2", "COMPRESSION", "500"))
+        # ensure tha the destination t-digest has the passed compression
+        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest-50"))
+        compression = int(to_info["Compression"])
+        self.assertEqual(500, compression)
+
+        # merge to a t-digest that already exists but given we specify override it will use the max compression of all inputs
+        self.assertOk(self.cmd("tdigest.merge", "to-tdigest-50", "2","from-1", "from-2", "OVERRIDE"))
+        # ensure tha the destination t-digest has the passed compression
+        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest-50"))
+        compression = int(to_info["Compression"])
+        self.assertEqual(200, compression)
+
+    def test_tdigest_merge_percentile(self):
         self.cmd("FLUSHALL")
         self.assertOk(self.cmd("tdigest.create", "from-1", "compression", 500))
         # insert datapoints into sketch
         for x in range(1, 10000):
             self.assertOk(self.cmd("tdigest.add", "from-1", x * 0.01, 1))
         # merge to a t-digest with default compression
-        self.assertOk(self.cmd("tdigest.mergestore", "to-tdigest-500", "1","from-1", "COMPRESSION", "500"))
+        self.assertOk(self.cmd("tdigest.merge", "to-tdigest-500", "1","from-1", "COMPRESSION", "500"))
         # assert min min/max have same result as quantile 0 and 1
         self.assertEqual(
             float(self.cmd("tdigest.max", "to-tdigest-500")),
@@ -297,97 +342,77 @@ class testTDigest:
         self.cmd('FLUSHALL')
         self.cmd("SET", "to-tdigest", "B")
         self.cmd("SET", "from-tdigest", "B")
-
-        # WRONGTYPE
-        self.assertRaises(
-            ResponseError, self.cmd, "tdigest.merge", "to-tdigest", "from-tdigest"
-        )
-        self.cmd("DEL", "to-tdigest")
-        self.assertOk(self.cmd("tdigest.create", "to-tdigest"))
-        self.assertRaises(
-            ResponseError, self.cmd, "tdigest.merge", "to-tdigest", "from-tdigest"
-        )
-        self.cmd("DEL", "from-tdigest")
-        self.assertOk(self.cmd("tdigest.create", "from-tdigest"))
-        # arity lower
-        self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.merge", "to-tdigest"
-        )
-        # arity upper
-        self.assertRaises(
-            ResponseError,
-            self.cmd,
-            "tdigest.merge",
-            "to-tdigest",
-            "from-tdigest",
-            "from-tdigest",
-        )
-        # key does not exist
-        self.assertRaises(
-            ResponseError, self.cmd, "tdigest.merge", "dont-exist", "to-tdigest"
-        )
-        self.assertRaises(
-            ResponseError, self.cmd, "tdigest.merge", "to-tdigest", "dont-exist"
-        )
-
-    def test_negative_tdigest_mergestore(self):
-        self.cmd('FLUSHALL')
-        self.cmd("SET", "to-tdigest", "B")
-        self.cmd("SET", "from-tdigest", "B")
         self.assertOk(self.cmd("tdigest.create", "from-1"))
 
         # WRONGTYPE
         self.assertRaises(
-            ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest", "1", "from-tdigest"
+            redis.exceptions.ResponseError, self.cmd, "tdigest.merge", "to-tdigest", "1", "from-tdigest"
         )
         # WRONGTYPE in the one of the inputs
         self.assertRaises(
-            ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest", "2", "from-1", "from-tdigest"
+            redis.exceptions.ResponseError, self.cmd, "tdigest.merge", "to-tdigest", "2", "from-1", "from-tdigest"
         )
         self.assertRaises(
-            ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest", "2", "from-tdigest", "from-1"
+            redis.exceptions.ResponseError, self.cmd, "tdigest.merge", "to-tdigest", "2", "from-tdigest", "from-1"
+        )
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.merge", "to-tdigest", "1", "from-tdigest", "COMPRESSION", "a"
         )
         self.cmd("DEL", "to-tdigest")
         # arity lower
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.mergestore"
+            redis.exceptions.ResponseError, self.cmd, "tdigest.merge"
         )
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest"
+            redis.exceptions.ResponseError, self.cmd, "tdigest.merge", "to-tdigest"
         )
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest", "1"
+            redis.exceptions.ResponseError, self.cmd, "tdigest.merge", "to-tdigest", "1"
         )
-        # arity upper
         self.assertRaises(
-            ResponseError,
+            redis.exceptions.ResponseError, self.cmd, "tdigest.merge", "to-tdigest", "1", "from-tdigest", "COMPRESSION"
+        )
+        # wrong keyword
+        self.assertRaises(
+            redis.exceptions.ResponseError,
             self.cmd,
-            "tdigest.mergestore",
+            "tdigest.merge",
             "to-tdigest",
             "1",
             "from-tdigest",
             "extra-arg",
         )
-        # numkeys needs to be a positive integer
+        # arity upper
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest", "-1", "from-tdigest"
+            redis.exceptions.ResponseError,
+            self.cmd,
+            "tdigest.merge",
+            "to-tdigest",
+            "1",
+            "from-tdigest",
+            "OVERRIDE",
+            "extra-arg"
         )
         # numkeys needs to be a positive integer
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest", "0", "from-tdigest"
+            redis.exceptions.ResponseError, self.cmd, "tdigest.merge", "to-tdigest", "-1", "from-tdigest"
+        )
+        # numkeys needs to be a positive integer
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.merge", "to-tdigest", "0", "from-tdigest"
         )
         # bad keyword
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.mergestore", "to-tdigest-500", "1","from-1",
+            redis.exceptions.ResponseError, self.cmd, "tdigest.merge", "to-tdigest-500", "1","from-1",
                                                       "bad_keyword", "500"
-        ) 
+        )
 
     def test_tdigest_min_max(self):
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "tdigest"))
         # test for no datapoints first
-        self.assertEqual(sys.float_info.max, float(self.cmd("tdigest.min", "tdigest")))
-        self.assertEqual(-sys.float_info.max, float(self.cmd("tdigest.max", "tdigest")))
+        self.assertEqual('nan', self.cmd("tdigest.min", "tdigest"))
+        self.assertEqual('nan', self.cmd("tdigest.max", "tdigest"))
         # insert datapoints into sketch
         for x in range(1, 101):
             self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
@@ -553,6 +578,76 @@ class testTDigest:
             redis.exceptions.ResponseError, self.cmd, "tdigest.cdf", "tdigest", 1.0, 'foo'
         )
 
+    def test_tdigest_rank(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
+        # insert datapoints into sketch
+        for x in range(0, 20):
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
+
+        # -1 when value < value of the smallest observation
+        self.assertEqual(-1, float(self.cmd("tdigest.rank", "tdigest", -1)[0]))
+        # rank from cdf of min
+        self.assertEqual(1, float(self.cmd("tdigest.rank", "tdigest", 0)[0]))
+        # rank from cdf of max
+        self.assertEqual(20, float(self.cmd("tdigest.rank", "tdigest", 19)[0]))
+        # rank from cdf above max
+        self.assertEqual(20, float(self.cmd("tdigest.rank", "tdigest", 20)[0]))
+        # rank within [min,max]
+        self.assertEqual(19, float(self.cmd("tdigest.rank", "tdigest", 18)[0]))
+        self.assertEqual(11, float(self.cmd("tdigest.rank", "tdigest", 10)[0]))
+        self.assertEqual(2, float(self.cmd("tdigest.rank", "tdigest", 1)[0]))
+        # multiple inputs test
+        self.assertEqual(["-1","20","10"], self.cmd("tdigest.rank", "tdigest", -20, 20, 9))
+
+    def test_tdigest_revrank(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
+        # insert datapoints into sketch
+        for x in range(0, 20):
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
+
+        # -1 when value > value of the largest observation
+        self.assertEqual(-1, float(self.cmd("tdigest.revrank", "tdigest", 20)[0]))
+        # rank from cdf of min
+        self.assertEqual(20, float(self.cmd("tdigest.revrank", "tdigest", 0)[0]))
+        # rank from cdf of max
+        self.assertEqual(1, float(self.cmd("tdigest.revrank", "tdigest", 19)[0]))
+        # rank from cdf above max
+        self.assertEqual(-1, float(self.cmd("tdigest.revrank", "tdigest", 50)[0]))
+        # rank within [min,max]
+        self.assertEqual(1, float(self.cmd("tdigest.revrank", "tdigest", 18)[0]))
+        self.assertEqual(10, float(self.cmd("tdigest.revrank", "tdigest", 10)[0]))
+        self.assertEqual(19, float(self.cmd("tdigest.revrank", "tdigest", 1)[0]))
+        # multiple inputs test
+        self.assertEqual(["-1","20","10"], self.cmd("tdigest.revrank", "tdigest", 21, 0, 10))
+
+    def test_negative_tdigest_rank(self):
+        self.cmd('FLUSHALL')
+        self.cmd("SET", "tdigest", "B")
+        # WRONGTYPE
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.rank", "tdigest", 0.9
+        )
+        # key does not exist
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.rank", "dont-exist", 0.9
+        )
+        self.cmd("DEL", "tdigest")
+        self.assertOk(self.cmd("tdigest.create", "tdigest"))
+        # arity lower
+        self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.rank")
+        # parsing
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.rank", "tdigest", NaN
+        )
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.rank", "tdigest", "a", 0.9
+        )
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.rank", "tdigest", 1.5, "a"
+        )
+
     def test_tdigest_trimmed_mean(self):
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
@@ -714,6 +809,8 @@ class testTDigest:
             self.assertOk(self.cmd("tdigest.add", "tdigest", 1.0, 1))
         self.assertEqual(True, self.cmd("SAVE"))
         mem_usage_prior_restart = self.cmd("MEMORY", "USAGE", "tdigest")
+        tdigest_min = self.cmd("tdigest.min", "tdigest")
+        tdigest_max = self.cmd("tdigest.max", "tdigest")
         self.restart_and_reload()
         # assert we have 100 unmerged nodes
         self.assertEqual(1, self.cmd("EXISTS", "tdigest"))
@@ -725,3 +822,5 @@ class testTDigest:
         )
         mem_usage_after_restart = self.cmd("MEMORY", "USAGE", "tdigest")
         self.assertEqual(mem_usage_prior_restart, mem_usage_after_restart)
+        self.assertEqual(tdigest_min, self.cmd("tdigest.min", "tdigest"))
+        self.assertEqual(tdigest_max, self.cmd("tdigest.max", "tdigest"))
