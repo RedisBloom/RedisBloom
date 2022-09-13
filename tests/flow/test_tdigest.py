@@ -410,8 +410,8 @@ class testTDigest:
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "tdigest"))
         # test for no datapoints first
-        self.assertEqual(sys.float_info.max, float(self.cmd("tdigest.min", "tdigest")))
-        self.assertEqual(-sys.float_info.max, float(self.cmd("tdigest.max", "tdigest")))
+        self.assertEqual('nan', self.cmd("tdigest.min", "tdigest"))
+        self.assertEqual('nan', self.cmd("tdigest.max", "tdigest"))
         # insert datapoints into sketch
         for x in range(1, 101):
             self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
@@ -702,6 +702,8 @@ class testTDigest:
             self.assertOk(self.cmd("tdigest.add", "tdigest", 1.0, 1))
         self.assertEqual(True, self.cmd("SAVE"))
         mem_usage_prior_restart = self.cmd("MEMORY", "USAGE", "tdigest")
+        tdigest_min = self.cmd("tdigest.min", "tdigest")
+        tdigest_max = self.cmd("tdigest.max", "tdigest")
         self.restart_and_reload()
         # assert we have 100 unmerged nodes
         self.assertEqual(1, self.cmd("EXISTS", "tdigest"))
@@ -713,3 +715,5 @@ class testTDigest:
         )
         mem_usage_after_restart = self.cmd("MEMORY", "USAGE", "tdigest")
         self.assertEqual(mem_usage_prior_restart, mem_usage_after_restart)
+        self.assertEqual(tdigest_min, self.cmd("tdigest.min", "tdigest"))
+        self.assertEqual(tdigest_max, self.cmd("tdigest.max", "tdigest"))

@@ -192,6 +192,38 @@
       {
         "name": "key",
         "type": "key"
+      },
+      {
+        "name": "single_value",
+        "type": "oneof",
+        "optional": true,
+        "arguments": [
+            {
+              "name": "capacity",
+              "type": "pure-token",
+              "token": "CAPACITY"
+            },
+            {
+              "name": "size",
+              "type": "pure-token",
+              "token": "SIZE"
+            },
+            {
+              "name": "filters",
+              "type": "pure-token",
+              "token": "FILTERS"
+            },
+            {
+              "name": "items",
+              "type": "pure-token",
+              "token": "ITEMS"
+            },
+            {
+              "name": "expansion",
+              "type": "pure-token",
+              "token": "EXPANSION"
+            }
+        ]
       }
     ],
     "since": "1.0.0",
