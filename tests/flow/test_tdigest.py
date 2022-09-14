@@ -811,6 +811,42 @@ class testTDigest:
             redis.exceptions.ResponseError, self.cmd, "tdigest.trimmed_mean", "tdigest", "0.1", "0.1"
         )
 
+    def test_tdigest_info(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd("tdigest.create", "tdigest"))
+        # insert datapoints into sketch
+        for x in range(1, 101):
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
+        td_info = parse_tdigest_info(self.cmd("tdigest.info", "tdigest"))
+        # total weight
+        self.assertEqual(
+                100,
+                int(td_info["Sum weights"]),
+            )
+        init_mem_usage = td_info["Memory usage"]
+        # memory usage check
+        self.assertTrue(
+                init_mem_usage <= self.cmd("MEMORY", "USAGE", "tdigest"),
+            )
+        # independent of the datapoints this sketch has an invariant size after creation
+        for x in range(1, 10001):
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
+        td_info = parse_tdigest_info(self.cmd("tdigest.info", "tdigest"))
+        self.assertEqual(
+                init_mem_usage,
+                td_info["Memory usage"],
+            )
+        previous_mem_usage = 0
+        for compression in [100,200,300,400,500]:
+            self.cmd('FLUSHALL')
+            self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", compression))
+            td_info = parse_tdigest_info(self.cmd("tdigest.info", "tdigest"))
+            current_mem_usage = td_info["Memory usage"]
+            self.assertTrue(
+                previous_mem_usage < current_mem_usage,
+            )
+            previous_mem_usage = current_mem_usage
+
     def test_negative_tdigest_info(self):
         self.cmd('FLUSHALL')
         self.cmd("SET", "tdigest", "B")
