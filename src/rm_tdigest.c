@@ -22,6 +22,7 @@
 #include "tdigest.h"
 
 RedisModuleType *TDigestSketchType;
+size_t TDigestMemUsage(const void *value);
 
 /**
  * Helper method to check if key is empty and it's type.
@@ -678,7 +679,7 @@ int TDigestSketch_Info(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 
     td_histogram_t *tdigest = RedisModule_ModuleTypeGetValue(key);
 
-    RedisModule_ReplyWithArray(ctx, 7 * 2);
+    RedisModule_ReplyWithArray(ctx, 9 * 2);
     RedisModule_ReplyWithSimpleString(ctx, "Compression");
     RedisModule_ReplyWithLongLong(ctx, tdigest->compression);
     RedisModule_ReplyWithSimpleString(ctx, "Capacity");
@@ -691,8 +692,13 @@ int TDigestSketch_Info(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     RedisModule_ReplyWithDouble(ctx, tdigest->merged_weight);
     RedisModule_ReplyWithSimpleString(ctx, "Unmerged weight");
     RedisModule_ReplyWithDouble(ctx, tdigest->unmerged_weight);
+    RedisModule_ReplyWithSimpleString(ctx, "Sum weights");
+    RedisModule_ReplyWithDouble(ctx, tdigest->unmerged_weight + tdigest->merged_weight);
     RedisModule_ReplyWithSimpleString(ctx, "Total compressions");
     RedisModule_ReplyWithLongLong(ctx, tdigest->total_compressions);
+    RedisModule_ReplyWithSimpleString(ctx, "Memory usage");
+    const size_t size_b = TDigestMemUsage(tdigest);
+    RedisModule_ReplyWithLongLong(ctx, size_b);
     RedisModule_CloseKey(key);
     return REDISMODULE_OK;
 }
