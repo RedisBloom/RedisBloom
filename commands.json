@@ -967,6 +967,40 @@
     "since": "2.4.0",
     "group": "tdigest"
   },
+  "TDIGEST.BYRANK": {
+    "summary": "Retrieve an estimation of the value with the given the rank. Multiple estimations can be returned with one call.",
+    "complexity": "O(1)",
+    "arguments": [
+      {
+        "name": "key",
+        "type": "key"
+      },
+      {
+        "name": "rank",
+        "type": "double",
+        "multiple": true
+      }
+    ],
+    "since": "2.4.0",
+    "group": "tdigest"
+  },
+  "TDIGEST.BYREVRANK": {
+    "summary": "Retrieve an estimation of the value with the given the reverse rank. Multiple estimations can be returned with one call.",
+    "complexity": "O(1)",
+    "arguments": [
+      {
+        "name": "key",
+        "type": "key"
+      },
+      {
+        "name": "reverse_rank",
+        "type": "double",
+        "multiple": true
+      }
+    ],
+    "since": "2.4.0",
+    "group": "tdigest"
+  },
   "TDIGEST.INFO": {
     "summary": "Returns information about a sketch",
     "complexity": "O(1)",
