@@ -750,7 +750,7 @@ class testTDigest:
         self.assertOk(self.cmd("tdigest.create", "tdigest"))
         # insert datapoints into sketch
         for x in range(1, 101):
-            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1.0))
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
         td_info = parse_tdigest_info(self.cmd("tdigest.info", "tdigest"))
         # total weight
         self.assertEqual(
@@ -764,7 +764,7 @@ class testTDigest:
             )
         # independent of the datapoints this sketch has an invariant size after creation
         for x in range(1, 10001):
-            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1.0))
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
         td_info = parse_tdigest_info(self.cmd("tdigest.info", "tdigest"))
         self.assertEqual(
                 init_mem_usage,
