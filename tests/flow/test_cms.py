@@ -28,7 +28,10 @@ class testCMS():
         self.assertEqual(['width', 2000, 'depth', 7, 'count', 5],
                          self.cmd('cms.info', 'cms2'))
         if not VALGRIND:
-            self.assertEqual(840, self.cmd('MEMORY USAGE', 'cms1'))
+            if server_version_at_least(self.env, '7.0.0'):
+                self.assertEqual(856, self.cmd('MEMORY USAGE', 'cms1'))
+            else:
+                self.assertEqual(840, self.cmd('MEMORY USAGE', 'cms1'))
 
     def test_validation(self):
         self.cmd('FLUSHALL')
