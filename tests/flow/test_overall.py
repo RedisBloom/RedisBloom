@@ -216,6 +216,9 @@ class testRedisBloom():
         env = self.env
         env.cmd('FLUSHALL')
         env.assertOk(env.cmd('bf.reserve', 'bf', '0.05', '1000'))
+        yield 1
+        self.env.dumpAndReload()
+        yield 2
         if not VALGRIND:
             if server_version_at_least(self.env, '7.0.0'):
                 env.assertEqual(1104, env.cmd('MEMORY USAGE', 'bf'))
