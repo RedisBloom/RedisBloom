@@ -149,6 +149,9 @@ class testCuckoo():
     def test_mem_usage(self):
         self.cmd('FLUSHALL')
         self.cmd('CF.RESERVE', 'cf', '1000')
+        yield 1
+        self.env.dumpAndReload()
+        yield 2
         if not VALGRIND:
             self.assertEqual(1112, self.cmd('MEMORY USAGE', 'cf'))
         self.cmd('cf.insert', 'cf', 'nocreate', 'items', 'foo')
