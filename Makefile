@@ -19,13 +19,13 @@ ROOT=.
 MK.pyver:=3
 include $(ROOT)/deps/readies/mk/main
 
-#----------------------------------------------------------------------------------------------  
+#----------------------------------------------------------------------------------------------
 
 # export T_DIGEST_C_BINDIR=$(ROOT)/bin/$(FULL_VARIANT.release)/t-digest-c
 export T_DIGEST_C_BINDIR=$(ROOT)/bin/$(FULL_VARIANT)/t-digest-c
 include $(ROOT)/build/t-digest-c/Makefile.defs
 
-#----------------------------------------------------------------------------------------------  
+#----------------------------------------------------------------------------------------------
 
 define HELPTEXT
 make setup         # install packages required for build
@@ -95,7 +95,7 @@ make benchmarks     # run all benchmarks
 
 endef
 
-#----------------------------------------------------------------------------------------------  
+#----------------------------------------------------------------------------------------------
 
 MK_CUSTOM_CLEAN=1
 
@@ -128,16 +128,26 @@ CC_FLAGS = \
 #	-fno-common
 
 LD_FLAGS += -g
+
 LD_LIBS += \
-	  $(T_DIGEST_C) \
-	  -lc -lm -lpthread
+	  -lc \
+	  -lm \
+	  -lpthread \
+	  $(T_DIGEST_C)
 
 ifeq ($(OS),linux)
-SO_LD_FLAGS += -shared -Wl,-Bsymbolic,-Bsymbolic-functions $(LD_FLAGS)
+SO_LD_FLAGS += \
+	-shared \
+	-Wl,-Bsymbolic,-Bsymbolic-functions \
+	$(LD_FLAGS)
 endif
 
 ifeq ($(OS),macos)
-SO_LD_FLAGS += -bundle -undefined dynamic_lookup $(LD_FLAGS)
+SO_LD_FLAGS += \
+	-bundle \
+	-undefined dynamic_lookup \
+	$(LD_FLAGS)
+
 DYLIB_LD_FLAGS += -dynamiclib $(LD_FLAGS)
 endif
 
@@ -260,7 +270,7 @@ $(TARGET): $(BIN_DIRS) $(MISSING_DEPS) $(OBJECTS)
 	@echo Linking $@...
 	$(SHOW)$(CC) $(SO_LD_FLAGS) -o $@ $(OBJECTS) $(LD_LIBS)
 ifeq ($(OS),macos)
-	$(SHOW)$(CC) $(SO_LD_FLAGS) -o $(patsubst %.so,%.dylib,$@) $(OBJECTS) $(LD_LIBS)
+	$(SHOW)$(CC) $(DYLIB_LD_FLAGS) -o $(patsubst %.so,%.dylib,$@) $(OBJECTS) $(LD_LIBS)
 endif
 
 #----------------------------------------------------------------------------------------------
