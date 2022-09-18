@@ -26,14 +26,16 @@ class RedisBloomSetup(paella.Setup):
 
     def redhat_compat(self):
         self.run("%s/bin/getepel" % READIES)
-        self.run("%s/bin/getgcc" % READIES)
+        self.run("%s/bin/getgcc --modern" % READIES)
+
+    def linux_last(self):
+        self.install("valgrind")
 
     def macos(self):
         self.install_gnu_utils()
         self.run("%s/bin/getredis" % READIES)
 
     def common_last(self):
-        self.install("valgrind")
         if self.dist == "arch":
             self.install("lcov-git", aur=True)
         else:
@@ -42,7 +44,8 @@ class RedisBloomSetup(paella.Setup):
         self.run("{PYTHON} {READIES}/bin/getrmpytools --modern".format(PYTHON=self.python, READIES=READIES))
         self.run("{PYTHON} {READIES}/bin/getcmake --usr".format(PYTHON=self.python, READIES=READIES))
         self.pip_install("-r tests/flow/requirements.txt")
-        self.pip_install("pudb awscli")
+        self.run("{READIES}/bin/getaws".format(READIES=READIES))
+        self.pip_install("pudb")
 
 #----------------------------------------------------------------------------------------------
 
