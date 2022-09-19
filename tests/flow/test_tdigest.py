@@ -58,6 +58,11 @@ class testTDigest:
             redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest", "compression", 100
         )
         self.cmd("DEL", "tdigest")
+        # failed allocation
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest", "compression", 10000000000000000
+        )
+
         # arity upper
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest", 100, 5,

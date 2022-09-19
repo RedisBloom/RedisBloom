@@ -100,7 +100,10 @@ int TDigestSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
             return REDISMODULE_ERR;
         }
     }
-    tdigest = td_new(compression);
+    if (td_init(compression, &tdigest) != 0) {
+        RedisModule_CloseKey(key);
+        return RedisModule_ReplyWithError(ctx, "ERR T-Digest: allocation failed");
+    }
     if (RedisModule_ModuleTypeSetValue(key, TDigestSketchType, tdigest) != REDISMODULE_OK) {
         RedisModule_CloseKey(key);
         return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error setting value");
