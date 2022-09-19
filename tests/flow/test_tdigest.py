@@ -58,10 +58,6 @@ class testTDigest:
             redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest", "compression", 100
         )
         self.cmd("DEL", "tdigest")
-        # failed allocation
-        self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest", "compression", 10000000000000000
-        )
 
         # arity upper
         self.assertRaises(
@@ -86,6 +82,11 @@ class testTDigest:
         # wrong keyword
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest", "string", 100
+        )
+        self.cmd('FLUSHALL')
+        # failed allocation
+        self.assertRaises(
+           redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest", "compression", '100000000000000000000'
         )
 
     def test_tdigest_reset(self):
@@ -410,6 +411,11 @@ class testTDigest:
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.merge", "to-tdigest-500", "1","from-1",
                                                       "bad_keyword", "500"
+        )
+        # allocation of destination digest failed
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.merge", "to-tdigest", "1","from-1",
+                                                      "COMPRESSION", "10000000000000000000"
         )
 
     def test_tdigest_min_max(self):

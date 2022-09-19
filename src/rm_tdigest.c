@@ -309,7 +309,10 @@ int TDigestSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             compression = td_compression > compression ? td_compression : compression;
         }
     }
-    tdigestTo = td_new(compression);
+    if (td_init(compression, &tdigestTo) != 0) {
+        RedisModule_ReplyWithError(ctx, "ERR T-Digest: allocation of destination digest failed");
+        goto cleanup;
+    }
     if (tdigestToStart != NULL && override == false) {
         td_merge(tdigestTo, tdigestToStart);
     }
