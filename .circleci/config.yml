@@ -522,9 +522,9 @@ workflows:
       # - static-analysis-infer:
       #     <<: *on-any-branch
       - coverage:
-          <<: *on-any-branch
+          <<: *never
       - valgrind:
-          <<: *on-any-branch
+          <<: *never
           requires:
             - lint
       - build:
@@ -572,12 +572,12 @@ workflows:
           requires:
             - upload-release-artifacts
       - benchmark-bloom-oss-standalone:
-          <<: *on-perf-tags
+          <<: *on-any-branch
           requires:
             - lint
           context: common
       - benchmark-bloom-oss-standalone-profiler:
-          <<: *on-perf-tags
+          <<: *on-any-branch
           requires:
             - lint
           context: common
