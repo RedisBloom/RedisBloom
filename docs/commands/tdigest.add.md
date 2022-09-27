@@ -4,7 +4,7 @@ Adds one or more observations to a t-digest sketch.
 
 * **key**: The name of the sketch (a t-digest data structure)
 * **val**: The value of the observation (floating-point). The value should be a finite number
-* **weight**: The weight of this observation (positive integer). **weight** can indicate the number of observations with such value
+* **weight**: The weight of this observation (positive integer).
 
 @return
 
