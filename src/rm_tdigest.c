@@ -140,7 +140,7 @@ int TDigestSketch_Reset(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 }
 
 /**
- * Command: TDIGEST.ADD {key} {val} {weight} [ {val} {weight} ] ...
+ * Command: TDIGEST.ADD {key} {val} [ {val} ] ...
  *
  * Adds one or more samples to a histogram.
  *
@@ -151,7 +151,7 @@ int TDigestSketch_Reset(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
  */
 int TDigestSketch_Add(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     // Number of arguments needs to be even
-    if (argc < 4 || (argc % 2 != 0)) {
+    if (argc < 3) {
         return RedisModule_WrongArity(ctx);
     }
     RedisModuleString *keyName = argv[1];
@@ -162,8 +162,7 @@ int TDigestSketch_Add(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
     td_histogram_t *tdigest = RedisModule_ModuleTypeGetValue(key);
     double val = 0.0;
-    long long weight = 1;
-    for (int i = 2; i < argc; i += 2) {
+    for (int i = 2; i < argc; i++) {
         if (RedisModule_StringToDouble(argv[i], &val) != REDISMODULE_OK) {
             RedisModule_CloseKey(key);
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing val parameter");
@@ -173,16 +172,7 @@ int TDigestSketch_Add(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
             return RedisModule_ReplyWithError(
                 ctx, "ERR T-Digest: val parameter needs to be a finite number");
         }
-        if (RedisModule_StringToLongLong(argv[i + 1], &weight) != REDISMODULE_OK) {
-            RedisModule_CloseKey(key);
-            return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing weight parameter");
-        }
-        if (weight < 1) {
-            RedisModule_CloseKey(key);
-            return RedisModule_ReplyWithError(
-                ctx, "ERR T-Digest: weight parameter needs to be a positive integer");
-        }
-        if (td_add(tdigest, val, (double)weight) != 0) {
+        if (td_add(tdigest, val, 1.0) != 0) {
             RedisModule_CloseKey(key);
             return RedisModule_ReplyWithError(ctx,
                                               "ERR T-Digest: double-precision overflow detected");
@@ -788,7 +778,7 @@ int TDigestSketch_Info(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     RedisModule_ReplyWithDouble(ctx, tdigest->merged_weight);
     RedisModule_ReplyWithSimpleString(ctx, "Unmerged weight");
     RedisModule_ReplyWithDouble(ctx, tdigest->unmerged_weight);
-    RedisModule_ReplyWithSimpleString(ctx, "Sum weights");
+    RedisModule_ReplyWithSimpleString(ctx, "Observations");
     RedisModule_ReplyWithDouble(ctx, tdigest->unmerged_weight + tdigest->merged_weight);
     RedisModule_ReplyWithSimpleString(ctx, "Total compressions");
     RedisModule_ReplyWithLongLong(ctx, tdigest->total_compressions);

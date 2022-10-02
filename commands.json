@@ -800,10 +800,6 @@
           {
             "name": "value",
             "type": "double"
-          },
-          {
-            "name": "weight",
-            "type": "double"
           }
         ]
       }
