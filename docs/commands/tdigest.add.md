@@ -4,7 +4,6 @@ Adds one or more observations to a t-digest sketch.
 
 * **key**: The name of the sketch (a t-digest data structure)
 * **val**: The value of the observation (floating-point). The value should be a finite number
-* **weight**: The weight of this observation (positive integer).
 
 @return
 
@@ -13,14 +12,11 @@ Adds one or more observations to a t-digest sketch.
 @examples
 
 ```
-redis> TDIGEST.ADD t-digest 42 1 194 1
+redis> TDIGEST.ADD t-digest 42 194
 OK
 ```
+
 ```
 redis> TDIGEST.ADD t-digest string 1
 (error) ERR T-Digest: error parsing val parameter
-```
-```
-redis> TDIGEST.ADD t-digest 42 string
-(error) ERR T-Digest: error parsing weight parameter
 ```
