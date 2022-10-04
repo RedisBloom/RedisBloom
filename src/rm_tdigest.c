@@ -143,7 +143,7 @@ int TDigestSketch_Reset(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 }
 
 /**
- * Command: TDIGEST.ADD {key} {val} {weight} [ {val} {weight} ] ...
+ * Command: TDIGEST.ADD {key} {val} [ {val} ] ...
  *
  * Adds one or more samples to a histogram.
  *
@@ -154,7 +154,7 @@ int TDigestSketch_Reset(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
  */
 int TDigestSketch_Add(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     // Number of arguments needs to be even
-    if (argc < 4 || (argc % 2 != 0)) {
+    if (argc < 3) {
         return RedisModule_WrongArity(ctx);
     }
     RedisModuleString *keyName = argv[1];
@@ -165,8 +165,7 @@ int TDigestSketch_Add(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
     td_histogram_t *tdigest = RedisModule_ModuleTypeGetValue(key);
     double val = 0.0;
-    long long weight = 1;
-    for (int i = 2; i < argc; i += 2) {
+    for (int i = 2; i < argc; i++) {
         if (RedisModule_StringToDouble(argv[i], &val) != REDISMODULE_OK) {
             RedisModule_CloseKey(key);
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing val parameter");
@@ -176,16 +175,7 @@ int TDigestSketch_Add(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
             return RedisModule_ReplyWithError(
                 ctx, "ERR T-Digest: val parameter needs to be a finite number");
         }
-        if (RedisModule_StringToLongLong(argv[i + 1], &weight) != REDISMODULE_OK) {
-            RedisModule_CloseKey(key);
-            return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing weight parameter");
-        }
-        if (weight < 1) {
-            RedisModule_CloseKey(key);
-            return RedisModule_ReplyWithError(
-                ctx, "ERR T-Digest: weight parameter needs to be a positive integer");
-        }
-        if (td_add(tdigest, val, (double)weight) != 0) {
+        if (td_add(tdigest, val, 1.0) != 0) {
             RedisModule_CloseKey(key);
             return RedisModule_ReplyWithError(ctx,
                                               "ERR T-Digest: double-precision overflow detected");
@@ -458,15 +448,15 @@ static int _TDigest_Rank(RedisModuleCtx *ctx, RedisModuleString *const *argv, in
         } else if (vals[i] > max) {
             ranks[i] = reverse ? -1 : size;
         } else {
-            const double cdf_value = td_cdf(tdigest, vals[i]);
-            ranks[i] = round(reverse ? ((1 - cdf_value) * size) : (cdf_value * size));
+            const double cdf_to_absolute = round(td_cdf(tdigest, vals[i]) * size);
+            ranks[i] = round(reverse ? (size - cdf_to_absolute) : cdf_to_absolute);
         }
     }
 
     RedisModule_CloseKey(key);
     RedisModule_ReplyWithArray(ctx, n_values);
     for (int i = 0; i < n_values; ++i) {
-        RedisModule_ReplyWithDouble(ctx, ranks[i]);
+        RedisModule_ReplyWithLongLong(ctx, (long long)ranks[i]);
     }
     __td_free(vals);
     __td_free(ranks);
@@ -557,8 +547,8 @@ static int _TDigest_ByRank(RedisModuleCtx *ctx, RedisModuleString *const *argv, 
         } else if (input_ranks[i] >= size) {
             values[i] = reverse ? -INFINITY : INFINITY;
         } else {
-            const double cdf_input =
-                reverse ? ((size - input_ranks[i]) / size) : (input_ranks[i] / size);
+            const double input_p = (input_ranks[i] / size);
+            const double cdf_input = reverse ? 1 - input_p : input_p;
             values[i] = td_quantile(tdigest, cdf_input);
         }
     }
@@ -794,7 +784,7 @@ int TDigestSketch_Info(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     RedisModule_ReplyWithDouble(ctx, tdigest->merged_weight);
     RedisModule_ReplyWithSimpleString(ctx, "Unmerged weight");
     RedisModule_ReplyWithDouble(ctx, tdigest->unmerged_weight);
-    RedisModule_ReplyWithSimpleString(ctx, "Sum weights");
+    RedisModule_ReplyWithSimpleString(ctx, "Observations");
     RedisModule_ReplyWithDouble(ctx, tdigest->unmerged_weight + tdigest->merged_weight);
     RedisModule_ReplyWithSimpleString(ctx, "Total compressions");
     RedisModule_ReplyWithLongLong(ctx, tdigest->total_compressions);

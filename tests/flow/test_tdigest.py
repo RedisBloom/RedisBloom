@@ -1,4 +1,5 @@
 
+from ast import arg
 from common import *
 from numpy import NaN
 import redis
@@ -96,7 +97,7 @@ class testTDigest:
         self.assertOk(self.cmd("tdigest.reset", "tdigest"))
         # insert datapoints into sketch
         for x in range(100):
-            self.assertOk(self.cmd("tdigest.add", "tdigest", random.random(), 1))
+            self.assertOk(self.cmd("tdigest.add", "tdigest", random.random()))
 
         # assert we have 100 unmerged nodes
         self.assertEqual(
@@ -144,8 +145,28 @@ class testTDigest:
                     "tdigest.add",
                     "tdigest",
                     random.random() * 10000,
-                    int(random.random() * 500 + 1.0),
                 )
+            )
+        
+        # check that multiple datapoints insertion behaves as expected
+        self.assertOk(self.cmd("tdigest.create", "tdigest2"))
+        args = ["tdigest.add", "tdigest2"]
+        for x in range(100):
+            args.append("1.0")
+        self.assertOk(
+                self.cmd(
+                    " ".join(args)
+                )
+            )
+        td_info = parse_tdigest_info(self.cmd("tdigest.info", "tdigest2"))
+        total_weight = float(td_info["Merged weight"]) + float(
+            td_info["Unmerged weight"]
+        )
+        self.assertEqual(100.0, total_weight)
+        # total weight
+        self.assertEqual(
+                100.0,
+                int(td_info["Observations"]),
             )
 
     def test_negative_tdigest_add(self):
@@ -153,7 +174,7 @@ class testTDigest:
         self.cmd("SET", "tdigest", "B")
         # WRONGTYPE
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 100, 100
+            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 100
         )
         self.cmd("DEL", "tdigest")
         self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 100))
@@ -161,13 +182,9 @@ class testTDigest:
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest"
         )
-        # arity upper
-        self.assertRaises(
-            ResponseError, self.cmd, "tdigest.add", "tdigest", 100, 5, 100
-        )
         # key does not exist
         self.assertRaises(
-            ResponseError, self.cmd, "tdigest.add", "dont-exist", 100, 100
+            ResponseError, self.cmd, "tdigest.add", "dont-exist", 100
         )
         # parsing
         self.assertRaises(
@@ -178,29 +195,10 @@ class testTDigest:
         )
         # val parameter needs to be a finite number
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", "-inf", 5, 
+            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", "-inf",
         )
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", "+inf", 5,
-        )
-        # weight parameter needs to be a positive integer
-        self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, 0
-        )
-        self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, -10
-        )
-        self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, 5.95
-        )
-        self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, -10.0
-        )
-        self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, "-inf"
-        )
-        self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, "+inf"
+            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", "+inf",
         )
 
     def test_tdigest_merge_to_empty(self):
@@ -209,7 +207,7 @@ class testTDigest:
         self.assertOk(self.cmd("tdigest.create", "from-tdigest", "compression", 100))
         # insert datapoints into sketch
         for _ in range(100):
-            self.assertOk(self.cmd("tdigest.add", "from-tdigest", 1.0, 1))
+            self.assertOk(self.cmd("tdigest.add", "from-tdigest", 1.0))
         # merge from-tdigest into to-tdigest
         self.assertOk(self.cmd("tdigest.merge", "to-tdigest", 1 ,"from-tdigest"))
         # assert we have same merged weight on both histograms ( given the to-histogram was empty )
@@ -228,7 +226,7 @@ class testTDigest:
         self.assertOk(self.cmd("tdigest.create", "to-tdigest", "compression", 100))
         # insert datapoints into sketch
         for _ in range(100):
-            self.assertOk(self.cmd("tdigest.add", "to-tdigest", 1.0, 1))
+            self.assertOk(self.cmd("tdigest.add", "to-tdigest", 1.0))
         # we should now have 100 weight on to-histogram
         to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest"))
         total_weight_to = float(to_info["Merged weight"]) + float(
@@ -252,9 +250,9 @@ class testTDigest:
         self.assertOk(self.cmd("tdigest.create", "from-tdigest", "compression", 100))
         # insert datapoints into sketch
         for _ in range(100):
-            self.assertOk(self.cmd("tdigest.add", "from-tdigest", 1.0, 1))
-        for _ in range(100):
-            self.assertOk(self.cmd("tdigest.add", "to-tdigest", 1.0, 10))
+            self.assertOk(self.cmd("tdigest.add", "from-tdigest", 1.0))
+        for _ in range(1000):
+            self.assertOk(self.cmd("tdigest.add", "to-tdigest", 1.0))
         # merge from-tdigest into to-tdigest
         self.assertOk(self.cmd("tdigest.merge", "to-tdigest", 1, "from-tdigest"))
         # we should now have 1100 weight on to-histogram
@@ -269,8 +267,9 @@ class testTDigest:
         self.assertOk(self.cmd("tdigest.create", "from-2", "compression", 200))
         self.assertOk(self.cmd("tdigest.create", "from-3", "compression", 300))
         # insert datapoints into sketch
-        self.assertOk(self.cmd("tdigest.add", "from-1", 1.0, 1))
-        self.assertOk(self.cmd("tdigest.add", "from-2", 1.0, 10))
+        self.assertOk(self.cmd("tdigest.add", "from-1", 1.0))
+        for _ in range(0,10):
+            self.assertOk(self.cmd("tdigest.add", "from-2", 1.0))
         # merge to a t-digest with max compression of all inputs which is 200
         self.assertOk(self.cmd("tdigest.merge", "to-tdigest-100", "2", "from-1", "from-2"))
         to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest-100"))
@@ -317,7 +316,7 @@ class testTDigest:
         self.assertOk(self.cmd("tdigest.create", "from-1", "compression", 500))
         # insert datapoints into sketch
         for x in range(1, 10000):
-            self.assertOk(self.cmd("tdigest.add", "from-1", x * 0.01, 1))
+            self.assertOk(self.cmd("tdigest.add", "from-1", x * 0.01))
         # merge to a t-digest with default compression
         self.assertOk(self.cmd("tdigest.merge", "to-tdigest-500", "1","from-1", "COMPRESSION", "500"))
         # assert min min/max have same result as quantile 0 and 1
@@ -426,7 +425,7 @@ class testTDigest:
         self.assertEqual('nan', self.cmd("tdigest.max", "tdigest"))
         # insert datapoints into sketch
         for x in range(1, 101):
-            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x))
         # min/max
         self.assertEqual(100, float(self.cmd("tdigest.max", "tdigest")))
         self.assertEqual(1, float(self.cmd("tdigest.min", "tdigest")))
@@ -467,7 +466,7 @@ class testTDigest:
         self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
         # insert datapoints into sketch
         for x in range(1, 10000):
-            self.assertOk(self.cmd("tdigest.add", "tdigest", x * 0.01, 1))
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x * 0.01))
         # assert min min/max have same result as quantile 0 and 1
         self.assertEqual(
             float(self.cmd("tdigest.max", "tdigest")),
@@ -550,7 +549,7 @@ class testTDigest:
         self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
         # insert datapoints into sketch
         for x in range(1, 100):
-            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x))
 
         self.assertAlmostEqual(
             0.01, float(self.cmd("tdigest.cdf", "tdigest", 1.0)[0]), 0.01
@@ -594,7 +593,7 @@ class testTDigest:
         self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
         # insert datapoints into sketch
         for x in range(0, 20):
-            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x))
 
         # -1 when value < value of the smallest observation
         self.assertEqual(-1, float(self.cmd("tdigest.rank", "tdigest", -1)[0]))
@@ -609,29 +608,37 @@ class testTDigest:
         self.assertEqual(11, float(self.cmd("tdigest.rank", "tdigest", 10)[0]))
         self.assertEqual(2, float(self.cmd("tdigest.rank", "tdigest", 1)[0]))
         # multiple inputs test
-        self.assertEqual(["-1","20","10"], self.cmd("tdigest.rank", "tdigest", -20, 20, 9))
+        self.assertEqual([-1,20,10], self.cmd("tdigest.rank", "tdigest", -20, 20, 9))
 
     def test_tdigest_revrank(self):
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
         # insert datapoints into sketch
         for x in range(0, 20):
-            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x))
 
         # -1 when value > value of the largest observation
         self.assertEqual(-1, float(self.cmd("tdigest.revrank", "tdigest", 20)[0]))
         # rank from cdf of min
-        self.assertEqual(20, float(self.cmd("tdigest.revrank", "tdigest", 0)[0]))
+        self.assertEqual(19, float(self.cmd("tdigest.revrank", "tdigest", 0)[0]))
         # rank from cdf of max
-        self.assertEqual(1, float(self.cmd("tdigest.revrank", "tdigest", 19)[0]))
+        self.assertEqual(0, float(self.cmd("tdigest.revrank", "tdigest", 19)[0]))
         # rank from cdf above max
         self.assertEqual(-1, float(self.cmd("tdigest.revrank", "tdigest", 50)[0]))
         # rank within [min,max]
         self.assertEqual(1, float(self.cmd("tdigest.revrank", "tdigest", 18)[0]))
-        self.assertEqual(10, float(self.cmd("tdigest.revrank", "tdigest", 10)[0]))
-        self.assertEqual(19, float(self.cmd("tdigest.revrank", "tdigest", 1)[0]))
+        self.assertEqual(9, float(self.cmd("tdigest.revrank", "tdigest", 10)[0]))
+        self.assertEqual(18, float(self.cmd("tdigest.revrank", "tdigest", 1)[0]))
         # multiple inputs test
-        self.assertEqual(["-1","20","10"], self.cmd("tdigest.revrank", "tdigest", 21, 0, 10))
+        self.assertEqual([-1,19,9], self.cmd("tdigest.revrank", "tdigest", 21, 0, 10))
+    
+    def test_tdigest_rank_and_revrank(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd("tdigest.create", "t", "compression","1000"))
+        self.assertOk(self.cmd('TDIGEST.ADD', 't', '1', '2', '2', '3', '3', '3', '4', '4', '4', '4', '5', '5', '5', '5', '5'))
+        self.assertEqual([-1, 1, 2, 5, 8, 13, 15], self.cmd('TDIGEST.RANK', 't', '0', '1', '2', '3', '4', '5', '6'))
+        self.assertEqual([15, 14, 13, 10, 7, 2, -1], self.cmd('TDIGEST.REVRANK', 't', '0', '1', '2', '3', '4', '5', '6'))
+
 
     def test_negative_tdigest_rank(self):
         self.cmd('FLUSHALL')
@@ -664,7 +671,7 @@ class testTDigest:
         self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
         # insert datapoints into sketch
         for x in range(1, 11):
-            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x))
 
         # rank 0 is precise ( equal to minimum )
         self.assertEqual(1, float(self.cmd("tdigest.byrank", "tdigest", 0)[0]))
@@ -677,10 +684,10 @@ class testTDigest:
         
     def test_tdigest_byrevrank(self):
         self.cmd('FLUSHALL')
-        self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
+        self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 1000))
         # insert datapoints into sketch
         for x in range(1, 11):
-            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x))
 
         # inverse rank 0
         self.assertEqual(10, float(self.cmd("tdigest.byrevrank", "tdigest", 0)[0]))
@@ -689,7 +696,7 @@ class testTDigest:
         # inverse rank larger than total count
         self.assertEqual("-inf", self.cmd("tdigest.byrevrank", "tdigest", 100)[0])
         # inverse rank of N-1
-        self.assertEqual(2, float(self.cmd("tdigest.byrevrank", "tdigest", 9)[0]))
+        self.assertEqual(1.0, float(self.cmd("tdigest.byrevrank", "tdigest", 9)[0]))
 
     def test_negative_tdigest_byrank(self):
         self.cmd('FLUSHALL')
@@ -730,7 +737,7 @@ class testTDigest:
         self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
         # insert datapoints into sketch
         for x in range(0, 20):
-            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x))
 
         self.assertAlmostEqual(
             9.5, float(self.cmd("tdigest.trimmed_mean", "tdigest", 0.1,0.9)), 0.01
@@ -749,7 +756,7 @@ class testTDigest:
         # given a high number of datapoints, the trimmed mean between a range on those datapoints
         # is approximate to the precise mean of the interval range
         for x in range(1, 10001):
-            self.assertOk(self.cmd("tdigest.add", "tdigest", float(x)/1000.0, 1))
+            self.assertOk(self.cmd("tdigest.add", "tdigest", float(x)/1000.0))
         for x in range(1, 10):
             low_cut = float(x)/10.0
             high_cut = low_cut + 0.1
@@ -766,8 +773,9 @@ class testTDigest:
         #      TRIMMEAN(G2:G11,0.02) we get 1.4
         # if we replicate this on our trimmed_mean implementation we get the same results
         self.assertOk(self.cmd("tdigest.reset", "tdigest"))
-        self.assertOk(self.cmd("tdigest.add", "tdigest", 1.0, 9))
-        self.assertOk(self.cmd("tdigest.add", "tdigest", 5.0, 1))
+        for x in range(0,9):
+            self.assertOk(self.cmd("tdigest.add", "tdigest", 1.0))
+        self.assertOk(self.cmd("tdigest.add", "tdigest", 5.0))
         self.assertAlmostEqual(
                 1.0, float(self.cmd("tdigest.trimmed_mean", "tdigest", 0.10, 0.90)), 0.01
             )
@@ -827,12 +835,12 @@ class testTDigest:
         self.assertOk(self.cmd("tdigest.create", "tdigest"))
         # insert datapoints into sketch
         for x in range(1, 101):
-            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x))
         td_info = parse_tdigest_info(self.cmd("tdigest.info", "tdigest"))
         # total weight
         self.assertEqual(
                 100,
-                int(td_info["Sum weights"]),
+                int(td_info["Observations"]),
             )
         init_mem_usage = td_info["Memory usage"]
         # memory usage check
@@ -841,7 +849,7 @@ class testTDigest:
             )
         # independent of the datapoints this sketch has an invariant size after creation
         for x in range(1, 10001):
-            self.assertOk(self.cmd("tdigest.add", "tdigest", x, 1))
+            self.assertOk(self.cmd("tdigest.add", "tdigest", x))
         td_info = parse_tdigest_info(self.cmd("tdigest.info", "tdigest"))
         self.assertEqual(
                 init_mem_usage,
@@ -883,7 +891,7 @@ class testTDigest:
         self.assertOk(self.cmd("tdigest.create", "tdigest"))
         # insert datapoints into sketch
         for _ in range(1, 101):
-            self.assertOk(self.cmd("tdigest.add", "tdigest", 1.0, 1))
+            self.assertOk(self.cmd("tdigest.add", "tdigest", 1.0))
         self.assertEqual(True, self.cmd("SAVE"))
         mem_usage_prior_restart = self.cmd("MEMORY", "USAGE", "tdigest")
         tdigest_min = self.cmd("tdigest.min", "tdigest")
