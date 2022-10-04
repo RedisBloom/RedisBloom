@@ -597,7 +597,7 @@ class testTDigest:
         self.assertEqual(11, float(self.cmd("tdigest.rank", "tdigest", 10)[0]))
         self.assertEqual(2, float(self.cmd("tdigest.rank", "tdigest", 1)[0]))
         # multiple inputs test
-        self.assertEqual(["-1","20","10"], self.cmd("tdigest.rank", "tdigest", -20, 20, 9))
+        self.assertEqual([-1,20,10], self.cmd("tdigest.rank", "tdigest", -20, 20, 9))
 
     def test_tdigest_revrank(self):
         self.cmd('FLUSHALL')
@@ -619,14 +619,14 @@ class testTDigest:
         self.assertEqual(9, float(self.cmd("tdigest.revrank", "tdigest", 10)[0]))
         self.assertEqual(18, float(self.cmd("tdigest.revrank", "tdigest", 1)[0]))
         # multiple inputs test
-        self.assertEqual(["-1","19","9"], self.cmd("tdigest.revrank", "tdigest", 21, 0, 10))
+        self.assertEqual([-1,19,9], self.cmd("tdigest.revrank", "tdigest", 21, 0, 10))
     
     def test_tdigest_rank_and_revrank(self):
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "t", "compression","1000"))
         self.assertOk(self.cmd('TDIGEST.ADD', 't', '1', '2', '2', '3', '3', '3', '4', '4', '4', '4', '5', '5', '5', '5', '5'))
-        self.assertEqual(['-1', '1', '2', '5', '8', '13', '15'], self.cmd('TDIGEST.RANK', 't', '0', '1', '2', '3', '4', '5', '6'))
-        self.assertEqual(['15', '14', '13', '10', '7', '2', '-1'], self.cmd('TDIGEST.REVRANK', 't', '0', '1', '2', '3', '4', '5', '6'))
+        self.assertEqual([-1, 1, 2, 5, 8, 13, 15], self.cmd('TDIGEST.RANK', 't', '0', '1', '2', '3', '4', '5', '6'))
+        self.assertEqual([15, 14, 13, 10, 7, 2, -1], self.cmd('TDIGEST.REVRANK', 't', '0', '1', '2', '3', '4', '5', '6'))
 
 
     def test_negative_tdigest_rank(self):

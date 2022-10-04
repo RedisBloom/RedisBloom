@@ -450,7 +450,7 @@ static int _TDigest_Rank(RedisModuleCtx *ctx, RedisModuleString *const *argv, in
     RedisModule_CloseKey(key);
     RedisModule_ReplyWithArray(ctx, n_values);
     for (int i = 0; i < n_values; ++i) {
-        RedisModule_ReplyWithDouble(ctx, ranks[i]);
+        RedisModule_ReplyWithLongLong(ctx, (long long)ranks[i]);
     }
     __td_free(vals);
     __td_free(ranks);
