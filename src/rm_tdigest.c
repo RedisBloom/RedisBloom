@@ -442,15 +442,15 @@ static int _TDigest_Rank(RedisModuleCtx *ctx, RedisModuleString *const *argv, in
         } else if (vals[i] > max) {
             ranks[i] = reverse ? -1 : size;
         } else {
-            const double cdf_value = td_cdf(tdigest, vals[i]);
-            ranks[i] = round(reverse ? ((1 - cdf_value) * size) : (cdf_value * size));
+            const double cdf_to_absolute = round(td_cdf(tdigest, vals[i]) * size);
+            ranks[i] = round(reverse ? (size - cdf_to_absolute) : cdf_to_absolute);
         }
     }
 
     RedisModule_CloseKey(key);
     RedisModule_ReplyWithArray(ctx, n_values);
     for (int i = 0; i < n_values; ++i) {
-        RedisModule_ReplyWithDouble(ctx, ranks[i]);
+        RedisModule_ReplyWithLongLong(ctx, (long long)ranks[i]);
     }
     __td_free(vals);
     __td_free(ranks);
@@ -541,8 +541,8 @@ static int _TDigest_ByRank(RedisModuleCtx *ctx, RedisModuleString *const *argv, 
         } else if (input_ranks[i] >= size) {
             values[i] = reverse ? -INFINITY : INFINITY;
         } else {
-            const double cdf_input =
-                reverse ? ((size - input_ranks[i]) / size) : (input_ranks[i] / size);
+            const double input_p = (input_ranks[i] / size);
+            const double cdf_input = reverse ? 1 - input_p : input_p;
             values[i] = td_quantile(tdigest, cdf_input);
         }
     }
