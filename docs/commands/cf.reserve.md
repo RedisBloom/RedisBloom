@@ -9,7 +9,7 @@ rate. The new sub-filter is created with size of the previous sub-filter
 multiplied by `expansion`.
 Like bucket size, additional sub-filters grow the error rate linearly.
 The size of the new sub-filter is the size of the last sub-filter multiplied by
-`expansion`. The default value is 1.
+`expansion`.
 
 The minimal false positive error rate is 2/255 ≈ 0.78% when bucket size of 1 is
 used. Larger buckets increase the error rate linearly (for example, a bucket size
@@ -17,7 +17,7 @@ of 3 yields a 2.35% error rate) but improve the fill rate of the filter.
 
 `maxiterations` dictates the number of attempts to find a slot for the incoming
 fingerprint. Once the filter gets full, high `maxIterations` value will slow
-down insertions. The default value is 20.
+down insertions.
 
 Unused capacity in prior sub-filters is automatically used when possible.
 The filter can grow up to 32 times.
@@ -31,15 +31,9 @@ Make sure to reserve extra capacity if you want to avoid expansions.
 
 Optional parameters:
 
-* **bucketsize**: Number of items in each bucket. A higher bucket size value
-improves the fill rate but also causes a higher error rate and slightly slower
-performance.
-* **maxiterations**: Number of attempts to swap items between buckets before
-declaring filter as full and creating an additional filter. A low value is
-better for performance and a higher number is better for filter fill rate.
-* **expansion**: When a new filter is created, its size is the size of the
-current filter multiplied by `expansion`. Expansion is rounded to the next
-`2^n` number.
+* **bucketsize**: Number of items in each bucket. A higher bucket size value improves the fill rate but also causes a higher error rate and slightly slower performance. The default value is 2.
+* **maxiterations**: Number of attempts to swap items between buckets before declaring filter as full and creating an additional filter. A low value is better for performance and a higher number is better for filter fill rate. The default value is 20.
+* **expansion**: When a new filter is created, its size is the size of the current filter multiplied by `expansion`. Expansion is rounded to the next `2^n` number. The default value is 1.
 
 @return
 
