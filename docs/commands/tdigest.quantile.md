@@ -10,21 +10,16 @@ Multiple quantiles can be returned with one call.
 
 @return
 
-@array-reply - the command returns an array of results populated with quantile_1, cutoff_1, quantile_2, cutoff_2, ..., quantile_N, cutoff_N.
-
-The returned array of results will be ordered in ascending order by quantile.
+@array-reply - the command returns an array of results populated with cutoff_1, cutoff_2, ..., cutoff_N.
 
 @examples
 
 ```
 redis> TDIGEST.QUANTILE t-digest 0.5
-1) "0.5"
-2) "100.42"
+1) "100.42"
 ```
 ```
 redis> TDIGEST.QUANTILE t-digest 0.5 0.999
-1) "0.5"
-2) "100.42"
-3) "0.999"
-4) "190.01"
+1) "100.42"
+2) "190.01"
 ```

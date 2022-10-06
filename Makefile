@@ -1,192 +1,407 @@
-CC?=gcc
-INFER?=./deps/infer
-INFER_DOCKER?=redisbench/infer-linux64:1.0.0
 
-DEBUGFLAGS = -g -ggdb -O2
-ifeq ($(DEBUG), 1)
-	DEBUGFLAGS = -g -ggdb -O0 -pedantic
+ifneq ($(filter coverage show-cov upload-cov,$(MAKECMDGOALS)),)
+export COV=1
 endif
 
-# find the OS
-uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
-username := $(shell sh -c 'id -u')
-usergroup := $(shell sh -c 'id -g')
-CPPFLAGS =  -Wall -Wno-unused-function $(DEBUGFLAGS) -fPIC -D_GNU_SOURCE -DREDISBLOOM_GIT_SHA=\"$(REDISBLOOM_GIT_SHA)\"
-# CC:=$(shell sh -c 'type $(CC) >/dev/null 2>/dev/null && echo $(CC) || echo gcc')
+ifeq ($(VG),1)
+override VALGRIND:=1
+export VALGRIND
+endif
 
-# Compile flags for linux / osx
-ifeq ($(uname_S),Linux)
-	LD=$(CC)
-	SHOBJ_CFLAGS ?=  -fno-common -g -ggdb
-	SHOBJ_LDFLAGS ?= -shared -Wl,-Bsymbolic,-Bsymbolic-functions
+ifeq ($(VALGRIND),1)
+override DEBUG:=1
+export DEBUG
+endif
+
+MK_ALL_TARGETS=bindirs deps build pack
+
+ROOT=.
+MK.pyver:=3
+include $(ROOT)/deps/readies/mk/main
+
+#----------------------------------------------------------------------------------------------
+
+# export T_DIGEST_C_BINDIR=$(ROOT)/bin/$(FULL_VARIANT.release)/t-digest-c
+export T_DIGEST_C_BINDIR=$(ROOT)/bin/$(FULL_VARIANT)/t-digest-c
+include $(ROOT)/build/t-digest-c/Makefile.defs
+
+#----------------------------------------------------------------------------------------------
+
+define HELPTEXT
+make setup         # install packages required for build
+make fetch         # download and prepare dependant modules
+
+make build
+  DEBUG=1          # build debug variant
+  VARIANT=name     # use a build variant 'name'
+  PROFILE=1        # enable profiling compile flags (and debug symbols) for release type
+                   # You can consider this as build type release with debug symbols and -fno-omit-frame-pointer
+  DEPS=1           # also build dependant modules
+  COV=1            # perform coverage analysis (implies debug build)
+make clean         # remove binary files
+  ALL=1            # remove binary directories
+  DEPS=1           # also clean dependant modules
+
+make deps          # build dependant modules
+make all           # build all libraries and packages
+
+make run           # run redis-server with module
+make test          # run all tests
+
+make unit_tests    # run unit tests
+
+make flow_tests    # run tests
+  TEST=name        # run test matching 'name'
+  TEST_ARGS="..."  # RLTest arguments
+  QUICK=1          # shortcut for GEN=1 AOF=0 SLAVES=0 OSS_CLUSTER=0
+  GEN=1            # run general tests on a standalone Redis topology
+  AOF=1            # run AOF persistency tests on a standalone Redis topology
+  SLAVES=1         # run replication tests on standalone Redis topology
+  OSS_CLUSTER=1    # run general tests on an OSS Cluster topology
+  SHARDS=num       # run OSS cluster with `num` shards (default: 3)
+  RLEC=1           # flow tests on RLEC
+  COV=1            # perform coverage analysis
+  VALGRIND|VG=1    # run specified tests with Valgrind
+  EXT=1            # run tests with existing redis-server running
+
+make pack          # build packages (ramp & dependencies)
+make upload-artifacts   # copy snapshot packages to S3
+  OSNICK=nick             # copy snapshots for specific OSNICK
+make upload-release     # copy release packages to S3
+
+common options for upload operations:
+  STAGING=1             # copy to staging lab area (for validation)
+  FORCE=1               # allow operation outside CI environment
+  VERBOSE=1             # show more details
+  NOP=1                 # do not copy, just print commands
+
+make coverage      # perform coverage analysis
+make show-cov      # show coverage analysis results (implies COV=1)
+make upload-cov    # upload coverage analysis results to codecov.io (implies COV=1)
+
+make docker        # build for specific Linux distribution
+  OSNICK=nick        # Linux distribution to build for
+  REDIS_VER=ver      # use Redis version `ver`
+  TEST=1             # test aftar build
+  PACK=1             # create packages
+  ARTIFACTS=1        # copy artifacts from docker image
+  PUBLISH=1          # publish (i.e. docker push) after build
+
+make static-analysis   # Perform static analysis via fbinter
+
+make benchmarks     # run all benchmarks
+  BENCHMARK=file      # run benchmark specified by `file`
+  BENCH_ARGS="..."    # redisbench_admin extra arguments
+
+endef
+
+#----------------------------------------------------------------------------------------------
+
+MK_CUSTOM_CLEAN=1
+
+BINDIR=$(BINROOT)
+SRCDIR=.
+
+#----------------------------------------------------------------------------------------------
+
+TARGET=$(BINROOT)/redisbloom.so
+
+CC=gcc
+
+CC_FLAGS = \
+	-D_GNU_SOURCE \
+	-DREDIS_MODULE_TARGET \
+	-DREDISMODULE_EXPERIMENTAL_API \
+	-include $(SRCDIR)/src/common.h \
+	-I. \
+	-Isrc \
+	-I$(ROOT)/deps \
+	-I$(ROOT)/deps/murmur2 \
+	-I$(ROOT)/deps/t-digest-c/src \
+	-Wall \
+	-fPIC \
+	-std=gnu99 \
+	-MMD -MF $(@:.o=.d) \
+	-g -ggdb
+
+#	-pedantic
+#	-fno-common
+
+LD_FLAGS += -g
+
+LD_LIBS += \
+	  -lc \
+	  -lm \
+	  -lpthread \
+	  $(T_DIGEST_C)
+
+ifeq ($(OS),linux)
+SO_LD_FLAGS += \
+	-shared \
+	-Wl,-Bsymbolic,-Bsymbolic-functions \
+	$(LD_FLAGS)
+endif
+
+ifeq ($(OS),macos)
+SO_LD_FLAGS += \
+	-bundle \
+	-undefined dynamic_lookup \
+	$(LD_FLAGS)
+
+DYLIB_LD_FLAGS += -dynamiclib $(LD_FLAGS)
+endif
+
+ifeq ($(PROFILE),1)
+CC_FLAGS += -fno-omit-frame-pointer
+endif
+
+ifeq ($(DEBUG),1)
+CC_FLAGS += -O0 -DDEBUG -D_DEBUG
+LD_FLAGS +=
+
+ifeq ($(VALGRIND),1)
+CC_FLAGS += -D_VALGRIND
+endif
+else ifeq ($(PROFILE),1)
+CC_FLAGS += -O2
+SO_LD_FLAGS += -flto
 else
-	# version 10.15 changed SDK dir
-	# https://stackoverflow.com/questions/58278260/cant-compile-a-c-program-on-a-mac-after-upgrading-to-catalina-10-15
-	MACOS_VERSION = $(shell sh -c 'sw_vers -productVersion 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' ' )
-	ifeq ($(shell expr $(MACOS_VERSION) \>= 10.15), 1)
-		SHOBJ_LDFLAGS ?= -syslibroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
-	endif
-	CC=clang
-	CFLAGS ?= -dynamic -fcommon -g -ggdb
-	SHOBJ_LDFLAGS += -dylib -exported_symbol _RedisModule_OnLoad
+CC_FLAGS += -O3
+SO_LD_FLAGS += -flto
 endif
 
-ROOT=$(shell pwd)
+CC_FLAGS += $(CC_FLAGS.coverage)
+LD_FLAGS += $(LD_FLAGS.coverage)
 
-LDFLAGS = -lm -lc
-CPPFLAGS += -I$(ROOT)/contrib -I$(ROOT) -I$(ROOT)/src -I$(ROOT)/deps/t-digest-c/src
-SRCDIR := $(ROOT)/src
-MODULE_OBJ = $(SRCDIR)/rebloom.o
-MODULE_SO = $(ROOT)/redisbloom.so
-LIBTDIGEST_LIBDIR = $(ROOT)/deps/t-digest-c/build/src
-LIBTDIGEST = $(LIBTDIGEST_LIBDIR)/libtdigest_static.a
-REDISBLOOM_GIT_SHA := $(shell git rev-parse --short HEAD)
+_SOURCES=\
+	deps/bloom/bloom.c \
+	deps/murmur2/MurmurHash2.c \
+	deps/rmutil/util.c \
+	src/rebloom.c \
+	src/sb.c \
+	src/cf.c \
+	src/rm_topk.c \
+	src/rm_tdigest.c \
+	src/topk.c \
+	src/rm_cms.c \
+	src/cms.c
 
-# Flags for preprocessor
-MODULE_LDFLAGS = -lm -lc -L$(LIBTDIGEST_LIBDIR) -ltdigest_static
-
-DEPS = $(ROOT)/contrib/MurmurHash2.o \
-	   $(ROOT)/rmutil/util.o \
-	   $(SRCDIR)/sb.o \
-	   $(SRCDIR)/cf.o \
-	   $(SRCDIR)/rm_topk.o \
-	   $(SRCDIR)/rm_tdigest.o \
-	   $(SRCDIR)/topk.o \
-	   $(SRCDIR)/rm_cms.o \
-	   $(SRCDIR)/cms.o
-
-DEPS_TEST = $(ROOT)/contrib/MurmurHash2.o \
-	   $(ROOT)/rmutil/util.o \
-	   $(SRCDIR)/sb.o \
-	   $(SRCDIR)/cf.o \
-	   $(SRCDIR)/rm_topk.o \
-	   $(SRCDIR)/topk.o \
-	   $(SRCDIR)/rm_cms.o \
-	   $(SRCDIR)/cms.o
-
-export
-
-ifeq ($(COV),1)
-CFLAGS += -fprofile-arcs -ftest-coverage
-MODULE_LDFLAGS += -fprofile-arcs
+ifeq ($(DEBUG),1)
+_SOURCES += deps/readies/cetara/diag/gdb.c
 endif
 
-all: $(MODULE_SO)
+SOURCES=$(addprefix $(SRCDIR)/,$(_SOURCES))
+HEADERS=$(sort $(wildcard src/*.h $(patsubst %.c,%.h,$(SOURCES))))
+OBJECTS=$(patsubst $(SRCDIR)/%.c,$(BINDIR)/%.o,$(SOURCES))
 
-$(MODULE_SO): $(MODULE_OBJ) $(DEPS) $(LIBTDIGEST)
-	$(LD) $^ -o $@ $(SHOBJ_LDFLAGS) $(MODULE_LDFLAGS)
+CC_DEPS = $(patsubst $(SRCDIR)/%.c, $(BINDIR)/%.d, $(SOURCES) $(TEST_SOURCES))
 
-$(LIBTDIGEST):
-	$(MAKE) -C deps/t-digest-c library_static
+include $(MK)/defs
 
-libtdigest: $(LIBTDIGEST)
+#----------------------------------------------------------------------------------------------
 
-build: all
-	$(MAKE) -C tests
+MISSING_DEPS:=
+ifeq ($(wildcard $(T_DIGEST_C)),)
+MISSING_DEPS += $(T_DIGEST_C)
+endif
 
+ifneq ($(MISSING_DEPS),)
+DEPS=1
+endif
 
-TEST_REPORT_DIR ?= $(PWD)
+DEPENDENCIES=t-digest-c
 
-ifeq ($(SIMPLE),1)
+ifneq ($(filter all deps $(DEPENDENCIES) pack,$(MAKECMDGOALS)),)
+DEPS=1
+endif
+
+.PHONY: deps $(DEPENDENCIES)
+
+#----------------------------------------------------------------------------------------------
+
+.PHONY: all deps clean lint format pack run tests unit_tests flow_tests docker bindirs
+
+all: bindirs $(TARGET)
+
+include $(MK)/rules
+
+#----------------------------------------------------------------------------------------------
+
+ifeq ($(DEPS),1)
+
+.PHONY: t-digest-c
+
+deps: $(T_DIGEST_C)
+
+t-digest-c: $(T_DIGEST_C)
+
+$(T_DIGEST_C):
+	@echo Building $@ ...
+	$(SHOW)$(MAKE) --no-print-directory -C $(ROOT)/build/t-digest-c
+
+#----------------------------------------------------------------------------------------------
+
+else
+
+deps: ;
+
+endif # DEPS
+
+#----------------------------------------------------------------------------------------------
+
+clean:
+ifeq ($(ALL),1)
+	-$(SHOW)rm -rf $(BINDIR) $(TARGET)
+else
+	-$(SHOW)[ -e $(BINDIR) ] && find $(BINDIR) -name '*.[oadh]' -type f -delete
+	-$(SHOW)rm -f $(TARGET)
+endif
+ifdef ($(DEPS),1)
+	-$(SHOW)$(MAKE) --no-print-directory -C $(ROOT)/build/t-digest-c clean
+endif
+
+-include $(CC_DEPS)
+
+$(BINDIR)/%.o: $(SRCDIR)/%.c
+	@echo Compiling $<...
+	$(SHOW)$(CC) $(CC_FLAGS) -c $< -o $@
+
+$(TARGET): $(BIN_DIRS) $(MISSING_DEPS) $(OBJECTS)
+	@echo Linking $@...
+	$(SHOW)$(CC) $(SO_LD_FLAGS) -o $@ $(OBJECTS) $(LD_LIBS)
+ifeq ($(OS),macos)
+	$(SHOW)$(CC) $(DYLIB_LD_FLAGS) -o $(patsubst %.so,%.dylib,$@) $(OBJECTS) $(LD_LIBS)
+endif
+
+#----------------------------------------------------------------------------------------------
+
+NO_LINT_PATTERNS=./deps/
+
+LINT_SOURCES=$(call filter-out2,$(NO_LINT_PATTERNS),$(SOURCES) $(HEADERS))
+
+lint:
+	$(SHOW)clang-format -Werror -n $(LINT_SOURCES)
+
+format:
+	$(SHOW)clang-format -i $(LINT_SOURCES)
+
+#----------------------------------------------------------------------------------------------
+
+run: $(TARGET)
+	$(SHOW)redis-server --loadmodule $(realpath $(TARGET))
+
+#----------------------------------------------------------------------------------------------
+
+test: unit_tests flow_tests
+
+#----------------------------------------------------------------------------------------------
+
+unit_tests: $(TARGET)
+	@echo Running unit tests...
+	$(SHOW)$(MAKE) -C tests/unit build test
+
+#----------------------------------------------------------------------------------------------
+
+ifeq ($(QUICK),1)
 export GEN=1
 export SLAVES=0
 export AOF=0
-export CLUSTER=0
+export OSS_CLUSTER=0
 else
 export GEN ?= 1
 export SLAVES ?= 1
 export AOF ?= 1
-export CLUSTER ?= 0
+export OSS_CLUSTER ?= 1
 endif
 
-test: $(MODULE_SO)
-	$(MAKE) -C tests/unit test
-	MODULE=$(realpath $(MODULE_SO)) \
-	CLUSTER=$(CLUSTER) \
-	GEN=$(GEN) AOF=$(AOF) SLAVES=$(SLAVES) \
+ifneq ($(RLEC),1)
+
+flow_tests: #$(TARGET)
+	$(SHOW)\
+	MODULE=$(realpath $(TARGET)) \
+	GEN=$(GEN) AOF=$(AOF) SLAVES=$(SLAVES) OSS_CLUSTER=$(OSS_CLUSTER) \
 	VALGRIND=$(VALGRIND) \
+	TEST=$(TEST) \
 	$(ROOT)/tests/flow/tests.sh
 
-perf:
-	$(MAKE) -C tests perf
+else # RLEC
 
-lint:
-	clang-format -style=file -Werror -n $(SRCDIR)/*
+flow_tests: #$(TARGET)
+	$(SHOW)RLEC=1 $(ROOT)/tests/flow/tests.sh
 
-setup:
-	@echo Setting up system...
-	@./opt/build/get-fbinfer.sh
-	@./deps/readies/bin/getpy3
-	@./system-setup.py
+endif # RLEC
 
-static-analysis-docker:
-	$(MAKE) clean
-	$(MAKE) libtdigest
-	docker run -v $(ROOT)/:/RedisBloom/ --user "$(username):$(usergroup)" $(INFER_DOCKER) bash -c "cd RedisBloom && CC=clang infer run --fail-on-issue --biabduction --skip-analysis-in-path ".*rmutil.*"  -- make"
+#----------------------------------------------------------------------------------------------
 
-static-analysis:
-	$(MAKE) clean
-	$(MAKE) libtdigest
-	 CC=clang $(INFER) run --fail-on-issue --biabduction --skip-analysis-in-path ".*rmutil.*" -- $(MAKE)
-
-format:
-	clang-format -style=file -i $(SRCDIR)/*
-
-pack: $(MODULE_SO)
-	mkdir -p $(ROOT)/build
-	$(ROOT)/pack.sh
-
-clean:
-	$(RM) $(MODULE_OBJ) $(MODULE_SO) $(DEPS)
-	$(RM) -f print_version
-	$(RM) -rf infer-out
-	$(RM) -rf tmp
-	find . -name '*.gcov' -delete
-	find . -name '*.gcda' -delete
-	find . -name '*.gcno' -delete
-	$(MAKE) -C deps/t-digest-c clean
-	$(MAKE) -C tests clean
-
-distclean: clean
-
-docker:
-	docker build -t redislabs/rebloom .
-
-docker_push: docker
-	docker push redislabs/rebloom:latest
-
-# Compile an executable that prints the current version
-print_version:  $(SRCDIR)/version.h $(SRCDIR)/print_version.c
-	@$(CC) -o $@ -DPRINT_VERSION_TARGET $(SRCDIR)/$@.c
-
-#   $(MAKE) CFLAGS="-fprofile-arcs -ftest-coverage" LDFLAGS="-fprofile-arcs"
-
-COV_DIR=tmp/lcov
-
-cov coverage:
-	@$(MAKE) clean
-	@$(MAKE) test COV=1
-	mkdir -p $(COV_DIR)
-	gcov -c -b $(SRCDIR)/* > /dev/null 2>&1
-	lcov -d . -c -o $(COV_DIR)/gcov.info --no-external > /dev/null 2>&1
-	lcov -r $(COV_DIR)/gcov.info "*test*" "*contrib*" "*redismodule.h" "*util.c*" -o $(COV_DIR)/gcov.info > /dev/null 2>&1
-	lcov -l $(COV_DIR)/gcov.info
-	genhtml --legend -o $(COV_DIR)/report $(COV_DIR)/gcov.info > /dev/null 2>&1
-
-ifneq ($(REMOTE),)
-BENCHMARK_ARGS = run-remote
+ifneq ($(REMOTE),1)
+BENCHMARK_ARGS=run-local
 else
-BENCHMARK_ARGS = run-local
+BENCHMARK_ARGS=run-remote 
 endif
 
-BENCHMARK_ARGS += --module_path $(realpath $(MODULE_SO)) --required-module bf
+BENCHMARK_ARGS += \
+	--module_path $(realpath $(TARGET)) \
+	--required-module bf \
+	--dso $(realpath $(TARGET))
 
 ifneq ($(BENCHMARK),)
 BENCHMARK_ARGS += --test $(BENCHMARK)
 endif
 
-bench benchmark: $(MODULE_SO)
-	cd ./tests/benchmarks ;\
-	redisbench-admin $(BENCHMARK_ARGS)
+ifneq ($(BENCH_ARGS),)
+BENCHMARK_ARGS += $(BENCH_ARGS)
+endif
 
-.PHONY: bench benchmark
+benchmark: $(TARGET)
+	$(SHOW)set -e; cd $(ROOT)/tests/benchmarks; redisbench-admin $(BENCHMARK_ARGS)
+
+.PHONY: benchmark
+
+#----------------------------------------------------------------------------------------------
+
+pack: $(TARGET)
+	@echo Creating packages...
+	$(SHOW)MODULE=$(realpath $(TARGET)) BINDIR=$(BINDIR) $(ROOT)/sbin/pack.sh
+
+upload-release:
+	$(SHOW)RELEASE=1 ./sbin/upload-artifacts
+
+upload-artifacts:
+	$(SHOW)SNAPSHOT=1 ./sbin/upload-artifacts
+
+.PHONY: pack upload-artifacts upload-release
+
+#----------------------------------------------------------------------------------------------
+
+INFER=infer
+INFER_DOCKER=redisbench/infer-linux64:1.0.0
+
+static-analysis: #$(TARGET)
+ifeq ($(DOCKER),1)
+	$(SHOW)docker run -v $(ROOT)/:/RedisBloom/ --user "$(username):$(usergroup)" $(INFER_DOCKER) \
+		bash -c "cd RedisBloom && CC=clang infer run --fail-on-issue --biabduction --skip-analysis-in-path '.*rmutil.*'  -- make"
+else
+	$(SHOW)CC=clang $(INFER) run --fail-on-issue --biabduction --skip-analysis-in-path '.*rmutil.*' -- $(MAKE) VARIANT=infer
+endif
+
+#----------------------------------------------------------------------------------------------
+
+coverage:
+	$(SHOW)$(MAKE) build COV=1
+	$(SHOW)$(COVERAGE_RESET)
+	$(SHOW)$(MAKE) test COV=1
+	$(SHOW)$(COVERAGE_COLLECT_REPORT)
+
+.PHONY: coverage
+
+#----------------------------------------------------------------------------------------------
+
+docker:
+	$(SHOW)$(MAKE) -C build/docker
+ifeq ($(PUBLISH),1)
+	$(SHOW)make -C build/docker publish
+endif
+
+.PHONY: docker
+
+#----------------------------------------------------------------------------------------------
