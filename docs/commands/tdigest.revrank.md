@@ -14,7 +14,7 @@ Multiple ranks can be returned with one call.
 @examples
 
 ```
-redis> TDIGEST.RANK t-digest 5 10
+redis> TDIGEST.REVRANK t-digest 5 10
 1) "200"
 2) "100"
 ```
