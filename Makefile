@@ -106,8 +106,6 @@ SRCDIR=.
 
 TARGET=$(BINROOT)/redisbloom.so
 
-CC=gcc
-
 CC_FLAGS = \
 	-D_GNU_SOURCE \
 	-DREDIS_MODULE_TARGET \
