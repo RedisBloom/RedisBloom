@@ -1,43 +1,42 @@
 #!/bin/bash
 
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-ROOT=$HERE
+# [[ $V == 1 || $VERBOSE == 1 ]] && set -x
+
+PROGNAME="${BASH_SOURCE[0]}"
+HERE="$(cd "$(dirname "$PROGNAME")" &>/dev/null && pwd)"
+ROOT=$(cd $HERE/.. && pwd)
 export READIES=$ROOT/deps/readies
 . $READIES/shibumi/defs
+SBIN=$ROOT/sbin
+
+export PYTHONWARNINGS=ignore
 
 cd $ROOT
 
-export PYTHONWARNINGS=ignore
-export LC_CTYPE=en_US.UTF-8
-
-if [ -f /usr/bin/python ]; then
-    PYTHON=/usr/bin/python
-elif [ -f /usr/bin/python2 ]; then
-    PYTHON=/usr/bin/python2
-elif [ -f /usr/bin/python3 ]; then
-    PYTHON=/usr/bin/python3
-fi
-
 #----------------------------------------------------------------------------------------------
 
-if [[ $1 == --help || $1 == help ]]; then
+if [[ $1 == --help || $1 == help || $HELP == 1 ]]; then
 	cat <<-END
+		Generate RedisBloom distribution packages.
+
 		[ARGVARS...] pack.sh [--help|help]
 
 		Argument variables:
-		VERBOSE=1           Print commands
-		IGNERR=1            Do not abort on error
+		MODULE=path       Path of module .so
 
-		RAMP=1              Build RAMP file
-		DEPS=1              Build dependencies file
+		RAMP=1|0          Build RAMP file
+		DEPS=0|1          Build dependencies file
+		SYM=0|1           Build debug symbols file
 
-		PACKAGE_NAME=name   Package stem name
-		VARIANT=name        Build variant (empty for standard packages)
-		BRANCH=name         Branch name for snapshot packages
-		GITSHA=1            Append Git SHA to shapshot package names
+		BRANCH=name       Branch name for snapshot packages
+		VERSION=ver         Version for release packages
+		WITH_GITSHA=1     Append Git SHA to shapshot package names
+		VARIANT=name      Build variant (default: empty)
 
-		BINDIR=dir          Directory in which packages are created
-		INSTALL_DIR=dir     Directory in which artifacts are found
+		ARTDIR=dir        Directory in which packages are created (default: bin/artifacts)
+
+		VERBOSE=1         Print commands
+		HELP=1            Show help
 
 	END
 	exit 0
@@ -45,35 +44,29 @@ fi
 
 #----------------------------------------------------------------------------------------------
 
-[[ $IGNERR == 1 ]] || set -e
-[[ $V == 1 || $VERBOSE == 1 ]] && set -x
-
 RAMP=${RAMP:-1}
 DEPS=${DEPS:-1}
+SYM=${SYM:-0}
 
-[[ -z $INSTALL_DIR ]] && INSTALL_DIR=src
-INSTALL_DIR=$(cd $INSTALL_DIR && pwd)
+[[ -z $ARTDIR ]] && ARTDIR=bin/artifacts
+mkdir -p $ARTDIR $ARTDIR/snapshots
+ARTDIR=$(cd $ARTDIR && pwd)
 
-[[ -z $BINDIR ]] && BINDIR=bin/artifacts
-mkdir -p $BINDIR
-BINDIR=$(cd $BINDIR && pwd)
+# RLEC naming conventions
 
-. $READIES/bin/enable-utf8
-
-export ARCH=$($READIES/bin/platform --arch)
+ARCH=$($READIES/bin/platform --arch)
 [[ $ARCH == x64 ]] && ARCH=x86_64
 
-export OS=$($READIES/bin/platform --os)
+OS=$($READIES/bin/platform --os)
 [[ $OS == linux ]] && OS=Linux
 
-export OSNICK=$($READIES/bin/platform --osnick)
+OSNICK=$($READIES/bin/platform --osnick)
 [[ $OSNICK == trusty ]]  && OSNICK=ubuntu14.04
 [[ $OSNICK == xenial ]]  && OSNICK=ubuntu16.04
 [[ $OSNICK == bionic ]]  && OSNICK=ubuntu18.04
 [[ $OSNICK == focal ]]   && OSNICK=ubuntu20.04
 [[ $OSNICK == centos7 ]] && OSNICK=rhel7
 [[ $OSNICK == centos8 ]] && OSNICK=rhel8
-[[ $OSNICK == ol8 ]]     && OSNICK=rhel8
 [[ $OSNICK == rocky8 ]]  && OSNICK=rhel8
 
 export PRODUCT=redisbloom
@@ -82,7 +75,7 @@ export DEPNAMES=""
 
 export PACKAGE_NAME=${PACKAGE_NAME:-${PRODUCT}}
 
-RAMP_PROG="${PYTHON} -m RAMP.ramp"
+RAMP_CMD="python3 -m RAMP.ramp"
 
 #----------------------------------------------------------------------------------------------
 
@@ -92,28 +85,28 @@ pack_ramp() {
 	local platform="$OS-$OSNICK-$ARCH"
 	local stem=${PACKAGE_NAME}.${platform}
 
-	local verspec=${SEMVER}${_VARIANT}
-
+	local verspec=${SEMVER}${VARIANT}
+	
 	local fq_package=$stem.${verspec}.zip
 
-	[[ ! -d $BINDIR ]] && mkdir -p $BINDIR
-
-	local packfile="$BINDIR/$fq_package"
-	local product_so="$PRODUCT.so"
+	local packfile="$ARTDIR/$fq_package"
+	local product_so="$MODULE"
 
 	local xtx_vars=""
 	local dep_fname=${PACKAGE_NAME}.${platform}.${verspec}.tgz
 
-	if [[ -z $RAMP_YAML ]]; then
-		RAMP_YAML=$ROOT/ramp.yml
+	if [[ -z $VARIANT ]]; then
+		local rampfile=ramp.yml
+	else
+		local rampfile=ramp$VARIANT.yml
 	fi
 
-	${PYTHON} $READIES/bin/xtx \
+	python3 $READIES/bin/xtx \
 		$xtx_vars \
 		-e NUMVER -e SEMVER \
-		$RAMP_YAML > /tmp/ramp.yml
+		$ROOT/$rampfile > /tmp/ramp.yml
 	rm -f /tmp/ramp.fname $packfile
-	$RAMP_PROG pack -m /tmp/ramp.yml --packname-file /tmp/ramp.fname --verbose --debug \
+	$RAMP_CMD pack -m /tmp/ramp.yml --packname-file /tmp/ramp.fname --verbose --debug \
 		-o $packfile $product_so >/tmp/ramp.err 2>&1 || true
 	if [[ ! -e $packfile ]]; then
 		eprint "Error generating RAMP file:"
@@ -121,10 +114,9 @@ pack_ramp() {
 		exit 1
 	fi
 
-	mkdir -p $BINDIR/snapshots
-	cd $BINDIR/snapshots
+	cd $ARTDIR/snapshots
 	if [[ ! -z $BRANCH ]]; then
-		local snap_package=$stem.${BRANCH}${_VARIANT}.zip
+		local snap_package=$stem.${BRANCH}${VARIANT}.zip
 		ln -sf ../$fq_package $snap_package
 	fi
 
@@ -137,22 +129,21 @@ pack_deps() {
 	local dep="$1"
 
 	local platform="$OS-$OSNICK-$ARCH"
-	local verspec=${SEMVER}${_VARIANT}
+	local verspec=${SEMVER}${VARIANT}
 	local stem=${PACKAGE_NAME}-${dep}.${platform}
 
-	local artdir=$BINDIR
-	local depdir=$(cat $artdir/$dep.dir)
+	local depdir=$(cat $ARTDIR/$dep.dir)
 
 	local fq_dep=$stem.${verspec}.tgz
-	local tar_path=$artdir/$fq_dep
-	local dep_prefix_dir=$(cat $artdir/$dep.prefix)
-
+	local tar_path=$ARTDIR/$fq_dep
+	local dep_prefix_dir=$(cat $ARTDIR/$dep.prefix)
+	
 	{ cd $depdir ;\
-	  cat $artdir/$dep.files | \
+	  cat $ARTDIR/$dep.files | \
 	  xargs tar -c --sort=name --owner=root:0 --group=root:0 --mtime='UTC 1970-01-01' \
 		--transform "s,^,$dep_prefix_dir," 2>> /tmp/pack.err | \
 	  gzip -n - > $tar_path ; E=$?; } || true
-	rm -f $artdir/$dep.prefix $artdir/$dep.files $artdir/$dep.dir
+	rm -f $ARTDIR/$dep.prefix $ARTDIR/$dep.files $ARTDIR/$dep.dir
 
 	cd $ROOT
 	if [[ $E != 0 ]]; then
@@ -162,10 +153,9 @@ pack_deps() {
 	fi
 	sha256sum $tar_path | awk '{print $1}' > $tar_path.sha256
 
-	mkdir -p $BINDIR/snapshots
-	cd $BINDIR/snapshots
+	cd $ARTDIR/snapshots
 	if [[ ! -z $BRANCH ]]; then
-		local snap_dep=$stem.${BRANCH}${_VARIANT}.tgz
+		local snap_dep=$stem.${BRANCH}${VARIANT}.tgz
 		ln -sf ../$fq_dep $snap_dep
 		ln -sf ../$fq_dep.sha256 $snap_dep.sha256
 	fi
@@ -177,27 +167,34 @@ pack_deps() {
 
 prepare_symbols_dep() {
 	echo "Preparing debug symbols dependencies ..."
-	echo $INSTALL_DIR > $BINDIR/debug.dir
-	echo $PRODUCT.so.debug > $BINDIR/debug.files
-	echo "" > $BINDIR/debug.prefix
+	echo $(cd "$(dirname $MODULE)" && pwd) > $ARTDIR/debug.dir
+	echo $PRODUCT.so.debug > $ARTDIR/debug.files
+	echo "" > $ARTDIR/debug.prefix
 	pack_deps debug
 	echo "Done."
 }
 
 #----------------------------------------------------------------------------------------------
 
-export NUMVER=$(NUMERIC=1 $ROOT/getver)
-export SEMVER=$($ROOT/getver)
+NUMVER=$(NUMERIC=1 $SBIN/getver)
+SEMVER=$($SBIN/getver)
 
-_VARIANT=
-if [[ -n $VARIANT ]]; then
-	_VARIANT=-${VARIANT}
+if [[ ! -z $VARIANT ]]; then
+	VARIANT=-${VARIANT}
 fi
 
-[[ -z $BRANCH ]] && BRANCH=${CIRCLE_BRANCH:-`git rev-parse --abbrev-ref HEAD`}
+#----------------------------------------------------------------------------------------------
+
+if [[ -z $BRANCH ]]; then
+	BRANCH=$(git rev-parse --abbrev-ref HEAD)
+	# this happens of detached HEAD
+	if [[ $BRANCH == HEAD ]]; then
+		BRANCH="$SEMVER"
+	fi
+fi
 BRANCH=${BRANCH//[^A-Za-z0-9._-]/_}
-if [[ $GITSHA == 1 ]]; then
-	GIT_COMMIT=$(git describe --always --abbrev=7 --dirty="+" 2>/dev/null || git rev-parse --short HEAD)
+if [[ $WITH_GITSHA == 1 ]]; then
+	GIT_COMMIT=$(git rev-parse --short HEAD)
 	BRANCH="${BRANCH}-${GIT_COMMIT}"
 fi
 export BRANCH
@@ -205,7 +202,7 @@ export BRANCH
 if [[ $DEPS == 1 ]]; then
 	echo "Building dependencies ..."
 
-	prepare_symbols_dep
+	[[ $SYM == 1 ]] && prepare_symbols_dep
 
 	for dep in $DEPNAMES; do
 			echo "$dep ..."
@@ -215,18 +212,18 @@ fi
 
 if [[ $RAMP == 1 ]]; then
 	if ! command -v redis-server > /dev/null; then
-		eprint "$0: Cannot find redis-server. Aborting."
+		eprint "$PROGNAME: Cannot find redis-server. Aborting."
 		exit 1
 	fi
 
-	echo "Building RAMP files ..."
+	echo "Building RAMP $VARIANT files ..."
 	pack_ramp
 	echo "Done."
 fi
 
 if [[ $VERBOSE == 1 ]]; then
 	echo "Artifacts:"
-	du -ah --apparent-size $BINDIR
+	du -ah --apparent-size $ARTDIR
 fi
 
 exit 0

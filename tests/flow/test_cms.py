@@ -1,15 +1,21 @@
-#!/usr/bin/env python
-from rmtest import ModuleTestCase
-from redis import ResponseError
-import sys
+
+from common import *
 from random import randint
-import math
 
-if sys.version >= '3':
-    xrange = range
 
-class CMSTest(ModuleTestCase('../redisbloom.so')):
+class testCMS():
+    def __init__(self):
+        self.env = Env(decodeResponses=True)
+        self.assertOk = self.env.assertTrue
+        self.cmd = self.env.cmd
+        self.assertEqual = self.env.assertEqual
+        self.assertRaises = self.env.assertRaises
+        self.assertTrue = self.env.assertTrue
+        self.assertAlmostEqual = self.env.assertAlmostEqual
+        self.assertGreater = self.env.assertGreater
+
     def test_simple(self):
+        self.cmd('FLUSHALL')
         self.assertOk(self.cmd('cms.initbydim', 'cms1', '20', '5'))
         self.assertEqual([5], self.cmd('cms.incrby', 'cms1', 'a', '5'))
         self.assertEqual([5], self.cmd('cms.query', 'cms1', 'a'))
@@ -18,40 +24,42 @@ class CMSTest(ModuleTestCase('../redisbloom.so')):
 
         self.assertOk(self.cmd('cms.initbyprob', 'cms2', '0.001', '0.01'))
         self.assertEqual([5], self.cmd('cms.incrby', 'cms2', 'a', '5'))
-        self.assertEqual([5L], self.cmd('cms.query', 'cms2', 'a'))
+        self.assertEqual([5], self.cmd('cms.query', 'cms2', 'a'))
         self.assertEqual(['width', 2000, 'depth', 7, 'count', 5],
                          self.cmd('cms.info', 'cms2'))
-#        self.assertEqual(840, self.cmd('MEMORY USAGE', 'cms1'))
+        if not VALGRIND:
+            self.assertEqual(840, self.cmd('MEMORY USAGE', 'cms1'))
 
     def test_validation(self):
+        self.cmd('FLUSHALL')
         for args in (
-            (),
-            ('foo', ),
-            ('foo', '0.1'),
-            ('foo', '0.1', 'blah'),
-            ('foo', '10'),
-            ('foo', '10', 'blah'),
-            ('foo', 'blah', '10'),
-            ('foo', '0', '0'),
-            ('foo', '0', '100'),
-            ('foo', '100', '0'),
+                (),
+                ('foo',),
+                ('foo', '0.1'),
+                ('foo', '0.1', 'blah'),
+                ('foo', '10'),
+                ('foo', '10', 'blah'),
+                ('foo', 'blah', '10'),
+                ('foo', '0', '0'),
+                ('foo', '0', '100'),
+                ('foo', '100', '0'),
         ):
             self.assertRaises(ResponseError, self.cmd, 'cms.initbydim', *args)
 
         for args in (
-            (),
-            ('foo', ),
-            ('foo', '1000'),
-            ('foo', '0.1'),
-            ('foo', '1000', '0.1'),
-            ('foo', '1000', 'blah'),
-            ('foo', '1000', '10'),
-            ('foo', '0.1', 'blah'),
-            ('foo', '10', 'blah'),
-            ('foo', 'blah', '10'),
-            ('foo', '0', '0'),
-            ('foo', '1000', '0',),
-            ('foo', '0', '100'),
+                (),
+                ('foo',),
+                ('foo', '1000'),
+                ('foo', '0.1'),
+                ('foo', '1000', '0.1'),
+                ('foo', '1000', 'blah'),
+                ('foo', '1000', '10'),
+                ('foo', '0.1', 'blah'),
+                ('foo', '10', 'blah'),
+                ('foo', 'blah', '10'),
+                ('foo', '0', '0'),
+                ('foo', '1000', '0',),
+                ('foo', '0', '100'),
         ):
             self.assertRaises(ResponseError, self.cmd, 'cms.initbyprob', *args)
 
@@ -66,34 +74,36 @@ class CMSTest(ModuleTestCase('../redisbloom.so')):
                 self.assertRaises(ResponseError, self.cmd, cmd, *args)
 
     def test_incrby_query(self):
+        self.cmd('FLUSHALL')
         self.cmd('SET', 'A', 'B')
         self.cmd('cms.initbydim', 'cms', '1000', '5')
         self.cmd('cms.incrby', 'cms', 'bar', '5', 'baz', '42')
         self.assertEqual([0], self.cmd('cms.query', 'cms', 'foo'))
         self.assertEqual([0, 5, 42], self.cmd('cms.query',
-                                    'cms', 'foo', 'bar', 'baz'))
+                                              'cms', 'foo', 'bar', 'baz'))
         self.assertRaises(ResponseError, self.cmd, 'cms.incrby', 'noexist', 'bar', '5')
         self.assertRaises(ResponseError, self.cmd, 'cms.incrby', 'A', 'bar', '5')
         self.assertRaises(ResponseError, self.cmd, 'cms.incrby',
-                                    'cms', 'bar', '5', 'baz')
+                          'cms', 'bar', '5', 'baz')
         self.assertRaises(ResponseError, self.cmd, 'cms.incrby',
-                                    'cms', 'bar', '5', 'baz')
+                          'cms', 'bar', '5', 'baz')
         self.assertEqual([0, 5, 42], self.cmd('cms.query',
-                                    'cms', 'foo', 'bar', 'baz'))
+                                              'cms', 'foo', 'bar', 'baz'))
 
-        c = self.client
+        # c = self.client
         self.cmd('cms.initbydim', 'test', '1000', '5')
         self.assertEqual([1], self.cmd('cms.incrby', 'test', 'foo', '1'))
         self.assertEqual([1], self.cmd('cms.query', 'test', 'foo'))
         self.assertEqual([0], self.cmd('cms.query', 'test', 'bar'))
 
         self.assertEqual([2, 1], self.cmd('cms.incrby', 'test', 'foo', '1', 'bar', '1'))
-        for _ in c.retry_with_rdb_reload():
-            self.assertEqual([2], self.cmd('cms.query', 'test', 'foo'))
-            self.assertEqual([1], self.cmd('cms.query', 'test', 'bar'))
-            self.assertEqual([0], self.cmd('cms.query', 'test', 'nonexist'))
+        # for _ in c.retry_with_rdb_reload():
+        #     self.assertEqual([2], self.cmd('cms.query', 'test', 'foo'))
+        #     self.assertEqual([1], self.cmd('cms.query', 'test', 'bar'))
+        #     self.assertEqual([0], self.cmd('cms.query', 'test', 'nonexist'))
 
     def test_merge(self):
+        self.cmd('FLUSHALL')
         self.cmd('cms.initbydim', 'small_1', '20', '5')
         self.cmd('cms.initbydim', 'small_2', '20', '5')
         self.cmd('cms.initbydim', 'small_3', '20', '5')
@@ -125,9 +135,10 @@ class CMSTest(ModuleTestCase('../redisbloom.so')):
 
         # mixed batch
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'small_3', 2,
-                                    'small_2', 'large_5')
+                          'small_2', 'large_5')
 
     def test_errors(self):
+        self.cmd('FLUSHALL')
         self.cmd('SET', 'A', '2000')
         self.assertRaises(ResponseError, self.cmd, 'cms.initbydim', 'A', '2000', '10')
         self.assertRaises(ResponseError, self.cmd, 'cms.incrby', 'A', 'foo')
@@ -146,8 +157,8 @@ class CMSTest(ModuleTestCase('../redisbloom.so')):
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 'A', 'foo', 'weights', 1)
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 3, 'bar', 'baz' 'weights', 1, 'a')
 
-
     def test_merge_extensive(self):
+        self.cmd('FLUSHALL')
         self.cmd('cms.initbydim', 'A', '2000', '10')
         self.cmd('cms.initbydim', 'B', '2000', '10')
         self.cmd('cms.initbydim', 'C', '2000', '10')
@@ -174,18 +185,16 @@ class CMSTest(ModuleTestCase('../redisbloom.so')):
         # overflow as result > UNIT32_MAX
         res = self.cmd('cms.incrby', 'cms', 'a', large_val, 'b', 10, 'c', 7, 'd', 5)
         # result of insert is an error message
+        self.env.assertResponseError(res[0], contained='CMS: INCRBY overflow')
         self.assertEqual(res[1:], [44, 51, 15])
         # result of query in UINT32_MAX (large_val * 2 + 1)
         self.assertEqual([large_val * 2 + 1, 51, 51, 15], self.cmd('cms.query', 'cms', 'a', 'b', 'c', 'd'))
 
     def test_smallset(self):
+        self.cmd('FLUSHALL')
         self.assertOk(self.cmd('cms.initbydim', 'cms1', '2', '2'))
         self.assertEqual([10, 42], self.cmd('cms.incrby', 'cms1', 'foo', '10', 'bar', '42'))
         self.assertEqual([10, 42], self.cmd('cms.query', 'cms1', 'foo', 'bar'))
         self.assertEqual(['width', 2, 'depth', 2, 'count', 52],
                          self.cmd('cms.info', 'cms1'))
         self.assertEqual([10, 42], self.cmd('cms.incrby', 'cms1', 'foo', '0', 'bar', '0'))
-
-if __name__ == "__main__":
-    import unittest
-    unittest.main()

@@ -1,7 +1,24 @@
 version: 2.1
 
 commands:
-  early_return_for_forked_pull_requests:
+  early-returns:
+    steps:
+      - run:
+          name: Early return if this is a docs build
+          command: |
+            if [[ $CIRCLE_BRANCH == *docs ]]; then
+              echo "Identifies as documents PR, no testing required."
+              circleci step halt
+            fi
+      - run:
+          name: Early return if this branch should ignore CI
+          command: |
+            if [[ $CIRCLE_BRANCH == *noci ]]; then
+              echo "Identifies as actively ignoring CI, no testing required."
+              circleci step halt
+            fi
+
+  early-return-for-forked-pull-requests:
     description: >-
       If this build is from a fork, stop executing the current job and return success.
       This is useful to avoid steps that will fail due to missing credentials.
@@ -9,25 +26,10 @@ commands:
       - run:
           name: Early return if this build is from a forked PR
           command: |
-            if [ -n "$CIRCLE_PR_NUMBER" ]; then
+            if [[ -n "$CIRCLE_PR_NUMBER" ]]; then
               echo "Nothing to do for forked PRs, so marking this step successful"
               circleci step halt
             fi
-
-  setup-automation:
-    steps:
-      - run:
-          name: Setup automation
-          command: |
-            PIP=1 ./deps/readies/bin/getpy2
-            python2 -m pip install -r ./deps/readies/paella/requirements.txt
-
-  checkout-all:
-    steps:
-      - checkout
-      - run:
-          name: Checkout submodules
-          command: git submodule update --init --recursive
 
   setup-executor:
     steps:
@@ -38,51 +40,181 @@ commands:
             apt-get -q install -y git openssh-client curl ca-certificates make tar gzip
             bash <(curl -fsSL https://raw.githubusercontent.com/docker/docker-install/master/install.sh)
       - setup_remote_docker:
-          version: 20.10.2
+          version: 20.10.14
           docker_layer_caching: true
 
-  platform-build-steps:
+  checkout-all:
+    steps:
+      - checkout
+      - run:
+          name: Checkout submodules
+          command: git submodule update --init --recursive
+
+  setup-automation:
+    steps:
+      - run:
+          name: Setup automation
+          command: |
+            git submodule update --init deps/readies
+            ./deps/readies/bin/getpy3
+            ./deps/readies/bin/getaws
+            python3 --version
+            python3 -m pip list
+
+  install-prerequisites:
+    parameters:
+      redis_version:
+        type: string
+        default: "6"
+      getredis_params:
+        type: string
+        default: ""
+    steps:
+      - run:
+          name: System setup
+          command: ./sbin/setup
+      - run:
+          name: Install Redis
+          shell: /bin/bash -l -eo pipefail
+          command: |
+            python3 ./deps/readies/bin/getredis -v '<<parameters.redis_version>>' --force <<parameters.getredis_params>>
+            redis-server --version
+
+  save-tests-logs:
+    steps:
+      - run:
+          name: Cleanup test log dir
+          command: |
+            rm -f tests/flow/logs/*.{aof,rdb}
+          when: always
+      - store_artifacts:
+          path: tests/flow/logs
+
+  persist-artifacts:
+    steps:
+      - early-return-for-forked-pull-requests
+      - run:
+          name: List artifacts
+          command: |
+            cd bin/artifacts
+            du -ah --apparent-size *
+      - persist_to_workspace:
+          root: bin/
+          paths:
+            - artifacts/*.zip
+            - artifacts/*.tgz
+            - artifacts/*.tar
+
+  build-steps:
+    parameters:
+      redis_version:
+        type: string
+        default: "6"
+      getredis_params:
+        type: string
+        default: ""
+      build_params:
+        type: string
+        default: ""
+      test_params:
+        type: string
+        default: ""
+    steps:
+      - early-returns
+      - checkout-all
+      - install-prerequisites:
+          redis_version: <<parameters.redis_version>>
+          getredis_params: <<parameters.getredis_params>>
+      - run:
+          name: Build
+          shell: /bin/bash -l -eo pipefail
+          command: make build <<parameters.build_params>> SHOW=1
+      - run:
+          name: Pack
+          shell: /bin/bash -l -eo pipefail
+          command: make pack SHOW=1
+      - run:
+          name: Tests
+          shell: /bin/bash -l -eo pipefail
+          command: |
+            python3 -m RLTest --version
+            make test <<parameters.test_params>> SHOW=1
+      - save-tests-logs
+
+  build-platforms-steps:
     parameters:
       platform:
         type: string
     steps:
+      - early-returns
       - setup-executor
       - checkout-all
+      - install-prerequisites
       - run:
-          name: Install dependencies
+          name: Build for platform
           command: |
-            ./deps/readies/bin/getpy2
-            ./deps/readies/bin/getpy3
+            ROOT=$PWD
+            cd build/docker
+            make build OSNICK=<<parameters.platform>> VERSION="$CIRCLE_TAG" BRANCH="$CIRCLE_BRANCH" TEST=1 OFFICIAL=1 SHOW=1
+            cd $ROOT
+            mkdir -p tests/flow/logs
+            tar -C tests/flow/logs -xzf bin/artifacts/tests-flow-logs*.tgz
+          no_output_timeout: 30m
+      - save-tests-logs
+      - early-return-for-forked-pull-requests
       - run:
-          name: Build for platform (docker build)
+          name: Upload artifacts to S3
+          shell: /bin/bash -l -eo pipefail
           command: |
-            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> ARTIFACTS=1 OFFICIAL=1 VERSION=$CIRCLE_TAG BRANCH=$CIRCLE_BRANCH SHOW=1 TEST=1
-      - persist_to_workspace:
-          root: bin
-          paths:
-            - artifacts/snapshots/*.zip
-            - artifacts/*.zip
+            if [[ -n $CIRCLE_BRANCH ]]; then
+                make upload-artifacts OSNICK=<<parameters.platform>> SHOW=1
+            fi
+      - run:
+          name: Publish container
+          shell: /bin/bash -l -eo pipefail
+          command: |
+            docker login -u redisfab -p $DOCKER_REDISFAB_PWD
+            cd build/docker
+            make publish OSNICK=<<parameters.platform>> VERSION="$CIRCLE_TAG" BRANCH="$CIRCLE_BRANCH" OFFICIAL=1 SHOW=1
+      - persist-artifacts
 
-  arm-platform-build-steps:
+  vm-build-platforms-steps:
     parameters:
       platform:
         type: string
     steps:
+      - early-returns
       - checkout-all
+      - setup-automation
       - run:
-          name: Install dependencies
-          command: |
-            ./deps/readies/bin/getpy2
-            ./deps/readies/bin/getpy3
+          name: Install Docker
+          shell: /bin/bash -l -eo pipefail
+          command: ./deps/readies/bin/getdocker
       - run:
-          name: Build for platform (docker build)
+          name: Build for platform
           command: |
-            make -C build/docker build DOCKER_SUFFIX=".<<parameters.platform>>" OSNICK=<<parameters.platform>> ARTIFACTS=1 OFFICIAL=1 VERSION=$CIRCLE_TAG BRANCH=$CIRCLE_BRANCH SHOW=1 TEST=1
-      - persist_to_workspace:
-          root: bin
-          paths:
-            - artifacts/snapshots/*.zip
-            - artifacts/*.zip
+            ROOT=$PWD
+            cd build/docker
+            make build OSNICK=<<parameters.platform>> VERSION="$CIRCLE_TAG" BRANCH="$CIRCLE_BRANCH" TEST=1 OFFICIAL=1 SHOW=1
+            cd $ROOT
+            mkdir -p tests/flow/logs
+            tar -C tests/flow/logs -xzf bin/artifacts/tests-flow-logs*.tgz
+          no_output_timeout: 30m
+      - save-tests-logs
+      - early-return-for-forked-pull-requests
+      - run:
+          name: Upload artifacts to S3
+          command: |
+            if [[ -n $CIRCLE_BRANCH ]]; then
+                make upload-artifacts OSNICK=<<parameters.platform>> SHOW=1
+            fi
+      - run:
+          name: Publish container
+          command: |
+            docker login -u redisfab -p $DOCKER_REDISFAB_PWD
+            cd build/docker
+            make publish OSNICK=<<parameters.platform>> VERSION="$CIRCLE_TAG" BRANCH="$CIRCLE_BRANCH" OFFICIAL=1 SHOW=1
+      - persist-artifacts
 
   benchmark-steps:
     parameters:
@@ -91,47 +223,155 @@ commands:
         default: $CIRCLE_USERNAME
       module_path:
         type: string
-        default: ../../redisbloom.so
+        default: bin/linux-x64-release/redisbloom.so
+      profile_env:
+        type: string
+        default: "0"
+      benchmark_glob:
+        type: string
+        default: "*.yml"
+      triggering_env:
+        type: string
+        default: "circleci"
+      allowed_envs:
+        type: string
+        default: "oss-standalone"
     steps:
       - run:
-          name: Install remote benchmark tool dependencies
+          name: Prepare automation
           command: |
+            ./deps/readies/bin/getpy3
+            python3 -m pip install -r tests/benchmarks/requirements.txt
             VERSION=0.14.8 ./deps/readies/bin/getterraform
-      - run:
-          name: Install remote benchmark python dependencies
-          command: python3 -m pip install -r ./tests/benchmarks/requirements.txt
       - run:
           name: Run CI benchmarks on aws
           timeout: 60m
           no_output_timeout: 30m
           command: |
-            cd ./tests/benchmarks
+            ROOT="$PWD"
+            cd tests/benchmarks
             export AWS_ACCESS_KEY_ID=$PERFORMANCE_EC2_ACCESS_KEY
             export AWS_SECRET_ACCESS_KEY=$PERFORMANCE_EC2_SECRET_KEY
             export AWS_DEFAULT_REGION=$PERFORMANCE_EC2_REGION
             export EC2_PRIVATE_PEM=$PERFORMANCE_EC2_PRIVATE_PEM
+            export PROFILE=<< parameters.profile_env >>
+            export BENCHMARK_GLOB=<< parameters.benchmark_glob >>
+            export PERF_CALLGRAPH_MODE="dwarf"
             redisbench-admin run-remote \
               --required-module bf \
-              --module_path << parameters.module_path >> \
-              --github_actor << parameters.github_actor >> \
+              --module_path "$ROOT/<< parameters.module_path >>" \
+              --github_actor "<< parameters.github_actor >>" \
               --github_repo $CIRCLE_PROJECT_REPONAME \
               --github_org $CIRCLE_PROJECT_USERNAME \
               --github_sha $CIRCLE_SHA1 \
               --github_branch $CIRCLE_BRANCH \
               --upload_results_s3 \
-              --triggering_env circleci \
-              --push_results_redistimeseries
+              --triggering_env << parameters.triggering_env >> \
+              --fail_fast \
+              --push_results_redistimeseries \
+              --allowed-envs << parameters.allowed_envs >>
 
 jobs:
   lint:
     docker:
       - image: redislabsmodules/llvm-toolset:latest
     steps:
-      - checkout
+      - early-returns
+      - checkout-all
+      - install-prerequisites
       - run:
           name: lint
+          shell: /bin/bash -l -eo pipefail
+          command: make lint
+
+  build:
+    docker:
+      - image: redisfab/rmbuilder:6.2.7-x64-bullseye
+    parameters:
+      redis_version:
+        type: string
+        default: "6"
+      persist:
+        type: string
+        default: "yes"
+    steps:
+      - build-steps:
+          redis_version: <<parameters.redis_version>>
+      - run:
+          name: Persist artifacts?
           command: |
-            make lint
+            if [[ "<<parameters.persist>>" != "yes" ]]; then
+              circleci step halt
+            fi
+      - persist-artifacts
+
+  build-platforms:
+    parameters:
+      platform:
+        type: string
+    # docker:
+    #   - image: debian:bullseye
+    machine:
+      enabled: true
+      image: ubuntu-2004:202010-01
+      resource_class: large
+    steps:
+      - vm-build-platforms-steps:
+          platform: <<parameters.platform>>
+
+  build-arm-platforms:
+    parameters:
+      platform:
+        type: string
+    machine:
+      image: ubuntu-2004:202101-01
+    resource_class: arm.medium
+    steps:
+      - vm-build-platforms-steps:
+          platform: <<parameters.platform>>
+
+  build-macos:
+    macos:
+      xcode: 11.7.0
+    resource_class: macos.x86.medium.gen2
+    parameters:
+      upload:
+        type: string
+        default: "yes"
+    steps:
+      - early-returns
+      - build-steps
+      - run:
+          name: Upload artifacts to S3
+          command: |
+            if [[ -n $CIRCLE_BRANCH && "<<parameters.upload>>" == "yes" ]]; then
+                make upload-artifacts SHOW=1
+            fi
+      - persist-artifacts
+
+  coverage:
+    docker:
+      - image: redisfab/rmbuilder:6.2.7-x64-bullseye
+    steps:
+      - early-returns
+      - checkout-all
+      - install-prerequisites
+      - run:
+          name: Build & Test
+          shell: /bin/bash -l -eo pipefail
+          command: |
+            make coverage SHOW=1
+            make upload-cov SHOW=1
+          no_output_timeout: 30m
+      - save-tests-logs
+
+  valgrind:
+    docker:
+      - image: redisfab/rmbuilder:6.2.7-x64-bullseye
+    steps:
+      - build-steps:
+          build_params: VALGRIND=1
+          test_params: VALGRIND=1 SIMPLE=1
 
   static-analysis-infer:
     docker:
@@ -140,201 +380,63 @@ jobs:
       - checkout-all
       - run:
           name: run fbinfer
-          command: |
-            CC=clang INFER=infer make static-analysis
+          command: make static-analysis
 
-  build:
-    docker:
-      - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
-    steps:
-      - checkout-all
-      - setup-automation
-      - run:
-          name: Build
-          command: make -j `nproc`
-      - run:
-          name: Test
-          command: make test
-      - run:
-          name: Coverage
-          command: |
-            apt-get update -qq
-            apt-get install -y lcov curl
-            make coverage
-            bash <(curl -s https://codecov.io/bash)
-      - early_return_for_forked_pull_requests
-      - run:
-          name: Persist Artifacts
-          command: |
-            mkdir -p /workspace/build
-            cp $MODULE_ARTIFACT /workspace/
-            cp ramp.yml /workspace
-
-      - persist_to_workspace:
-          root: /workspace
-          paths:
-            - '*.so'
-            - ramp.yml
-            - build
-  build-macos:
-    macos:
-      xcode: 11.6.0
-    steps:
-      - checkout-all
-      - run:
-          name: Fix macOS setup
-          command: |
-            # brew update || true
-            # workaround for ramp pack failure
-            sudo mkdir -p /var/opt/redislabs
-            sudo chmod 777 /var/opt/redislabs
-      - run:
-          name: Install dependencies
-          command: |
-            ./deps/readies/bin/getpy2
-            ./system-setup.py
-      - run:
-          name: Build for mac
-          command: |
-            bash -l -c "make all"
-      - run:
-          name: Create RAMP
-          command: |
-            bash -l -c "make pack"
-      - run:
-          name: Run tests
-          command: |
-            bash -l -c "TEST= make test"
-      - persist_to_workspace:
-          root: bin
-          paths:
-            - artifacts/snaphots/*.zip
-            - artifacts/*.zip
-
-  platform_build:
+  upload-artifacts:
     parameters:
-      platform:
+      staging-lab:
         type: string
+        default: "0"
     docker:
-      - image: debian:bullseye
+      - image: redisfab/rmbuilder:6.2.7-x64-bullseye
     steps:
-      - platform-build-steps:
-          platform: <<parameters.platform>>
-
-  platform_build_arm:
-    parameters:
-      platform:
-        type: string
-    machine:
-      image: ubuntu-2004:202101-01
-    resource_class: arm.medium
-    steps:
-      - arm-platform-build-steps:
-          platform: <<parameters.platform>>
-
-
-  package_branch:
-    docker:
-      - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
-    steps:
-      - attach_workspace:
-          at: /workspace
-      - run:
-          name: Package
-          command: |
-            export LC_ALL=C.UTF-8
-            export LANG=C.UTF-8
-            python -m RAMP.ramp pack -m /workspace/ramp.yml -o /workspace/build/$PACKAGE_NAME.{os}-{architecture}.$CIRCLE_BRANCH.zip /workspace/$MODULE_ARTIFACT
-      - persist_to_workspace:
-          root: /workspace
-          paths:
-            - build
-      - store_artifacts:
-          path: /workspace/build
-
-  package_release:
-    docker:
-      - image: 'redisfab/rmbuilder:6.0.9-x64-bionic'
-    steps:
-      - attach_workspace:
-          at: /workspace
-      - run:
-          name: Package
-          command: |
-            export LC_ALL=C.UTF-8
-            export LANG=C.UTF-8
-            python -m RAMP.ramp pack -m /workspace/ramp.yml -o /workspace/build/$PACKAGE_NAME.{os}-{architecture}.{semantic_version}.zip /workspace/$MODULE_ARTIFACT
-      - run:
-          name: Package
-          command: |
-            export LC_ALL=C.UTF-8
-            export LANG=C.UTF-8
-            python -m RAMP.ramp pack -m /workspace/ramp.yml -o /workspace/build/$PACKAGE_NAME.{os}-{architecture}.latest.zip /workspace/$MODULE_ARTIFACT
-      - persist_to_workspace:
-          root: /workspace
-          paths:
-            - build
-      - store_artifacts:
-          path: /workspace/build
-
-  deploy_snapshots:
-    docker:
-      - image: redisfab/rmbuilder:6.2.5-x64-bullseye
-    steps:
-      - attach_workspace:
-          at: workspace
-      - run:
-          name: Deploy to S3
-          command: |
-            cd workspace/artifacts/snapshots
-            for f in `ls *.zip *.tgz`; do
-              aws s3 cp $f s3://redismodules/redisbloom/snapshots/$path --acl public-read
-            done
-
-  deploy_release:
-    docker:
-      - image: redisfab/rmbuilder:6.2.5-x64-bullseye
-    steps:
-      - attach_workspace:
-          at: workspace
-      - run:
-          name: Deploy to S3
-          command: |
-            cd workspace/artifacts/
-            for f in `ls *.zip *.tgz`; do
-              aws s3 cp $f s3://redismodules/redisbloom/$path --acl public-read
-            done
-
-  release_automation:
-    docker:
-      - image: redisfab/rmbuilder:6.0.9-x64-buster
-    steps:
-      - checkout-all
+      - early-returns
+      - early-return-for-forked-pull-requests
+      - checkout
       - setup-automation
+      - attach_workspace:
+          at: ~/workspace
       - run:
-          name: Run QA Automation
-          command: MODULE_VERSION=$CIRCLE_TAG VERBOSE=1 TEST=release ./tests/qa/run
+          name: Upload artifacts to S3
+          command: |
+            mkdir -p bin
+            ln -s ~/workspace/artifacts bin/artifacts
+            if [[ -n $CIRCLE_TAG && "<<parameters.staging-lab>>" != 1 ]]; then
+                make upload-release SHOW=1
+            else
+                make upload-release SHOW=1 STAGING=1
+            fi
 
-  nightly_automation:
+  release-qa-tests:
     docker:
-      - image: redisfab/rmbuilder:6.0.9-x64-buster
+      - image: redisfab/rmbuilder:6.2.7-x64-bullseye
     steps:
+      - early-returns
+      - early-return-for-forked-pull-requests
       - checkout
       - setup-automation
       - run:
           name: Run QA Automation
-          command: MODULE_VERSION=$CIRCLE_BRANCH VERBOSE=1 TEST=nightly QUICK=1 ./tests/qa/run
+          command: ./tests/qa/qatests -m "$CIRCLE_TAG"
 
-  performance-automation:
+  benchmark-bloom-oss-standalone:
     docker:
-      - image: redisfab/rmbuilder:6.2.3-x64-bionic
+      - image: redisfab/rmbuilder:6.2.7-x64-bionic
+    steps:
+      - build-steps
+      - benchmark-steps
+
+  benchmark-bloom-oss-standalone-profiler:
+    docker:
+      - image: redisfab/rmbuilder:6.2.7-x64-bionic
     steps:
       - checkout-all
       - setup-automation
-      - run:
-          name: build artifact
-          command: make build
-      - benchmark-steps
+      - build-steps
+      - benchmark-steps:
+          profile_env: "1"
+          triggering_env: "circleci.profilers" # results generated with profilers attached are not mixed with the ones without it
+
 #----------------------------------------------------------------------------------------------------------------------------------
 
 on-any-branch: &on-any-branch
@@ -365,6 +467,7 @@ on-integ-branch: &on-integ-branch
         - master
         - /^\d+\.\d+.*$/
         - /^feature-.*$/
+        - /^perf.*$/
     tags:
       ignore: /.*/
 
@@ -375,6 +478,7 @@ not-on-integ-branch: &not-on-integ-branch
         - master
         - /^\d+\.\d+.*$/
         - /^feature-.*$/
+        - /^perf.*$/
     tags:
       ignore: /.*/
 
@@ -392,75 +496,96 @@ on-integ-and-version-tags: &on-integ-and-version-tags
         - master
         - /^\d+\.\d+.*$/
         - /^feature-.*$/
-        - /^perf-.*$/
     tags:
       only: /^v[0-9].*/
 
-context: &context
-  context:
-    - common
+on-perf-tags: &on-perf-tags
+  filters:
+    branches:
+      only:
+        - master
+        - /^\d+\.\d+.*$/
+        - /^perf.*$/
+    tags:
+      only: /^v[0-9].*/
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
 workflows:
   version: 2
-  build_and_package:
+  default-flow:
     jobs:
       - lint:
           <<: *on-any-branch
-      - static-analysis-infer:
-          <<: *on-any-branch
       - build:
+          <<: *not-on-integ-branch
+      # - static-analysis-infer:
+      #     <<: *on-any-branch
+      - coverage:
+          <<: *on-any-branch
+      - valgrind:
           <<: *on-any-branch
           requires:
             - lint
+      - build:
+          name: build-with-redis-<<matrix.redis_version>>
+          <<: *on-integ-and-version-tags
+          matrix:
+            alias: build-with-redis-ver
+            parameters:
+              redis_version: ["6.0", "7", "unstable"]
+      - build-platforms:
+          #@@ <<: *on-integ-and-version-tags
+          <<: *on-any-branch
+          context: common
+          matrix:
+            parameters:
+              #@@ platform: [jammy, focal, bionic, xenial, rocky8, centos7, bullseye]
+              platform: [focal, rocky8]
+      - build-arm-platforms:
+          #@@ <<: *on-integ-and-version-tags
+          <<: *on-any-branch
+          context: common
+          matrix:
+            parameters:
+              #@@ platform: [bionic, focal, jammy]
+              platform: [focal]
       - build-macos:
-          <<: *context
-          <<: *on-integ-and-version-tags
-      - performance-automation:
-          <<: *on-integ-and-version-tags
+          context: common
+          #@@ <<: *on-integ-and-version-tags
+          <<: *on-any-branch
+      - upload-artifacts:
+          name: upload-artifacts-to-staging-lab
+          staging-lab: "1"
+          context: common
+          <<: *on-integ-branch
+          requires:
+            - build-platforms
+            - build-arm-platforms
+            - build-macos
+      - upload-artifacts:
+          name: upload-release-artifacts
+          context: common
+          <<: *on-version-tags
+          requires:
+            - build-platforms
+            - build-arm-platforms
+            - build-macos
+      - release-qa-tests:
+          context: common
+          <<: *on-version-tags
+          requires:
+            - upload-release-artifacts
+      - benchmark-bloom-oss-standalone:
+          <<: *on-perf-tags
           requires:
             - lint
           context: common
-      - package_branch:
-          <<: *on-integ-branch
+      - benchmark-bloom-oss-standalone-profiler:
+          <<: *on-perf-tags
           requires:
-            - build
-      - package_release:
-          <<: *on-version-tags
-          requires:
-            - build
-      - deploy_snapshots:
+            - lint
           context: common
-          <<: *on-integ-branch
-          requires:
-            - platform_build
-            - platform_build_arm
-            - build-macos
-      - deploy_release:
-          context: common
-          <<: *on-version-tags
-          requires:
-            - platform_build
-            - platform_build_arm
-            - build-macos
-      - platform_build:
-          <<: *context
-          <<: *on-integ-and-version-tags
-          matrix:
-            parameters:
-              platform: [xenial, bionic, focal, buster, bullseye, centos7, rocky8]
-      - platform_build_arm:
-          <<: *context
-          <<: *on-integ-and-version-tags
-          matrix:
-            parameters:
-              platform: [bionic]
-      - release_automation:
-          context: common
-          <<: *on-version-tags
-          requires:
-            - deploy_release
 
   nightly:
     triggers:
@@ -470,7 +595,10 @@ workflows:
             branches:
               only:
                 - master
+                - /^\d+\.\d+.*$/
                 - /^feature-.*$/
     jobs:
-      - performance-automation:
+      - benchmark-bloom-oss-standalone:
+          context: common
+      - benchmark-bloom-oss-standalone-profiler:
           context: common

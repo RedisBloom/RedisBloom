@@ -1,9 +1,16 @@
+
 #include "sb.h"
+
 #include "redismodule.h"
+
 #define BLOOM_CALLOC RedisModule_Calloc
 #define BLOOM_FREE RedisModule_Free
-#include "contrib/bloom.c"
+
+#include "bloom/bloom.h"
+
 #include <string.h>
+
+bloom_hashval bloom_calc_hash64(const void *buffer, int len);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

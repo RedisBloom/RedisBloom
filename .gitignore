@@ -11,9 +11,10 @@
 *.html
 *.info
 *.css
-tests/test-basic
-tests/test-perf
-tests/test-cuckoo
-site/
-venv/
-infer-out/
+/tests/flow/logs/
+/site/
+/venv/
+/infer-out/
+.idea
+/tests/benchmarks/profile_*
+/bin/

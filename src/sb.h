@@ -1,7 +1,7 @@
-#ifndef REBLOOM_H
-#define REBLOOM_H
 
-#include "contrib/bloom.h"
+#pragma once
+
+#include "bloom/bloom.h"
 #include <stdlib.h>
 
 #ifdef __cplusplus
@@ -101,5 +101,4 @@ int SBChain_LoadEncodedChunk(SBChain *sb, long long iter, const char *buf, size_
                              const char **errmsg);
 #ifdef __cplusplus
 }
-#endif
 #endif
