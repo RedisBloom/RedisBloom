@@ -897,7 +897,7 @@ static size_t BFMemUsage(const void *value);
 
 static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    if (argc != 2) {
+    if (argc != 2 && argc != 3) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -906,6 +906,30 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     int status = bfGetChain(key, &bf);
     if (status != REDISMODULE_OK) {
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
+    }
+
+    if (argc == 3) {
+        if (!rsStrcasecmp(argv[2], "capacity")) {
+            RedisModule_ReplyWithArray(ctx, 1);
+            RedisModule_ReplyWithLongLong(ctx, BFCapacity(bf));
+        } else if (!rsStrcasecmp(argv[2], "size")) {
+            RedisModule_ReplyWithArray(ctx, 1);
+            RedisModule_ReplyWithLongLong(ctx, BFMemUsage(bf));
+        } else if (!rsStrcasecmp(argv[2], "filters")) {
+            RedisModule_ReplyWithArray(ctx, 1);
+            RedisModule_ReplyWithLongLong(ctx, bf->nfilters);
+        } else if (!rsStrcasecmp(argv[2], "items")) {
+            RedisModule_ReplyWithArray(ctx, 1);
+            RedisModule_ReplyWithLongLong(ctx, bf->size);
+        } else if (!rsStrcasecmp(argv[2], "expansion")) {
+            RedisModule_ReplyWithArray(ctx, 1);
+            bf->options &BLOOM_OPT_NO_SCALING ? RedisModule_ReplyWithNull(ctx)
+                                              : RedisModule_ReplyWithLongLong(ctx, bf->growth);
+        } else {
+            return RedisModule_ReplyWithError(ctx, "Invalid information value");
+        }
+
+        return REDISMODULE_OK;
     }
 
     RedisModule_ReplyWithArray(ctx, 5 * 2);

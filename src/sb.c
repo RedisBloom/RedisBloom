@@ -141,7 +141,7 @@ typedef struct __attribute__((packed)) {
     uint32_t nfilters;
     uint32_t options;
     uint32_t growth;
-    dumpedChainLink links[0];
+    dumpedChainLink links[];
 } dumpedChainHeader;
 
 static SBLink *getLinkPos(const SBChain *sb, long long curIter, size_t *offset) {

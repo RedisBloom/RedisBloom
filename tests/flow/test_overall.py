@@ -216,12 +216,21 @@ class testRedisBloom():
         env = self.env
         env.cmd('FLUSHALL')
         env.assertOk(env.cmd('bf.reserve', 'bf', '0.05', '1000'))
+        yield 1
+        self.env.dumpAndReload()
+        yield 2
         if not VALGRIND:
-            env.assertEqual(1088, env.cmd('MEMORY USAGE', 'bf'))
+            if server_version_at_least(self.env, '7.0.0'):
+                env.assertEqual(1104, env.cmd('MEMORY USAGE', 'bf'))
+            else:
+                env.assertEqual(1088, env.cmd('MEMORY USAGE', 'bf'))
         env.assertEqual([1, 1, 1], env.cmd(
             'bf.madd', 'bf', 'foo', 'bar', 'baz'))
         if not VALGRIND:
-            env.assertEqual(1088, env.cmd('MEMORY USAGE', 'bf'))
+            if server_version_at_least(self.env, '7.0.0'):
+                env.assertEqual(1104, env.cmd('MEMORY USAGE', 'bf'))
+            else:
+                env.assertEqual(1088, env.cmd('MEMORY USAGE', 'bf'))
         with env.assertResponseError():
             env.cmd('bf.debug', 'bf', 'noexist')
         with env.assertResponseError():
@@ -292,6 +301,45 @@ class testRedisBloom():
             env.cmd('bf.info', 'cf')
         with env.assertResponseError():
             env.cmd('bf.info')
+
+    def test_info_capacity(self):
+        env = self.env
+        env.cmd('FLUSHALL')
+        env.assertOk(env.cmd('bf.reserve', 'bf', '0.001', '100'))
+        env.assertEqual(env.cmd('bf.info bf capacity'), [100])
+
+    def test_info_size(self):
+        env = self.env
+        env.cmd('FLUSHALL')
+        env.assertOk(env.cmd('bf.reserve', 'bf', '0.001', '100'))
+        env.assertEqual(env.cmd('bf.info bf size'), [296])
+
+    def test_info_filters(self):
+        env = self.env
+        env.cmd('FLUSHALL')
+        env.assertOk(env.cmd('bf.reserve', 'bf', '0.001', '100'))
+        env.assertEqual(env.cmd('bf.info bf filters'), [1])
+
+    def test_info_items(self):
+        env = self.env
+        env.cmd('FLUSHALL')
+        env.assertOk(env.cmd('bf.reserve', 'bf', '0.001', '100'))
+        env.assertEqual(env.cmd('bf.info bf items'), [0])
+
+    def test_info_expansion(self):
+        env = self.env
+        env.cmd('FLUSHALL')
+        env.assertOk(env.cmd('bf.reserve', 'bf', '0.001', '100'))
+        env.assertEqual(env.cmd('bf.info bf expansion'), [2])
+
+    def test_info_errors(self):
+        env = self.env
+        env.cmd('FLUSHALL')
+        env.assertOk(env.cmd('bf.reserve', 'bf', '0.001', '100'))
+        with env.assertResponseError():
+            env.cmd('bf.info', 'bf', 'capacity', 'size')
+        with env.assertResponseError():
+            env.cmd('bf.info', 'bf', 'wrong_value')
 
     def test_no_1_error_rate(self):
         env = self.env

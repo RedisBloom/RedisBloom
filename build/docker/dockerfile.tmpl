@@ -14,8 +14,7 @@ COPY --from=redis /usr/local/ /usr/local/
 ADD . /build
 
 RUN ./deps/readies/bin/getupdates
-RUN ./deps/readies/bin/getpy3
-RUN ./sbin/system-setup.py
+RUN ./sbin/setup
 
 RUN /usr/local/bin/redis-server --version
 
@@ -38,7 +37,6 @@ RUN set -e ;\
 {% endif %}
 
 #----------------------------------------------------------------------------------------------
-# FROM redisfab/redisearch:{{REDISEARCH_VERSION}}-{{ARCH}}-{{OSNICK}} AS search
 FROM redisfab/redis:{{REDIS_VERSION}}-{{ARCH}}-{{OSNICK}}
 
 WORKDIR /data

@@ -149,6 +149,9 @@ class testCuckoo():
     def test_mem_usage(self):
         self.cmd('FLUSHALL')
         self.cmd('CF.RESERVE', 'cf', '1000')
+        yield 1
+        self.env.dumpAndReload()
+        yield 2
         if not VALGRIND:
             self.assertEqual(1112, self.cmd('MEMORY USAGE', 'cf'))
         self.cmd('cf.insert', 'cf', 'nocreate', 'items', 'foo')
@@ -173,8 +176,8 @@ class testCuckoo():
         self.cmd('cf.del', 'nums', 'Redis')
         d1 = self.cmd('cf.debug', 'nums')
         self.env.dumpAndReload()
-        # for _ in self.client.retry_with_rdb_reload():   
-        #     self.cmd('ping')    
+        # for _ in self.client.retry_with_rdb_reload():
+        #     self.cmd('ping')
         d2 = self.cmd('cf.debug', 'nums')
         self.assertEqual(d1, d2)
 
@@ -315,7 +318,7 @@ class testCuckoo():
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 BUCKETSIZE 0')
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 BUCKETSIZE -1')
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 MAXITERATIONS 0')
-        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 MAXITERATIONS -1')        
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE err 10 MAXITERATIONS -1')
         self.cmd('CF.RESERVE err 1000')
 
         self.assertRaises(ResponseError, self.cmd, 'CF.ADD')
@@ -392,7 +395,7 @@ class testCuckooNoCodec():
     def test_scandump_with_expansion(self):
         self.cmd('FLUSHALL')
         maxrange = 500
-    
+
         self.cmd('cf.reserve', 'cf', int(maxrange / 8), 'expansion', '2')
         self.assertEqual([0, None], self.cmd('cf.scandump', 'cf', '0'))
         for x in range(maxrange):
@@ -420,10 +423,10 @@ class testCuckooNoCodec():
         # check loaded filter
         for x in range(maxrange):
             self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
-    
+
     def test_scandump_huge(self):
         self.cmd('FLUSHALL')
-    
+
         self.cmd('cf.reserve', 'cf', 1024 * 1024 * 64)
         self.assertEqual([0, None], self.cmd('cf.scandump', 'cf', '0'))
         for x in range(6):
