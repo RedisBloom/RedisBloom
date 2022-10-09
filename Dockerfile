@@ -1,19 +1,46 @@
-FROM redisfab/rmbuilder:6.0.9-x64-bionic as builder
+# BUILD redisfab/redistimeseries:${VERSION}-${ARCH}-${OSNICK}
 
-# Build the source
-ADD . /
-WORKDIR /
-RUN set -ex;\
-    make clean; \
-    make all -j 4; \
-    make test;
+ARG REDIS_VER=6.2.7
 
-# Package the runner
-FROM redisfab/redis:6.0-latest-x64-bionic
+# stretch|bionic|buster
+ARG OSNICK=buster
+
+# ARCH=x64|arm64v8|arm32v7
+ARG ARCH=x64
+
+#----------------------------------------------------------------------------------------------
+FROM redisfab/redis:${REDIS_VER}-${ARCH}-${OSNICK} AS builder
+
+ARG REDIS_VER
+
+ADD ./ /build
+WORKDIR /build
+
+RUN ./deps/readies/bin/getupdates
+RUN ./sbin/setup
+RUN set -ex ;\
+    if [ -e /usr/bin/apt-get ]; then \
+        apt-get update -qq; \
+        apt-get upgrade -yqq; \
+        rm -rf /var/cache/apt; \
+    fi
+RUN if [ -e /usr/bin/yum ]; then \
+        yum update -y; \
+        rm -rf /var/cache/yum; \
+    fi
+
+RUN bash -l -c "make fetch"
+RUN bash -l -c "make all"
+
+#----------------------------------------------------------------------------------------------
+FROM redisfab/redis:${REDIS_VER}-${ARCH}-${OSNICK}
+
+ARG REDIS_VER
 ENV LIBDIR /usr/lib/redis/modules
 WORKDIR /data
-RUN set -ex;\
-    mkdir -p "$LIBDIR";
-COPY --from=builder /redisbloom.so "$LIBDIR"
+RUN mkdir -p "$LIBDIR"
 
+COPY --from=builder /build/redisbloom.so "$LIBDIR"
+
+EXPOSE 6379
 CMD ["redis-server", "--loadmodule", "/usr/lib/redis/modules/redisbloom.so"]

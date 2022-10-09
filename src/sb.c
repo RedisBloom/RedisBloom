@@ -1,9 +1,16 @@
+
 #include "sb.h"
+
 #include "redismodule.h"
+
 #define BLOOM_CALLOC RedisModule_Calloc
 #define BLOOM_FREE RedisModule_Free
-#include "contrib/bloom.c"
+
+#include "bloom/bloom.h"
+
 #include <string.h>
+
+bloom_hashval bloom_calc_hash64(const void *buffer, int len);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -134,7 +141,7 @@ typedef struct __attribute__((packed)) {
     uint32_t nfilters;
     uint32_t options;
     uint32_t growth;
-    dumpedChainLink links[0];
+    dumpedChainLink links[];
 } dumpedChainHeader;
 
 static SBLink *getLinkPos(const SBChain *sb, long long curIter, size_t *offset) {

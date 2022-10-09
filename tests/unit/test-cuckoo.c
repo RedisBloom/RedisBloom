@@ -1,7 +1,9 @@
+
 #include "cuckoo.h"
 #include "test.h"
-#include "murmurhash2.h"
+#include "murmur2/murmurhash2.h"
 #include "redismodule.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -12,7 +14,7 @@
 static void *calloc_wrap(size_t a, size_t b) { return calloc(a, b); }
 static void free_wrap(void *p) { free(p); }
 
-TEST_CLASS(cuckoo);
+TEST_CLASS(cuckoo)
 TEST_DEFINE_GLOBALS();
 
 TEST_F(cuckoo, testBasicOps) {

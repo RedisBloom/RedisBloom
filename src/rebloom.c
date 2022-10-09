@@ -1,4 +1,7 @@
+
+#define REDISMODULE_MAIN
 #include "redismodule.h"
+
 #include "sb.h"
 #include "cf.h"
 #include "rm_cms.h"
@@ -225,6 +228,7 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keystr, REDISMODULE_READ | REDISMODULE_WRITE);
     SBChain *sb;
     const int status = bfGetChain(key, &sb);
+
     if (status == SB_EMPTY && options->autocreate) {
         sb = bfCreateChain(key, options->error_rate, options->capacity, options->expansion,
                            options->nonScaling);
@@ -386,14 +390,14 @@ static int BFDebug_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     // Start writing info
     RedisModule_ReplyWithArray(ctx, 1 + sb->nfilters);
 
-    RedisModuleString *info_s = RedisModule_CreateStringPrintf(ctx, "size:%llu", sb->size);
+    RedisModuleString *info_s = RedisModule_CreateStringPrintf(ctx, "size:%lu", sb->size);
     RedisModule_ReplyWithString(ctx, info_s);
     RedisModule_FreeString(ctx, info_s);
 
     for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         const SBLink *lb = sb->filters + ii;
         info_s = RedisModule_CreateStringPrintf(
-            ctx, "bytes:%llu bits:%llu hashes:%u hashwidth:%u capacity:%u size:%lu ratio:%g",
+            ctx, "bytes:%lu bits:%llu hashes:%u hashwidth:%u capacity:%lu size:%lu ratio:%g",
             lb->inner.bytes, lb->inner.bits ? lb->inner.bits : 1LLU << lb->inner.n2,
             lb->inner.hashes, sb->options & BLOOM_OPT_FORCE64 ? 64 : 32, lb->inner.entries,
             lb->size, lb->inner.error);
@@ -889,19 +893,11 @@ uint64_t BFCapacity(SBChain *bf) {
     return capacity;
 }
 
-uint64_t BFSize(SBChain *bf) {
-    uint64_t bytes = 0;
-    for (size_t ii = 0; ii < bf->nfilters; ++ii) {
-        bytes += bf->filters[ii].inner.bytes; // * sizeof(unsigned char);
-    }
-
-    return sizeof(*bf) + sizeof(*bf->filters) * bf->nfilters + sizeof(struct bloom) * bf->nfilters +
-           bytes;
-}
+static size_t BFMemUsage(const void *value);
 
 static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    if (argc != 2) {
+    if (argc != 2 && argc != 3) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -912,11 +908,35 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
 
+    if (argc == 3) {
+        if (!rsStrcasecmp(argv[2], "capacity")) {
+            RedisModule_ReplyWithArray(ctx, 1);
+            RedisModule_ReplyWithLongLong(ctx, BFCapacity(bf));
+        } else if (!rsStrcasecmp(argv[2], "size")) {
+            RedisModule_ReplyWithArray(ctx, 1);
+            RedisModule_ReplyWithLongLong(ctx, BFMemUsage(bf));
+        } else if (!rsStrcasecmp(argv[2], "filters")) {
+            RedisModule_ReplyWithArray(ctx, 1);
+            RedisModule_ReplyWithLongLong(ctx, bf->nfilters);
+        } else if (!rsStrcasecmp(argv[2], "items")) {
+            RedisModule_ReplyWithArray(ctx, 1);
+            RedisModule_ReplyWithLongLong(ctx, bf->size);
+        } else if (!rsStrcasecmp(argv[2], "expansion")) {
+            RedisModule_ReplyWithArray(ctx, 1);
+            bf->options &BLOOM_OPT_NO_SCALING ? RedisModule_ReplyWithNull(ctx)
+                                              : RedisModule_ReplyWithLongLong(ctx, bf->growth);
+        } else {
+            return RedisModule_ReplyWithError(ctx, "Invalid information value");
+        }
+
+        return REDISMODULE_OK;
+    }
+
     RedisModule_ReplyWithArray(ctx, 5 * 2);
     RedisModule_ReplyWithSimpleString(ctx, "Capacity");
     RedisModule_ReplyWithLongLong(ctx, BFCapacity(bf));
     RedisModule_ReplyWithSimpleString(ctx, "Size");
-    RedisModule_ReplyWithLongLong(ctx, BFSize(bf));
+    RedisModule_ReplyWithLongLong(ctx, BFMemUsage(bf));
     RedisModule_ReplyWithSimpleString(ctx, "Number of filters");
     RedisModule_ReplyWithLongLong(ctx, bf->nfilters);
     RedisModule_ReplyWithSimpleString(ctx, "Number of items inserted");
@@ -1209,12 +1229,19 @@ static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2) {
     }
     return strncasecmp(s1, s2, n1);
 }
-
+/*
 #define BAIL(s, ...)                                                                               \
     do {                                                                                           \
         RedisModule_Log(ctx, "warning", s, ##__VA_ARGS__);                                         \
         return REDISMODULE_ERR;                                                                    \
-    } while (0);
+    } while (0)
+*/
+
+#define BAIL(s)                                                                                    \
+    do {                                                                                           \
+        RedisModule_Log(ctx, "warning", s);                                                        \
+        return REDISMODULE_ERR;                                                                    \
+    } while (0)
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (RedisModule_Init(ctx, "bf", REBLOOM_MODULE_VERSION, REDISMODULE_APIVER_1) !=
@@ -1237,41 +1264,41 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     }
 
     if (argc % 2) {
-        BAIL("Invalid number of arguments passed", NULL);
+        BAIL("Invalid number of arguments passed");
     }
 
     for (int ii = 0; ii < argc; ii += 2) {
         if (!rsStrcasecmp(argv[ii], "initial_size")) {
             long long v;
             if (RedisModule_StringToLongLong(argv[ii + 1], &v) == REDISMODULE_ERR) {
-                BAIL("Invalid argument for 'INITIAL_SIZE'", NULL);
+                BAIL("Invalid argument for 'INITIAL_SIZE'");
             }
             if (v > 0) {
                 BFDefaultInitCapacity = v;
             } else {
-                BAIL("INITIAL_SIZE must be > 0", NULL);
+                BAIL("INITIAL_SIZE must be > 0");
             }
         } else if (!rsStrcasecmp(argv[ii], "error_rate")) {
             double d;
             if (RedisModule_StringToDouble(argv[ii + 1], &d) == REDISMODULE_ERR) {
-                BAIL("Invalid argument for 'ERROR_RATE'", NULL);
+                BAIL("Invalid argument for 'ERROR_RATE'");
             } else if (d <= 0) {
-                BAIL("ERROR_RATE must be > 0", NULL);
+                BAIL("ERROR_RATE must be > 0");
             } else if (d >= 1) {
-                BAIL("ERROR_RATE must be < 1", NULL);
+                BAIL("ERROR_RATE must be < 1");
             } else {
                 BFDefaultErrorRate = d;
             }
         } else if (!rsStrcasecmp(argv[ii], "cf_max_expansions")) {
             long long l;
             if (RedisModule_StringToLongLong(argv[ii + 1], &l) == REDISMODULE_ERR) {
-                BAIL("Invalid argument for 'CF_MAX_EXPANSIONS'", NULL);
+                BAIL("Invalid argument for 'CF_MAX_EXPANSIONS'");
             } else if (l < 1) {
-                BAIL("CF_MAX_EXPANSIONS must be an integer >= 1", NULL);
+                BAIL("CF_MAX_EXPANSIONS must be an integer >= 1");
             }
             CFMaxExpansions = l;
         } else {
-            BAIL("Unrecognized option", NULL);
+            BAIL("Unrecognized option");
         }
     }
 
