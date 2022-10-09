@@ -147,7 +147,7 @@ class testTDigest:
                     random.random() * 10000,
                 )
             )
-        
+
         # check that multiple datapoints insertion behaves as expected
         self.assertOk(self.cmd("tdigest.create", "tdigest2"))
         args = ["tdigest.add", "tdigest2"]
@@ -631,7 +631,7 @@ class testTDigest:
         self.assertEqual(18, float(self.cmd("tdigest.revrank", "tdigest", 1)[0]))
         # multiple inputs test
         self.assertEqual([-1,19,9], self.cmd("tdigest.revrank", "tdigest", 21, 0, 10))
-    
+
     def test_tdigest_rank_and_revrank(self):
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "t", "compression","1000"))
@@ -665,7 +665,7 @@ class testTDigest:
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.rank", "tdigest", 1.5, "a"
         )
-        
+
     def test_tdigest_byrank(self):
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
@@ -681,7 +681,7 @@ class testTDigest:
         self.assertEqual("inf", self.cmd("tdigest.byrank", "tdigest", 100)[0])
         # inverse rank of N-1: [1,10]
         self.assertEqual(10, float(self.cmd("tdigest.byrank", "tdigest", 9)[0]))
-        
+
     def test_tdigest_byrevrank(self):
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 1000))
@@ -731,7 +731,7 @@ class testTDigest:
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.byrank", "tdigest", 1.5, "a"
         )
-    
+
     def test_tdigest_trimmed_mean(self):
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
