@@ -180,14 +180,14 @@ class testCMS():
 
     def test_overflow(self):
         large_val = 1024*1024*1024*2 - 1
-        
+
         self.cmd('FLUSHALL')
         self.cmd('cms.initbydim', 'cms', '5', '2')
         self.assertEqual([large_val, 10, 17, 5], self.cmd('cms.incrby', 'cms', 'a', large_val, 'b', 10, 'c', 7, 'd', 5))
         self.assertEqual([large_val, 17, 17, 5], self.cmd('cms.query', 'cms', 'a', 'b', 'c', 'd'))
         self.assertEqual([large_val * 2, 27, 34, 10], self.cmd('cms.incrby', 'cms', 'a', large_val, 'b', 10, 'c', 7, 'd', 5))
         self.assertEqual([large_val * 2, 34, 34, 10], self.cmd('cms.query', 'cms', 'a', 'b', 'c', 'd'))
-        
+
         # overflow as result > UNIT32_MAX
         res = self.cmd('cms.incrby', 'cms', 'a', large_val, 'b', 10, 'c', 7, 'd', 5)
         # result of insert is an error message
