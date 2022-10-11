@@ -167,7 +167,7 @@ commands:
           shell: /bin/bash -l -eo pipefail
           command: |
             if [[ -n $CIRCLE_BRANCH ]]; then
-                make upload-artifacts OSNICK=<<parameters.platform>> SHOW=1
+                make upload-artifacts OSNICK=<<parameters.platform>> SHOW=1 VERBOSE=1
             fi
       - run:
           name: Publish container
@@ -206,7 +206,7 @@ commands:
           name: Upload artifacts to S3
           command: |
             if [[ -n $CIRCLE_BRANCH ]]; then
-                make upload-artifacts OSNICK=<<parameters.platform>> SHOW=1
+                make upload-artifacts OSNICK=<<parameters.platform>> SHOW=1 VERBOSE=1
             fi
       - run:
           name: Publish container
@@ -345,7 +345,7 @@ jobs:
           name: Upload artifacts to S3
           command: |
             if [[ -n $CIRCLE_BRANCH && "<<parameters.upload>>" == "yes" ]]; then
-                make upload-artifacts SHOW=1
+                make upload-artifacts SHOW=1 VERBOSE=1
             fi
       - persist-artifacts
 
@@ -545,7 +545,7 @@ workflows:
           context: common
           matrix:
             parameters:
-              platform: [bionic, focal, jammy]
+              platform: [jammy, focal, bionic]
       - build-macos:
           context: common
           <<: *on-integ-and-version-tags
