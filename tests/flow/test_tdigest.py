@@ -439,7 +439,7 @@ class testTDigest:
                 self.cmd('tdigest.merge z 5 z z z z z')
         except redis.exceptions.ResponseError as e:
             error_str = e.__str__()
-            self.assertTrue("double-precision overflow detected" in error_str)
+            self.assertTrue("overflow detected" in error_str)
 
 
     def test_tdigest_min_max(self):

@@ -177,8 +177,7 @@ int TDigestSketch_Add(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         }
         if (td_add(tdigest, val, 1) != 0) {
             RedisModule_CloseKey(key);
-            return RedisModule_ReplyWithError(ctx,
-                                              "ERR T-Digest: double-precision overflow detected");
+            return RedisModule_ReplyWithError(ctx, "ERR T-Digest: overflow detected");
         }
     }
     RedisModule_CloseKey(key);
@@ -315,7 +314,7 @@ int TDigestSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         if (from_tdigests[i] != NULL) {
             if (td_merge(tdigestTo, from_tdigests[i]) != 0) {
                 td_free(tdigestTo);
-                RedisModule_ReplyWithError(ctx, "ERR T-Digest: double-precision overflow detected");
+                RedisModule_ReplyWithError(ctx, "ERR T-Digest: overflow detected");
                 goto cleanup;
             }
         }
