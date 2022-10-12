@@ -783,11 +783,11 @@ int TDigestSketch_Info(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     RedisModule_ReplyWithSimpleString(ctx, "Unmerged nodes");
     RedisModule_ReplyWithLongLong(ctx, tdigest->unmerged_nodes);
     RedisModule_ReplyWithSimpleString(ctx, "Merged weight");
-    RedisModule_ReplyWithDouble(ctx, tdigest->merged_weight);
+    RedisModule_ReplyWithLongLong(ctx, tdigest->merged_weight);
     RedisModule_ReplyWithSimpleString(ctx, "Unmerged weight");
-    RedisModule_ReplyWithDouble(ctx, tdigest->unmerged_weight);
+    RedisModule_ReplyWithLongLong(ctx, tdigest->unmerged_weight);
     RedisModule_ReplyWithSimpleString(ctx, "Observations");
-    RedisModule_ReplyWithDouble(ctx, tdigest->unmerged_weight + tdigest->merged_weight);
+    RedisModule_ReplyWithLongLong(ctx, tdigest->unmerged_weight + tdigest->merged_weight);
     RedisModule_ReplyWithSimpleString(ctx, "Total compressions");
     RedisModule_ReplyWithLongLong(ctx, tdigest->total_compressions);
     RedisModule_ReplyWithSimpleString(ctx, "Memory usage");
