@@ -529,7 +529,7 @@ workflows:
             - lint
       - build:
           name: build-with-redis-<<matrix.redis_version>>
-          <<: *on-integ-and-version-tags
+          <<: *on-any-branch
           matrix:
             alias: build-with-redis-ver
             parameters:
