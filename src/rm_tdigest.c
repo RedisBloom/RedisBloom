@@ -175,7 +175,7 @@ int TDigestSketch_Add(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
             return RedisModule_ReplyWithError(
                 ctx, "ERR T-Digest: val parameter needs to be a finite number");
         }
-        if (td_add(tdigest, val, 1.0) != 0) {
+        if (td_add(tdigest, val, 1) != 0) {
             RedisModule_CloseKey(key);
             return RedisModule_ReplyWithError(ctx,
                                               "ERR T-Digest: double-precision overflow detected");
@@ -218,6 +218,7 @@ int TDigestSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     if (RedisModule_KeyType(keyDestination) != REDISMODULE_KEYTYPE_EMPTY) {
         if (RedisModule_ModuleTypeGetType(keyDestination) != TDigestSketchType) {
             RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+            RedisModule_CloseKey(keyDestination);
             goto cleanup;
         }
         tdigestToStart = RedisModule_ModuleTypeGetValue(keyDestination);
@@ -283,7 +284,6 @@ int TDigestSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         if (RedisModule_StringCompare(keyNameDestination, keyNameFrom) != 0) {
             RedisModuleKey *current_key = RedisModule_OpenKey(ctx, keyNameFrom, REDISMODULE_READ);
             if (_TDigest_KeyCheck(ctx, current_key)) {
-                RedisModule_CloseKey(current_key);
                 goto cleanup;
             }
             from_tdigests[current_pos] = RedisModule_ModuleTypeGetValue(current_key);
