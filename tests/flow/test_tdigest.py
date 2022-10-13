@@ -695,7 +695,7 @@ class testTDigest:
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
         # insert datapoints into sketch
-        self.assertOk(self.cmd("tdigest.add", "tdigest", "1 2 3 4 5 6 7 8 9 10"))
+        self.assertOk(self.cmd("tdigest.add tdigest 1 2 3 4 5 6 7 8 9 10"))
 
         # rank 0 is precise ( equal to minimum )
         self.assertEqual(1, float(self.cmd("tdigest.byrank", "tdigest", 0)[0]))
