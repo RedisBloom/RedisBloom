@@ -175,10 +175,9 @@ int TDigestSketch_Add(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
             return RedisModule_ReplyWithError(
                 ctx, "ERR T-Digest: val parameter needs to be a finite number");
         }
-        if (td_add(tdigest, val, 1.0) != 0) {
+        if (td_add(tdigest, val, 1) != 0) {
             RedisModule_CloseKey(key);
-            return RedisModule_ReplyWithError(ctx,
-                                              "ERR T-Digest: double-precision overflow detected");
+            return RedisModule_ReplyWithError(ctx, "ERR T-Digest: overflow detected");
         }
     }
     RedisModule_CloseKey(key);
@@ -212,19 +211,19 @@ int TDigestSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     int current_pos = 0;
     int res = REDISMODULE_ERR;
     td_histogram_t **from_tdigests = NULL;
-    RedisModuleKey **from_keys = NULL;
     bool to_exists = false;
-    RedisModuleKey *keyDestination =
-        RedisModule_OpenKey(ctx, keyNameDestination, REDISMODULE_READ | REDISMODULE_WRITE);
+    RedisModuleKey *keyDestination = RedisModule_OpenKey(ctx, keyNameDestination, REDISMODULE_READ);
     // check if key existed already. If so, confirm it's of the proper type
     if (RedisModule_KeyType(keyDestination) != REDISMODULE_KEYTYPE_EMPTY) {
         if (RedisModule_ModuleTypeGetType(keyDestination) != TDigestSketchType) {
             RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+            RedisModule_CloseKey(keyDestination);
             goto cleanup;
         }
         tdigestToStart = RedisModule_ModuleTypeGetValue(keyDestination);
         to_exists = true;
     }
+    RedisModule_CloseKey(keyDestination);
     // parse numkeys
     long long numkeys = 1;
     if (RedisModule_StringToLongLong(argv[2], &numkeys) != REDISMODULE_OK) {
@@ -277,20 +276,24 @@ int TDigestSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         }
     }
     from_tdigests = (td_histogram_t **)__td_calloc(numkeys, sizeof(td_histogram_t *));
-    from_keys = (RedisModuleKey **)__td_calloc(numkeys, sizeof(RedisModuleKey *));
     for (current_pos = 0; current_pos < numkeys; current_pos++) {
         RedisModuleString *keyNameFrom = argv[current_pos + 3];
         // If the key is not the same as the destination key, open it
         // otherwise the key was already open
         if (RedisModule_StringCompare(keyNameDestination, keyNameFrom) != 0) {
-            from_keys[current_pos] = RedisModule_OpenKey(ctx, keyNameFrom, REDISMODULE_READ);
-            from_tdigests[current_pos] = RedisModule_ModuleTypeGetValue(from_keys[current_pos]);
+            RedisModuleKey *current_key = RedisModule_OpenKey(ctx, keyNameFrom, REDISMODULE_READ);
+            if (_TDigest_KeyCheck(ctx, current_key)) {
+                goto cleanup;
+            }
+            from_tdigests[current_pos] = RedisModule_ModuleTypeGetValue(current_key);
+            RedisModule_CloseKey(current_key);
         } else {
-            from_keys[current_pos] = keyDestination;
-            from_tdigests[current_pos] = tdigestToStart;
-        }
-        if (_TDigest_KeyCheck(ctx, from_keys[current_pos])) {
-            goto cleanup;
+            if (to_exists) {
+                from_tdigests[current_pos] = tdigestToStart;
+            } else {
+                RedisModule_ReplyWithError(ctx, "ERR T-Digest: key does not exist");
+                goto cleanup;
+            }
         }
         // if we haven't specified the COMPRESSION parameter we will use the
         // highest possible compression
@@ -308,30 +311,28 @@ int TDigestSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     }
 
     for (long long i = 0; i < numkeys; i++) {
-        td_merge(tdigestTo, from_tdigests[i]);
+        if (from_tdigests[i] != NULL) {
+            if (td_merge(tdigestTo, from_tdigests[i]) != 0) {
+                td_free(tdigestTo);
+                RedisModule_ReplyWithError(ctx, "ERR T-Digest: overflow detected");
+                goto cleanup;
+            }
+        }
     }
+    keyDestination = RedisModule_OpenKey(ctx, keyNameDestination, REDISMODULE_WRITE);
     if (RedisModule_ModuleTypeSetValue(keyDestination, TDigestSketchType, tdigestTo) !=
         REDISMODULE_OK) {
+        RedisModule_CloseKey(keyDestination);
         RedisModule_ReplyWithError(ctx, "ERR T-Digest: error setting value");
         goto cleanup;
     }
+    RedisModule_CloseKey(keyDestination);
     res = REDISMODULE_OK;
     RedisModule_ReplicateVerbatim(ctx);
     RedisModule_ReplyWithSimpleString(ctx, "OK");
 cleanup:
-    RedisModule_CloseKey(keyDestination);
-    for (size_t i = 0; i < current_pos; i++) {
-        RedisModuleString *keyNameFrom = argv[i + 3];
-        // If the key is not the same as the destination key, close it
-        if (RedisModule_StringCompare(keyNameDestination, keyNameFrom) != 0) {
-            RedisModule_CloseKey(from_keys[i]);
-        }
-    }
     if (from_tdigests)
         __td_free(from_tdigests);
-    if (from_keys)
-        __td_free(from_keys);
-
     return res;
 }
 
@@ -495,6 +496,12 @@ int TDigestSketch_RevRank(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
     return _TDigest_Rank(ctx, argv, argc, true);
 }
 
+static double _td_get_byrank(td_histogram_t *tdigest, const double total_observations,
+                             const double input_rank) {
+    const double input_p = input_rank / total_observations;
+    return td_quantile(tdigest, input_p);
+}
+
 /**
  * Helper method to utilize TDIGEST.BYRANK and TDIGEST.BYREVRANK common logic.
  */
@@ -529,27 +536,27 @@ static int _TDigest_ByRank(RedisModuleCtx *ctx, RedisModuleString *const *argv, 
     td_histogram_t *tdigest = RedisModule_ModuleTypeGetValue(key);
     double *values = (double *)__td_calloc(n_values, sizeof(double));
 
-    const double size = td_size(tdigest);
+    const double size = (double)td_size(tdigest);
     const double min = td_min(tdigest);
     const double max = td_max(tdigest);
     for (int i = 0; i < n_values; ++i) {
+        const double input_rank = input_ranks[i];
         // Nan if the sketch is empty
         if (size == 0) {
             values[i] = NAN;
             // when rank is 0:
             // the value of the largest observation if reverse
             // the value of the smallest observation if !reverse
-        } else if (input_ranks[i] == 0) {
+        } else if (input_rank == 0) {
             values[i] = reverse ? max : min;
             // when rank is larger or equal to the the sum of weights of all observations in the
             // sketch: -inf if reverse
             // +inf if !reverse
-        } else if (input_ranks[i] >= size) {
+        } else if (input_rank >= size) {
             values[i] = reverse ? -INFINITY : INFINITY;
         } else {
-            const double input_p = (input_ranks[i] / size);
-            const double cdf_input = reverse ? 1 - input_p : input_p;
-            values[i] = td_quantile(tdigest, cdf_input);
+            values[i] =
+                _td_get_byrank(tdigest, size, reverse ? (size - input_rank - 1) : input_rank);
         }
     }
 

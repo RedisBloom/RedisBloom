@@ -421,14 +421,14 @@ jobs:
 
   benchmark-bloom-oss-standalone:
     docker:
-      - image: redisfab/rmbuilder:6.2.7-x64-bionic
+      - image: redisfab/rmbuilder:6.2.7-x64-focal
     steps:
       - build-steps
       - benchmark-steps
 
   benchmark-bloom-oss-standalone-profiler:
     docker:
-      - image: redisfab/rmbuilder:6.2.7-x64-bionic
+      - image: redisfab/rmbuilder:6.2.7-x64-focal
     steps:
       - checkout-all
       - setup-automation
@@ -533,7 +533,7 @@ workflows:
           matrix:
             alias: build-with-redis-ver
             parameters:
-              redis_version: ["7", "unstable"]
+              redis_version: ["6.0", "7", "unstable"]
       - build-platforms:
           <<: *on-integ-and-version-tags
           context: common

@@ -417,6 +417,31 @@ class testTDigest:
                                                       "COMPRESSION", "10000000000000000000"
         )
 
+    def test_negative_tdigest_merge_crashes(self):
+        # reported crash on merge to self where key does not exist
+        self.cmd('FLUSHALL')
+        for _ in range(1,1000):
+            self.assertRaises(
+                redis.exceptions.ResponseError, self.cmd,
+                "tdigest.merge", "z", "5","z","z","z","z","z", "COMPRESSION", "3"
+            )
+
+
+    def test_negative_tdigest_merge_crashes_recursive(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd('tdigest.create x COMPRESSION 1000'))
+        self.assertOk(self.cmd('tdigest.create y COMPRESSION 1000'))
+        self.assertOk(self.cmd('tdigest.add x 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20'))
+        self.assertOk(self.cmd('tdigest.add y 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120'))
+        try:
+            for x in range(1,500):
+                self.cmd('tdigest.merge z 5 x y x y x')
+                self.cmd('tdigest.merge z 5 z z z z z')
+        except redis.exceptions.ResponseError as e:
+            error_str = e.__str__()
+            self.assertTrue("overflow detected" in error_str)
+
+
     def test_tdigest_min_max(self):
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "tdigest"))
@@ -670,8 +695,7 @@ class testTDigest:
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
         # insert datapoints into sketch
-        for x in range(1, 11):
-            self.assertOk(self.cmd("tdigest.add", "tdigest", x))
+        self.assertOk(self.cmd("tdigest.add tdigest 1 2 3 4 5 6 7 8 9 10"))
 
         # rank 0 is precise ( equal to minimum )
         self.assertEqual(1, float(self.cmd("tdigest.byrank", "tdigest", 0)[0]))
@@ -697,6 +721,15 @@ class testTDigest:
         self.assertEqual("-inf", self.cmd("tdigest.byrevrank", "tdigest", 100)[0])
         # inverse rank of N-1
         self.assertEqual(1.0, float(self.cmd("tdigest.byrevrank", "tdigest", 9)[0]))
+
+        # reset the sketch
+        self.assertOk(self.cmd("tdigest.reset", "tdigest"))
+        self.assertOk(self.cmd("TDIGEST.ADD tdigest 1 2 2 3 3 3 4 4 4 4 5 5 5 5 5"))
+        expected_revrank = ['5', '5', '5', '5', '5', '4', '4', '4', '4', '3', '3', '3', '2', '2', '1', '-inf']
+        expected_rank = ['inf', '5', '5', '5', '5', '5', '4', '4', '4', '4', '3', '3', '3', '2', '2', '1']
+        self.assertEqual(expected_revrank, self.cmd("TDIGEST.BYREVRANK tdigest 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15"))
+        self.assertEqual(expected_rank, self.cmd("TDIGEST.BYRANK tdigest 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1 0"))
+        self.assertEqual(expected_rank [1:], expected_revrank[:-1])
 
     def test_negative_tdigest_byrank(self):
         self.cmd('FLUSHALL')

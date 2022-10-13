@@ -58,7 +58,9 @@ class testTopK():
     def test_add_query_count(self):
         self.cmd('FLUSHALL')
         self.assertTrue(self.cmd('topk.reserve', 'topk', '20', '50', '5', '0.9'))
+        yield 1
         self.env.dumpAndReload(restart=True) # prevent error `Background save already in progress`
+        yield 2
 
         self.cmd('topk.add', 'topk', 'bar', 'baz', '42')
         self.assertEqual([1], self.cmd('topk.query', 'topk', 'bar'))
