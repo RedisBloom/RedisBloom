@@ -496,6 +496,12 @@ int TDigestSketch_RevRank(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
     return _TDigest_Rank(ctx, argv, argc, true);
 }
 
+static double _td_get_byrank(td_histogram_t *tdigest, const double total_observations,
+                             const double input_rank) {
+    const double input_p = input_rank / total_observations;
+    return td_quantile(tdigest, input_p);
+}
+
 /**
  * Helper method to utilize TDIGEST.BYRANK and TDIGEST.BYREVRANK common logic.
  */
@@ -530,27 +536,27 @@ static int _TDigest_ByRank(RedisModuleCtx *ctx, RedisModuleString *const *argv, 
     td_histogram_t *tdigest = RedisModule_ModuleTypeGetValue(key);
     double *values = (double *)__td_calloc(n_values, sizeof(double));
 
-    const double size = td_size(tdigest);
+    const double size = (double)td_size(tdigest);
     const double min = td_min(tdigest);
     const double max = td_max(tdigest);
     for (int i = 0; i < n_values; ++i) {
+        const double input_rank = input_ranks[i];
         // Nan if the sketch is empty
         if (size == 0) {
             values[i] = NAN;
             // when rank is 0:
             // the value of the largest observation if reverse
             // the value of the smallest observation if !reverse
-        } else if (input_ranks[i] == 0) {
+        } else if (input_rank == 0) {
             values[i] = reverse ? max : min;
             // when rank is larger or equal to the the sum of weights of all observations in the
             // sketch: -inf if reverse
             // +inf if !reverse
-        } else if (input_ranks[i] >= size) {
+        } else if (input_rank >= size) {
             values[i] = reverse ? -INFINITY : INFINITY;
         } else {
-            const double input_p = (input_ranks[i] / size);
-            const double cdf_input = reverse ? 1 - input_p : input_p;
-            values[i] = td_quantile(tdigest, cdf_input);
+            values[i] =
+                _td_get_byrank(tdigest, size, reverse ? (size - input_rank - 1) : input_rank);
         }
     }
 

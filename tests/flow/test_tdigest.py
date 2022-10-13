@@ -695,8 +695,7 @@ class testTDigest:
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
         # insert datapoints into sketch
-        for x in range(1, 11):
-            self.assertOk(self.cmd("tdigest.add", "tdigest", x))
+        self.assertOk(self.cmd("tdigest.add", "tdigest", "1 2 3 4 5 6 7 8 9 10"))
 
         # rank 0 is precise ( equal to minimum )
         self.assertEqual(1, float(self.cmd("tdigest.byrank", "tdigest", 0)[0]))
@@ -722,6 +721,15 @@ class testTDigest:
         self.assertEqual("-inf", self.cmd("tdigest.byrevrank", "tdigest", 100)[0])
         # inverse rank of N-1
         self.assertEqual(1.0, float(self.cmd("tdigest.byrevrank", "tdigest", 9)[0]))
+
+        # reset the sketch
+        self.assertOk(self.cmd("tdigest.reset", "tdigest"))
+        self.assertOk(self.cmd("TDIGEST.ADD tdigest 1 2 2 3 3 3 4 4 4 4 5 5 5 5 5"))
+        expected_revrank = ['5', '5', '5', '5', '5', '4', '4', '4', '4', '3', '3', '3', '2', '2', '1', '-inf']
+        expected_rank = ['inf', '5', '5', '5', '5', '5', '4', '4', '4', '4', '3', '3', '3', '2', '2', '1']
+        self.assertEqual(expected_revrank, self.cmd("TDIGEST.BYREVRANK tdigest 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15"))
+        self.assertEqual(expected_rank, self.cmd("TDIGEST.BYRANK tdigest 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1 0"))
+        self.assertEqual(expected_rank [1:], expected_revrank[:-1])
 
     def test_negative_tdigest_byrank(self):
         self.cmd('FLUSHALL')
