@@ -167,8 +167,10 @@ class testTopK():
         self.assertEqual(['foo', 'baz', 'bar'], heapList)
 
         info = self.cmd('topk.info', 'topk')
-        expected_info = ['k', 3, 'width', 8, 'depth', 7, 'decay', '0.90000000000000002']
-        self.assertEqual(expected_info, info)
+        expected_info = ['k', 3, 'width', 8, 'depth', 7, 'decay']
+        expected_decay = float('0.90000000000000002')
+        self.assertEqual(expected_info, info[:-1])
+        self.assertEqual(expected_decay, float(info[-1:][0]))
 
     def test_list_with_count(self):
         self.cmd('FLUSHALL')
