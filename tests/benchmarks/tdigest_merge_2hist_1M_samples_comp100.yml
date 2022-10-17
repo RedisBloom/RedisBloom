@@ -13,6 +13,5 @@ dbconfig:
       keyspacelen: 2
 
 clientconfig:
-  benchmark_type: "read-only"
   tool: memtier_benchmark
-  arguments: "--test-time 180 -c 32 -t 1 --hide-histogram --command 'TDIGEST.MERGE tdigest-0 tdigest-1'"
+  arguments: "--test-time 180 -c 32 -t 1 --hide-histogram --command 'TDIGEST.MERGE tdigest-0 1 tdigest-1'"

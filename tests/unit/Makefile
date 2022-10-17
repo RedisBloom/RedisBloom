@@ -37,8 +37,6 @@ MK_CUSTOM_CLEAN=1
 
 include $(MK)/defs
 
-CC=gcc
-
 _SOURCES=\
 	test-basic.c \
 	test-cuckoo.c \
