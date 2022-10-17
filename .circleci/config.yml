@@ -548,8 +548,7 @@ workflows:
               platform: [bionic, focal, jammy]
       - build-macos:
           context: common
-          #@@ <<: *on-integ-and-version-tags
-          <<: *on-any-branch
+          <<: *on-integ-and-version-tags
       - upload-artifacts:
           name: upload-artifacts-to-staging-lab
           staging-lab: "1"
