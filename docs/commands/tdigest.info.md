@@ -1,15 +1,19 @@
 Returns compression, capacity, total merged and unmerged nodes, the total compressions 
 made up to date on that key, and merged and unmerged weight.
 
-### Parameters:
 
-* **key**: The name of the sketch (a t-digest data structure)
+## Required arguments
 
-@return
+<details open><summary><code>key</code></summary> 
+
+is key name for an existing t-digest sketch.
+</details>
+
+## Return value
 
 @array-reply with information about the sketch.
 
-@examples
+## Examples
 
 ```
 redis> tdigest.info t-digest
