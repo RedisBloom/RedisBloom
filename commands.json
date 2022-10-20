@@ -192,6 +192,38 @@
       {
         "name": "key",
         "type": "key"
+      },
+      {
+        "name": "single_value",
+        "type": "oneof",
+        "optional": true,
+        "arguments": [
+            {
+              "name": "capacity",
+              "type": "pure-token",
+              "token": "CAPACITY"
+            },
+            {
+              "name": "size",
+              "type": "pure-token",
+              "token": "SIZE"
+            },
+            {
+              "name": "filters",
+              "type": "pure-token",
+              "token": "FILTERS"
+            },
+            {
+              "name": "items",
+              "type": "pure-token",
+              "token": "ITEMS"
+            },
+            {
+              "name": "expansion",
+              "type": "pure-token",
+              "token": "EXPANSION"
+            }
+        ]
       }
     ],
     "since": "1.0.0",
@@ -677,6 +709,7 @@
   "TOPK.COUNT": {
     "summary": "Return the count for one or more items are in a sketch",
     "complexity": "O(n) where n is the number of items",
+    "deprecated_since": "2.4",
     "arguments": [
       {
         "name": "key",
@@ -767,10 +800,6 @@
           {
             "name": "value",
             "type": "double"
-          },
-          {
-            "name": "weight",
-            "type": "double"
           }
         ]
       }
@@ -779,23 +808,6 @@
     "group": "tdigest"
   },
   "TDIGEST.MERGE": {
-    "summary": "Merges all of the values from 'source-key' keys to 'destination-key' sketch",
-    "complexity": "O(N), where N is the number of centroids",
-    "arguments": [
-      {
-        "name": "destination-key",
-        "type": "key"
-      },
-      {
-        "name": "source-key",
-        "type": "key",
-        "multiple": true
-      }
-    ],
-    "since": "2.4.0",
-    "group": "tdigest"
-  },
-  "TDIGEST.MERGESTORE": {
     "summary": "Merges all of the values from 'source-key' keys to 'destination-key' sketch",
     "complexity": "O(N*K), where N is the number of centroids and K being the number of input sketches",
     "arguments": [
@@ -828,6 +840,12 @@
             "type": "integer"
           }
         ]
+      },
+      {
+        "name": "override",
+        "type": "pure-token",
+        "token": "OVERRIDE",
+        "optional": true
       }
     ],
     "since": "2.4.0",
@@ -875,7 +893,7 @@
     "group": "tdigest"
   },
   "TDIGEST.CDF": {
-    "summary": "Returns the fraction of all points added which are <= value",
+    "summary": "Returns the fraction of all points added which are <= value. Multiple fractions can be returned with one call.",
     "complexity": "O(1)",
     "arguments": [
       {
@@ -884,7 +902,8 @@
       },
       {
         "name": "value",
-        "type": "double"
+        "type": "double",
+        "multiple": true
       }
     ],
     "since": "2.4.0",
@@ -905,6 +924,74 @@
       {
         "name": "high_cut_quantile",
         "type": "double"
+      }
+    ],
+    "since": "2.4.0",
+    "group": "tdigest"
+  },
+  "TDIGEST.RANK": {
+    "summary": "Retrieve the estimated rank of value (the number of observations in the sketch that are smaller than value + half the number of observations that are equal to value). Multiple ranks can be returned with one call.",
+    "complexity": "O(1)",
+    "arguments": [
+      {
+        "name": "key",
+        "type": "key"
+      },
+      {
+        "name": "value",
+        "type": "double",
+        "multiple": true
+      }
+    ],
+    "since": "2.4.0",
+    "group": "tdigest"
+  },
+  "TDIGEST.REVRANK": {
+    "summary": "Retrieve the estimated rank of value (the number of observations in the sketch that are larger than value + half the number of observations that are equal to value). Multiple ranks can be returned with one call.",
+    "complexity": "O(1)",
+    "arguments": [
+      {
+        "name": "key",
+        "type": "key"
+      },
+      {
+        "name": "value",
+        "type": "double",
+        "multiple": true
+      }
+    ],
+    "since": "2.4.0",
+    "group": "tdigest"
+  },
+  "TDIGEST.BYRANK": {
+    "summary": "Retrieve an estimation of the value with the given the rank. Multiple estimations can be returned with one call.",
+    "complexity": "O(1)",
+    "arguments": [
+      {
+        "name": "key",
+        "type": "key"
+      },
+      {
+        "name": "rank",
+        "type": "double",
+        "multiple": true
+      }
+    ],
+    "since": "2.4.0",
+    "group": "tdigest"
+  },
+  "TDIGEST.BYREVRANK": {
+    "summary": "Retrieve an estimation of the value with the given the reverse rank. Multiple estimations can be returned with one call.",
+    "complexity": "O(1)",
+    "arguments": [
+      {
+        "name": "key",
+        "type": "key"
+      },
+      {
+        "name": "reverse_rank",
+        "type": "double",
+        "multiple": true
       }
     ],
     "since": "2.4.0",

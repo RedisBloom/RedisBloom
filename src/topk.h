@@ -9,25 +9,22 @@
  * Implementation by Ariel Shtul
  */
 
-#ifndef RM_TOPK_H
-#define RM_TOPK_H
+#pragma once
 
-#include <stdint.h>  //  uint32_t
-#include <stddef.h>  //  size_t
-#include <stdbool.h> //  bool
-#include <string.h>  //  memcpy
-#include <stdlib.h>  //  calloc
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
+#include <string.h>
+#include <stdlib.h>
 
-#define REDISMODULE_MAIN
-
-#define REDIS_MODULE_TARGET
 #ifdef REDIS_MODULE_TARGET
 #include "redismodule.h"
+
 #define TOPK_CALLOC(count, size) RedisModule_Calloc(count, size)
 #define TOPK_FREE(ptr) RedisModule_Free(ptr)
 #else
-#define TOPK_CALLOC(count, size) calloc(count, size)
-#define TOPK_FREE(ptr) free(ptr)
+//#define TOPK_CALLOC(count, size) calloc(count, size)
+//#define TOPK_FREE(ptr) free(ptr)
 #endif
 
 #define TOPK_DECAY_LOOKUP_TABLE 256
@@ -85,5 +82,3 @@ size_t TopK_Count(TopK *topk, const char *item, size_t itemlen);
 
 /*  Returns full 'heapList' of items in 'topk' DS. */
 HeapBucket *TopK_List(TopK *topk);
-
-#endif

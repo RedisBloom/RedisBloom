@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
-from RLTest import Env
-from redis import ResponseError
+
+from common import *
 import time
 
 
@@ -59,7 +58,9 @@ class testTopK():
     def test_add_query_count(self):
         self.cmd('FLUSHALL')
         self.assertTrue(self.cmd('topk.reserve', 'topk', '20', '50', '5', '0.9'))
+        yield 1
         self.env.dumpAndReload(restart=True) # prevent error `Background save already in progress`
+        yield 2
 
         self.cmd('topk.add', 'topk', 'bar', 'baz', '42')
         self.assertEqual([1], self.cmd('topk.query', 'topk', 'bar'))
@@ -153,7 +154,7 @@ class testTopK():
 
         heapList = self.cmd('topk.list', 'topk')
         self.assertEqual(100, len(heapList))
-        res = sum(1 for i in range(len(heapList)) if int(heapList[i]) % 100 == 0)
+        res = sum(1 for i in range(len(heapList)) if (int(heapList[i]) % 100 == 0))
         self.assertGreater(res, 45)
 
     def test_no_init_params(self):
@@ -166,8 +167,10 @@ class testTopK():
         self.assertEqual(['foo', 'baz', 'bar'], heapList)
 
         info = self.cmd('topk.info', 'topk')
-        expected_info = ['k', 3, 'width', 8, 'depth', 7, 'decay', '0.90000000000000002']
-        self.assertEqual(expected_info, info)
+        expected_info = ['k', 3, 'width', 8, 'depth', 7, 'decay']
+        expected_decay = float('0.90000000000000002')
+        self.assertEqual(expected_info, info[:-1])
+        self.assertEqual(expected_decay, float(info[-1:][0]))
 
     def test_list_with_count(self):
         self.cmd('FLUSHALL')
@@ -183,4 +186,4 @@ class testTopK():
         self.cmd('topk.reserve', 'topk', '10', '8', '7', '1')
         self.cmd('topk.add', 'topk', 'j', 'h', 'd', 'j', 'h', 'h', 'j', 'g', 'e', 'g', 'i', 'f', 'g', 'f', 'a', 'j', 'c', 'i', 'a', 'd')
         heapList = self.cmd('topk.list', 'topk')
-        self.assertEqual(len(set(heapList)), len(heapList)) 
+        self.assertEqual(len(set(heapList)), len(heapList))
