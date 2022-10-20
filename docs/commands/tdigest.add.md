@@ -1,15 +1,22 @@
 Adds one or more observations to a t-digest sketch.
 
-#### Parameters:
+## Required arguments
 
-* **key** is key name for an existing t-digest sketch.
-* **value** is value of an observation (floating-point).
+<details open><summary><code>key</code></summary> 
 
-@return
+is key name for an existing t-digest sketch.
+</details>
+
+<details open><summary><code>value</code></summary> 
+
+is value of an observation (floating-point).
+</details>
+
+## Return value
 
 @simple-string-reply - `OK` if executed correctly, or @error-reply otherwise.
 
-@examples
+## Examples
 
 ```
 redis> TDIGEST.ADD t 1 2 3
