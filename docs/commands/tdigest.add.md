@@ -3,7 +3,7 @@ Adds one or more observations to a t-digest sketch.
 #### Parameters:
 
 * **key** is key name for an existing t-digest data structure.
-* **value**: is value of an observation (floating-point).
+* **value** is value of an observation (floating-point).
 
 @return
 
