@@ -23,22 +23,39 @@ The rank of the smallest observation, when there is a single smallest observatio
 ## Examples
 
 {{< highlight bash >}}
-redis> TDIGEST.CREATE t
+redis> TDIGEST.CREATE s COMPRESSION 1000
 OK
-redis> TDIGEST.ADD t 10 20 30 40 50
+redis> TDIGEST.ADD s 10 20 30 40 50 60
 OK
-redis> TDIGEST.RANK t -5 10 40 30 100
+redis> TDIGEST.RANK s 0 10 20 30 40 50 60 70
 1) (integer) -1
 2) (integer) 1
+3) (integer) 2
+4) (integer) 3
+5) (integer) 4
+6) (integer) 5
+7) (integer) 6
+8) (integer) 6
+redis> TDIGEST.REVRANK s 0 10 20 30 40 50 60 70
+1) (integer) 6
+2) (integer) 5
 3) (integer) 4
 4) (integer) 3
-5) (integer) 5
+5) (integer) 2
+6) (integer) 1
+7) (integer) 0
+8) (integer) -1  
 {{< / highlight >}}
   
-  
-redis> TDIGEST.CREATE s
+{{< highlight bash >}}
+redis> TDIGEST.CREATE s COMPRESSION 1000
 OK
-redis> TDIGEST.ADD s 10 10 10 10 20
+redis> TDIGEST.ADD s 10 10 10 10 20 20
 OK
-redis> TDIGEST.RANK s 10
+redis> TDIGEST.RANK s 10 20
 1) (integer) 2
+2) (integer) 5
+redis> TDIGEST.REVRANK s 10 20
+1) (integer) 4
+2) (integer) 1
+{{< / highlight >}}
