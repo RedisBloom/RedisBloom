@@ -12,7 +12,7 @@ is input value for which the rank should be estimated.
 
 ## Return value
 
-@array-reply - an array of results populated with rank_1, rank_2, ..., rank_N:
+@array-reply - an array of integers populated with rank_1, rank_2, ..., rank_N:
   
 - -1 - when value is smaller than the value of the smallest observation
 - The number of observations - when value is larger than the value of the largest observation
