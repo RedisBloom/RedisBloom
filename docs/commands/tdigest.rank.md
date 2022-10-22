@@ -18,7 +18,7 @@ is input value for which the rank should be estimated.
 - The number of observations - when value is larger than the value of the largest observation
 - Otherwise: an estimation of the number of (observations smaller than a given value + half the observations equal to the given value).
   
-The rank of the smallest observation, when there is a single smallest observation, is 1.
+The rank of the smallest observation, when there is a single smallest observation, is 0.
 
 ## Examples
 
