@@ -11,7 +11,7 @@ is key name for an existing t-digest sketch.
 
 ## Examples
 
-```
+{{< highlight bash >}}
 redis> TDIGEST.CREATE t
 OK
 redis> TDIGEST.MIN t
@@ -20,4 +20,4 @@ redis> TDIGEST.ADD t 3 4 1 2 5
 OK
 redis> TDIGEST.MIN t
 "1"
-```
+{{< / highlight >}}
