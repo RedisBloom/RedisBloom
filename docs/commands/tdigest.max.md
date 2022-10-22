@@ -1,6 +1,7 @@
 Get the maximum observation value from a sketch.
 
 ## Required arguments
+
 <details open><summary><code>key</code></summary>
 is key name for an existing t-digest sketch.
 </details>
