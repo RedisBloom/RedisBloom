@@ -1,7 +1,7 @@
-Get the minimum observation value from a sketch. 
+Get the minimum observation value from a sketch.
 
 ## Required arguments
-<details open><summary><code>key</code></summary> 
+<details open><summary><code>key</code></summary>
 is key name for an existing t-digest sketch.
 </details>
 
