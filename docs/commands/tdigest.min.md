@@ -1,17 +1,23 @@
-Get the minimum observation value from the sketch.
+Get the minimum observation value from a sketch. 
 
-#### Parameters:
+## Required arguments
+<details open><summary><code>key</code></summary> 
+is key name for an existing t-digest sketch.
+</details>
 
-* **key**: The name of the sketch (a t-digest data structure)
+## Return value
 
-@return
+@simple-string-reply of minimum observation value from a sketch. The result is always accurate. 'nan' if the sketch is empty.
 
-@simple-string-reply of minimum observation value from the sketch.
-Return 'nan' if the sketch is empty.
-
-@examples
+## Examples
 
 ```
-redis> TDIGEST.MIN t-digest
-"10"
+redis> TDIGEST.CREATE t
+OK
+redis> TDIGEST.MIN t
+"nan"
+redis> TDIGEST.ADD t 3 4 1 2 5
+OK
+redis> TDIGEST.MIN t
+"1"
 ```
