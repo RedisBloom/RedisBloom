@@ -15,24 +15,28 @@ is key name for an existing t-digest sketch.
 
 ## Examples
 
-```
-redis> tdigest.info t-digest
+{{< highlight bash >}}
+redis> TDIGEST.CREATE t
+OK
+redis> TDIGEST.ADD t 1 2 3 4 5
+OK
+redis> TDIGEST.INFO t
  1) Compression
  2) (integer) 100
  3) Capacity
  4) (integer) 610
  5) Merged nodes
- 6) (integer) 3
+ 6) (integer) 0
  7) Unmerged nodes
- 8) (integer) 2
+ 8) (integer) 5
  9) Merged weight
-10) "120"
+10) (integer) 0
 11) Unmerged weight
-12) "1000"
-13) Sum weights
-14) "10"
+12) (integer) 5
+13) Observations
+14) (integer) 5
 15) Total compressions
-16) (integer) 1
+16) (integer) 0
 17) Memory usage
-18) (integer) 96168
-```
+18) (integer) 9768
+{{< / highlight >}}
