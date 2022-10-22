@@ -1,20 +1,53 @@
-Retrieve an estimation of the value with the given the rank.
+Retrieve, for each input rank, an estimation of the value (floating-point) with that rank.
 
-Multiple estimations can be returned with one call.
+Multiple estimations can be retrieved in a signle call.
 
-#### Parameters:
+## Required arguments
 
-* **key**: The name of the sketch (a t-digest data structure)
-* **value**: input rank, for which the value will be determined
+<details open><summary><code>key</code></summary>
+is key name for an existing t-digest sketch.
+</details>
 
-@return
+<details open><summary><code>rank</code></summary>
 
-@array-reply - the command returns an array of results populated with value_1, value_2, ..., value_N.
+rank, for which the value will be determined.
 
-@examples
+0 is the rank of the value of the smallest observation.
 
-```
-redis> TDIGEST.BYRANK t-digest 100 200
-1) "5"
-2) "10"
-```
+_n_-1 is the rank of the value of the largest observation, where _n_ denotes the number of observations added to the sketch.
+
+</details>
+
+## Return value
+
+@array-reply - an array of floating-points populated with value_1, value_2, ..., value_N:
+
+- Return an accurate result when `rank` is 0 (the value of the smallest observation)
+- Return an accurate result when `rank` is _n_-1 (the value of the largest observation), where _n_ denotes the number of observations added to the sketch.
+- Return 'inf' when `rank` is equal to n or larger than _n_
+
+## Examples
+
+{{< highlight bash >}}
+redis> TDIGEST.CREATE t COMPRESSION 1000
+OK
+redis> TDIGEST.ADD t 1 2 2 3 3 3 4 4 4 4 5 5 5 5 5
+OK
+redis> TDIGEST.BYRANK t 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+ 1) "1"
+ 2) "2"
+ 3) "2"
+ 4) "3"
+ 5) "3"
+ 6) "3"
+ 7) "4"
+ 8) "4"
+ 9) "4"
+10) "4"
+11) "5"
+12) "5"
+13) "5"
+14) "5"
+15) "5"
+16) "inf"
+{{< / highlight >}}
