@@ -10,7 +10,7 @@ is key name for an existing t-digest sketch.
 
 <details open><summary><code>revrank</code></summary>
 
-Reverse rank, for which the value should be determined.
+Reverse rank, for which the value should be retrieved.
 
 0 is the reverse rank of the value of the largest observation.
   
