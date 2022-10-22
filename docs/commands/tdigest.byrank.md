@@ -10,7 +10,7 @@ is key name for an existing t-digest sketch.
 
 <details open><summary><code>rank</code></summary>
 
-Rank, for which the value should be determined.
+Rank, for which the value should be retrieved.
 
 0 is the rank of the value of the smallest observation.
 
