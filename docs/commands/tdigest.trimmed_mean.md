@@ -1,19 +1,42 @@
 Estimate the mean value from the sketch, excluding observation values outside the low and high cutoff quantiles.
 
-#### Parameters:
+## Required arguments
 
-* **key**: The name of the sketch (a t-digest data structure)
-* **low_cut_quantile**: Exclude observation values lower than this quantile
-* **high_cut_quantile**: Exclude observation values higher than this quantile
+<details open><summary><code>key</code></summary> 
+is key name for an existing t-digest sketch.
+</details>
 
-@return
+<details open><summary><code>low_cut_quantile</code></summary> 
+  
+Exclude observation values lower than this quantile.
 
-@simple-string-reply estimation of the mean value.
-Will return "nan" if the sketch is empty.
+Foating-point value in the range [0..1], should be lower than `high_cut_quantile`
+</details>
 
-@examples
+<details open><summary><code>high_cut_quantile</code></summary> 
+  
+Exclude observation values higher than this quantile.
 
-```
-redis> TDIGEST.TRIMMED_MEAN t-digest 0.1 0.9
-"9.500001"
-```
+Floating-point value in the range [0..1], should be higher than `low_cut_quantile`  
+  
+</details>
+
+## Return value
+
+@simple-string-reply estimation of the mean value. 'nan' if the sketch is empty.
+
+## Examples
+
+{{< highlight bash >}}
+redis> TDIGEST.CREATE t COMPRESSION 1000
+OK
+redis> TDIGEST.ADD t 1 2 3 4 5 6 7 8 9 10
+OK
+redis> TDIGEST.TRIMMED_MEAN t 0.1 0.6
+"4"
+redis> TDIGEST.TRIMMED_MEAN t 0.3 0.9
+"6.5"
+redis> TDIGEST.TRIMMED_MEAN t 0 1
+"5.5"
+
+{{< / highlight >}}
