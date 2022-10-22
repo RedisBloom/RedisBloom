@@ -12,7 +12,7 @@ is input value for which the reverse rank should be estimated.
 
 ## Return value
 
-@array-reply - an array of results populated with revrank_1, revrank_2, ..., revrank_N:
+@array-reply - an array of integers populated with revrank_1, revrank_2, ..., revrank_N:
   
 - -1 - when value is larger than the value of the largest observation
 - The number of observations - when value is smaller than the value of the smallest observation
