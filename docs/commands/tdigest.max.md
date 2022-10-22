@@ -1,7 +1,7 @@
-Get the maximum observation value from a sketch. 
+Get the maximum observation value from a sketch.
 
 ## Required arguments
-<details open><summary><code>key</code></summary> 
+<details open><summary><code>key</code></summary>
 is key name for an existing t-digest sketch.
 </details>
 
@@ -11,13 +11,13 @@ is key name for an existing t-digest sketch.
 
 ## Examples
 
-```
+{{< highlight bash >}}
 redis> TDIGEST.CREATE t
 OK
 redis> TDIGEST.MAX t
 "nan"
 redis> TDIGEST.ADD t 3 4 1 2 5
 OK
-redis> TDIGEST.MAX t
+redis>TDIGEST.MAX t
 "5"
-```
+{{< / highlight >}}
