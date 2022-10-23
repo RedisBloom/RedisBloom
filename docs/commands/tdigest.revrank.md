@@ -12,11 +12,11 @@ is input value for which the reverse rank should be estimated.
 
 ## Return value
 
-@array-reply - an array of integers populated with revrank_1, revrank_2, ..., revrank_N:
+@array-reply - an array of integers populated with revrank_1, revrank_2, ..., revrank_V:
   
-- -1 - when value is larger than the value of the largest observation
-- The number of observations - when value is smaller than the value of the smallest observation
-- Otherwise: an estimation of the number of (observations larger than a given value + half the observations equal to the given value).
+- -1 - when `value` is larger than the value of the largest observation.
+- The number of observations - when `value` is smaller than the value of the smallest observation.
+- Otherwise: an estimation of the number of (observations larger than `value` + half the observations equal to `value`).
   
 The reverse rank of the largest observation, when there is a single largest observation, is 0.  
 
