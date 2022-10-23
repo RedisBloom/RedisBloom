@@ -12,15 +12,15 @@ is key name for an existing t-digest sketch.
 
 Rank, for which the value should be retrieved.
 
-0 is the rank of the value of the smallest observation.
+0 is the rank of the value of the smallest observation (when there is a single smallest observation)
 
-_n_-1 is the rank of the value of the largest observation, where _n_ denotes the number of observations added to the sketch.
+_n_-1 is the rank of the value of the largest observation (when there is a single largest observation); _n_ denotes the number of observations added to the sketch.
 
 </details>
 
 ## Return value
 
-@array-reply - an array of floating-points populated with value_1, value_2, ..., value_N:
+@array-reply - an array of floating-points populated with value_1, value_2, ..., value_R:
 
 - Return an accurate result when `rank` is 0 (the value of the smallest observation)
 - Return an accurate result when `rank` is _n_-1 (the value of the largest observation), where _n_ denotes the number of observations added to the sketch.
