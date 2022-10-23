@@ -1,6 +1,4 @@
-Returns compression, capacity, total merged and unmerged nodes, the total compressions 
-made up to date on that key, and merged and unmerged weight.
-
+Return information and statistics for a t-digest sketch.
 
 ## Required arguments
 
@@ -12,6 +10,18 @@ is key name for an existing t-digest sketch.
 ## Return value
 
 @array-reply with information about the sketch.
+
+| Name                 | Description
+| -------------------- | -
+| `Compression`        | The compression (controllable tradeoff between accuracy and memory consumption) of the sketch 
+| `Capacity`           | 
+| `Merged nodes`       | Number of merged nodes
+| `Unmerged nodes`     | Number of buffered nodes
+| `Merged weight`      | 
+| `Unmerged weight`    | 
+| `Observations`       | Number of observations added to the sketch
+| `Total compressions` | 
+| `Memory usage`       | Number of bytes allocated for the sketch
 
 ## Examples
 
