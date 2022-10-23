@@ -9,7 +9,7 @@ is key name for an existing t-digest sketch.
 
 ## Return value
 
-@array-reply with information about the sketch.
+@array-reply with information about the sketch:
 
 | Name                 | Description
 | -------------------- | -
