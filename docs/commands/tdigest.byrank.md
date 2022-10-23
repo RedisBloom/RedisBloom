@@ -12,9 +12,9 @@ is key name for an existing t-digest sketch.
 
 Rank, for which the value should be retrieved.
 
-0 is the rank of the value of the smallest observation (when there is a single smallest observation)
+0 is the rank of the value of the smallest observation.
 
-_n_-1 is the rank of the value of the largest observation (when there is a single largest observation); _n_ denotes the number of observations added to the sketch.
+_n_-1 is the rank of the value of the largest observation; _n_ denotes the number of observations added to the sketch.
 
 </details>
 
