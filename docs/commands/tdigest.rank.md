@@ -17,12 +17,12 @@ is input value for which the rank should be estimated.
 - -1 - when `value` is smaller than the value of the smallest observation.
 - The number of observations - when `value` is larger than the value of the largest observation.
 - Otherwise: an estimation of the number of (observations smaller than `value` + half the observations equal to `value`).
-  
+
 0 is the rank of the value of the smallest observation.
 
 _n_-1 is the rank of the value of the largest observation; _n_ denotes the number of observations added to the sketch.
-  
-All values are -2 if the sketch is empty.  
+
+All values are -2 if the sketch is empty.
 
 ## Examples
 
