@@ -22,6 +22,8 @@ is input value for which the rank should be estimated.
 
 _n_-1 is the rank of the value of the largest observation; _n_ denotes the number of observations added to the sketch.
   
+All values are -2 if the sketch is empty.  
+
 ## Examples
 
 {{< highlight bash >}}
