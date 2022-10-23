@@ -19,8 +19,10 @@ is input value for which the reverse rank should be estimated.
 - Otherwise: an estimation of the number of (observations larger than `value` + half the observations equal to `value`).
   
 0 is the reverse rank of the value of the largest observation.
-  
+
 _n_-1 is the reverse rank of the value of the smallest observation; _n_ denotes the number of observations added to the sketch.
+
+All values are -2 if the sketch is empty.  
 
 ## Examples
 
