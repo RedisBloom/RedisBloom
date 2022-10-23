@@ -12,11 +12,11 @@ is input value for which the rank should be estimated.
 
 ## Return value
 
-@array-reply - an array of integers populated with rank_1, rank_2, ..., rank_N:
+@array-reply - an array of integers populated with rank_1, rank_2, ..., rank_V:
   
-- -1 - when value is smaller than the value of the smallest observation
-- The number of observations - when value is larger than the value of the largest observation
-- Otherwise: an estimation of the number of (observations smaller than a given value + half the observations equal to the given value).
+- -1 - when `value` is smaller than the value of the smallest observation.
+- The number of observations - when `value` is larger than the value of the largest observation.
+- Otherwise: an estimation of the number of (observations smaller than `value` + half the observations equal to `value`).
   
 The rank of the smallest observation, when there is a single smallest observation, is 0.
 
