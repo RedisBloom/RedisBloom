@@ -17,4 +17,4 @@ clientconfig:
     - threads: 2
     - pipeline: 1
     - keyspacelen: 10000000
-    - command: 'TDIGEST.ADD t-digest __rand_int__ 1'
+    - command: 'TDIGEST.ADD t-digest:500 __rand_int__'
