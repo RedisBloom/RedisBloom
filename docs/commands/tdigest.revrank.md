@@ -33,12 +33,12 @@ redis> TDIGEST.ADD s 10 20 30 40 50 60
 OK
 redis> TDIGEST.RANK s 0 10 20 30 40 50 60 70
 1) (integer) -1
-2) (integer) 1
-3) (integer) 2
-4) (integer) 3
-5) (integer) 4
-6) (integer) 5
-7) (integer) 6
+2) (integer) 0
+3) (integer) 1
+4) (integer) 2
+5) (integer) 3
+6) (integer) 4
+7) (integer) 5
 8) (integer) 6
 redis> TDIGEST.REVRANK s 0 10 20 30 40 50 60 70
 1) (integer) 6
