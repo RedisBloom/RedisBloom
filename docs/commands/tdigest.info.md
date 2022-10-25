@@ -13,14 +13,14 @@ is key name for an existing t-digest sketch.
 
 | Name                 | Description
 | -------------------- | -
-| `Compression`        | The compression (controllable tradeoff between accuracy and memory consumption) of the sketch 
-| `Capacity`           | 
+| `Compression`        | The compression (controllable trade-off between accuracy and memory consumption) of the sketch 
+| `Capacity`           | Size of the buffer used for storing the centroids and for the incoming unmerged datapoints
 | `Merged nodes`       | Number of merged nodes
-| `Unmerged nodes`     | Number of buffered nodes
-| `Merged weight`      | 
-| `Unmerged weight`    | 
+| `Unmerged nodes`     | Number of buffered nodes (uncompressed datapoints)
+| `Merged weight`      | Weight of values of the merged nodes
+| `Unmerged weight`    | Weight of values of the umerged nodes (uncompressed datapoints)
 | `Observations`       | Number of observations added to the sketch
-| `Total compressions` | 
+| `Total compressions` | Number of times this sketch compressed data together
 | `Memory usage`       | Number of bytes allocated for the sketch
 
 ## Examples
