@@ -8,17 +8,20 @@ is key name for an existing t-digest sketch.
 
 <details open><summary><code>low_cut_quantile</code></summary> 
   
-Exclude observation values lower than this quantile.
-
 Foating-point value in the range [0..1], should be lower than `high_cut_quantile`
+  
+When equal to 0: No low cut.
+  
+When higher than 0: Exclude observation values lower than this quantile.
 </details>
 
 <details open><summary><code>high_cut_quantile</code></summary> 
   
-Exclude observation values higher than this quantile.
-
 Floating-point value in the range [0..1], should be higher than `low_cut_quantile`  
   
+When lower than 1: Exclude observation values higher than or equal to this quantile.
+
+When equal to 1: No high cut.
 </details>
 
 ## Return value
