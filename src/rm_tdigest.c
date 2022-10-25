@@ -58,6 +58,16 @@ static int _TDigest_ParseCompressionParameter(RedisModuleCtx *ctx, const RedisMo
     return REDISMODULE_OK;
 }
 
+double _halfRoundDown(double f) {
+    double int_part;
+    double frac_part = modf(f, &int_part);
+
+    if (fabs(frac_part) <= 0.5)
+        return int_part;
+
+    return int_part >= 0.0 ? int_part + 1.0 : int_part - 1.0;
+}
+
 /**
  * Command: TDIGEST.CREATE {key} [{compression}]
  *
@@ -162,25 +172,34 @@ int TDigestSketch_Add(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
     if (_TDigest_KeyCheck(ctx, key) != REDISMODULE_OK)
         return REDISMODULE_ERR;
+    const size_t n_values = argc - 2;
+    double *vals = (double *)__td_calloc(n_values, sizeof(double));
 
-    td_histogram_t *tdigest = RedisModule_ModuleTypeGetValue(key);
-    double val = 0.0;
-    for (int i = 2; i < argc; i++) {
-        if (RedisModule_StringToDouble(argv[i], &val) != REDISMODULE_OK) {
+    for (int i = 0; i < n_values; ++i) {
+        if ((RedisModule_StringToDouble(argv[2 + i], &vals[i]) != REDISMODULE_OK) ||
+            isnan(vals[i])) {
             RedisModule_CloseKey(key);
+            __td_free(vals);
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing val parameter");
         }
-        if (val < -__DBL_MAX__ || val > __DBL_MAX__) {
+        if (vals[i] < -__DBL_MAX__ || vals[i] > __DBL_MAX__) {
             RedisModule_CloseKey(key);
+            __td_free(vals);
             return RedisModule_ReplyWithError(
                 ctx, "ERR T-Digest: val parameter needs to be a finite number");
         }
-        if (td_add(tdigest, val, 1) != 0) {
+    }
+
+    td_histogram_t *tdigest = RedisModule_ModuleTypeGetValue(key);
+    for (int i = 0; i < n_values; ++i) {
+        if (td_add(tdigest, vals[i], 1) != 0) {
             RedisModule_CloseKey(key);
+            __td_free(vals);
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: overflow detected");
         }
     }
     RedisModule_CloseKey(key);
+    __td_free(vals);
     RedisModule_ReplicateVerbatim(ctx);
     RedisModule_ReplyWithSimpleString(ctx, "OK");
     return REDISMODULE_OK;
@@ -435,9 +454,9 @@ static int _TDigest_Rank(RedisModuleCtx *ctx, RedisModuleString *const *argv, in
     const double min = td_min(tdigest);
     const double max = td_max(tdigest);
     for (int i = 0; i < n_values; ++i) {
-        // Nan if the sketch is empty
+        // -2 if the sketch is empty
         if (size == 0) {
-            ranks[i] = NAN;
+            ranks[i] = -2;
             // when value < value of the smallest observation:
             // n if reverse
             // -1 if !reverse
@@ -449,8 +468,11 @@ static int _TDigest_Rank(RedisModuleCtx *ctx, RedisModuleString *const *argv, in
         } else if (vals[i] > max) {
             ranks[i] = reverse ? -1 : size;
         } else {
-            const double cdf_to_absolute = round(td_cdf(tdigest, vals[i]) * size);
-            ranks[i] = round(reverse ? (size - cdf_to_absolute) : cdf_to_absolute);
+            const double cdf_val = td_cdf(tdigest, vals[i]);
+            const double cdf_val_prior_round = cdf_val * size;
+            const double cdf_to_absolute =
+                reverse ? round(cdf_val_prior_round) : _halfRoundDown(cdf_val_prior_round);
+            ranks[i] = reverse ? round(size - cdf_to_absolute) : cdf_to_absolute;
         }
     }
 
