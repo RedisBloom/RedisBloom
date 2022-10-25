@@ -1,22 +1,27 @@
 Adds one or more observations to a t-digest sketch.
 
-#### Parameters:
+## Required arguments
 
-* **key**: The name of the sketch (a t-digest data structure)
-* **val**: The value of the observation (floating-point). The value should be a finite number
+<details open><summary><code>key</code></summary> 
+is key name for an existing t-digest sketch.
+</details>
 
-@return
+<details open><summary><code>value</code></summary> 
+is value of an observation (floating-point).
+</details>
+
+## Return value
 
 @simple-string-reply - `OK` if executed correctly, or @error-reply otherwise.
 
-@examples
+## Examples
 
-```
-redis> TDIGEST.ADD t-digest 42 194
+{{< highlight bash >}}
+redis> TDIGEST.ADD t 1 2 3
 OK
-```
+{{< / highlight >}}
 
-```
-redis> TDIGEST.ADD t-digest string 1
+{{< highlight bash >}}
+redis> TDIGEST.ADD t string
 (error) ERR T-Digest: error parsing val parameter
-```
+{{< / highlight >}}
