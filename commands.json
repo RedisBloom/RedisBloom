@@ -911,7 +911,7 @@
   },
   "TDIGEST.TRIMMED_MEAN": {
     "summary": "Returns the trimmed mean ignoring values outside given cutoff upper and lower limits",
-    "complexity": "O(n)",
+    "complexity": "O(N) where N is the number of centroids",
     "arguments": [
       {
         "name": "key",
