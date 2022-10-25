@@ -188,11 +188,18 @@ class testTDigest:
         )
         # parsing
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", "a", 5
+            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", "a", 5, 10, 20
         )
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, "a"
+            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, "a", 10, 20
         )
+        # ensure nothing was added given  at least one input is not a valid floating-point value
+        td_info = parse_tdigest_info(self.cmd("tdigest.info", "tdigest"))
+        total_weight = float(td_info["Merged weight"]) + float(
+            td_info["Unmerged weight"]
+        )
+        self.assertEqual(0, total_weight)
+
         # val parameter needs to be a finite number
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", "-inf",
@@ -623,17 +630,17 @@ class testTDigest:
         # -1 when value < value of the smallest observation
         self.assertEqual(-1, float(self.cmd("tdigest.rank", "tdigest", -1)[0]))
         # rank from cdf of min
-        self.assertEqual(1, float(self.cmd("tdigest.rank", "tdigest", 0)[0]))
+        self.assertEqual(0, float(self.cmd("tdigest.rank", "tdigest", 0)[0]))
         # rank from cdf of max
-        self.assertEqual(20, float(self.cmd("tdigest.rank", "tdigest", 19)[0]))
+        self.assertEqual(19, float(self.cmd("tdigest.rank", "tdigest", 19)[0]))
         # rank from cdf above max
         self.assertEqual(20, float(self.cmd("tdigest.rank", "tdigest", 20)[0]))
         # rank within [min,max]
-        self.assertEqual(19, float(self.cmd("tdigest.rank", "tdigest", 18)[0]))
-        self.assertEqual(11, float(self.cmd("tdigest.rank", "tdigest", 10)[0]))
-        self.assertEqual(2, float(self.cmd("tdigest.rank", "tdigest", 1)[0]))
+        self.assertEqual(18, float(self.cmd("tdigest.rank", "tdigest", 18)[0]))
+        self.assertEqual(10, float(self.cmd("tdigest.rank", "tdigest", 10)[0]))
+        self.assertEqual(1, float(self.cmd("tdigest.rank", "tdigest", 1)[0]))
         # multiple inputs test
-        self.assertEqual([-1,20,10], self.cmd("tdigest.rank", "tdigest", -20, 20, 9))
+        self.assertEqual([-1,20,9], self.cmd("tdigest.rank", "tdigest", -20, 20, 9))
 
     def test_tdigest_revrank(self):
         self.cmd('FLUSHALL')
@@ -661,8 +668,20 @@ class testTDigest:
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "t", "compression","1000"))
         self.assertOk(self.cmd('TDIGEST.ADD', 't', '1', '2', '2', '3', '3', '3', '4', '4', '4', '4', '5', '5', '5', '5', '5'))
-        self.assertEqual([-1, 1, 2, 5, 8, 13, 15], self.cmd('TDIGEST.RANK', 't', '0', '1', '2', '3', '4', '5', '6'))
+        self.assertEqual([-1, 0, 2, 4, 8, 12, 15], self.cmd('TDIGEST.RANK', 't', '0', '1', '2', '3', '4', '5', '6'))
         self.assertEqual([15, 14, 13, 10, 7, 2, -1], self.cmd('TDIGEST.REVRANK', 't', '0', '1', '2', '3', '4', '5', '6'))
+
+        # RANK on an empty sketch
+        self.assertOk(self.cmd("tdigest.create", "empty"))
+        self.assertEqual([-2, -2], self.cmd('TDIGEST.RANK', 'empty', '0', '1'))
+
+        # REVRANK on an empty sketch
+        self.assertEqual([-2, -2], self.cmd('TDIGEST.REVRANK', 'empty', '0', '1'))
+
+        # round down RANK
+        self.assertOk(self.cmd("tdigest.create", "s", "compression","1000"))
+        self.assertOk(self.cmd('TDIGEST.ADD', 's', '10', '20', '30', '40', '50', '60'))
+        self.assertEqual([-1, 0, 1, 2, 3, 4, 5, 6], self.cmd('TDIGEST.RANK', 's', '0', '10', '20', '30', '40', '50', '60', '70'))
 
 
     def test_negative_tdigest_rank(self):
