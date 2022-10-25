@@ -1,17 +1,24 @@
-Get the maximum observation value from the sketch.
+Get the maximum observation value from a sketch.
 
-#### Parameters:
+## Required arguments
 
-* **key**: The name of the sketch (a t-digest data structure)
+<details open><summary><code>key</code></summary>
+is key name for an existing t-digest sketch.
+</details>
 
-@return
+## Return value
 
-@simple-string-reply of the maximum observation value from the sketch.
-Return 'nan' if the sketch is empty.
+@simple-string-reply of maximum observation value from a sketch. The result is always accurate. 'nan' if the sketch is empty.
 
-@examples
+## Examples
 
-```
-redis> TDIGEST.MAX t-digest
-"10"
-```
+{{< highlight bash >}}
+redis> TDIGEST.CREATE t
+OK
+redis> TDIGEST.MAX t
+"nan"
+redis> TDIGEST.ADD t 3 4 1 2 5
+OK
+redis>TDIGEST.MAX t
+"5"
+{{< / highlight >}}
