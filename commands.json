@@ -910,7 +910,7 @@
     "group": "tdigest"
   },
   "TDIGEST.TRIMMED_MEAN": {
-    "summary": "Returns the trimmed mean ignoring values outside given cutoff upper and lower limits",
+    "summary": "Retrieve an estimation of the mean value from the sketch, excluding observation values outside the low and high cutoff quantiles",
     "complexity": "O(N) where N is the number of centroids",
     "arguments": [
       {
