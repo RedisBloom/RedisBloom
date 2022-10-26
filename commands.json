@@ -755,7 +755,7 @@
     "group": "topk"
   },
   "TDIGEST.CREATE": {
-    "summary": "Allocate the memory and initialize the t-digest",
+    "summary": "Allocate memory and initialize a t-digest sketch",
     "complexity": "O(1)",
     "arguments": [
       {
@@ -773,7 +773,7 @@
     "group": "tdigest"
   },
   "TDIGEST.RESET": {
-    "summary": "Reset the sketch to zero - empty out the sketch and re-initialize it",
+    "summary": "Reset a t-digest sketch: empty the sketch and re-initialize it",
     "complexity": "O(1)",
     "arguments": [
       {
@@ -785,7 +785,7 @@
     "group": "tdigest"
   },
   "TDIGEST.ADD": {
-    "summary": "Adds one or more samples to a sketch",
+    "summary": "Adds one or more observations to a t-digest sketch",
     "complexity": "O(N) , where N is the number of samples to add",
     "arguments": [
       {
@@ -808,7 +808,7 @@
     "group": "tdigest"
   },
   "TDIGEST.MERGE": {
-    "summary": "Merges all of the values from 'source-key' keys to 'destination-key' sketch",
+    "summary": "Merges multiple t-digest sketches into a single sketch",
     "complexity": "O(N*K), where N is the number of centroids and K being the number of input sketches",
     "arguments": [
       {
@@ -852,7 +852,7 @@
     "group": "tdigest"
   },
   "TDIGEST.MIN": {
-    "summary": "Get minimum value from the sketch",
+    "summary": "Get the minimum observation value from a t-digest sketch",
     "complexity": "O(1)",
     "arguments": [
       {
@@ -864,7 +864,7 @@
     "group": "tdigest"
   },
   "TDIGEST.MAX": {
-    "summary": "Get maximum value from the sketch",
+    "summary": "Get the maximum observation value from a t-digest sketch",
     "complexity": "O(1)",
     "arguments": [
       {
@@ -876,7 +876,7 @@
     "group": "tdigest"
   },
   "TDIGEST.QUANTILE": {
-    "summary": "Returns an estimate of the cutoff such that a specified fraction of the data added to this TDigest would be less than or equal to the specified cutoffs. Multiple quantiles can be returned with one call.",
+    "summary": "Retrieve, for each input fraction, an estimation of the value (floating point) that is smaller than the given fraction of observations",
     "complexity": "O(1)",
     "arguments": [
       {
@@ -893,7 +893,7 @@
     "group": "tdigest"
   },
   "TDIGEST.CDF": {
-    "summary": "Returns the fraction of all points added which are <= value. Multiple fractions can be returned with one call.",
+    "summary": "Retrieve, for each input value, an estimation of the fraction (floating-point) of (observations smaller than the given value + half the observations equal to the given value)",
     "complexity": "O(1)",
     "arguments": [
       {
@@ -910,8 +910,8 @@
     "group": "tdigest"
   },
   "TDIGEST.TRIMMED_MEAN": {
-    "summary": "Returns the trimmed mean ignoring values outside given cutoff upper and lower limits",
-    "complexity": "O(n)",
+    "summary": "Retrieve an estimation of the mean value from the sketch, excluding observation values outside the low and high cutoff quantiles",
+    "complexity": "O(N) where N is the number of centroids",
     "arguments": [
       {
         "name": "key",
@@ -930,7 +930,7 @@
     "group": "tdigest"
   },
   "TDIGEST.RANK": {
-    "summary": "Retrieve the estimated rank of value (the number of observations in the sketch that are smaller than value + half the number of observations that are equal to value). Multiple ranks can be returned with one call.",
+    "summary": "Retrieve, for each floating-point input value, the estimated rank of the value (the number of observations in the sketch that are smaller than the value + half the number of observations that are equal to the value)",
     "complexity": "O(1)",
     "arguments": [
       {
@@ -947,7 +947,7 @@
     "group": "tdigest"
   },
   "TDIGEST.REVRANK": {
-    "summary": "Retrieve the estimated rank of value (the number of observations in the sketch that are larger than value + half the number of observations that are equal to value). Multiple ranks can be returned with one call.",
+    "summary": "Retrieve, for each floating-point input value, the estimated reverse rank of the value (the number of observations in the sketch that are larger than the value + half the number of observations that are equal to the value)",
     "complexity": "O(1)",
     "arguments": [
       {
@@ -964,7 +964,7 @@
     "group": "tdigest"
   },
   "TDIGEST.BYRANK": {
-    "summary": "Retrieve an estimation of the value with the given the rank. Multiple estimations can be returned with one call.",
+    "summary": "Retrieve, for each input rank, an estimation of the value (floating-point) with that rank",
     "complexity": "O(1)",
     "arguments": [
       {
@@ -981,7 +981,7 @@
     "group": "tdigest"
   },
   "TDIGEST.BYREVRANK": {
-    "summary": "Retrieve an estimation of the value with the given the reverse rank. Multiple estimations can be returned with one call.",
+    "summary": "Retrieve, for each input reverse rank, an estimation of the value (floating-point) with that reverse rank",
     "complexity": "O(1)",
     "arguments": [
       {
@@ -998,7 +998,7 @@
     "group": "tdigest"
   },
   "TDIGEST.INFO": {
-    "summary": "Returns information about a sketch",
+    "summary": "Return information and statistics for a t-digest sketch",
     "complexity": "O(1)",
     "arguments": [
       {
