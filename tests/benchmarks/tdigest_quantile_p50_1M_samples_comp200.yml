@@ -1,7 +1,7 @@
 version: 0.2
-name: "tdigest_quantile_p50_p95_p99_p999_1M_samples_comp100"
-description: "Benchmarking p50, p95, p99 and p999 calculation of 1 t-digest data sketch with 1M elements.
-              The T-Digest sketch has a compression of 100.
+name: "tdigest_quantile_p50_1M_samples_comp200"
+description: "Benchmarking p50 calculation of 1 t-digest data sketch with 1M elements.
+              The T-Digest sketch has a compression of 200.
         "
 remote:
  - type: oss-standalone
@@ -15,4 +15,4 @@ dbconfig:
 clientconfig:
   benchmark_type: "read-only"
   tool: memtier_benchmark
-  arguments: "--test-time 180 -c 32 -t 1 --hide-histogram --command 'TDIGEST.QUANTILE tdigest:comp:100 0.50 0.95 0.99 0.999'"
+  arguments: "--test-time 180 -c 32 -t 1 --hide-histogram --command 'TDIGEST.QUANTILE tdigest:comp:200 0.50'"
