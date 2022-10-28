@@ -7,11 +7,11 @@ remote:
  - type: oss-standalone
  - setup: redisbloom-m5
 dbconfig:
-  - dataset: "https://s3.amazonaws.com/benchmarks.redislabs/redisbloom/datasets/tdigest_1M_samples_comp100_v2.4.0_dump.rdb"
+  - dataset: "https://s3.amazonaws.com/benchmarks.redislabs/redisbloom/datasets/tdigest_1M_samples_compression-50-1000_v2.4.0_dump.rdb"
   - dataset_load_timeout_secs: 180
   - check:
-      keyspacelen: 2
+      keyspacelen: 5
 
 clientconfig:
   tool: memtier_benchmark
-  arguments: "--test-time 180 -c 32 -t 1 --hide-histogram --command 'TDIGEST.MERGE tdigest-0 1 tdigest-1'"
+  arguments: "--test-time 180 -c 32 -t 1 --hide-histogram --command 'TDIGEST.MERGE tdigest:comp:100 1 tdigest:comp:50'"
