@@ -1,4 +1,4 @@
-Get the maximum observation value from a sketch.
+Retrieves the maximum observation value from a sketch.
 
 ## Required arguments
 
