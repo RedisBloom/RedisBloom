@@ -1,4 +1,4 @@
-Retrieve, for each input fraction, an estimation of the value (floating point) that is smaller than the given fraction of observations.
+Retrieves, for each input fraction, an estimation of the value (floating point) that is smaller than the given fraction of observations.
 
 Multiple quantiles can be retrieved in a signle call.
 
