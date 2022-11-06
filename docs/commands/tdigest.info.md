@@ -1,4 +1,4 @@
-Retrieves information and statistics about a t-digest sketch.
+Returns information and statistics about a t-digest sketch.
 
 ## Required arguments
 
