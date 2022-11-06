@@ -3,7 +3,7 @@ Allocates memory and initializes a new t-digest sketch.
 ## Required arguments
 
 <details open><summary><code>key</code></summary> 
-is key name for an existing t-digest sketch.
+is key name for this new t-digest sketch.
 </details>
 
 ## Optional arguments
