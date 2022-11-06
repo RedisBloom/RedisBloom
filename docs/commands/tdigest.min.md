@@ -1,4 +1,4 @@
-Get the minimum observation value from a sketch.
+Retrieves the minimum observation value from a sketch.
 
 ## Required arguments
 <details open><summary><code>key</code></summary>
