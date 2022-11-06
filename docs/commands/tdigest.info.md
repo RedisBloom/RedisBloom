@@ -1,4 +1,4 @@
-Return information and statistics for a t-digest sketch.
+Retrieves information and statistics about a t-digest sketch.
 
 ## Required arguments
 
@@ -14,11 +14,11 @@ is key name for an existing t-digest sketch.
 | Name                 | Description
 | -------------------- | -
 | `Compression`        | The compression (controllable trade-off between accuracy and memory consumption) of the sketch 
-| `Capacity`           | Size of the buffer used for storing the centroids and for the incoming unmerged datapoints
-| `Merged nodes`       | Number of merged nodes
+| `Capacity`           | Size of the buffer used for storing the centroids and for the incoming unmerged observations
+| `Merged nodes`       | Number of merged observations
 | `Unmerged nodes`     | Number of buffered nodes (uncompressed observations)
 | `Merged weight`      | Weight of values of the merged nodes
-| `Unmerged weight`    | Weight of values of the umerged nodes (uncompressed observations)
+| `Unmerged weight`    | Weight of values of the unmerged nodes (uncompressed observations)
 | `Observations`       | Number of observations added to the sketch
 | `Total compressions` | Number of times this sketch compressed data together
 | `Memory usage`       | Number of bytes allocated for the sketch
