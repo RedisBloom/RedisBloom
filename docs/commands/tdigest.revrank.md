@@ -1,4 +1,4 @@
-Retrieve, for each floating-point input value, the estimated reverse rank of the value (the number of observations in the sketch that are larger than the value + half the number of observations that are equal to the value).
+Retrieves, for each floating-point input value, the estimated reverse rank of the value (the number of observations in the sketch that are larger than the value + half the number of observations that are equal to the value).
 
 Multiple reverse ranks can be retrieved in a signle call.
 
