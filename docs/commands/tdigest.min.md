@@ -1,4 +1,4 @@
-Returns the minimum observation value from a sketch.
+Returns the minimum observation value from a t-digest sketch.
 
 ## Required arguments
 <details open><summary><code>key</code></summary>
