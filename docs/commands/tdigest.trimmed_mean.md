@@ -1,4 +1,4 @@
-Retrieves an estimation of the mean value from the sketch, excluding observation values outside the low and high cutoff quantiles.
+Returns an estimation of the mean value from the sketch, excluding observation values outside the low and high cutoff quantiles.
 
 ## Required arguments
 
