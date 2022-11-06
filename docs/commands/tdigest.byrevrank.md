@@ -1,4 +1,4 @@
-Retrieves, for each input reverse rank, an estimation of the value (floating-point) with that reverse rank.
+Returns, for each input reverse rank, an estimation of the value (floating-point) with that reverse rank.
 
 Multiple estimations can be retrieved in a signle call.
 
