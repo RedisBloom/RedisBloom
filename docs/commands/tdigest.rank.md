@@ -1,4 +1,4 @@
-Retrieve, for each floating-point input value, the estimated rank of the value (the number of observations in the sketch that are smaller than the value + half the number of observations that are equal to the value).
+Returns, for each input value (floating-point), the estimated rank of the value (the number of observations in the sketch that are smaller than the value + half the number of observations that are equal to the value).
 
 Multiple ranks can be retrieved in a signle call.
 

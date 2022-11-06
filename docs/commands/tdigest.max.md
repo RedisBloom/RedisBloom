@@ -1,4 +1,4 @@
-Get the maximum observation value from a sketch.
+Returns the maximum observation value from a t-digest sketch.
 
 ## Required arguments
 

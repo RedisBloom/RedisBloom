@@ -1,4 +1,4 @@
-Reset a t-digest sketch: empty the sketch and re-initialize it.
+Resets a t-digest sketch: empty the sketch and re-initializes it.
 
 ## Required arguments
 <details open><summary><code>key</code></summary>

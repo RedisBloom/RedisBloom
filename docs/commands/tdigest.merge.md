@@ -1,4 +1,4 @@
-Merges multiple sketches into a single sketch.
+Merges multiple t-digest sketches into a single sketch.
 
 ## Required arguments
 <details open><summary><code>destination-key</code></summary>
