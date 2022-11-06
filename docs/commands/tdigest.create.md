@@ -1,4 +1,4 @@
-Allocates memory and initializes a t-digest sketch.
+Allocates memory and initializes a new t-digest sketch.
 
 ## Required arguments
 
