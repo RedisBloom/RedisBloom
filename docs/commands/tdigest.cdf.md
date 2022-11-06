@@ -1,4 +1,4 @@
-Retrieves, for each input value, an estimation of the fraction (floating-point) of (observations smaller than the given value + half the observations equal to the given value).
+Returns, for each input value, an estimation of the fraction (floating-point) of (observations smaller than the given value + half the observations equal to the given value).
 
 Multiple fractions can be retrieved in a signle call.
 
