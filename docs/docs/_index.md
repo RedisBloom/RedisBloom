@@ -50,4 +50,4 @@ Top-K
 Got questions? Feel free to ask at the [RedisBloom forum](https://forum.redis.com/c/modules/redisbloom).
 
 ## License
-RedisBloom is licensed under the [Redis Source Available License Agreement](https://redis.com/legal/licenses/)
+RedisBloom is licensed under the [Redis Source Available License 2.0 (RSALv2)](https://redis.com/legal/rsalv2-agreement) or the [Server Side Public License v1 (SSPLv1)](https://www.mongodb.com/licensing/server-side-public-license).
