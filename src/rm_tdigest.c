@@ -4,7 +4,6 @@
  * the Server Side Public License v1 (SSPLv1).
  */
 
-
 #include "rm_tdigest.h"
 #include "rmutil/util.h"
 #include "version.h"
