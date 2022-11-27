@@ -2,7 +2,6 @@
 [![CircleCI](https://circleci.com/gh/RedisBloom/RedisBloom.svg?style=svg)](https://circleci.com/gh/RedisBloom/RedisBloom)
 [![Dockerhub](https://img.shields.io/badge/dockerhub-redislabs%2Frebloom-blue)](https://hub.docker.com/r/redislabs/rebloom/tags/)
 [![codecov](https://codecov.io/gh/RedisBloom/RedisBloom/branch/master/graph/badge.svg)](https://codecov.io/gh/RedisBloom/RedisBloom)
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/RedisBloom/RedisBloom.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/RedisBloom/RedisBloom/alerts/)
 
 # RedisBloom: Probabilistic Data Structures for Redis
 [![Forum](https://img.shields.io/badge/Forum-RedisBloom-blue)](https://forum.redis.com/c/modules/redisbloom)
