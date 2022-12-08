@@ -8,13 +8,17 @@ type: docs
 [![Discord](https://img.shields.io/discord/697882427875393627?style=flat-square)](https://discord.gg/wXhwjCQ)
 [![GitHub](https://img.shields.io/static/v1?label=&message=repository&color=5961FF&logo=github)](https://github.com/RedisBloom/RedisBloom/)
 
-RedisBloom adds these probabilistic data structures to Redis: a scalable **Bloom filter**, a **cuckoo filter**, a **count-min sketch**, a **top-k**, and **t-digest**. These data structures trade perfect accuracy for extreme memory efficiency, so they're especially useful for big data and streaming applications.
+RedisBloom contains a set of useful probabilistic data structures. Probabilistic data structures allow developers to control the accuracy of returned results while gaining performance and reducing memory. 
+These data structures are ideal for analyzing streaming data and large datasets.
 
-**Bloom and cuckoo filters** are used to determine, with a high degree of certainty, whether an element is a member of a set.
+Use these data structures to answer a set of common questions concerning data streams:
 
-A **count-min sketch** is generally used to determine the frequency of events in a stream. You can query the count-min sketch get an estimate of the frequency of any given event.
+* **HyperLogLog**: How many unique values appeared so far in the data stream?
+* **Bloom filter** and **Cuckoo filter**: Did the value v already appear in the data stream?
+* **Count-min sketch**: How many times did the value v appear in the data stream?
+* **Top-K**: What are the k most frequent values in the data stream?
 
-A **top-k** maintains a list of _k_ most frequently seen items.
+Answering each of these questions accurately can require a huge amount of memory, but if you are willing to sacrifice accuracy, you can reduce the memory requirements drastically. Each of these data structures allows you to set a controllable tradeoff between accuracy and memory consumption.
 
 **t-digest** estimates percentiles based on a data stream or a large dataset of floating-point values.
 
