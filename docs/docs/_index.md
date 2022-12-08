@@ -14,13 +14,12 @@ These data structures are ideal for analyzing streaming data and large datasets.
 Use these data structures to answer a set of common questions concerning data streams:
 
 * **HyperLogLog**: How many unique values appeared so far in the data stream?
-* **Bloom filter** and **Cuckoo filter**: Did the value v already appear in the data stream?
-* **Count-min sketch**: How many times did the value v appear in the data stream?
-* **Top-K**: What are the k most frequent values in the data stream?
+* **Bloom filter** and **Cuckoo filter**: Did the value _v_ already appear in the data stream?
+* **Count-min sketch**: How many times did the value _v_ appear in the data stream?
+* **Top-K**: What are the _k_ most frequent values in the data stream?
+* **t-digest**: What percentile of a data stream has a specific characteristic?
 
 Answering each of these questions accurately can require a huge amount of memory, but if you are willing to sacrifice accuracy, you can reduce the memory requirements drastically. Each of these data structures allows you to set a controllable tradeoff between accuracy and memory consumption.
-
-**t-digest** estimates percentiles based on a data stream or a large dataset of floating-point values.
 
 ## Bloom vs. Cuckoo filters
 Bloom filters typically exhibit better performance and scalability when inserting
