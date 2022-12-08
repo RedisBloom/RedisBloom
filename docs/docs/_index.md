@@ -16,7 +16,7 @@ A **count-min sketch** is generally used to determine the frequency of events in
 
 A **top-k** maintains a list of _k_ most frequently seen items.
 
-**t-digest** estimates quantiles based on a data stream or a large dataset of floating-point values.
+**t-digest** estimates percentiles based on a data stream or a large dataset of floating-point values.
 
 ## Bloom vs. Cuckoo filters
 Bloom filters typically exhibit better performance and scalability when inserting
