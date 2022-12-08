@@ -17,7 +17,12 @@ Use these data structures to answer a set of common questions concerning data st
 * **Bloom filter** and **Cuckoo filter**: Did the value _v_ already appear in the data stream?
 * **Count-min sketch**: How many times did the value _v_ appear in the data stream?
 * **Top-K**: What are the _k_ most frequent values in the data stream?
-* **t-digest**: What percentile of a data stream has a specific characteristic?
+* **t-digest** can be used to answer these questions:
+  - What fraction of the values in the data stream are smaller than a given value?
+  - How many values in the data stream are smaller than a given value?
+  - Which value is smaller than _p_ percent of the values in the data stream? (what is the _p_-percentile value)?
+  - What is the mean value between the _p1_-percentile value and the _p2_-percentile value?
+  - What is the value of the _n_-th smallest / largest value in the data stream? (what is the value with [reverse] rank _n_)?
 
 Answering each of these questions accurately can require a huge amount of memory, but if you are willing to sacrifice accuracy, you can reduce the memory requirements drastically. Each of these data structures allows you to set a controllable tradeoff between accuracy and memory consumption.
 
@@ -27,16 +32,6 @@ items (so if you're often adding items to your dataset, then a Bloom filter may 
 Cuckoo filters are quicker on check operations and also allow deletions.
 
 ## About t-digest
-
-**t-digest** can be used to answer these questions:
-
-- What fraction of the values in the data stream are smaller than a given value?
-- How many values in the data stream are smaller than a given value?
-- Which value is smaller than _p_ percent of the values in the data stream? (what is the _p_-percentile value)?
-- What is the mean value between the _p1_-percentile value and the _p2_-percentile value?
-- What is the value of the _n_-th smallest / largest value in the data stream? (what is the value with [reverse] rank _n_)?
-
-As for any other probabilistic data structures, t-digest requires sublinear space and has controllable space-accuracy tradeoffs.
 
 Using t-digest is simple and straightforward:
 
