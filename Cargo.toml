@@ -1,0 +1,22 @@
+[package]
+name = "redisbloom"
+version = "99.99.99"
+authors = ["Guy Korland <guy.korland@redis.com>"]
+edition = "2021"
+description = " Probabilistic Datatypes Module for Redis "
+repository = "https://github.com/RedisBloom/RedisBloom"
+readme = "README.md" 
+license = "Redis Source Available License 2.0 (RSALv2) or the Server Side Public License v1 (SSPLv1)"
+keywords = ["redis", "bloom", "plugin"]
+categories = ["database-implementations"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "rebloom"
+
+[dependencies]
+redis-module = { version="1.0", features = ["experimental-api"]}
+growable-bloom-filter = "2.0.1"
+
+[profile.release]
+debug = 1

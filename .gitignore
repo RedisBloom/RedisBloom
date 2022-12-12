@@ -18,3 +18,8 @@
 .idea
 /tests/benchmarks/profile_*
 /bin/
+
+
+# Added by cargo
+
+/target
