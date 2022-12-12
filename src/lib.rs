@@ -24,6 +24,7 @@ redis_module! {
     commands: [
         ["BF.RESERVE", bloom_filter::reserve, "", 1, 1, 1],
         ["BF.ADD", bloom_filter::add, "", 1, 1, 1],
+        ["BF.MADD", bloom_filter::madd, "", 1, 1, 1],
         ["BF.EXISTS", bloom_filter::exits, "", 1, 1, 1],
     ],
 }

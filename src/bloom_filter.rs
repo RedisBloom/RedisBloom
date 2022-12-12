@@ -1,5 +1,7 @@
 use redis_module::native_types::RedisType;
-use redis_module::{Context, RedisError, RedisModuleTypeMethods, RedisResult, RedisString, NextArg, REDIS_OK};
+use redis_module::{
+    Context, NextArg, RedisError, RedisValue,  RedisModuleTypeMethods, RedisResult, RedisString, REDIS_OK,
+};
 use std::os::raw::c_void;
 
 use growable_bloom_filter::GrowableBloom;
@@ -61,30 +63,56 @@ pub fn reserve(ctx: &Context, args: Vec<RedisString>) -> RedisResult {
 
 // BF.ADD key item
 pub fn add(ctx: &Context, args: Vec<RedisString>) -> RedisResult {
-    if args.len() < 3 {
+    if args.len() != 3 {
         return Err(RedisError::WrongArity);
     }
 
     let mut args = args.into_iter().skip(1);
     let key = args.next_arg()?;
     let item = args.next_arg()?;
-    
+
     let key = ctx.open_key_writable(&key);
 
-    if let Some(bloom) = key.get_value::<GrowableBloom>(&BLOOM_FILTER_TYPE)? {
-        bloom.insert(item.as_slice());
+    let res = if let Some(bloom) = key.get_value::<GrowableBloom>(&BLOOM_FILTER_TYPE)? {
+        bloom.insert(item.as_slice())
     } else {
         let mut bloom = GrowableBloom::new(0.1, 1000);
-        bloom.insert(item.as_slice());
+        let res = bloom.insert(item.as_slice());
         key.set_value(&BLOOM_FILTER_TYPE, bloom)?;
-    }
-    REDIS_OK
+        res
+    };
+    Ok((res as i64).into())
 }
 
+// BF.MADD key item [item ...]
+pub fn madd(ctx: &Context, args: Vec<RedisString>) -> RedisResult {
+    if args.len() < 3 {
+        return Err(RedisError::WrongArity);
+    }
+
+    let mut args = args.into_iter().skip(1);
+    let key = args.next_arg()?;
+
+    let key = ctx.open_key_writable(&key);
+
+    let res = if let Some(bloom) = key.get_value::<GrowableBloom>(&BLOOM_FILTER_TYPE)? {
+        args.map(|item| {
+            (bloom.insert(item.as_slice()) as i64).into()
+        }).collect()
+    } else {
+        let mut bloom = GrowableBloom::new(0.1, 1000);
+        let res = args.map(|item| {
+            (bloom.insert(item.as_slice()) as i64).into()
+        }).collect();
+        key.set_value(&BLOOM_FILTER_TYPE, bloom)?;
+        res
+    };
+    Ok(RedisValue::Array(res))
+}
 
 // BF.EXISTS key item
 pub fn exits(ctx: &Context, args: Vec<RedisString>) -> RedisResult {
-    if args.len() < 3 {
+    if args.len() != 3 {
         return Err(RedisError::WrongArity);
     }
 
@@ -95,7 +123,7 @@ pub fn exits(ctx: &Context, args: Vec<RedisString>) -> RedisResult {
     let key = ctx.open_key(&key);
 
     if let Some(bloom) = key.get_value::<GrowableBloom>(&BLOOM_FILTER_TYPE)? {
-        Ok( (bloom.contains(item.as_slice()) as i64).into())
+        Ok((bloom.contains(item.as_slice()) as i64).into())
     } else {
         Ok(0i64.into())
     }
