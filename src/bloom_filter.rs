@@ -1,6 +1,7 @@
 use redis_module::native_types::RedisType;
 use redis_module::{
-    Context, NextArg, RedisError, RedisValue,  RedisModuleTypeMethods, RedisResult, RedisString, REDIS_OK,
+    Context, NextArg, RedisError, RedisModuleTypeMethods, RedisResult, RedisString, RedisValue,
+    REDIS_OK,
 };
 use std::os::raw::c_void;
 
@@ -8,6 +9,9 @@ use growable_bloom_filter::GrowableBloom;
 
 const BLOOM_FILTER_TYPE_NAME: &str = "MBbloom--";
 const BLOOM_FILTER_TYPE_VERSION: i32 = 1;
+const EXPANSION: &str = "EXPANSION";
+const NONSCALING: &str = "NONSCALING";
+
 pub static BLOOM_FILTER_TYPE: RedisType = RedisType::new(
     BLOOM_FILTER_TYPE_NAME,
     BLOOM_FILTER_TYPE_VERSION,
@@ -35,8 +39,8 @@ pub static BLOOM_FILTER_TYPE: RedisType = RedisType::new(
     },
 );
 
-unsafe extern "C" fn free(_value: *mut c_void) {
-    // Box::from_raw(value.cast::<MyType>());
+unsafe extern "C" fn free(value: *mut c_void) {
+    drop(Box::from_raw(value.cast::<GrowableBloom>()));
 }
 
 // BF.RESERVE key error_rate capacity [EXPANSION expansion] [NONSCALING]
@@ -47,15 +51,29 @@ pub fn reserve(ctx: &Context, args: Vec<RedisString>) -> RedisResult {
 
     let mut args = args.into_iter().skip(1);
     let key = args.next_arg()?;
-    let desired_error_prob = args.next_f64()?;
-    let est_insertions = args.next_u64()?;
+    let error_rate = args.next_f64()?;
+    let capacity = args.next_u64()?;
+    let mut expansion = 1;
+    let mut scaling = true;
+
+    while let Ok(arg) = args.next_str() {
+        match arg {
+            arg if arg.eq_ignore_ascii_case(EXPANSION) => {
+                expansion = args.next_u64().map_err(|_| RedisError::Str("ERR bad expansion"))?;
+            }
+            arg if arg.eq_ignore_ascii_case(NONSCALING) => {
+                scaling = false;
+            }
+            _ => () // ignore unknown arguments for backward
+        }
+    }
 
     let key = ctx.open_key_writable(&key);
 
     if let Some(_value) = key.get_value::<GrowableBloom>(&BLOOM_FILTER_TYPE)? {
         Err(RedisError::Str("ERR item exists"))
     } else {
-        let bloom = GrowableBloom::new(desired_error_prob, est_insertions as usize);
+        let bloom = GrowableBloom::new(error_rate, capacity as usize);
         key.set_value(&BLOOM_FILTER_TYPE, bloom)?;
         REDIS_OK
     }
@@ -96,14 +114,13 @@ pub fn madd(ctx: &Context, args: Vec<RedisString>) -> RedisResult {
     let key = ctx.open_key_writable(&key);
 
     let res = if let Some(bloom) = key.get_value::<GrowableBloom>(&BLOOM_FILTER_TYPE)? {
-        args.map(|item| {
-            (bloom.insert(item.as_slice()) as i64).into()
-        }).collect()
+        args.map(|item| (bloom.insert(item.as_slice()) as i64).into())
+            .collect()
     } else {
         let mut bloom = GrowableBloom::new(0.1, 1000);
-        let res = args.map(|item| {
-            (bloom.insert(item.as_slice()) as i64).into()
-        }).collect();
+        let res = args
+            .map(|item| (bloom.insert(item.as_slice()) as i64).into())
+            .collect();
         key.set_value(&BLOOM_FILTER_TYPE, bloom)?;
         res
     };
