@@ -513,74 +513,74 @@ on-perf-tags: &on-perf-tags
 
 workflows:
   version: 2
-  default-flow:
-    jobs:
-      - lint:
-          <<: *on-any-branch
-      - build:
-          <<: *not-on-integ-branch
-      # - static-analysis-infer:
-      #     <<: *on-any-branch
-      - coverage:
-          <<: *on-any-branch
-      - valgrind:
-          <<: *on-any-branch
-          requires:
-            - lint
-      - build:
-          name: build-with-redis-<<matrix.redis_version>>
-          <<: *on-integ-and-version-tags
-          matrix:
-            alias: build-with-redis-ver
-            parameters:
-              redis_version: ["6.0", "7", "unstable"]
-      - build-platforms:
-          <<: *on-integ-and-version-tags
-          context: common
-          matrix:
-            parameters:
-              platform: [jammy, focal, bionic, xenial, rocky8, centos7, bullseye]
-      - build-arm-platforms:
-          <<: *on-integ-and-version-tags
-          context: common
-          matrix:
-            parameters:
-              platform: [jammy, focal, bionic]
-      - build-macos:
-          context: common
-          <<: *on-integ-and-version-tags
-      - upload-artifacts:
-          name: upload-artifacts-to-staging-lab
-          staging-lab: "1"
-          context: common
-          <<: *on-integ-branch
-          requires:
-            - build-platforms
-            - build-arm-platforms
-            - build-macos
-      - upload-artifacts:
-          name: upload-release-artifacts
-          context: common
-          <<: *on-version-tags
-          requires:
-            - build-platforms
-            - build-arm-platforms
-            - build-macos
-      - release-qa-tests:
-          context: common
-          <<: *on-version-tags
-          requires:
-            - upload-release-artifacts
-      - benchmark-bloom-oss-standalone:
-          <<: *on-perf-tags
-          requires:
-            - lint
-          context: common
-      - benchmark-bloom-oss-standalone-profiler:
-          <<: *on-perf-tags
-          requires:
-            - lint
-          context: common
+  # default-flow:
+  #   jobs:
+  #     - lint:
+  #         <<: *on-any-branch
+  #     - build:
+  #         <<: *not-on-integ-branch
+  #     # - static-analysis-infer:
+  #     #     <<: *on-any-branch
+  #     - coverage:
+  #         <<: *on-any-branch
+  #     - valgrind:
+  #         <<: *on-any-branch
+  #         requires:
+  #           - lint
+  #     - build:
+  #         name: build-with-redis-<<matrix.redis_version>>
+  #         <<: *on-integ-and-version-tags
+  #         matrix:
+  #           alias: build-with-redis-ver
+  #           parameters:
+  #             redis_version: ["6.0", "7", "unstable"]
+  #     - build-platforms:
+  #         <<: *on-integ-and-version-tags
+  #         context: common
+  #         matrix:
+  #           parameters:
+  #             platform: [jammy, focal, bionic, xenial, rocky8, centos7, bullseye]
+  #     - build-arm-platforms:
+  #         <<: *on-integ-and-version-tags
+  #         context: common
+  #         matrix:
+  #           parameters:
+  #             platform: [jammy, focal, bionic]
+  #     - build-macos:
+  #         context: common
+  #         <<: *on-integ-and-version-tags
+  #     - upload-artifacts:
+  #         name: upload-artifacts-to-staging-lab
+  #         staging-lab: "1"
+  #         context: common
+  #         <<: *on-integ-branch
+  #         requires:
+  #           - build-platforms
+  #           - build-arm-platforms
+  #           - build-macos
+  #     - upload-artifacts:
+  #         name: upload-release-artifacts
+  #         context: common
+  #         <<: *on-version-tags
+  #         requires:
+  #           - build-platforms
+  #           - build-arm-platforms
+  #           - build-macos
+  #     - release-qa-tests:
+  #         context: common
+  #         <<: *on-version-tags
+  #         requires:
+  #           - upload-release-artifacts
+  #     - benchmark-bloom-oss-standalone:
+  #         <<: *on-perf-tags
+  #         requires:
+  #           - lint
+  #         context: common
+  #     - benchmark-bloom-oss-standalone-profiler:
+  #         <<: *on-perf-tags
+  #         requires:
+  #           - lint
+  #         context: common
 
   nightly:
     triggers:
