@@ -31,14 +31,14 @@ redis_module! {
         ["BF.MADD", bloom_filter::madd, "write deny-oom", 1, 1, 1],
         ["BF.EXISTS", bloom_filter::exits, "readonly", 1, 1, 1],
 
+        ["CF.RESERVE", cuckoo_filter::reserve, "write deny-oom", 1, 1, 1],
+        ["CF.ADD", cuckoo_filter::add, "write deny-oom", 1, 1, 1],
+        ["CF.EXISTS", cuckoo_filter::exits, "write deny-oom", 1, 1, 1],
+
         ///////////
         // TODO just place holders
-        ["CF.ADD", cuckoo_filter::add, "write deny-oom", 1, 1, 1],
-
         ["TOPK.ADD", top_k::add, "write deny-oom", 1, 1, 1],
-
         ["CMS.INCRBY", count_min_sketch::incr_by, "write deny-oom", 1, 1, 1],
-
         ["TDIGEST.ADD", t_digest::add, "write deny-oom", 1, 1, 1],
     ],
 }

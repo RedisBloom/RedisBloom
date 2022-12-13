@@ -17,6 +17,7 @@ name = "rebloom"
 [dependencies]
 redis-module = { version="1.0", features = ["experimental-api"]}
 growable-bloom-filter = "2.0.1"
+cuckoofilter = "0.5.0"
 
 [profile.release]
 debug = 1
