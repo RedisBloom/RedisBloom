@@ -29,7 +29,7 @@ docker run -d --name redis-stack-server -p 6379:6379 redis/redis-stack-server:la
 
 ### 2. Use RedisBloom with `redis-cli`
 ```
-docker exec -it redis-redisbloom bash
+docker exec -it redis/redis-stack-server bash
 
 # redis-cli
 # 127.0.0.1:6379>
