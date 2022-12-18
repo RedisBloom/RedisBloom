@@ -1,9 +1,10 @@
+use cuckoofilter::CuckooFilter;
 use redis_module::native_types::RedisType;
 use redis_module::{
-    Context, NextArg, RedisError, RedisModuleTypeMethods, RedisResult, RedisString, REDIS_OK};
-use std::os::raw::c_void;
+    Context, NextArg, RedisError, RedisModuleTypeMethods, RedisResult, RedisString, REDIS_OK,
+};
 use std::collections::hash_map::DefaultHasher;
-use cuckoofilter::CuckooFilter;
+use std::os::raw::c_void;
 
 const TYPE_NAME: &str = "MBbloomCF";
 const TYPE_VERSION: i32 = 1;
@@ -56,9 +57,11 @@ pub fn reserve(ctx: &Context, args: Vec<RedisString>) -> RedisResult {
     while let Ok(arg) = args.next_str() {
         match arg {
             arg if arg.eq_ignore_ascii_case(EXPANSION) => {
-                expansion = args.next_u64().map_err(|_| RedisError::Str("ERR bad expansion"))?;
+                expansion = args
+                    .next_u64()
+                    .map_err(|_| RedisError::Str("ERR bad expansion"))?;
             }
-            _ => () // ignore unknown arguments for backward
+            _ => (), // ignore unknown arguments for backward
         }
     }
 

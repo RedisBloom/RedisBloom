@@ -5,12 +5,15 @@ use redis_module::{
 };
 use std::os::raw::c_void;
 
-use growable_bloom_filter::GrowableBloom;
+use tdigest::TDigest;
 
 const TYPE_NAME: &str = "TDIS-TYPE";
 const TYPE_VERSION: i32 = 1;
-const EXPANSION: &str = "EXPANSION";
-const NONSCALING: &str = "NONSCALING";
+const COMPRESSION: &str = "COMPRESSION";
+
+struct Histogram {
+    tdigest: TDigest,
+}
 
 pub static T_DIGEST_TYPE: RedisType = RedisType::new(
     TYPE_NAME,
@@ -40,108 +43,93 @@ pub static T_DIGEST_TYPE: RedisType = RedisType::new(
 );
 
 unsafe extern "C" fn free(value: *mut c_void) {
-    drop(Box::from_raw(value.cast::<GrowableBloom>()));
+    drop(Box::from_raw(value.cast::<Histogram>()));
 }
 
-// BF.RESERVE key error_rate capacity [EXPANSION expansion] [NONSCALING]
-pub fn reserve(ctx: &Context, args: Vec<RedisString>) -> RedisResult {
-    if args.len() < 4 {
+// TDIGEST.CREATE key [COMPRESSION compression]
+pub fn create(ctx: &Context, args: Vec<RedisString>) -> RedisResult {
+    if args.len() < 2 {
         return Err(RedisError::WrongArity);
     }
 
     let mut args = args.into_iter().skip(1);
     let key = args.next_arg()?;
-    let error_rate = args.next_f64()?;
-    let capacity = args.next_u64()?;
-    let mut expansion = 1;
-    let mut scaling = true;
+    let mut compression = 1;
 
     while let Ok(arg) = args.next_str() {
         match arg {
-            arg if arg.eq_ignore_ascii_case(EXPANSION) => {
-                expansion = args.next_u64().map_err(|_| RedisError::Str("ERR bad expansion"))?;
+            arg if arg.eq_ignore_ascii_case(COMPRESSION) => {
+                // TODO handle "(error) ERR T-Digest: compression parameter needs to be a positive integer"
+                compression = args.next_u64().map_err(|_| {
+                    RedisError::Str("ERR T-Digest: error parsing compression parameter")
+                })?;
             }
-            arg if arg.eq_ignore_ascii_case(NONSCALING) => {
-                scaling = false;
-            }
-            _ => () // ignore unknown arguments for backward
+            _ => (), // ignore unknown arguments for backward
         }
     }
 
     let key = ctx.open_key_writable(&key);
 
-    if let Some(_value) = key.get_value::<GrowableBloom>(&T_DIGEST_TYPE)? {
-        Err(RedisError::Str("ERR item exists"))
+    if let Some(_value) = key.get_value::<Histogram>(&T_DIGEST_TYPE)? {
+        Err(RedisError::Str("ERR T-Digest: key already exists"))
     } else {
-        let bloom = GrowableBloom::new(error_rate, capacity as usize);
-        key.set_value(&T_DIGEST_TYPE, bloom)?;
+        let histogram = TDigest::new_with_size(compression as usize);
+        key.set_value(&T_DIGEST_TYPE, histogram)?;
         REDIS_OK
     }
 }
 
-// BF.ADD key item
+// TDIGEST.ADD key value [value ...]
 pub fn add(ctx: &Context, args: Vec<RedisString>) -> RedisResult {
-    if args.len() != 3 {
+    if args.len() < 3 {
         return Err(RedisError::WrongArity);
     }
 
     let mut args = args.into_iter().skip(1);
-    let key = args.next_arg()?;
-    let item = args.next_arg()?;
+    let key_string = args.next_arg()?;
+    let key = ctx.open_key_writable(&key_string);
 
-    let key = ctx.open_key_writable(&key);
-
-    let res = if let Some(bloom) = key.get_value::<GrowableBloom>(&T_DIGEST_TYPE)? {
-        bloom.insert(item.as_slice())
+    if let Some(histogram) = key.get_value::<Histogram>(&T_DIGEST_TYPE)? {
+        let values: Result<Vec<f64>, _> = args.map(|item| item.parse_float()).collect();
+        values.map_or(
+            Err(RedisError::Str("ERR T-Digest: error parsing val parameter")),
+            |values| {
+                histogram.tdigest = histogram.tdigest.merge_unsorted(values);
+                REDIS_OK
+            },
+        )
     } else {
-        let mut bloom = GrowableBloom::new(0.1, 1000);
-        let res = bloom.insert(item.as_slice());
-        key.set_value(&T_DIGEST_TYPE, bloom)?;
-        res
-    };
-    Ok((res as i64).into())
+        Err(RedisError::Str("ERR T-Digest: key does not exist"))
+    }
 }
 
-// BF.MADD key item [item ...]
-pub fn madd(ctx: &Context, args: Vec<RedisString>) -> RedisResult {
+// TDIGEST.QUANTILE key quantile [quantile ...]
+pub fn quantile(ctx: &Context, args: Vec<RedisString>) -> RedisResult {
     if args.len() < 3 {
         return Err(RedisError::WrongArity);
     }
 
     let mut args = args.into_iter().skip(1);
     let key = args.next_arg()?;
-
-    let key = ctx.open_key_writable(&key);
-
-    let res = if let Some(bloom) = key.get_value::<GrowableBloom>(&T_DIGEST_TYPE)? {
-        args.map(|item| (bloom.insert(item.as_slice()) as i64).into())
-            .collect()
-    } else {
-        let mut bloom = GrowableBloom::new(0.1, 1000);
-        let res = args
-            .map(|item| (bloom.insert(item.as_slice()) as i64).into())
-            .collect();
-        key.set_value(&T_DIGEST_TYPE, bloom)?;
-        res
-    };
-    Ok(RedisValue::Array(res))
-}
-
-// BF.EXISTS key item
-pub fn exits(ctx: &Context, args: Vec<RedisString>) -> RedisResult {
-    if args.len() != 3 {
-        return Err(RedisError::WrongArity);
-    }
-
-    let mut args = args.into_iter().skip(1);
-    let key = args.next_arg()?;
-    let item = args.next_arg()?;
-
     let key = ctx.open_key(&key);
 
-    if let Some(bloom) = key.get_value::<GrowableBloom>(&T_DIGEST_TYPE)? {
-        Ok((bloom.contains(item.as_slice()) as i64).into())
+    if let Some(histogram) = key.get_value::<Histogram>(&T_DIGEST_TYPE)? {
+        // TODO handle "(error) ERR T-Digest: quantile should be in [0,1]"
+
+        let quantiles: Result<Vec<f64>, _> = args.map(|item| item.parse_float()).collect();
+        quantiles.map_or(
+            Err(RedisError::Str(
+                "ERR T-Digest: error parsing quantile parameter",
+            )),
+            |quantiles| {
+                let results: Vec<RedisValue> = quantiles
+                    .iter()
+                    .map(|quantile| histogram.tdigest.estimate_quantile(*quantile).into())
+                    .collect();
+                Ok(results.into())
+            },
+        )
     } else {
-        Ok(0i64.into())
+        Err(RedisError::Str("ERR T-Digest: key does not exist"))
     }
 }

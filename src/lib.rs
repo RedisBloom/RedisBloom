@@ -7,10 +7,10 @@
 #[macro_use]
 extern crate redis_module;
 mod bloom_filter;
-mod cuckoo_filter;
 mod count_min_sketch;
-mod top_k;
+mod cuckoo_filter;
 mod t_digest;
+mod top_k;
 
 use bloom_filter::BLOOM_FILTER_TYPE;
 
@@ -35,10 +35,13 @@ redis_module! {
         ["CF.ADD", cuckoo_filter::add, "write deny-oom", 1, 1, 1],
         ["CF.EXISTS", cuckoo_filter::exits, "write deny-oom", 1, 1, 1],
 
+        ["TDIGEST.CREATE", t_digest::create, "write deny-oom", 1, 1, 1],
+        ["TDIGEST.ADD", t_digest::add, "write deny-oom", 1, 1, 1],
+        ["TDIGEST.QUANTILE", t_digest::quantile, "write deny-oom", 1, 1, 1],
+
         ///////////
         // TODO just place holders
         ["TOPK.ADD", top_k::add, "write deny-oom", 1, 1, 1],
         ["CMS.INCRBY", count_min_sketch::incr_by, "write deny-oom", 1, 1, 1],
-        ["TDIGEST.ADD", t_digest::add, "write deny-oom", 1, 1, 1],
     ],
 }

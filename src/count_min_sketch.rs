@@ -59,12 +59,14 @@ pub fn reserve(ctx: &Context, args: Vec<RedisString>) -> RedisResult {
     while let Ok(arg) = args.next_str() {
         match arg {
             arg if arg.eq_ignore_ascii_case(EXPANSION) => {
-                expansion = args.next_u64().map_err(|_| RedisError::Str("ERR bad expansion"))?;
+                expansion = args
+                    .next_u64()
+                    .map_err(|_| RedisError::Str("ERR bad expansion"))?;
             }
             arg if arg.eq_ignore_ascii_case(NONSCALING) => {
                 scaling = false;
             }
-            _ => () // ignore unknown arguments for backward
+            _ => (), // ignore unknown arguments for backward
         }
     }
 
