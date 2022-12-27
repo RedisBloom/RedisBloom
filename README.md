@@ -1,6 +1,6 @@
 [![GitHub issues](https://img.shields.io/github/release/RedisLabsModules/redisbloom.svg)](https://github.com/RedisBloom/RedisBloom/releases/latest)
 [![CircleCI](https://circleci.com/gh/RedisBloom/RedisBloom.svg?style=svg)](https://circleci.com/gh/RedisBloom/RedisBloom)
-[![Dockerhub](https://img.shields.io/badge/dockerhub-redislabs%2Frebloom-blue)](https://hub.docker.com/r/redislabs/rebloom/tags/)
+[![Dockerhub](https://img.shields.io/docker/pulls/redis/redis-stack-server?label=redis-stack-server)](https://img.shields.io/docker/pulls/redis/redis-stack-server)
 [![codecov](https://codecov.io/gh/RedisBloom/RedisBloom/branch/master/graph/badge.svg)](https://codecov.io/gh/RedisBloom/RedisBloom)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/RedisBloom/RedisBloom.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/RedisBloom/RedisBloom/alerts/)
 
@@ -73,21 +73,36 @@ $ redis-server --loadmodule /path/to/redisbloom.so
 ```
 
 ## Client libraries
-| Project | Language | License | Author | URL | Comment |
-| ------- | -------- | ------- | ------ | --- | --- |
-| Jedis | Java | MIT | [Redis](https://redis.com) | [GitHub](https://github.com/redis/jedis) |
-| redisbloom-py | Python | BSD | [Redis](https://redis.com) | [GitHub](https://github.com/RedisBloom/redisbloom-py) |
-| JReBloom | Java | BSD | [Redis](https://redis.com) | [GitHub](https://github.com/RedisBloom/JReBloom) | Deprecated |
-| redisbloom-go | Go | BSD | [Redis](https://redis.com) | [GitHub](https://github.com/RedisBloom/redisbloom-go) |
-| rueidis | Go | Apache License 2.0 | [Rueian](https://github.com/rueian) | [GitHub](https://github.com/rueian/rueidis) |
-| rebloom | JavaScript | MIT | [Albert Team](https://cvitae.now.sh/) | [GitHub](https://github.com/albert-team/rebloom) |
-| phpredis-bloom | PHP | MIT | [Rafa Campoy](https://github.com/averias) | [GitHub](https://github.com/averias/phpredis-bloom) |
-| phpRebloom | PHP | MIT | [Alessandro Balasco](https://github.com/palicao) | [GitHub](https://github.com/palicao/phpRebloom) |
-| StackExchange.Redis (extensions) | .NET | MIT | [StackExchange](https://github.com/StackExchange/StackExchange.Redis) | [GitHub](https://gist.github.com/naile/96de4e9548c7b5fd6c0614009ffec755) |
-| redis-modules-sdk | TypeScript | BSD-3-Clause | [Dani Tseitlin](https://github.com/danitseitlin) | [GitHub](https://github.com/danitseitlin/redis-modules-sdk) |
-| redis-modules-java | Java | Apache License 2.0 | [dengliming](https://github.com/dengliming) | [GitHub](https://github.com/dengliming/redis-modules-java) |
-| NRedisBloom | .NET | MIT | [yadazula](https://github.com/yadazula) | [GitHub](https://github.com/yadazula/NRedisBloom) |
-| vertx-redis-client | Java | Apache License 2.0 | [Eclipse Vert.x](https://github.com/vert-x3) | [GitHub](https://github.com/vert-x3/vertx-redis-client) |
+| Project | Language | License | Author | Stars | Package | Comment |
+| ------- | -------- | ------- | ------ | ----- | ------- | ------- |
+| [jedis][jedis-url] | Java | MIT | [Redis][redis-url] | ![Stars][jedis-stars] | [Maven][jedis-package]||
+| [redis-py][redis-py-url] | Python | MIT | [Redis][redis-url] | ![Stars][redis-py-stars] | [pypi][redis-py-package]||
+| [node-redis][node-redis-url] | Python | MIT | [Redis][redis-url] | ![Stars][node-redis-stars] | [pypi][node-redis-package]||
+| [nredisstack][nredisstack-url] | Python | MIT | [Redis][redis-url] | ![Stars][nredisstack-stars] | [pypi][nredisstack-package]||
+| redisbloom-go | Go | BSD | [Redis](https://redis.com) |  ![Stars](https://img.shields.io/github/stars/RedisBloom/redisbloom-go.svg?style=social&amp;label=Star&amp;maxAge=2592000) | [GitHub](https://github.com/RedisBloom/redisbloom-go) ||
+| rueidis | Go | Apache License 2.0 | [Rueian](https://github.com/rueian) |  ![Stars](https://img.shields.io/github/stars/rueian/rueidis.svg?style=social&amp;label=Star&amp;maxAge=2592000) | [GitHub](https://github.com/rueian/rueidis) ||
+| rebloom | JavaScript | MIT | [Albert Team](https://cvitae.now.sh/) | ![Stars](https://img.shields.io/github/stars/albert-team/rebloom.svg?style=social&amp;label=Star&amp;maxAge=2592000) |[GitHub](https://github.com/albert-team/rebloom) ||
+| phpredis-bloom | PHP | MIT | [Rafa Campoy](https://github.com/averias) | ![Stars](https://img.shields.io/github/stars/averias/phpredis-bloom.svg?style=social&amp;label=Star&amp;maxAge=2592000) | [GitHub](https://github.com/averias/phpredis-bloom) ||
+| phpRebloom | PHP | MIT | [Alessandro Balasco](https://github.com/palicao) | ![Stars](https://img.shields.io/github/stars/palicao/phprebloom.svg?style=social&amp;label=Star&amp;maxAge=2592000) | [GitHub](https://github.com/palicao/phpRebloom) ||
+| vertx-redis-client | Java | Apache License 2.0 | [Eclipse Vert.x](https://github.com/vert-x3) | ![Stars](https://img.shields.io/github/stars/vert-x3/vertx-redis-client.svg?style=social&amp;label=Star&amp;maxAge=2592000) | [GitHub](https://github.com/vert-x3/vertx-redis-client) ||
+
+[redis-url]: https://redis.com
+
+[redis-py-url]: https://github.com/redis/redis-py
+[redis-py-stars]: https://img.shields.io/github/stars/redis/redis-py.svg?style=social&amp;label=Star&amp;maxAge=2592000
+[redis-py-package]: https://pypi.python.org/pypi/redis
+
+[jedis-url]: https://github.com/redis/jedis
+[jedis-stars]: https://img.shields.io/github/stars/redis/jedis.svg?style=social&amp;label=Star&amp;maxAge=2592000
+[Jedis-package]: https://search.maven.org/artifact/redis.clients/jedis
+
+[nredisstack-url]: https://github.com/redis/nredisstack
+[nredisstack-stars]: https://img.shields.io/github/stars/redis/nredisstack.svg?style=social&amp;label=Star&amp;maxAge=2592000
+[nredisstack-package]: https://www.nuget.org/packages/nredisstack/
+
+[node-redis-url]: https://github.com/redis/node-redis
+[node-redis-stars]: https://img.shields.io/github/stars/redis/node-redis.svg?style=social&amp;label=Star&amp;maxAge=2592000
+[node-redis-package]: https://www.npmjs.com/package/redis
 
 ## Documentation
 Documentation and full command reference at [redisbloom.io](http://redisbloom.io).
