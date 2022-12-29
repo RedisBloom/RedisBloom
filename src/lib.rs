@@ -39,9 +39,12 @@ redis_module! {
         ["TDIGEST.ADD", t_digest::add, "write deny-oom", 1, 1, 1],
         ["TDIGEST.QUANTILE", t_digest::quantile, "write deny-oom", 1, 1, 1],
 
+        ["CMS.INITBYDIM", count_min_sketch::init_by_dim, "write deny-oom", 1, 1, 1],
+        ["CMS.INITBYPROB", count_min_sketch::init_by_prob, "write deny-oom", 1, 1, 1],
+
         ///////////
         // TODO just place holders
         ["TOPK.ADD", top_k::add, "write deny-oom", 1, 1, 1],
-        ["CMS.INCRBY", count_min_sketch::incr_by, "write deny-oom", 1, 1, 1],
+        // ["CMS.INCRBY", count_min_sketch::incr_by, "write deny-oom", 1, 1, 1],
     ],
 }

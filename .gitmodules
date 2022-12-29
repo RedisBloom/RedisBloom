@@ -1,7 +1,3 @@
 [submodule "deps/readies"]
 	path = deps/readies
 	url = https://github.com/RedisLabsModules/readies.git
-[submodule "deps/t-digest-c"]
-	path = deps/t-digest-c
-	url = https://github.com/RedisBloom/t-digest-c
-	branch = v0.4.1
