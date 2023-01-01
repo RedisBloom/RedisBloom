@@ -47,6 +47,8 @@ Optional parameters:
 
 @integer-reply - "1" if the item did not exist in the filter, "0" otherwise.
 
+Note that false positives are possible: "0" may be returned even if such item was already added.
+
 @examples
 
 ```
