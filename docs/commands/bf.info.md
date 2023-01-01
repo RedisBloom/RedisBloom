@@ -8,7 +8,7 @@ Optional parameters:
 * **CAPACITY** Number of detected-as-unique items that can be stored in this Bloom filter before scaling would be required (included items already added)
 * **SIZE** Memory size: number of bytes allocated for this Bloom filter
 * **FILTERS** Number of filters
-* **ITEMS** Number detected-as-unique items added to this Bloom filter (items that caused at least one bit to be set in at least one filter). The real number of unique items is equal or larger.
+* **ITEMS** Number detected-as-unique items added to this Bloom filter (items that caused at least one bit to be set in at least one filter)
 * **EXPANSION** Expansion rate
 
 @return
