@@ -23,3 +23,4 @@ description: >
 | redis-modules-sdk | TypeScript | BSD-3-Clause | [Dani Tseitlin](https://github.com/danitseitlin) | [GitHub](https://github.com/danitseitlin/redis-modules-sdk) |
 | redis-modules-java | Java | Apache License 2.0 | [dengliming](https://github.com/dengliming) | [GitHub](https://github.com/dengliming/redis-modules-java) |
 | NRedisBloom | .NET | MIT | [yadazula](https://github.com/yadazula) | [GitHub](https://github.com/yadazula/NRedisBloom) |
+| Rustis | Rust | MIT | [Dahomey Technologies](https://github.com/dahomey-technologies) | [GitHub](https://github.com/dahomey-technologies/rustis) |
