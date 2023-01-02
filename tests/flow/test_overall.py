@@ -342,14 +342,18 @@ class testRedisBloom():
             env.cmd('bf.info', 'bf', 'wrong_value')
 
     def test_card(self):
-        self.cmd('FLUSHALL')
-        self.assertEqual(self.cmd('bf.card not_exist'), 0)
-        self.assertOk(self.cmd('bf.reserve', 'bf', '0.001', '100'))
-        self.assertEqual(self.cmd('bf.card bf'), 0)
-        self.assertOk(self.cmd('bf.add', 'bf', 'foo'))
-        self.assertEqual(self.cmd('bf.card bf'), 1)
-        with self.assertResponseError():
-            self.cmd('bf.card')
+        env = self.env
+        env.cmd('FLUSHALL')
+        env.assertEqual(env.cmd('bf.card not_exist'), 0)
+        env.assertOk(env.cmd('bf.reserve', 'bf', '0.001', '100'))
+        env.assertEqual(env.cmd('bf.card bf'), 0)
+        env.assertEqual(env.cmd('bf.add', 'bf', 'foo'), 1)
+        env.assertEqual(env.cmd('bf.card bf'), 1)
+        with env.assertResponseError():
+            env.cmd('bf.card')
+        with env.assertResponseError():
+            env.cmd('set', 'key:string', 'foo')
+            env.cmd('bf.card', 'key:string')
 
     def test_no_1_error_rate(self):
         env = self.env
