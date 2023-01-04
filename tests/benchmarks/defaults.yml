@@ -21,5 +21,6 @@ exporter:
   comparison:
     metrics:
       - "Ops/sec"
+      - "Tests.Overall.rps"
     mode: higher-better
     baseline-branch: master
