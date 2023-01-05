@@ -5,10 +5,10 @@ Return information about `key` filter.
 * **key**: Name of the key to return information about
 
 Optional parameters:
-* **CAPACITY** Capacity
-* **SIZE** Size
+* **CAPACITY** Number of unique items that can be stored in this Bloom filter before scaling would be required (including already added items)
+* **SIZE** Memory size: number of bytes allocated for this Bloom filter
 * **FILTERS** Number of filters
-* **ITEMS** Number of items inserted
+* **ITEMS** Number of items that were added to this Bloom filter and detected as unique (items that caused at least one bit to be set in at least one sub-filter)
 * **EXPANSION** Expansion rate
 
 @return

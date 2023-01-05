@@ -230,7 +230,7 @@
     "group": "bf"
   },
   "BF.CARD": {
-    "summary": "Returns the cardinality (number of items inserted) of the bloom filter stored at key.",
+    "summary": "Returns the cardinality of a Bloom filter",
     "complexity": "O(1)",
     "arguments": [
       {
