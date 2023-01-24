@@ -18,3 +18,9 @@ exporter:
       - "$.Tests.Overall.min_latency_ms"
       - '$."ALL STATS".*."Ops/sec"'
       - '$."ALL STATS".*."Latency"'
+  comparison:
+    metrics:
+      - "Ops/sec"
+      - "Tests.Overall.rps"
+    mode: higher-better
+    baseline-branch: master

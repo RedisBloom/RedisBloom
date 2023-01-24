@@ -28,7 +28,7 @@ docker run -d --name redis-stack-server -p 6379:6379 redis/redis-stack-server:la
 
 ### 2. Use RedisBloom with `redis-cli`
 ```
-docker exec -it redis-redisbloom bash
+docker exec -it redis/redis-stack-server bash
 
 # redis-cli
 # 127.0.0.1:6379>
@@ -87,6 +87,7 @@ $ redis-server --loadmodule /path/to/redisbloom.so
 | redis-modules-java | Java | Apache License 2.0 | [dengliming](https://github.com/dengliming) | [GitHub](https://github.com/dengliming/redis-modules-java) |
 | NRedisBloom | .NET | MIT | [yadazula](https://github.com/yadazula) | [GitHub](https://github.com/yadazula/NRedisBloom) |
 | vertx-redis-client | Java | Apache License 2.0 | [Eclipse Vert.x](https://github.com/vert-x3) | [GitHub](https://github.com/vert-x3/vertx-redis-client) |
+| rustis | Rust | MIT | [Dahomey Technologies](https://github.com/dahomey-technologies) | [GitHub](https://github.com/dahomey-technologies/rustis) |
 
 ## Documentation
 Documentation and full command reference at [redisbloom.io](http://redisbloom.io).
