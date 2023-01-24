@@ -25,8 +25,8 @@ typedef uint8_t CuckooBucket[1];
 typedef uint8_t MyCuckooBucket;
 
 typedef struct {
-    uint32_t numBuckets;
-    uint8_t bucketSize;
+    uint64_t numBuckets : 56;
+    uint64_t bucketSize : 8;
     MyCuckooBucket *data;
 } SubCF;
 
