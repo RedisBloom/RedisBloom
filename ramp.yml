@@ -22,3 +22,4 @@ capabilities:
     - flash
     - intershard_tls
     - intershard_tls_pass
+    - ipv6    
