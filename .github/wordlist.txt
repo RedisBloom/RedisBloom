@@ -49,6 +49,11 @@ Dockerhub
 io
 submodules
 scalable
+jedis
+npm
+nredisstack
+nuget
+pypy
 rustis
 RSALv
 SSPLv
