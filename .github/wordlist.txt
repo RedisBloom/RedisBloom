@@ -54,5 +54,6 @@ npm
 nredisstack
 nuget
 pypy
+rustis
 RSALv
 SSPLv
