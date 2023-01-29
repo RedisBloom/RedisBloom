@@ -292,7 +292,7 @@ commands:
 jobs:
   lint:
     docker:
-      - image: redislabsmodules/llvm-toolset:latest
+      - image: redisfab/rmbuilder:6.2.7-x64-bullseye
     steps:
       - early-returns
       - checkout-all
