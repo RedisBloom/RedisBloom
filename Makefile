@@ -3,7 +3,7 @@ ROOT=.
 
 include $(ROOT)/deps/readies/mk/main
 
-MK_ALL_TARGETS=bindirs deps build pack
+MK_ALL_TARGETS=bindirs deps build
 
 #----------------------------------------------------------------------------------------------
 
@@ -110,36 +110,8 @@ define CC_INCLUDES +=
 	$(ROOT)/deps/t-digest-c/src
 endef
 
-#CC_FLAGS = \
-#	-Wall \
-#	-fPIC \
-#	-std=gnu99 \
-#	-MMD -MF $(@:.o=.d) \
-#	-g -ggdb
-
-# LD_FLAGS += -g
-
 LD_LIBS += $(T_DIGEST_C)
 
-#ifeq ($(OS),linux)
-#SO_LD_FLAGS += \
-#	-shared \
-#	-Wl,-Bsymbolic,-Bsymbolic-functions \
-#	$(LD_FLAGS)
-#endif
-
-#ifeq ($(OS),macos)
-#SO_LD_FLAGS += \
-#	-bundle \
-#	-undefined dynamic_lookup \
-#	$(LD_FLAGS)
-#
-#DYLIB_LD_FLAGS += -dynamiclib $(LD_FLAGS)
-#endif
-
-#ifeq ($(PROFILE),1)
-#CC_FLAGS += -fno-omit-frame-pointer
-#endif
 
 ifeq ($(VG),1)
 	CC_DEFS += _VALGRIND
@@ -250,10 +222,7 @@ $(BINDIR)/%.o: $(SRCDIR)/%.c
 
 $(TARGET): $(BIN_DIRS) $(MISSING_DEPS) $(OBJECTS)
 	@echo Linking $@...
-	$(SHOW)$(CC) $(SO_LD_FLAGS) -o $@ $(OBJECTS) $(LD_LIBS)
-ifeq ($(OS),macos)
-	$(SHOW)$(CC) $(DYLIB_LD_FLAGS) -o $(patsubst %.so,%.dylib,$@) $(OBJECTS) $(LD_LIBS)
-endif
+	$(SHOW)$(CC) $(SO_LD_FLAGS) $(LD_FLAGS) -o $@ $(OBJECTS) $(LD_LIBS)
 
 #----------------------------------------------------------------------------------------------
 
