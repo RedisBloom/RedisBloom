@@ -954,6 +954,28 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     return REDISMODULE_OK;
 }
 
+static int BFCard_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx);
+    if (argc != 2) {
+        return RedisModule_WrongArity(ctx);
+    }
+
+    SBChain *bf;
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
+    if (key == NULL) {
+        RedisModule_ReplyWithLongLong(ctx, 0);
+        return REDISMODULE_OK;
+    }
+    int status = bfGetChain(key, &bf);
+    if (status != REDISMODULE_OK) {
+        return RedisModule_ReplyWithError(ctx, statusStrerror(status));
+    }
+
+    RedisModule_ReplyWithLongLong(ctx, bf->size);
+
+    return REDISMODULE_OK;
+}
+
 uint64_t CFSize(CuckooFilter *cf) {
     uint64_t numBuckets = 0;
     for (uint16_t ii = 0; ii < cf->numFilters; ++ii) {
@@ -1324,6 +1346,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     CREATE_ROCMD("bf.exists", BFCheck_RedisCommand);
     CREATE_ROCMD("bf.mexists", BFCheck_RedisCommand);
     CREATE_ROCMD("bf.info", BFInfo_RedisCommand);
+    CREATE_ROCMD("bf.card", BFCard_RedisCommand);
 
     // Bloom - Debug
     CREATE_ROCMD("bf.debug", BFDebug_RedisCommand);
