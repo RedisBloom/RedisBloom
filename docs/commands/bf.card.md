@@ -1,6 +1,6 @@
 Returns the cardinality of a Bloom filter - number of items that were added to a Bloom filter and detected as unique (items that caused at least one bit to be set in at least one sub-filter)
 
-## **Note**: this command will be available on the next release.
+ (since RedisBloom 2.4.4)
 
 ### Parameters
 
