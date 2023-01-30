@@ -1,23 +1,9 @@
 
-ifneq ($(filter coverage show-cov upload-cov,$(MAKECMDGOALS)),)
-export COV=1
-endif
-
-ifeq ($(VG),1)
-override VALGRIND:=1
-export VALGRIND
-endif
-
-ifeq ($(VALGRIND),1)
-override DEBUG:=1
-export DEBUG
-endif
-
-MK_ALL_TARGETS=bindirs deps build pack
-
 ROOT=.
-MK.pyver:=3
+
 include $(ROOT)/deps/readies/mk/main
+
+MK_ALL_TARGETS=bindirs deps build
 
 #----------------------------------------------------------------------------------------------
 
@@ -48,9 +34,9 @@ make all           # build all libraries and packages
 make run           # run redis-server with module
 make test          # run all tests
 
-make unit_tests    # run unit tests
+make unit-tests    # run unit tests
 
-make flow_tests    # run tests
+make flow-tests    # run tests
   TEST=name        # run test matching 'name'
   TEST_ARGS="..."  # RLTest arguments
   QUICK=1          # shortcut for GEN=1 AOF=0 SLAVES=0 OSS_CLUSTER=0
@@ -106,70 +92,38 @@ SRCDIR=.
 
 TARGET=$(BINROOT)/redisbloom.so
 
-CC_FLAGS = \
-	-D_GNU_SOURCE \
-	-DREDIS_MODULE_TARGET \
-	-DREDISMODULE_EXPERIMENTAL_API \
-	-include $(SRCDIR)/src/common.h \
-	-I. \
-	-Isrc \
-	-I$(ROOT)/deps \
-	-I$(ROOT)/deps/murmur2 \
-	-I$(ROOT)/deps/t-digest-c/src \
-	-Wall \
-	-fPIC \
-	-std=gnu99 \
-	-MMD -MF $(@:.o=.d) \
-	-g -ggdb
+CC_C_STD=gnu99
 
-#	-pedantic
-#	-fno-common
+CC_COMMON_H=$(SRCDIR)/src/common.h
 
-LD_FLAGS += -g
+define CC_DEFS +=
+	_GNU_SOURCE
+	REDIS_MODULE_TARGET
+	REDISMODULE_EXPERIMENTAL_API
+endef
 
-LD_LIBS += \
-	  -lc \
-	  -lm \
-	  -lpthread \
-	  $(T_DIGEST_C)
+define CC_INCLUDES +=
+	.
+	src
+	$(ROOT)/deps
+	$(ROOT)/deps/murmur2
+	$(ROOT)/deps/t-digest-c/src
+endef
 
-ifeq ($(OS),linux)
-SO_LD_FLAGS += \
-	-shared \
-	-Wl,-Bsymbolic,-Bsymbolic-functions \
-	$(LD_FLAGS)
-endif
+LD_LIBS += $(T_DIGEST_C)
 
-ifeq ($(OS),macos)
-SO_LD_FLAGS += \
-	-bundle \
-	-undefined dynamic_lookup \
-	$(LD_FLAGS)
 
-DYLIB_LD_FLAGS += -dynamiclib $(LD_FLAGS)
+ifeq ($(VG),1)
+	CC_DEFS += _VALGRIND
 endif
 
 ifeq ($(PROFILE),1)
-CC_FLAGS += -fno-omit-frame-pointer
-endif
-
-ifeq ($(DEBUG),1)
-CC_FLAGS += -O0 -DDEBUG -D_DEBUG
-LD_FLAGS +=
-
-ifeq ($(VALGRIND),1)
-CC_FLAGS += -D_VALGRIND
-endif
-else ifeq ($(PROFILE),1)
-CC_FLAGS += -O2
-SO_LD_FLAGS += -flto
-else
-CC_FLAGS += -O3
 SO_LD_FLAGS += -flto
 endif
 
-CC_FLAGS += $(CC_FLAGS.coverage)
-LD_FLAGS += $(LD_FLAGS.coverage)
+ifneq ($(DEBUG),1)
+SO_LD_FLAGS += -flto
+endif
 
 _SOURCES=\
 	deps/bloom/bloom.c \
@@ -196,6 +150,8 @@ CC_DEPS = $(patsubst $(SRCDIR)/%.c, $(BINDIR)/%.d, $(SOURCES) $(TEST_SOURCES))
 
 include $(MK)/defs
 
+LD_LIBS:=$(filter /%,$(LD_LIBS)) $(foreach LIB,$(filter-out /%,$(LD_LIBS)),-l$(LIB))
+
 #----------------------------------------------------------------------------------------------
 
 MISSING_DEPS:=
@@ -217,7 +173,7 @@ endif
 
 #----------------------------------------------------------------------------------------------
 
-.PHONY: all deps clean lint format pack run tests unit_tests flow_tests docker bindirs
+.PHONY: all deps clean lint format pack run tests unit-tests flow-tests docker bindirs
 
 all: bindirs $(TARGET)
 
@@ -266,10 +222,7 @@ $(BINDIR)/%.o: $(SRCDIR)/%.c
 
 $(TARGET): $(BIN_DIRS) $(MISSING_DEPS) $(OBJECTS)
 	@echo Linking $@...
-	$(SHOW)$(CC) $(SO_LD_FLAGS) -o $@ $(OBJECTS) $(LD_LIBS)
-ifeq ($(OS),macos)
-	$(SHOW)$(CC) $(DYLIB_LD_FLAGS) -o $(patsubst %.so,%.dylib,$@) $(OBJECTS) $(LD_LIBS)
-endif
+	$(SHOW)$(CC) $(SO_LD_FLAGS) $(LD_FLAGS) -o $@ $(OBJECTS) $(LD_LIBS)
 
 #----------------------------------------------------------------------------------------------
 
@@ -290,11 +243,11 @@ run: $(TARGET)
 
 #----------------------------------------------------------------------------------------------
 
-test: unit_tests flow_tests
+test: unit-tests flow-tests
 
 #----------------------------------------------------------------------------------------------
 
-unit_tests: $(TARGET)
+unit-tests: $(TARGET)
 	@echo Running unit tests...
 	$(SHOW)$(MAKE) -C tests/unit build test
 
@@ -314,7 +267,7 @@ endif
 
 ifneq ($(RLEC),1)
 
-flow_tests: #$(TARGET)
+flow-tests: #$(TARGET)
 	$(SHOW)\
 	MODULE=$(realpath $(TARGET)) \
 	GEN=$(GEN) AOF=$(AOF) SLAVES=$(SLAVES) OSS_CLUSTER=$(OSS_CLUSTER) \
@@ -324,7 +277,7 @@ flow_tests: #$(TARGET)
 
 else # RLEC
 
-flow_tests: #$(TARGET)
+flow-tests: #$(TARGET)
 	$(SHOW)RLEC=1 $(ROOT)/tests/flow/tests.sh
 
 endif # RLEC

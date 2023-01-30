@@ -292,7 +292,7 @@ commands:
 jobs:
   lint:
     docker:
-      - image: redislabsmodules/llvm-toolset:latest
+      - image: redisfab/rmbuilder:6.2.7-x64-bullseye
     steps:
       - early-returns
       - checkout-all
@@ -350,7 +350,7 @@ jobs:
 
   build-macos:
     macos:
-      xcode: 11.7.0
+      xcode: 12.5.1
     resource_class: macos.x86.medium.gen2
     parameters:
       upload:
@@ -458,6 +458,13 @@ jobs:
 #----------------------------------------------------------------------------------------------------------------------------------
 
 on-any-branch: &on-any-branch
+  filters:
+    branches:
+      only: /.*/
+    tags:
+      only: /.*/
+
+always: &always
   filters:
     branches:
       only: /.*/
