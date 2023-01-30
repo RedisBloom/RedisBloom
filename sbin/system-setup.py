@@ -41,7 +41,7 @@ class RedisBloomSetup(paella.Setup):
         else:
             self.install("lcov")
         self.run("{ROOT}/sbin/get-fbinfer".format(ROOT=ROOT))
-        self.run("{PYTHON} {READIES}/bin/getrmpytools --modern".format(PYTHON=self.python, READIES=READIES))
+        self.run("{PYTHON} {READIES}/bin/getrmpytools --reinstall --modern".format(PYTHON=self.python, READIES=READIES))
         self.run("{PYTHON} {READIES}/bin/getcmake --usr".format(PYTHON=self.python, READIES=READIES))
         self.pip_install("-r tests/flow/requirements.txt")
         self.run("{READIES}/bin/getaws".format(READIES=READIES))

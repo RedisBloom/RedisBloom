@@ -1,16 +1,6 @@
 
-ifeq ($(VG),1)
-override VALGRIND:=1
-export VALGRIND
-endif
-
-ifeq ($(VALGRIND),1)
-override DEBUG:=1
-export DEBUG
-endif
-
 ROOT=../..
-MK.pyver:=3
+
 include $(ROOT)/deps/readies/mk/main
 
 define HELPTEXT
@@ -26,14 +16,16 @@ MK_ALL_TARGETS=build
 BINDIR=$(BINROOT)/unit_tests
 SRCDIR=$(ROOT)/tests/unit
 
-.PHONY: unit_tests
-TARGET=unit_tests
+.PHONY: unit-tests
+TARGET=unit-tests
 
 MODULE_SO=$(BINROOT)/redisbloom.so
 
 #----------------------------------------------------------------------------------------------
 
 MK_CUSTOM_CLEAN=1
+
+CC_C_STD=gnu99
 
 include $(MK)/defs
 
@@ -47,34 +39,19 @@ OBJECTS=$(patsubst $(SRCDIR)/%.c,$(BINDIR)/%.o,$(SOURCES))
 
 CC_DEPS = $(patsubst $(SRCDIR)/%.c, $(BINDIR)/%.d, $(SOURCES))
 
-CC_FLAGS += \
-	-fPIC \
-	-std=gnu99 \
-	-MMD -MF $(@:.o=.d) \
-	-I$(SRCDIR) \
-	-I$(BINDIR) \
-	-I$(ROOT)/deps \
-	-I$(ROOT)/src
+define CC_DEFS +=
+endef
 
-ifeq ($(DEBUG),1)
-CC_FLAGS += -g -O0
-LD_FLAGS += -g
-else
-CC_FLAGS += -O3 -Wno-unused-result
-endif
+define CC_INCLUDES +=
+	$(SRCDIR)
+	$(BINDIR)
+	$(ROOT)/deps
+	$(ROOT)/src
+endef
 
-ifeq ($(OS),macos)
-LD_FLAGS += -undefined dynamic_lookup
-LD_SHARED_EXT=dylib
-else
-LD_SHARED_EXT=so
-endif
-
-LD_FLAGS += $(LD_FLAGS.coverage)
-
-MODULE_SO=$(realpath $(BINROOT)/redisbloom.$(LD_SHARED_EXT))
-
-LD_LIBS += $(MODULE_SO)
+LD_LIBS:=\
+	$(filter /%,$(LD_LIBS)) $(foreach LIB,$(filter-out /%,$(LD_LIBS)),-l$(LIB)) \
+	$(MODULE_SO)
 
 #----------------------------------------------------------------------------------------------
 

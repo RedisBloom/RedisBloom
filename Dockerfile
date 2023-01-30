@@ -13,7 +13,9 @@ FROM redisfab/redis:${REDIS_VER}-${ARCH}-${OSNICK} AS builder
 
 ARG REDIS_VER
 
-ADD ./ /build
+RUN if [ -f /root/.profile ]; then sed -ie 's/mesg n/tty -s \&\& mesg -n/g' /root/.profile; fi
+SHELL ["/bin/bash", "-l", "-c"]
+ADD . /build
 WORKDIR /build
 
 RUN ./deps/readies/bin/getupdates
@@ -29,8 +31,8 @@ RUN if [ -e /usr/bin/yum ]; then \
         rm -rf /var/cache/yum; \
     fi
 
-RUN bash -l -c "make fetch"
-RUN bash -l -c "make all"
+RUN make fetch
+RUN make all
 
 #----------------------------------------------------------------------------------------------
 FROM redisfab/redis:${REDIS_VER}-${ARCH}-${OSNICK}
