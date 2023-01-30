@@ -543,20 +543,23 @@ workflows:
             parameters:
               redis_version: ["6.0", "7", "unstable"]
       - build-platforms:
-          <<: *on-integ-and-version-tags
+          #@@<<: *on-integ-and-version-tags
+          <<: *always
           context: common
           matrix:
             parameters:
               platform: [jammy, focal, bionic, xenial, rocky8, centos7, bullseye]
       - build-arm-platforms:
-          <<: *on-integ-and-version-tags
+          #@@<<: *on-integ-and-version-tags
+          <<: *always
           context: common
           matrix:
             parameters:
               platform: [jammy, focal, bionic]
       - build-macos:
           context: common
-          <<: *on-integ-and-version-tags
+          #@@<<: *on-integ-and-version-tags
+          <<: *always
       - upload-artifacts:
           name: upload-artifacts-to-staging-lab
           staging-lab: "1"
