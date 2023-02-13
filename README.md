@@ -26,7 +26,7 @@ RedisBloom adds a set of probabilistic data structures to Redis, including Bloom
   - What is the mean value between the _p1_-percentile value and the _p2_-percentile value?
   - What is the value of the *n*ᵗʰ smallest / largest value in the data stream? (what is the value with [reverse] rank _n_)?
 
-Answering each of these questions accurately can require a huge amount of memory, but if you are willing to sacrifice accuracy - you can reduce the memory requirements drastically. Each of these data structures allows you to set a controllable tradeoff between accuracy and memory consumption. In addition to having a smaller memory footprint, probabilistic data structures are generally much faster than accurate algorithms.
+Answering each of these questions accurately can require a huge amount of memory, but if you are willing to sacrifice accuracy - you can reduce the memory requirements drastically. Each of these data structures allows you to set a controllable trade-off between accuracy and memory consumption. In addition to having a smaller memory footprint, probabilistic data structures are generally much faster than accurate algorithms.
 
 ## Getting started
 
