@@ -11,22 +11,22 @@
 
 ## Overview
 
-RedisBloom adds a set of probabilistic data structures to Redis, including Bloom filter, Cuckoo filter, Count-min sketch, Top-K, and t-digest. With this capability you can query streaming data without needing to store all the elements of the stream:
+RedisBloom adds a set of probabilistic data structures to Redis, including Bloom filter, Cuckoo filter, Count-min sketch, Top-K, and t-digest. Using this capability, you can query streaming data without needing to store all the elements of the stream. Probabilistic data structures each answer the following questions:
 
 - Bloom filter and Cuckoo filter:
-  -  Did the value _v_ already appear in the data stream?
+  -  Did value _v_ already appear in the data stream?
 - Count-min sketch:
-  - How many times did the value _v_ appear in the data stream?
+  - How many times did value _v_ appear in the data stream?
 - Top-k:
   - What are the _k_ most frequent values in the data stream?
 - t-digest:
   - Which fraction of the values in the data stream are smaller than a given value?
   - How many values in the data stream are smaller than a given value?
-  - Which value is smaller than _p_ percent of the values in the data stream? (what is the _p_-percentile value)?
+  - Which value is smaller than _p_ percent of the values in the data stream? (What is the _p_-percentile value?)
   - What is the mean value between the _p1_-percentile value and the _p2_-percentile value?
-  - What is the value of the *n*ᵗʰ smallest / largest value in the data stream? (what is the value with [reverse] rank _n_)?
+  - What is the value of the *n*ᵗʰ smallest/largest value in the data stream? (What is the value with [reverse] rank _n_?)
 
-Answering each of these questions accurately can require a huge amount of memory, but if you are willing to sacrifice accuracy - you can reduce the memory requirements drastically. Each of these data structures allows you to set a controllable trade-off between accuracy and memory consumption. In addition to having a smaller memory footprint, probabilistic data structures are generally much faster than accurate algorithms.
+Answering each of these questions accurately can require a huge amount of memory, but you can lower the memory requirements drastically at the cost of reduced accuracy. Each of these data structures allows you to set a controllable trade-off between accuracy and memory consumption. In addition to having a smaller memory footprint, probabilistic data structures are generally much faster than accurate algorithms.
 
 Redis Bloom is part of [Redis Stack](https://github.com/redis-stack).
 
