@@ -13,11 +13,13 @@ FROM redisfab/redis:${REDIS_VER}-${ARCH}-${OSNICK} AS builder
 
 ARG REDIS_VER
 
-ADD ./ /build
+RUN if [ -f /root/.profile ]; then sed -ie 's/mesg n/tty -s \&\& mesg -n/g' /root/.profile; fi
+SHELL ["/bin/bash", "-l", "-c"]
+ADD . /build
 WORKDIR /build
 
-RUN ./deps/readies/bin/getpy3
-RUN ./system-setup.py
+RUN ./deps/readies/bin/getupdates
+RUN ./sbin/setup
 RUN set -ex ;\
     if [ -e /usr/bin/apt-get ]; then \
         apt-get update -qq; \
@@ -29,9 +31,8 @@ RUN if [ -e /usr/bin/yum ]; then \
         rm -rf /var/cache/yum; \
     fi
 
-RUN bash -l -c "make fetch"
-RUN bash -l -c "make all"
-RUN bash -l -c "TEST= make test"
+RUN make fetch
+RUN make all
 
 #----------------------------------------------------------------------------------------------
 FROM redisfab/redis:${REDIS_VER}-${ARCH}-${OSNICK}

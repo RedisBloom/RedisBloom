@@ -16,7 +16,7 @@ RedisBloom is available on all Redis Cloud managed services.  Redis Cloud Essent
 
 ## Launch RedisBloom with Docker
 ```
-docker run -p 6379:6379 --name redis-redisbloom redislabs/rebloom:latest
+docker run -p 6379:6379 --name redis-redisbloom redis/redis-stack-server
 ```
 
 ## Download

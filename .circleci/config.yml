@@ -1,5 +1,13 @@
 version: 2.1
 
+parameters:
+  run_default_flow:
+    default: true
+    type: boolean
+  run_benchmark_flow_label:
+    default: false
+    type: boolean
+
 commands:
   early-returns:
     steps:
@@ -167,7 +175,7 @@ commands:
           shell: /bin/bash -l -eo pipefail
           command: |
             if [[ -n $CIRCLE_BRANCH ]]; then
-                make upload-artifacts OSNICK=<<parameters.platform>> SHOW=1
+                make upload-artifacts OSNICK=<<parameters.platform>> SHOW=1 VERBOSE=1
             fi
       - run:
           name: Publish container
@@ -206,7 +214,7 @@ commands:
           name: Upload artifacts to S3
           command: |
             if [[ -n $CIRCLE_BRANCH ]]; then
-                make upload-artifacts OSNICK=<<parameters.platform>> SHOW=1
+                make upload-artifacts OSNICK=<<parameters.platform>> SHOW=1 VERBOSE=1
             fi
       - run:
           name: Publish container
@@ -270,11 +278,21 @@ commands:
               --fail_fast \
               --push_results_redistimeseries \
               --allowed-envs << parameters.allowed_envs >>
+      - run:
+          name: Generate Pull Request Performance info
+          command: |
+            if [[ -n ${CIRCLE_PULL_REQUEST##*/} ]]; then
+                redisbench-admin compare  \
+                  --defaults_filename ./tests/benchmarks/defaults.yml \
+                  --comparison-branch $CIRCLE_BRANCH \
+                  --auto-approve \
+                  --pull-request ${CIRCLE_PULL_REQUEST##*/}
+            fi
 
 jobs:
   lint:
     docker:
-      - image: redislabsmodules/llvm-toolset:latest
+      - image: redisfab/rmbuilder:6.2.7-x64-bullseye
     steps:
       - early-returns
       - checkout-all
@@ -332,7 +350,7 @@ jobs:
 
   build-macos:
     macos:
-      xcode: 11.7.0
+      xcode: 12.5.1
     resource_class: macos.x86.medium.gen2
     parameters:
       upload:
@@ -345,7 +363,7 @@ jobs:
           name: Upload artifacts to S3
           command: |
             if [[ -n $CIRCLE_BRANCH && "<<parameters.upload>>" == "yes" ]]; then
-                make upload-artifacts SHOW=1
+                make upload-artifacts SHOW=1 VERBOSE=1
             fi
       - persist-artifacts
 
@@ -421,14 +439,14 @@ jobs:
 
   benchmark-bloom-oss-standalone:
     docker:
-      - image: redisfab/rmbuilder:6.2.7-x64-bionic
+      - image: redisfab/rmbuilder:6.2.7-x64-focal
     steps:
       - build-steps
       - benchmark-steps
 
   benchmark-bloom-oss-standalone-profiler:
     docker:
-      - image: redisfab/rmbuilder:6.2.7-x64-bionic
+      - image: redisfab/rmbuilder:6.2.7-x64-focal
     steps:
       - checkout-all
       - setup-automation
@@ -440,6 +458,13 @@ jobs:
 #----------------------------------------------------------------------------------------------------------------------------------
 
 on-any-branch: &on-any-branch
+  filters:
+    branches:
+      only: /.*/
+    tags:
+      only: /.*/
+
+always: &always
   filters:
     branches:
       only: /.*/
@@ -467,7 +492,6 @@ on-integ-branch: &on-integ-branch
         - master
         - /^\d+\.\d+.*$/
         - /^feature-.*$/
-        - /^perf.*$/
     tags:
       ignore: /.*/
 
@@ -478,7 +502,6 @@ not-on-integ-branch: &not-on-integ-branch
         - master
         - /^\d+\.\d+.*$/
         - /^feature-.*$/
-        - /^perf.*$/
     tags:
       ignore: /.*/
 
@@ -499,21 +522,13 @@ on-integ-and-version-tags: &on-integ-and-version-tags
     tags:
       only: /^v[0-9].*/
 
-on-perf-tags: &on-perf-tags
-  filters:
-    branches:
-      only:
-        - master
-        - /^\d+\.\d+.*$/
-        - /^perf.*$/
-    tags:
-      only: /^v[0-9].*/
-
 #----------------------------------------------------------------------------------------------------------------------------------
 
 workflows:
   version: 2
   default-flow:
+    when:
+      << pipeline.parameters.run_default_flow >>
     jobs:
       - lint:
           <<: *on-any-branch
@@ -533,7 +548,7 @@ workflows:
           matrix:
             alias: build-with-redis-ver
             parameters:
-              redis_version: ["7", "unstable"]
+              redis_version: ["6.0", "7", "unstable"]
       - build-platforms:
           <<: *on-integ-and-version-tags
           context: common
@@ -545,7 +560,7 @@ workflows:
           context: common
           matrix:
             parameters:
-              platform: [bionic, focal, jammy]
+              platform: [jammy, focal, bionic]
       - build-macos:
           context: common
           <<: *on-integ-and-version-tags
@@ -572,26 +587,35 @@ workflows:
           requires:
             - upload-release-artifacts
       - benchmark-bloom-oss-standalone:
-          <<: *on-perf-tags
+          <<: *on-integ-and-version-tags
           requires:
             - lint
           context: common
       - benchmark-bloom-oss-standalone-profiler:
-          <<: *on-perf-tags
+          <<: *on-integ-and-version-tags
           requires:
             - lint
           context: common
 
-  nightly:
+  benchmark_flow_label:
+    when:
+      << pipeline.parameters.run_benchmark_flow_label >>
+    jobs:
+      - benchmark-bloom-oss-standalone:
+          <<: *on-any-branch
+          context: common
+      - benchmark-bloom-oss-standalone-profiler:
+          <<: *on-any-branch
+          context: common
+
+  nightly-perf-once-a-week:
     triggers:
       - schedule:
-          cron: "07 20 * * *"
+          #  “At 07:00 on Mondays.”
+          cron: "00 07 * * 1"
           filters:
             branches:
-              only:
-                - master
-                - /^\d+\.\d+.*$/
-                - /^feature-.*$/
+              only: master
     jobs:
       - benchmark-bloom-oss-standalone:
           context: common

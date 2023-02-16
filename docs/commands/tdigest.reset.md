@@ -1,16 +1,17 @@
-Reset the sketch - empty the sketch and re-initialize it.
+Resets a t-digest sketch: empty the sketch and re-initializes it.
 
-#### Parameters:
+## Required arguments
+<details open><summary><code>key</code></summary>
+is key name for an existing t-digest sketch.
+</details>
 
-* **key**: The name of the sketch (a t-digest data structure)
-
-@return
+## Return value
 
 @simple-string-reply - `OK` if executed correctly, or @error-reply otherwise.
 
-@examples
+## Examples
 
-```
-redis> TDIGEST.RESET t-digest
+{{< highlight bash >}}
+redis> TDIGEST.RESET t
 OK
-```
+{{< / highlight >}}

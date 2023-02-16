@@ -1,10 +1,7 @@
 /*
- * Copyright 2019 Redis Ltd. and Contributors
- *
- * This file is available under the Redis Source Available License Agreement
- *
- * This Top-K Data Type is based on Heavy Keeper algorithm. The paper can be found
- * at https://www.usenix.org/system/files/conference/atc18/atc18-gong.pdf
+ * Copyright Redis Ltd. 2019 - present
+ * Licensed under your choice of the Redis Source Available License 2.0 (RSALv2) or
+ * the Server Side Public License v1 (SSPLv1).
  *
  * Implementation by Ariel Shtul
  */
@@ -145,8 +142,8 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
                 } else {
                     //  using precalculate lookup table to save cpu
                     decay = pow(topk->lookupTable[TOPK_DECAY_LOOKUP_TABLE - 1],
-                                (*countPtr / TOPK_DECAY_LOOKUP_TABLE) *
-                                    topk->lookupTable[*countPtr % TOPK_DECAY_LOOKUP_TABLE]);
+                                (*countPtr / (TOPK_DECAY_LOOKUP_TABLE - 1))) *
+                            topk->lookupTable[*countPtr % (TOPK_DECAY_LOOKUP_TABLE - 1)];
                 }
                 double chance = rand() / (double)RAND_MAX;
                 if (chance < decay) {

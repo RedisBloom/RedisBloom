@@ -1,0 +1,20 @@
+version: 0.2
+name: "tdigest_add_comp500"
+description: "Benchmarking adding an item to the t-Digest sketch, 
+              with an desired compression of 500"
+remote:
+ - type: oss-standalone
+ - setup: redisbloom-m5
+dbconfig:
+  - init_commands:
+    - 'TDIGEST.CREATE t-digest:500 compression 500'
+clientconfig:
+  - tool: redis-benchmark
+  - min-tool-version: "6.2.0"
+  - parameters:
+    - clients: 16
+    - requests: 10000000
+    - threads: 2
+    - pipeline: 1
+    - keyspacelen: 10000000
+    - command: 'TDIGEST.ADD t-digest:500 __rand_int__'

@@ -147,7 +147,7 @@ class testTDigest:
                     random.random() * 10000,
                 )
             )
-        
+
         # check that multiple datapoints insertion behaves as expected
         self.assertOk(self.cmd("tdigest.create", "tdigest2"))
         args = ["tdigest.add", "tdigest2"]
@@ -188,11 +188,18 @@ class testTDigest:
         )
         # parsing
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", "a", 5
+            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", "a", 5, 10, 20
         )
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, "a"
+            redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", 5.0, "a", 10, 20
         )
+        # ensure nothing was added given  at least one input is not a valid floating-point value
+        td_info = parse_tdigest_info(self.cmd("tdigest.info", "tdigest"))
+        total_weight = float(td_info["Merged weight"]) + float(
+            td_info["Unmerged weight"]
+        )
+        self.assertEqual(0, total_weight)
+
         # val parameter needs to be a finite number
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.add", "tdigest", "-inf",
@@ -417,6 +424,31 @@ class testTDigest:
                                                       "COMPRESSION", "10000000000000000000"
         )
 
+    def test_negative_tdigest_merge_crashes(self):
+        # reported crash on merge to self where key does not exist
+        self.cmd('FLUSHALL')
+        for _ in range(1,1000):
+            self.assertRaises(
+                redis.exceptions.ResponseError, self.cmd,
+                "tdigest.merge", "z", "5","z","z","z","z","z", "COMPRESSION", "3"
+            )
+
+
+    def test_negative_tdigest_merge_crashes_recursive(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd('tdigest.create x COMPRESSION 1000'))
+        self.assertOk(self.cmd('tdigest.create y COMPRESSION 1000'))
+        self.assertOk(self.cmd('tdigest.add x 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20'))
+        self.assertOk(self.cmd('tdigest.add y 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120'))
+        try:
+            for x in range(1,500):
+                self.cmd('tdigest.merge z 5 x y x y x')
+                self.cmd('tdigest.merge z 5 z z z z z')
+        except redis.exceptions.ResponseError as e:
+            error_str = e.__str__()
+            self.assertTrue("overflow detected" in error_str)
+
+
     def test_tdigest_min_max(self):
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "tdigest"))
@@ -598,17 +630,17 @@ class testTDigest:
         # -1 when value < value of the smallest observation
         self.assertEqual(-1, float(self.cmd("tdigest.rank", "tdigest", -1)[0]))
         # rank from cdf of min
-        self.assertEqual(1, float(self.cmd("tdigest.rank", "tdigest", 0)[0]))
+        self.assertEqual(0, float(self.cmd("tdigest.rank", "tdigest", 0)[0]))
         # rank from cdf of max
-        self.assertEqual(20, float(self.cmd("tdigest.rank", "tdigest", 19)[0]))
+        self.assertEqual(19, float(self.cmd("tdigest.rank", "tdigest", 19)[0]))
         # rank from cdf above max
         self.assertEqual(20, float(self.cmd("tdigest.rank", "tdigest", 20)[0]))
         # rank within [min,max]
-        self.assertEqual(19, float(self.cmd("tdigest.rank", "tdigest", 18)[0]))
-        self.assertEqual(11, float(self.cmd("tdigest.rank", "tdigest", 10)[0]))
-        self.assertEqual(2, float(self.cmd("tdigest.rank", "tdigest", 1)[0]))
+        self.assertEqual(18, float(self.cmd("tdigest.rank", "tdigest", 18)[0]))
+        self.assertEqual(10, float(self.cmd("tdigest.rank", "tdigest", 10)[0]))
+        self.assertEqual(1, float(self.cmd("tdigest.rank", "tdigest", 1)[0]))
         # multiple inputs test
-        self.assertEqual([-1,20,10], self.cmd("tdigest.rank", "tdigest", -20, 20, 9))
+        self.assertEqual([-1,20,9], self.cmd("tdigest.rank", "tdigest", -20, 20, 9))
 
     def test_tdigest_revrank(self):
         self.cmd('FLUSHALL')
@@ -631,13 +663,25 @@ class testTDigest:
         self.assertEqual(18, float(self.cmd("tdigest.revrank", "tdigest", 1)[0]))
         # multiple inputs test
         self.assertEqual([-1,19,9], self.cmd("tdigest.revrank", "tdigest", 21, 0, 10))
-    
+
     def test_tdigest_rank_and_revrank(self):
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "t", "compression","1000"))
         self.assertOk(self.cmd('TDIGEST.ADD', 't', '1', '2', '2', '3', '3', '3', '4', '4', '4', '4', '5', '5', '5', '5', '5'))
-        self.assertEqual([-1, 1, 2, 5, 8, 13, 15], self.cmd('TDIGEST.RANK', 't', '0', '1', '2', '3', '4', '5', '6'))
+        self.assertEqual([-1, 0, 2, 4, 8, 12, 15], self.cmd('TDIGEST.RANK', 't', '0', '1', '2', '3', '4', '5', '6'))
         self.assertEqual([15, 14, 13, 10, 7, 2, -1], self.cmd('TDIGEST.REVRANK', 't', '0', '1', '2', '3', '4', '5', '6'))
+
+        # RANK on an empty sketch
+        self.assertOk(self.cmd("tdigest.create", "empty"))
+        self.assertEqual([-2, -2], self.cmd('TDIGEST.RANK', 'empty', '0', '1'))
+
+        # REVRANK on an empty sketch
+        self.assertEqual([-2, -2], self.cmd('TDIGEST.REVRANK', 'empty', '0', '1'))
+
+        # round down RANK
+        self.assertOk(self.cmd("tdigest.create", "s", "compression","1000"))
+        self.assertOk(self.cmd('TDIGEST.ADD', 's', '10', '20', '30', '40', '50', '60'))
+        self.assertEqual([-1, 0, 1, 2, 3, 4, 5, 6], self.cmd('TDIGEST.RANK', 's', '0', '10', '20', '30', '40', '50', '60', '70'))
 
 
     def test_negative_tdigest_rank(self):
@@ -665,13 +709,12 @@ class testTDigest:
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.rank", "tdigest", 1.5, "a"
         )
-        
+
     def test_tdigest_byrank(self):
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
         # insert datapoints into sketch
-        for x in range(1, 11):
-            self.assertOk(self.cmd("tdigest.add", "tdigest", x))
+        self.assertOk(self.cmd("tdigest.add tdigest 1 2 3 4 5 6 7 8 9 10"))
 
         # rank 0 is precise ( equal to minimum )
         self.assertEqual(1, float(self.cmd("tdigest.byrank", "tdigest", 0)[0]))
@@ -681,7 +724,7 @@ class testTDigest:
         self.assertEqual("inf", self.cmd("tdigest.byrank", "tdigest", 100)[0])
         # inverse rank of N-1: [1,10]
         self.assertEqual(10, float(self.cmd("tdigest.byrank", "tdigest", 9)[0]))
-        
+
     def test_tdigest_byrevrank(self):
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 1000))
@@ -697,6 +740,15 @@ class testTDigest:
         self.assertEqual("-inf", self.cmd("tdigest.byrevrank", "tdigest", 100)[0])
         # inverse rank of N-1
         self.assertEqual(1.0, float(self.cmd("tdigest.byrevrank", "tdigest", 9)[0]))
+
+        # reset the sketch
+        self.assertOk(self.cmd("tdigest.reset", "tdigest"))
+        self.assertOk(self.cmd("TDIGEST.ADD tdigest 1 2 2 3 3 3 4 4 4 4 5 5 5 5 5"))
+        expected_revrank = ['5', '5', '5', '5', '5', '4', '4', '4', '4', '3', '3', '3', '2', '2', '1', '-inf']
+        expected_rank = ['inf', '5', '5', '5', '5', '5', '4', '4', '4', '4', '3', '3', '3', '2', '2', '1']
+        self.assertEqual(expected_revrank, self.cmd("TDIGEST.BYREVRANK tdigest 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15"))
+        self.assertEqual(expected_rank, self.cmd("TDIGEST.BYRANK tdigest 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1 0"))
+        self.assertEqual(expected_rank [1:], expected_revrank[:-1])
 
     def test_negative_tdigest_byrank(self):
         self.cmd('FLUSHALL')
@@ -731,7 +783,7 @@ class testTDigest:
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.byrank", "tdigest", 1.5, "a"
         )
-    
+
     def test_tdigest_trimmed_mean(self):
         self.cmd('FLUSHALL')
         self.assertOk(self.cmd("tdigest.create", "tdigest", "compression", 500))
