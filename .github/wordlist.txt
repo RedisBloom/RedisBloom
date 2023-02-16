@@ -37,6 +37,7 @@ dengliming
 phpRebloom
 phpredis
 py
+pypi
 rebloom
 redisbloom
 rueidis
