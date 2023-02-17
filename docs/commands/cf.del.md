@@ -2,7 +2,11 @@ Deletes an item once from the filter. If the item exists only once, it will be
 removed from the filter. If the item was added multiple times, it will still be
 present.
 
-!!! danger "Deleting elements that are not in the filter may delete a different item, resulting in false negatives!"
+{{% alert title="Warning" color="warning" %}} 
+
+Deleting elements that are not in the filter may delete a different item, resulting in false negatives.
+
+{{% /alert %}}
 
 ### Parameters
 
