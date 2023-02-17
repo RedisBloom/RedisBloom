@@ -32,12 +32,12 @@ Redis Bloom is part of [Redis Stack](https://github.com/redis-stack).
 
 ## Getting started
 
-1. [Launch RedisBloom with Docker](#launch-redisbloom-with-docker)
-1. [Use RedisBloom with `redis-cli`](#use-redisbloom-with-redis-cli)
+1. [Launch RedisBloom with Docker](#1-launch-redisbloom-with-docker)
+2. [Use RedisBloom with `redis-cli`](#2-use-redisbloom-with-redis-cli) or with [RedisInsight](https://redis.io/docs/ui/insight/)
 
 Note: You can also [build and load the module](#building-and-loading-redisbloom) yourself.
 
-### 1. Launch with Docker
+### 1. Launch RedisBloom with Docker
 ```
 docker run -d --name redis-stack-server -p 6379:6379 redis/redis-stack-server:latest
 ```
