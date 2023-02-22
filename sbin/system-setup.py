@@ -25,7 +25,7 @@ class RedisBloomSetup(paella.Setup):
         self.run("%s/bin/getgcc" % READIES)
 
     def redhat_compat(self):
-        self.run("which")
+        self.install("which")
         self.run("%s/bin/getepel" % READIES)
         self.run("%s/bin/getgcc --modern" % READIES)
 
