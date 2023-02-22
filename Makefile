@@ -112,7 +112,6 @@ endef
 
 LD_LIBS += $(T_DIGEST_C)
 
-
 ifeq ($(VG),1)
 	CC_DEFS += _VALGRIND
 endif
@@ -149,8 +148,6 @@ OBJECTS=$(patsubst $(SRCDIR)/%.c,$(BINDIR)/%.o,$(SOURCES))
 CC_DEPS = $(patsubst $(SRCDIR)/%.c, $(BINDIR)/%.d, $(SOURCES) $(TEST_SOURCES))
 
 include $(MK)/defs
-
-LD_LIBS:=$(filter /%,$(LD_LIBS)) $(foreach LIB,$(filter-out /%,$(LD_LIBS)),-l$(LIB))
 
 #----------------------------------------------------------------------------------------------
 
