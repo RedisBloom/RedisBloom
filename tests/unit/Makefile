@@ -49,9 +49,7 @@ define CC_INCLUDES +=
 	$(ROOT)/src
 endef
 
-LD_LIBS:=\
-	$(filter /%,$(LD_LIBS)) $(foreach LIB,$(filter-out /%,$(LD_LIBS)),-l$(LIB)) \
-	$(MODULE_SO)
+LD_LIBS += $(MODULE_SO)
 
 #----------------------------------------------------------------------------------------------
 
