@@ -64,8 +64,16 @@ commands:
           name: Setup automation
           command: |
             git submodule update --init deps/readies
+            if [[ $(uname -s) == Darwin ]]; then rm -f /usr/local/bin/python3; fi
             ./deps/readies/bin/getpy3
+      - run:
+          name: Setup automation (part 2)
+          shell: /bin/bash -l -eo pipefail
+          command: |
+            export HOMEBREW_NO_AUTO_UPDATE=1
             ./deps/readies/bin/getaws
+            ls -l /usr/local/bin/python* || true
+            echo "python3: $(command -v python3)"
             python3 --version
             python3 -m pip list
 
@@ -78,13 +86,18 @@ commands:
         type: string
         default: ""
     steps:
+      - setup-automation
       - run:
           name: System setup
-          command: ./sbin/setup
+          shell: /bin/bash -l -eo pipefail
+          command: |
+            ./sbin/system-setup.py
+            python3 -m pip list
       - run:
           name: Install Redis
           shell: /bin/bash -l -eo pipefail
           command: |
+            export HOMEBREW_NO_AUTO_UPDATE=1
             python3 ./deps/readies/bin/getredis -v '<<parameters.redis_version>>' --force <<parameters.getredis_params>>
             redis-server --version
 
@@ -550,11 +563,13 @@ workflows:
             parameters:
               redis_version: ["6.0", "7", "unstable"]
       - build-platforms:
-          <<: *on-integ-and-version-tags
+          #@@<<: *on-integ-and-version-tags
+          #@@<<: *always
           context: common
           matrix:
             parameters:
-              platform: [jammy, focal, bionic, xenial, rocky8, centos7, bullseye]
+              #@@platform: [jammy, focal, bionic, xenial, amzn2, rocky8, centos7, bullseye]
+              platform: [amzn2]
       - build-arm-platforms:
           <<: *on-integ-and-version-tags
           context: common
