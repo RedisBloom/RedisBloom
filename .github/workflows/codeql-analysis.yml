@@ -35,7 +35,9 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
+      with:
+        submodules: true
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
@@ -49,8 +51,12 @@ jobs:
 
     # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
     # If this step fails, then you should remove it and run the build manually (see below)
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v1
+    - name: Build
+      run: |
+        sudo ln -sf /usr/bin/gcc /usr/bin/gcc-5
+        ./deps/readies/bin/getpy3
+        ./sbin/system-setup.py # --no-rmpytools
+        make build
 
     # ℹ️ Command-line programs to run using the OS shell.
     # 📚 https://git.io/JvXDl
