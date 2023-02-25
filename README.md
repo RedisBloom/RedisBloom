@@ -7,21 +7,37 @@
 [![Forum](https://img.shields.io/badge/Forum-RedisBloom-blue)](https://forum.redis.com/c/modules/redisbloom)
 [![Discord](https://img.shields.io/discord/697882427875393627?style=flat-square)](https://discord.gg/wXhwjCQ)
 
-The RedisBloom module provides four data structures: a scalable **Bloom filter**,  a **cuckoo filter**, a **count-min sketch**, and a **top-k**. These data structures trade perfect accuracy for extreme memory efficiency, so they're especially useful for big data and streaming applications.
+<img src="docs/docs/images/logo.svg" alt="logo" width="300"/>
 
-**Bloom and cuckoo filters** are used to determine, with a high degree of certainty, whether an element is a member of a set.
+## Overview
 
-A **count-min sketch** is generally used to determine the frequency of events in a stream. You can query the count-min sketch get an estimate of the frequency of any given event.
+RedisBloom adds a set of probabilistic data structures to Redis, including Bloom filter, Cuckoo filter, Count-min sketch, Top-K, and t-digest. Using this capability, you can query streaming data without needing to store all the elements of the stream. Probabilistic data structures each answer the following questions:
 
-A **top-k** maintains a list of _k_ most frequently seen items.
+- Bloom filter and Cuckoo filter:
+  -  Did value _v_ already appear in the data stream?
+- Count-min sketch:
+  - How many times did value _v_ appear in the data stream?
+- Top-k:
+  - What are the _k_ most frequent values in the data stream?
+- t-digest:
+  - Which fraction of the values in the data stream are smaller than a given value?
+  - How many values in the data stream are smaller than a given value?
+  - Which value is smaller than _p_ percent of the values in the data stream? (What is the _p_-percentile value?)
+  - What is the mean value between the _p1_-percentile value and the _p2_-percentile value?
+  - What is the value of the *n*ᵗʰ smallest/largest value in the data stream? (What is the value with [reverse] rank _n_?)
 
-## Quick Start Guide
-1. [Launch RedisBloom with Docker](#launch-redisbloom-with-docker)
-1. [Use RedisBloom with `redis-cli`](#use-redisbloom-with-redis-cli)
+Answering each of these questions accurately can require a huge amount of memory, but you can lower the memory requirements drastically at the cost of reduced accuracy. Each of these data structures allows you to set a controllable trade-off between accuracy and memory consumption. In addition to having a smaller memory footprint, probabilistic data structures are generally much faster than accurate algorithms.
+
+Redis Bloom is part of [Redis Stack](https://github.com/redis-stack).
+
+## Getting started
+
+1. [Launch RedisBloom with Docker](#1-launch-redisbloom-with-docker)
+2. [Use RedisBloom with `redis-cli`](#2-use-redisbloom-with-redis-cli) or with [RedisInsight](https://redis.io/docs/ui/insight/)
 
 Note: You can also [build and load the module](#building-and-loading-redisbloom) yourself.
 
-### 1. Launch with Docker
+### 1. Launch RedisBloom with Docker
 ```
 docker run -d --name redis-stack-server -p 6379:6379 redis/redis-stack-server:latest
 ```
