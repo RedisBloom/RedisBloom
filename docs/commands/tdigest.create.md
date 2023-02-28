@@ -19,6 +19,6 @@ is a controllable tradeoff between accuracy and memory consumption. 100 is a com
 ## Examples
 
 {{< highlight bash >}}
-redis> TDIGEST.CREATE t 100
+redis> TDIGEST.CREATE t COMPRESSION 100
 OK
 {{< / highlight >}}
