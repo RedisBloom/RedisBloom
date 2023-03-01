@@ -361,10 +361,29 @@ jobs:
       - vm-build-platforms-steps:
           platform: <<parameters.platform>>
 
-  build-macos:
+  build-macos-x64:
     macos:
       xcode: 12.5.1
     resource_class: macos.x86.medium.gen2
+    parameters:
+      upload:
+        type: string
+        default: "yes"
+    steps:
+      - early-returns
+      - build-steps
+      - run:
+          name: Upload artifacts to S3
+          command: |
+            if [[ -n $CIRCLE_BRANCH && "<<parameters.upload>>" == "yes" ]]; then
+                make upload-artifacts SHOW=1 VERBOSE=1
+            fi
+      - persist-artifacts
+
+  build-macos-m1:
+    macos:
+      xcode: 14.2.0
+    resource_class: macos.m1.large.gen1
     parameters:
       upload:
         type: string
@@ -574,9 +593,13 @@ workflows:
           matrix:
             parameters:
               platform: [jammy, focal, bionic]
-      - build-macos:
+      - build-macos-x64:
           context: common
           <<: *on-integ-and-version-tags
+      - build-macos-m1:
+          context: common
+          #@@<<: *on-integ-and-version-tags
+          <<: *always
       - upload-artifacts:
           name: upload-artifacts-to-staging-lab
           staging-lab: "1"
@@ -585,7 +608,8 @@ workflows:
           requires:
             - build-platforms
             - build-arm-platforms
-            - build-macos
+            - build-macos-x64
+            - build-macos-m1
       - upload-artifacts:
           name: upload-release-artifacts
           context: common
@@ -593,7 +617,8 @@ workflows:
           requires:
             - build-platforms
             - build-arm-platforms
-            - build-macos
+            - build-macos-x64
+            - build-macos-m1
       - release-qa-tests:
           context: common
           <<: *on-version-tags
