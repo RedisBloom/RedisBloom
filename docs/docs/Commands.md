@@ -8,23 +8,30 @@ description: >
 
 ## Overview
 
-### Supported Probabilistic Data Structures
+RedisBloom adds a set of probabilistic data structures to Redis, including Bloom filter, Cuckoo filter, Count-min sketch, Top-K, and t-digest. Using this capability, you can query streaming data without needing to store all the elements of the stream. Probabilistic data structures each answer the following questions:
 
-Redis includes a single Probabilistic Data Structure (PDS), the HyperLogLog which is used to count distinct elements in a multiset. RedisBloom adds to redis five additional PDS. 
-*   Bloom Filter - test for membership of elements in a set. 
-*   Cuckoo Filter - test for membership of elements in a set. 
-*   Count-Min Sketch - count the frequency of elements in a stream. 
-*   TopK - maintain a list of most frequent K elements in a stream.
-*   T-digest Sketch - query for quantile.
+- Bloom filter and Cuckoo filter:
+  -  Did value _v_ already appear in the data stream?
+- Count-min sketch:
+  - How many times did value _v_ appear in the data stream?
+- Top-k:
+  - What are the _k_ most frequent values in the data stream?
+- t-digest:
+  - Which fraction of the values in the data stream are smaller than a given value?
+  - How many values in the data stream are smaller than a given value?
+  - Which value is smaller than _p_ percent of the values in the data stream? (What is the _p_-percentile value?)
+  - What is the mean value between the _p1_-percentile value and the _p2_-percentile value?
+  - What is the value of the *n*ᵗʰ smallest/largest value in the data stream? (What is the value with [reverse] rank _n_?)
 
-### Probabilistic Data Structures API
+Answering each of these questions accurately can require a huge amount of memory, but you can lower the memory requirements drastically at the cost of reduced accuracy. Each of these data structures allows you to set a controllable trade-off between accuracy and memory consumption. In addition to having a smaller memory footprint, probabilistic data structures are generally much faster than accurate algorithms.
 
-Details on module's [commands](/commands/?group=module) can be filtered for a specific PDS.
-*   [`Bloom Filter commands`](/commands/?name=bf.).
-*   [`Cuckoo Filter commands`](/commands/?name=cf.).
-*   [`Count-Min Sketch commands`](/commands/?name=cms.).
-*   [`TopK list commands`](/commands/?name=topk.).
-*   [`T-digest Sketch commands`](/commands/?name=tdigest.).
+### Probabilistic Data Structures - Commands
+
+*   [Bloom filter - commands](/commands/?name=bf.)
+*   [Cuckoo filter - commands](/commands/?name=cf.)
+*   [Count-min sketch - commands](/commands/?name=cms.)
+*   [Top-k list - commands](/commands/?name=topk.)
+*   [t-digest - commands](/commands/?name=tdigest.)
 
 The details also include the syntax for the commands, where:
 
