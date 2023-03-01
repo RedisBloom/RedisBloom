@@ -38,8 +38,10 @@ if [[ -d $FBINFER_DIR ]]; then
 fi
 
 if [[ $OS == Darwin ]]; then
-	runn mkdir -p "$HINE/.local/opt"
-	runn curl -sSL "https://github.com/instabug/infer/releases/download/v$VERSION/infer-osx-v$VERSION.tar.xz" | tar -C "$HINE/.local/opt" -xJ
+	runn mkdir -p "$HOME/.local/opt"
+	runn @ <<-EOF
+		curl -sSL "https://github.com/instabug/infer/releases/download/v$VERSION/infer-osx-v$VERSION.tar.xz" | tar -C "$HOME/.local/opt" -xJ
+		EOF
 	runn ln -fs "$FBINFER_DIR/bin/infer" "$HOME/.local/bin/infer"
 	exit 0
 fi
