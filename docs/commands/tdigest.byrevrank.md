@@ -23,7 +23,7 @@ _n_-1 is the reverse rank of the value of the smallest observation; _n_ denotes 
 
 - Return an accurate result when `revrank` is 0 (the value of the largest observation)
 - Return an accurate result when `revrank` is _n_-1 (the value of the smallest observation), where _n_ denotes the number of observations added to the sketch.
-- Return 'inf' when `revrank` is equal to _n_ or larger than _n_
+- Return '-inf' when `revrank` is equal to _n_ or larger than _n_
 
 All values are 'nan' if the sketch is empty.
 
