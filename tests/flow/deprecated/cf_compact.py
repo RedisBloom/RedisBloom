@@ -22,7 +22,7 @@ for i in range(batches):
 print("--- %s seconds to add ---" % (time.time() - start_time))
 start_time = time.time()
 '''
-print 'check'
+print('check')
 for x in range(q):
   redis_pipe.execute_command('cf.exists cf', str(x))
 responses = redis_pipe.execute()
