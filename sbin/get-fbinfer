@@ -6,34 +6,58 @@ ROOT=$(cd $HERE/.. && pwd)
 READIES=$ROOT/deps/readies
 . $READIES/shibumi/defs
 
+VERSION="${VERSION:-1.1.0}"
+
 OP=""
 [[ $NOP == 1 ]] && OP=echo
 
 OS=`uname -s`
+ARCH=`uname -m`
 if [[ $OS == Linux ]]; then
 	FBINFER_OS=linux64
+	FBINFER_DIR="/opt/${FNINFER_NAME}"
 elif [[ $OS == Darwin ]]; then
-	$OP brew install infer
-	exit 0
+	if [[ $ARCH == arm64 ]]; then
+		FBINFER_DIR="$HOME/.local/opt/infer-osx-v$VERSION"
+	else
+		xinstall infer
+		exit 0
+	fi
 else
 	eprint "Cannot determine OS"
 	exit 1
 fi
 
-VERSION="${VERSION:-1.0.0}"
+if [[ -d $FBINFER_DIR ]]; then
+	if [[ $FORCE == 1 ]]; then
+		runn rm -rf "$FBINFER_DIR"
+	else
+		eprint "Already installed"
+		exit 0
+	fi
+fi
+
+if [[ $OS == Darwin ]]; then
+	runn mkdir -p "$HOME/.local/opt"
+	runn @ <<-EOF
+		curl -sSL "https://github.com/instabug/infer/releases/download/v$VERSION/infer-osx-v$VERSION.tar.xz" | tar -C "$HOME/.local/opt" -xJ
+		EOF
+	runn ln -fs "$FBINFER_DIR/bin/infer" "$HOME/.local/bin/infer"
+	exit 0
+fi
+
 FNINFER_NAME="infer-${FBINFER_OS}-v${VERSION}"
 FBINFER_ARCHIVE="${FNINFER_NAME}.tar.xz"
 
-if [[ ! -d /opt/${FNINFER_NAME} ]]; then
-	x_dir=$(mktemp -d /tmp/fbinfer.XXXXXX)
-	cd $x_dir
-	runn wget -q --no-check-certificate https://github.com/facebook/infer/releases/download/v$VERSION/${FBINFER_ARCHIVE}
-	$OP mkdir -p /opt/${FNINFER_NAME}
-	runn $SUDO tar -C /opt -xf ${FBINFER_ARCHIVE}
-	cd /
-	$OP rm -rf $x_dir
-fi
+x_dir=$(mktemp -d /tmp/fbinfer.XXXXXX)
+cd $x_dir
+runn wget -q --no-check-certificate https://github.com/facebook/infer/releases/download/v$VERSION/${FBINFER_ARCHIVE}
+runn mkdir -p /opt/${FNINFER_NAME}
+runn $SUDO tar -C /opt -xf ${FBINFER_ARCHIVE}
+cd /
+$OP rm -rf $x_dir
+
 if [[ -f /opt/${FNINFER_NAME}/bin/infer ]]; then
 	runn $SUDO ln -sf /opt/${FNINFER_NAME}/bin/infer /usr/local/bin/infer
 fi
-
+exit 0

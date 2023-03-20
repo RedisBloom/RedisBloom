@@ -148,7 +148,7 @@ class testRedisBloom():
         #         break
         #     else:
         #         cmds.append(cur)
-        #         print("Scaning chunk... (P={}. Len={})".format(cur[0], len(cur[1])))
+        #         self.env.debugPrint(f"Scaning chunk... (P={cur[0]}. Len={len(cur[1])})")
 
         # prev_info = env.cmd('bf.debug', 'myBloom')
         # # Remove the filter
@@ -156,7 +156,7 @@ class testRedisBloom():
 
         # # Now, load all the commands:
         # for cmd in cmds:
-        #     print("Loading chunk... (P={}. Len={})".format(cmd[0], len(cmd[1])))
+        #     self.env.debugPrint(f"Loading chunk... (P={cmd[0]}. Len={len(cmd[1])})")
         #     env.cmd('bf.loadchunk', 'myBloom', *cmd)
 
         # cur_info = env.cmd('bf.debug', 'myBloom')
@@ -440,12 +440,12 @@ class testRedisBloomNoCodec():
             if not chunk[0]:
                 break
             chunks.append(chunk)
-            # print("Scaning chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            # self.env.debugPrint(f"Scaning chunk... (P={chunk[0]}. Len={len(chunk[1])})")
         env.cmd('del', 'bf')
         env.assertRaises(ResponseError, env.cmd, 'bf.loadchunk', 'bf')
         env.assertRaises(ResponseError, env.cmd, 'bf.loadchunk', 'bf', 'str')
         for chunk in chunks:
-            print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            self.env.debugPrint(f"Loading chunk... (P={chunk[0]}. Len={len(chunk[1])})")
             env.cmd('bf.loadchunk', 'bf', *chunk)
         for x in range(maxrange):
             env.assertEqual(1, env.cmd('bf.exists', 'bf', str(x)))
@@ -469,14 +469,14 @@ class testRedisBloomNoCodec():
             if not chunk[0]:
                 break
             chunks.append(chunk)
-            print("Scaning chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            self.env.debugPrint(f"Scaning chunk... (P={chunk[0]}. Len={len(chunk[1])})")
         # delete filter
         env.cmd('del', 'bf')
 
         env.assertRaises(ResponseError, env.cmd, 'bf.loadchunk', 'bf')
         env.assertRaises(ResponseError, env.cmd, 'bf.loadchunk', 'bf', 'str')
         for chunk in chunks:
-            print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            self.env.debugPrint(f"Loading chunk... (P={chunk[0]}. Len={len(chunk[1])})")
             env.cmd('bf.loadchunk', 'bf', *chunk)
         # check loaded filter
         for x in range(maxrange):
@@ -500,14 +500,14 @@ class testRedisBloomNoCodec():
             if not chunk[0]:
                 break
             chunks.append(chunk)
-            print("Scaning chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            self.env.debugPrint(f"Scaning chunk... (P={chunk[0]}. Len={len(chunk[1])})")
         # delete filter
         env.cmd('del', 'bf')
 
         env.assertRaises(ResponseError, env.cmd, 'bf.loadchunk', 'bf')
         env.assertRaises(ResponseError, env.cmd, 'bf.loadchunk', 'bf', 'str')
         for chunk in chunks:
-            print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            self.env.debugPrint(f"Loading chunk... (P={chunk[0]}. Len={len(chunk[1])})")
             env.cmd('bf.loadchunk', 'bf', *chunk)
         # check loaded filter
         for x in range(6):

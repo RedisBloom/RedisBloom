@@ -382,12 +382,12 @@ class testCuckooNoCodec():
             if not chunk[0]:
                 break
             chunks.append(chunk)
-            # print("Scaning chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            # self.env.debugPrint(f"Scaning chunk... (P={chunk[0]}. Len={len(chunk[1])})")
         self.cmd('del', 'cf')
         self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf')
         self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf', 'str')
         for chunk in chunks:
-            print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            self.env.debugPrint(f"Loading chunk... (P={chunk[0]}. Len={len(chunk[1])})")
             self.cmd('cf.loadchunk', 'cf', *chunk)
         for x in range(maxrange):
             self.assertEqual(1, self.cmd('cf.exists', 'cf', str(x)))
@@ -411,14 +411,14 @@ class testCuckooNoCodec():
             if not chunk[0]:
                 break
             chunks.append(chunk)
-            print("Scaning chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            self.env.debugPrint(f"Scaning chunk... (P={chunk[0]}. Len={len(chunk[1])})")
         # delete filter
         self.cmd('del', 'cf')
 
         self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf')
         self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf', 'str')
         for chunk in chunks:
-            print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            self.env.debugPrint(f"Loading chunk... (P={chunk[0]}. Len={len(chunk[1])})")
             self.cmd('cf.loadchunk', 'cf', *chunk)
         # check loaded filter
         for x in range(maxrange):
@@ -442,14 +442,14 @@ class testCuckooNoCodec():
             if not chunk[0]:
                 break
             chunks.append(chunk)
-            print("Scaning chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            self.env.debugPrint(f"Scaning chunk... (P={chunk[0]}. Len={len(chunk[1])})")
         # delete filter
         self.cmd('del', 'cf')
 
         self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf')
         self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf', 'str')
         for chunk in chunks:
-            print("Loading chunk... (P={}. Len={})".format(chunk[0], len(chunk[1])))
+            self.env.debugPrint(f"Loading chunk... (P={chunk[0]}. Len={len(chunk[1])})")
             self.cmd('cf.loadchunk', 'cf', *chunk)
         # check loaded filter
         for x in range(6):

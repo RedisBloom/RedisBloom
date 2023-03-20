@@ -346,7 +346,7 @@ class testTDigest:
         )
         expected = [1,50,95,99]
         res = self.cmd("tdigest.quantile", "to-tdigest-500", 0.01, 0.5, 0.95, 0.99)
-        print (res)
+        self.env.debugPrint(res)
         for i in range(len(res)):
             self.assertAlmostEqual(expected[i], float(res[i]), 0.01)
 
