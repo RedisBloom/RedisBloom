@@ -598,8 +598,7 @@ workflows:
           <<: *on-integ-and-version-tags
       - build-macos-m1:
           context: common
-          #@@<<: *on-integ-and-version-tags
-          <<: *always
+          <<: *on-integ-and-version-tags
       - upload-artifacts:
           name: upload-artifacts-to-staging-lab
           staging-lab: "1"
