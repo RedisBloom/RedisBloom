@@ -1,0 +1,27 @@
+name: Build on Linux
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build-linux-jammy:
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        shell: bash -l -eo pipefail {0}
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+    - name: Setup
+      run: |
+        ./sbin/setup
+        export GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+        ./deps/readies/bin/getredis --with-github-token
+    - name: Build
+      run: make
+    - name: Unit tests
+      run: make unit-tests
+    - name: Flow tests
+      run: make flow-tests
