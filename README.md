@@ -30,25 +30,79 @@ Answering each of these questions accurately can require a huge amount of memory
 
 Redis Bloom is part of [Redis Stack](https://github.com/redis-stack).
 
-## Getting started
+## Setup
 
-1. [Launch RedisBloom with Docker](#1-launch-redisbloom-with-docker)
-2. [Use RedisBloom with `redis-cli`](#2-use-redisbloom-with-redis-cli) or with [RedisInsight](https://redis.io/docs/ui/insight/)
+You can either get RedisBloom setup in a Docker container or on your own machine.
 
-Note: You can also [build and load the module](#building-and-loading-redisbloom) yourself.
-
-### 1. Launch RedisBloom with Docker
-```
-docker run -d --name redis-stack-server -p 6379:6379 redis/redis-stack-server:latest
+### Docker
+To quickly try out RedisBloom, launch an instance using docker:
+```sh
+docker run -p 6379:6379 -it --rm redis/redis-stack-server:latest
 ```
 
-### 2. Use RedisBloom with `redis-cli`
-```
-docker exec -it redis/redis-stack-server bash
+### Build it yourself
 
-# redis-cli
-# 127.0.0.1:6379>
+You can also build RedisBloom on your own machine. Major Linux distributions as well as macOS are supported.
+
+First step is to have Redis installed, of course. The following, for example, builds Redis on a clean Ubuntu docker image (`docker pull ubuntu`):
+
 ```
+mkdir ~/Redis
+cd ~/Redis
+apt-get update -y && apt-get upgrade -y
+apt-get install -y wget make pkg-config build-essential
+wget https://download.redis.io/redis-stable.tar.gz
+tar -xzvf redis-stable.tar.gz
+cd redis-stable
+make distclean
+make
+make install
+```
+
+Next, you should get the RedisBloom repository from git and build it:
+
+```
+apt-get install -y git
+cd ~/Redis
+git clone --recursive https://github.com/RedisBloom/RedisBloom.git
+cd RedisBloom
+./sbin/setup
+bash -l
+make
+```
+
+Then `exit` to exit bash.
+
+**Note:** to get a specific version of RedisBloom, e.g. 2.4.5, add `-b v2.4.5` to the `git clone` command above.
+
+Next, run `make run -n` and copy the full path of the RedisBloom executable (e.g., `/root/Redis/RedisBloom/bin/linux-x64-release/redisbloom.so`).
+
+Next, add RedisBloom module to `redis.conf`, so Redis will load when started:
+
+```
+apt-get install -y vim
+cd ~/Redis/redis-stable
+vim redis.conf
+```
+Add: `loadmodule /root/Redis/RedisBloom/bin/linux-x64-release/redisbloom.so` under the MODULES section (use the full path copied above). 
+
+Save and exit vim (ESC :wq ENTER)
+
+For more information about modules, go to the [Redis official documentation](https://redis.io/topics/modules-intro).
+
+### Run
+
+Run redis-server in the background and then redis-cli:
+
+```
+cd ~/Redis/redis-stable
+redis-server redis.conf &
+redis-cli
+```
+
+## Give it a try
+
+After you setup RedisBloom, you can interact with it using redis-cli.
 
 Create a new bloom filter by adding a new item:
 ```
@@ -71,23 +125,8 @@ In this case, `1` means that the `foo` is most likely in the set represented by 
 
 A value `0` means that `bar` is definitely not in the set. Bloom filters do not allow for false negatives.
 
-## Building and Loading RedisBloom
-
-To build RedisBloom, ensure you have the proper git submodules, and afterwards run `make` in the project's directory.
-
-```
-git submodule update --init --recursive
-make
-```
-
-If the build is successful, you'll have a shared library called `redisbloom.so`.
-
-To load the library, pass its path to the `loadmodule` directive when starting `redis-server`:
-```
-$ redis-server --loadmodule /path/to/redisbloom.so
-```
-
 ## Client libraries
+
 | Project | Language | License | Author | Stars | Package | Comment |
 | ------- | -------- | ------- | ------ | ----- | ------- | ------- |
 | [jedis][jedis-url] | Java | MIT | [Redis][redis-url] | ![Stars][jedis-stars] | [Maven][jedis-package]||
