@@ -28,7 +28,7 @@ RedisBloom adds a set of probabilistic data structures to Redis, including Bloom
 
 Answering each of these questions accurately can require a huge amount of memory, but you can lower the memory requirements drastically at the cost of reduced accuracy. Each of these data structures allows you to set a controllable trade-off between accuracy and memory consumption. In addition to having a smaller memory footprint, probabilistic data structures are generally much faster than accurate algorithms.
 
-Redis Bloom is part of [Redis Stack](https://github.com/redis-stack).
+RedisBloom is part of [Redis Stack](https://github.com/redis-stack).
 
 ## Setup
 
