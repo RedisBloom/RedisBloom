@@ -653,6 +653,18 @@ workflows:
           filters:
             branches:
               only: master
+              
+  nightly:
+    triggers:
+      - schedule:
+          cron: "07 20 * * *"
+          filters:
+            branches:
+              only:
+                - master
+                - /^\d+\.\d+.*$/
+                - /^feature-.*$/
+                
     jobs:
       - benchmark-bloom-oss-standalone:
           context: common
