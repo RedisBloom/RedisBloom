@@ -582,10 +582,11 @@ workflows:
             - lint
           context: common
 
-  nightly:
+  nightly-perf-once-a-week:
     triggers:
       - schedule:
-          cron: "07 20 * * *"
+          #  “At 07:00 on Mondays.”
+          cron: "00 07 * * 1"
           filters:
             branches:
               only:
