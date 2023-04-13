@@ -105,6 +105,7 @@ endef
 define CC_INCLUDES +=
 	.
 	src
+	$(ROOT)/deps/RedisModulesSDK
 	$(ROOT)/deps
 	$(ROOT)/deps/murmur2
 	$(ROOT)/deps/t-digest-c/src
@@ -127,7 +128,6 @@ endif
 _SOURCES=\
 	deps/bloom/bloom.c \
 	deps/murmur2/MurmurHash2.c \
-	deps/rmutil/util.c \
 	src/rebloom.c \
 	src/sb.c \
 	src/cf.c \
@@ -327,9 +327,9 @@ INFER_DOCKER=redisbench/infer-linux64:1.0.0
 static-analysis: #$(TARGET)
 ifeq ($(DOCKER),1)
 	$(SHOW)docker run -v $(ROOT)/:/RedisBloom/ --user "$(username):$(usergroup)" $(INFER_DOCKER) \
-		bash -c "cd RedisBloom && CC=clang infer run --fail-on-issue --biabduction --skip-analysis-in-path '.*rmutil.*'  -- make"
+		bash -c "cd RedisBloom && CC=clang infer run --fail-on-issue --biabduction --skip-analysis-in-path  -- make"
 else
-	$(SHOW)CC=clang $(INFER) run --fail-on-issue --biabduction --skip-analysis-in-path '.*rmutil.*' -- $(MAKE) VARIANT=infer
+	$(SHOW)CC=clang $(INFER) run --fail-on-issue --biabduction --skip-analysis-in-path -- $(MAKE) VARIANT=infer
 endif
 
 #----------------------------------------------------------------------------------------------

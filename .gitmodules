@@ -5,3 +5,9 @@
 	path = deps/t-digest-c
 	url = https://github.com/RedisBloom/t-digest-c
 	branch = v0.4.1
+[submodule "RedisModulesSDK"]
+	path = RedisModulesSDK
+	url = git@github.com:RedisLabsModules/RedisModulesSDK.git
+[submodule "deps/RedisModulesSDK"]
+	path = deps/RedisModulesSDK
+	url = git@github.com:RedisLabsModules/RedisModulesSDK.git
