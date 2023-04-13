@@ -18,34 +18,34 @@ class RedisBloomSetup(paella.Setup):
 
     def common_first(self):
         self.install_downloaders()
-        self.run("%s/bin/enable-utf8" % READIES, sudo=self.os != 'macos')
+        self.run(f"{READIES}/bin/enable-utf8", sudo=self.os != 'macos')
         self.install("git jq")
 
     def debian_compat(self):
-        self.run("%s/bin/getgcc" % READIES)
+        self.run(f"{READIES}/bin/getgcc")
 
     def redhat_compat(self):
         self.install("which")
-        self.run("%s/bin/getepel" % READIES)
-        self.run("%s/bin/getgcc --modern" % READIES)
+        self.run(f"{READIES}/bin/getepel")
+        self.run(f"{READIES}/bin/getgcc --modern")
 
     def linux_last(self):
         self.install("valgrind")
 
     def macos(self):
         self.install_gnu_utils()
-        self.run("%s/bin/getredis" % READIES)
+        self.run(f"{READIES}/bin/getredis")
 
     def common_last(self):
         if self.dist == "arch":
             self.install("lcov-git", aur=True)
         else:
             self.install("lcov")
-        self.run("{ROOT}/sbin/get-fbinfer".format(ROOT=ROOT))
-        self.run("{PYTHON} {READIES}/bin/getrmpytools --reinstall --modern --redispy-version=v5.0.0b1 --rltest-version=github:rafi-resp3-1".format(PYTHON=self.python, READIES=READIES))
-        self.run("{PYTHON} {READIES}/bin/getcmake --usr".format(PYTHON=self.python, READIES=READIES))
+        self.run(f"{ROOT}/sbin/get-fbinfer")
+        self.run(f"{self.python} {READIES}/bin/getrmpytools --reinstall --modern --redispy-version=v5.0.0b1 --rltest-version=github:rafi-resp3-1")
+        self.run(f"{self.python} {READIES}/bin/getcmake --usr")
         self.pip_install("-r tests/flow/requirements.txt")
-        self.run("{READIES}/bin/getaws".format(READIES=READIES))
+        self.run(f"{READIES}/bin/getaws")
         self.pip_install("pudb")
 
 #----------------------------------------------------------------------------------------------
