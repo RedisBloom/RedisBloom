@@ -99,7 +99,7 @@ CC_COMMON_H=$(SRCDIR)/src/common.h
 define CC_DEFS +=
 	_GNU_SOURCE
 	REDIS_MODULE_TARGET
-	REDISMODULE_EXPERIMENTAL_API
+	REDISMODULE_SDK_RLEC
 endef
 
 define CC_INCLUDES +=
@@ -128,6 +128,7 @@ endif
 _SOURCES=\
 	deps/bloom/bloom.c \
 	deps/murmur2/MurmurHash2.c \
+	deps/rmutil/util.c \
 	src/rebloom.c \
 	src/sb.c \
 	src/cf.c \
