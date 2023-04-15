@@ -39,9 +39,9 @@ static inline bool _is_resp3(RedisModuleCtx *ctx) {
 
 #define _ReplyMap(ctx) (RedisModule_ReplyWithMap != NULL && _is_resp3(ctx))
 
-static void RedisModule_ReplyWithMapOrArray(RedisModuleCtx *ctx, long len, bool devide_by_two) {
+static void RedisModule_ReplyWithMapOrArray(RedisModuleCtx *ctx, long len, bool half) {
     if (_ReplyMap(ctx)) {
-        RedisModule_ReplyWithMap(ctx, devide_by_two ? len / 2 : len);
+        RedisModule_ReplyWithMap(ctx, half ? len / 2 : len);
     } else {
         RedisModule_ReplyWithArray(ctx, len);
     }
@@ -243,7 +243,7 @@ static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
             int exists = SBChain_Check(sb, s, n);
             reply = !!exists;
         }
-        if(_is_resp3(ctx)) {
+        if (_is_resp3(ctx)) {
             RedisModule_ReplyWithBool(ctx, reply);
         } else {
             RedisModule_ReplyWithLongLong(ctx, reply ? 1 : 0);
@@ -282,7 +282,7 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
         if (rv == -2) { // decide if to make into an error
             RedisModule_ReplyWithError(ctx, "ERR non scaling filter is full");
         } else {
-            if(_is_resp3(ctx)) {
+            if (_is_resp3(ctx)) {
                 RedisModule_ReplyWithBool(ctx, !!rv);
             } else {
                 RedisModule_ReplyWithLongLong(ctx, !!rv);
@@ -945,31 +945,31 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     if (argc == 3) {
         if (!rsStrcasecmp(argv[2], "capacity")) {
             RedisModule_ReplyWithMapOrArray(ctx, 1, false);
-            if(_ReplyMap(ctx)) {
+            if (_ReplyMap(ctx)) {
                 RedisModule_ReplyWithSimpleString(ctx, "Capacity");
             }
             RedisModule_ReplyWithLongLong(ctx, BFCapacity(bf));
         } else if (!rsStrcasecmp(argv[2], "size")) {
             RedisModule_ReplyWithMapOrArray(ctx, 1, false);
-            if(_ReplyMap(ctx)) {
+            if (_ReplyMap(ctx)) {
                 RedisModule_ReplyWithSimpleString(ctx, "Size");
             }
             RedisModule_ReplyWithLongLong(ctx, BFMemUsage(bf));
         } else if (!rsStrcasecmp(argv[2], "filters")) {
             RedisModule_ReplyWithMapOrArray(ctx, 1, false);
-            if(_ReplyMap(ctx)) {
+            if (_ReplyMap(ctx)) {
                 RedisModule_ReplyWithSimpleString(ctx, "Number of filters");
             }
             RedisModule_ReplyWithLongLong(ctx, bf->nfilters);
         } else if (!rsStrcasecmp(argv[2], "items")) {
             RedisModule_ReplyWithMapOrArray(ctx, 1, false);
-            if(_ReplyMap(ctx)) {
+            if (_ReplyMap(ctx)) {
                 RedisModule_ReplyWithSimpleString(ctx, "Number of items inserted");
             }
             RedisModule_ReplyWithLongLong(ctx, bf->size);
         } else if (!rsStrcasecmp(argv[2], "expansion")) {
             RedisModule_ReplyWithMapOrArray(ctx, 1, false);
-            if(_ReplyMap(ctx)) {
+            if (_ReplyMap(ctx)) {
                 RedisModule_ReplyWithSimpleString(ctx, "Expansion rate");
             }
             bf->options &BLOOM_OPT_NO_SCALING ? RedisModule_ReplyWithNull(ctx)
@@ -981,7 +981,7 @@ static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         return REDISMODULE_OK;
     }
 
-    RedisModule_ReplyWithMapOrArray(ctx, 5*2, true);
+    RedisModule_ReplyWithMapOrArray(ctx, 5 * 2, true);
     RedisModule_ReplyWithSimpleString(ctx, "Capacity");
     RedisModule_ReplyWithLongLong(ctx, BFCapacity(bf));
     RedisModule_ReplyWithSimpleString(ctx, "Size");
