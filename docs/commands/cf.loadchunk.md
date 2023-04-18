@@ -16,4 +16,4 @@ the cuckoo filter is not be modified between invocations.
 
 @examples
 
-See BF.SCANDUMP for an example.
+See CF.SCANDUMP for an example.
