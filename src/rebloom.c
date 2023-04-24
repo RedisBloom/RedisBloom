@@ -29,24 +29,6 @@
 #define CF_DEFAULT_EXPANSION 1
 #define BF_DEFAULT_EXPANSION 2
 
-static inline bool _is_resp3(RedisModuleCtx *ctx) {
-    int ctxFlags = RedisModule_GetContextFlags(ctx);
-    if (ctxFlags & REDISMODULE_CTX_FLAGS_RESP3) {
-        return true;
-    }
-    return false;
-}
-
-#define _ReplyMap(ctx) (RedisModule_ReplyWithMap != NULL && _is_resp3(ctx))
-
-static void RedisModule_ReplyWithMapOrArray(RedisModuleCtx *ctx, long len, bool half) {
-    if (_ReplyMap(ctx)) {
-        RedisModule_ReplyWithMap(ctx, half ? len / 2 : len);
-    } else {
-        RedisModule_ReplyWithArray(ctx, len);
-    }
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 /// Redis Commands                                                           ///
@@ -770,7 +752,11 @@ static int CFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
 
     for (size_t ii = 2; ii < argc; ++ii) {
         if (is_empty == 1) {
-            RedisModule_ReplyWithLongLong(ctx, 0);
+            if(_is_resp3(ctx)) {
+                RedisModule_ReplyWithBool(ctx, 0);
+            } else {
+                RedisModule_ReplyWithLongLong(ctx, 0);
+            }
         } else {
             size_t n;
             const char *s = RedisModule_StringPtrLen(argv[ii], &n);
@@ -781,7 +767,11 @@ static int CFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
             } else {
                 rv = CuckooFilter_Check(cf, hash);
             }
-            RedisModule_ReplyWithLongLong(ctx, rv);
+            if(_is_resp3(ctx)) {
+                RedisModule_ReplyWithBool(ctx, !!rv);
+            } else {
+                RedisModule_ReplyWithLongLong(ctx, rv);
+            }
         }
     }
     return REDISMODULE_OK;
@@ -806,7 +796,9 @@ static int CFDel_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     size_t elemlen;
     const char *elem = RedisModule_StringPtrLen(argv[2], &elemlen);
     CuckooHash hash = CUCKOO_GEN_HASH(elem, elemlen);
-    return RedisModule_ReplyWithLongLong(ctx, CuckooFilter_Delete(cf, hash));
+    int rv = CuckooFilter_Delete(cf, hash);
+    return _is_resp3(ctx) ? 
+    RedisModule_ReplyWithBool(ctx, !!rv) : RedisModule_ReplyWithLongLong(ctx, rv);
 }
 
 static int CFCompact_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
@@ -1041,7 +1033,7 @@ static int CFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
 
-    RedisModule_ReplyWithArray(ctx, 8 * 2);
+    RedisModule_ReplyWithMapOrArray(ctx, 8 * 2, true);
     RedisModule_ReplyWithSimpleString(ctx, "Size");
     RedisModule_ReplyWithLongLong(ctx, CFSize(cf));
     RedisModule_ReplyWithSimpleString(ctx, "Number of buckets");

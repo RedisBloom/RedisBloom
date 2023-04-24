@@ -13,6 +13,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <stdbool.h>
 
 // clang-format off
 #define INNER_ERROR(x) \
@@ -260,7 +261,7 @@ int CMSKetch_Info(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_OK;
     }
 
-    RedisModule_ReplyWithArray(ctx, 3 * 2);
+    RedisModule_ReplyWithMapOrArray(ctx, 3 * 2, true);
     RedisModule_ReplyWithSimpleString(ctx, "width");
     RedisModule_ReplyWithLongLong(ctx, cms->width);
     RedisModule_ReplyWithSimpleString(ctx, "depth");
