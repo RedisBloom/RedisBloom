@@ -172,7 +172,7 @@ static int TopK_Query_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
     for (int i = 2; i < argc; ++i) {
         const char *item = RedisModule_StringPtrLen(argv[i], &itemlen);
         res = TopK_Query(topk, item, itemlen);
-        if(_is_resp3(ctx)) {
+        if (_is_resp3(ctx)) {
             RedisModule_ReplyWithBool(ctx, !!res);
         } else {
             RedisModule_ReplyWithLongLong(ctx, res);

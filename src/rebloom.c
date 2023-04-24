@@ -752,7 +752,7 @@ static int CFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
 
     for (size_t ii = 2; ii < argc; ++ii) {
         if (is_empty == 1) {
-            if(_is_resp3(ctx)) {
+            if (_is_resp3(ctx)) {
                 RedisModule_ReplyWithBool(ctx, 0);
             } else {
                 RedisModule_ReplyWithLongLong(ctx, 0);
@@ -767,7 +767,7 @@ static int CFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
             } else {
                 rv = CuckooFilter_Check(cf, hash);
             }
-            if(_is_resp3(ctx)) {
+            if (_is_resp3(ctx)) {
                 RedisModule_ReplyWithBool(ctx, !!rv);
             } else {
                 RedisModule_ReplyWithLongLong(ctx, rv);
@@ -797,8 +797,8 @@ static int CFDel_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     const char *elem = RedisModule_StringPtrLen(argv[2], &elemlen);
     CuckooHash hash = CUCKOO_GEN_HASH(elem, elemlen);
     int rv = CuckooFilter_Delete(cf, hash);
-    return _is_resp3(ctx) ? 
-    RedisModule_ReplyWithBool(ctx, !!rv) : RedisModule_ReplyWithLongLong(ctx, rv);
+    return _is_resp3(ctx) ? RedisModule_ReplyWithBool(ctx, !!rv)
+                          : RedisModule_ReplyWithLongLong(ctx, rv);
 }
 
 static int CFCompact_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
