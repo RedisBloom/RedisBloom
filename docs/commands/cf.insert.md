@@ -1,19 +1,19 @@
 Adds one or more items to a cuckoo filter, allowing the filter to be created with a custom capacity if it does not exist yet.
 
-These commands offers more flexibility over the `ADD` command, at the cost of more verbosity.
+This command offers more flexibility over the `ADD` command, at the cost of more verbosity.
 
 ## Required arguments
 
 <details open><summary><code>key</code></summary>
 
-is key name for a cuckoo filter to add items to.
+is key name for a cuckoo filter to insert items to.
 
 If `key` does not exist - a new cuckoo filter is created.
 </details>
 
 <details open><summary><code>ITEMS item...</code></summary>
 
-One or more items to add.
+One or more items to insert.
 </details>
 
 ## Optional arguments
@@ -38,7 +38,7 @@ This option is mutually exclusive with `CAPACITY`.
 
 ## Return value
 
-@array-reply of @integer-reply - where "1" means the item has been added to the filter, and "-1" means that the item was not inserted because the filter is full.
+@array-reply of @integer-reply - where "1" means the item has been inserted to the filter, and "-1" means that the item was not inserted because the filter is full.
 
 @error-reply on error (invalid arguments, wrong key type, etc.)
 
@@ -48,10 +48,14 @@ This option is mutually exclusive with `CAPACITY`.
 redis> CF.INSERT cf CAPACITY 1000 ITEMS item1 item2 
 1) (integer) 1
 2) (integer) 1
+{{< / highlight >}}
 
+{{< highlight bash >}}
 redis> CF.INSERT cf1 CAPACITY 1000 NOCREATE ITEMS item1 item2 
 (error) ERR not found
+{{< / highlight >}}
 
+{{< highlight bash >}}
 redis> CF.RESERVE cf2 2 BUCKETSIZE 1 EXPANSION 0
 OK
 redis> CF.INSERT cf2 ITEMS 1 1 1 1

@@ -1,28 +1,39 @@
-Adds an item to a cuckoo filter if the item did not exist previously.
-See documentation on `CF.ADD` for more information on this command.
+Adds an item to a cuckoo filter if the item did not exist previously; creating the filter if it does not exist.
 
-This command is equivalent to a `CF.EXISTS` + `CF.ADD` command. It does not
-insert an element into the filter if its fingerprint already exists in order to
-use the available capacity more efficiently. However, deleting
-elements can introduce **false negative** error rate!
+This command is equivalent to a `CF.EXISTS` + `CF.ADD` command. It does not insert an element into the filter if its fingerprint already exists and therefore better utilizes the available capacity.
 
-Note that this command is slower than `CF.ADD` because it first checks whether the
-item exists.
+<note><b>Notes:</b>
 
-### Parameters
+- This command is slower than `CF.ADD` because it first checks whether the item exists.
+- Since `CF.EXISTS` can result in false positive, `CF.ADDNX` may not insert an element because it is supposedly already exist, which may be wrong.
 
-* **key**: The name of the filter
-* **item**: The item to add
+</note>
 
-@return
+## Required arguments
 
-@integer-reply - where "1" means the item has been added to the filter, and "0" mean, the item already existed.
+<details open><summary><code>key</code></summary>
 
-@examples
+is key name for a cuckoo filter to insert items to.
 
-```
+If `key` does not exist - a new cuckoo filter is created.
+</details>
+
+<details open><summary><code>item</code></summary>
+
+is an item to insert.
+</details>
+
+## Return value
+
+@integer-reply - where "0" means that an element with such fingerprint already exist in the filter, "1" means the item has been inserted to the filter.
+
+@error-reply on error (invalid arguments, wrong key type, etc.) and also when the filter is full.
+
+## Examples
+
+{{< highlight bash >}}
 redis> CF.ADDNX cf item1
 (integer) 0
 redis> CF.ADDNX cf item_new
 (integer) 1
-```
+{{< / highlight >}}

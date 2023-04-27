@@ -5,23 +5,36 @@ as separate. You can use `CF.ADDNX` to only add the item if it does not
 exist yet. Keep in mind that deleting an element inserted using `CF.ADDNX` may
 cause false-negative errors.
 
-### Parameters
+## Required arguments
 
-* **key**: The name of the filter
-* **item**: The item to add
+<details open><summary><code>key</code></summary>
 
-### Complexity
+is key name for a cuckoo filter to insert items to.
+
+If `key` does not exist - a new cuckoo filter is created.
+</details>
+
+<details open><summary><code>item</code></summary>
+
+is an item to insert.
+</details>
+
+## Return value
+
+@integer-reply - "1" means the item has been inserted to the filter.
+
+@error-reply on error (invalid arguments, wrong key type, etc.) and also when the filter is full.
+
+## Complexity
 
 O(n + i), where n is the number of `sub-filters` and i is `maxIterations`.
-Adding items requires up to 2 memory accesses per `sub-filter`.
+Inserting items requires up to 2 memory accesses per `sub-filter`.
 But as the filter fills up, both locations for an item might be full. The filter
 attempts to `Cuckoo` swap items up to `maxIterations` times.
 
-@return
+## Examples
 
-@integer-reply - "1" if executed correctly, or @error-reply otherwise.
-
-```
+{{< highlight bash >}}
 redis> CF.ADD cf item
 (integer) 1
-```
+{{< / highlight >}}
