@@ -19,9 +19,10 @@ is an item to insert.
 
 ## Return value
 
-@integer-reply - "1" means the item has been inserted to the filter.
+Either
 
-@error-reply on error (invalid arguments, wrong key type, etc.) and also when the filter is full.
+- @integer-reply - "1" means that the item has been successfully inserted to the filter.
+- @error-reply on error (invalid arguments, wrong key type, etc.) and also when the filter is full.
 
 ## Complexity
 
