@@ -38,9 +38,10 @@ This option is mutually exclusive with `CAPACITY`.
 
 ## Return value
 
-@array-reply of @integer-reply - where "1" means that the item has been successfully inserted to the filter, and "-1" means that the item was not inserted because the filter is full.
+Either
 
-@error-reply on error (invalid arguments, wrong key type, etc.)
+- @array-reply of @integer-reply - where "1" means that the item has been successfully inserted to the filter, and "-1" means that the item was not inserted because the filter is full.
+- @error-reply on error (invalid arguments, wrong key type, etc.)
 
 ## Examples
 
