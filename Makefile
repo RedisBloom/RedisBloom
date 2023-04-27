@@ -99,12 +99,13 @@ CC_COMMON_H=$(SRCDIR)/src/common.h
 define CC_DEFS +=
 	_GNU_SOURCE
 	REDIS_MODULE_TARGET
-	REDISMODULE_EXPERIMENTAL_API
+	REDISMODULE_SDK_RLEC
 endef
 
 define CC_INCLUDES +=
 	.
 	src
+	$(ROOT)/deps/RedisModulesSDK
 	$(ROOT)/deps
 	$(ROOT)/deps/murmur2
 	$(ROOT)/deps/t-digest-c/src
@@ -327,9 +328,9 @@ INFER_DOCKER=redisbench/infer-linux64:1.0.0
 static-analysis: #$(TARGET)
 ifeq ($(DOCKER),1)
 	$(SHOW)docker run -v $(ROOT)/:/RedisBloom/ --user "$(username):$(usergroup)" $(INFER_DOCKER) \
-		bash -c "cd RedisBloom && CC=clang infer run --fail-on-issue --biabduction --skip-analysis-in-path '.*rmutil.*'  -- make"
+		bash -c "cd RedisBloom && CC=clang infer run --fail-on-issue --biabduction --skip-analysis-in-path  -- make"
 else
-	$(SHOW)CC=clang $(INFER) run --fail-on-issue --biabduction --skip-analysis-in-path '.*rmutil.*' -- $(MAKE) VARIANT=infer
+	$(SHOW)CC=clang $(INFER) run --fail-on-issue --biabduction --skip-analysis-in-path -- $(MAKE) VARIANT=infer
 endif
 
 #----------------------------------------------------------------------------------------------

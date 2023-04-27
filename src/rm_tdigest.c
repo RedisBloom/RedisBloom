@@ -7,6 +7,7 @@
 #include "rm_tdigest.h"
 #include "rmutil/util.h"
 #include "version.h"
+#include "rm_cms.h"
 
 #include "redismodule.h"
 
@@ -805,7 +806,7 @@ int TDigestSketch_Info(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 
     td_histogram_t *tdigest = RedisModule_ModuleTypeGetValue(key);
 
-    RedisModule_ReplyWithArray(ctx, 9 * 2);
+    RedisModule_ReplyWithMapOrArray(ctx, 9 * 2, true);
     RedisModule_ReplyWithSimpleString(ctx, "Compression");
     RedisModule_ReplyWithLongLong(ctx, tdigest->compression);
     RedisModule_ReplyWithSimpleString(ctx, "Capacity");
