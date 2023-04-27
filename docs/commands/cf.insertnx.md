@@ -4,9 +4,10 @@ This command offers more flexibility over the `ADDNX` commands, at the cost of m
 
 This command is equivalent to a `CF.EXISTS` + `CF.ADD` command. It does not insert an element into the filter if its fingerprint already exists and therefore better utilizes the available capacity. 
 
-<note><b>Note:</b>
+<note><b>Notes:</b>
 
-Since `CF.EXISTS` can result in false positive, `CF.ADDNX` may not insert an element because it is supposedly already exist, which may be wrong.
+- This command is slower than `CF.INSERT` because it first checks whether each item exists.
+- Since `CF.EXISTS` can result in false positive, `CF.INSERTNX` may not insert an element because it is supposedly already exist, which may be wrong.
     
 </note>
 
