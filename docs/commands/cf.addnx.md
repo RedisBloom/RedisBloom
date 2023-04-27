@@ -32,8 +32,8 @@ is an item to insert.
 ## Examples
 
 {{< highlight bash >}}
-redis> CF.ADDNX cf item1
-(integer) 0
-redis> CF.ADDNX cf item_new
+redis> CF.ADDNX cf item
 (integer) 1
+redis> CF.ADDNX cf item
+(integer) 0
 {{< / highlight >}}
