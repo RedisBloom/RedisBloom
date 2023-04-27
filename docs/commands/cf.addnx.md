@@ -25,7 +25,7 @@ is an item to insert.
 
 ## Return value
 
-@integer-reply - where "0" means that an item with such fingerprint already exist in the filter, "1" means the item has been inserted to the filter.
+@integer-reply - where "0" means that an item with such fingerprint already exist in the filter, and "1" means the item has been inserted to the filter.
 
 @error-reply on error (invalid arguments, wrong key type, etc.) and also when the filter is full.
 
