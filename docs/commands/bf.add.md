@@ -1,57 +1,30 @@
-Creates an empty Bloom Filter with a single sub-filter for the initial capacity
-requested and with an upper bound `error_rate`. By default, the filter
-auto-scales by creating additional sub-filters when `capacity` is reached. The
-new sub-filter is created with size of the previous sub-filter multiplied by
-`expansion`.
+Adds an item to a Bloom filter if the item did not exist previously; creating the filter if it does not exist.
 
-Though the filter can scale up by creating sub-filters, it is recommended to
-reserve the estimated required `capacity` since maintaining and querying
-sub-filters requires additional memory (each sub-filter uses an extra bits and
-hash function) and consume  further CPU time than an equivalent filter that had
-the right capacity at creation time.
+## Required arguments
 
-The number of hash functions is `-log(error)/ln(2)^2`.
-The number of bits per item is `-log(error)/ln(2)` ≈ 1.44.
+<details open><summary><code>key</code></summary>
 
-* **1%**    error rate requires 7  hash functions and 10.08 bits per item.
-* **0.1%**  error rate requires 10 hash functions and 14.4  bits per item.
-* **0.01%** error rate requires 14 hash functions and 20.16 bits per item.
+is key name for a Bloom filter to insert items to.
 
+If `key` does not exist - a new Bloom filter is created.
+</details>
 
-### Parameters:
+<details open><summary><code>item</code></summary>
 
-* **key**: The key under which the filter is found
-* **error_rate**: The desired probability for false positives. The rate is
-    a decimal value between 0 and 1. For example, for a desired false
-    positive rate of 0.1% (1 in 1000), error_rate should be set to 0.001.
-* **capacity**: The number of entries intended to be added to the filter.
-    If your filter allows scaling, performance will begin to degrade after
-    adding more items than this number. The actual degradation depends on
-    how far the limit has been exceeded. Performance degrades linearly with
-    the number of `sub-filters`.
+is an item to insert.
+</details>
 
-Optional parameters:
+## Return value
 
-* **NONSCALING**: Prevents the filter from creating additional sub-filters if
-    initial capacity is reached. Non-scaling filters requires slightly less
-    memory than their scaling counterparts. The filter returns an error
-    when `capacity` is reached.
-* **EXPANSION**: When `capacity` is reached, an additional sub-filter is
-    created. The size of the new sub-filter is the size of the last sub-filter
-    multiplied by `expansion`. If the number of elements to be stored in the
-    filter is unknown, we recommend that you use an `expansion` of 2 or more
-    to reduce the number of sub-filters. Otherwise, we recommend that you use an
-    `expansion` of 1 to reduce memory consumption. The default expansion value is 2.
+@integer-reply - where "0" means that an item with such fingerprint already exists in the filter, and "1" means the item has been inserted to the filter.
 
-@return
+@error-reply on error (invalid arguments, wrong key type, etc.) and also when the filter is full.
 
-@integer-reply - "1" if such item did not exist in the filter, "0" if such item was likely added to the filter before (false positives are possible).
+## Examples
 
-@examples
-
-```
+{{< highlight bash >}}
+redis> BF.ADD bf item1
+(integer) 1
 redis> BF.ADD bf item1
 (integer) 0
-redis> BF.ADD bf item_new
-(integer) 1
-```
+{{< / highlight >}}
