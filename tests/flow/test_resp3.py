@@ -22,13 +22,13 @@ class testResp3():
         assert res == {b'Capacity': 100, b'Size': 240, b'Number of filters': 1,
          b'Number of items inserted': 1, b'Expansion rate': 2}
 
-        res = env.cmd('bf.insert', 'test', 'ITEMS', 'item2', 'item3')
+        res = env.cmd('bf.insert', 'test', 'ITEMS', 'item2', 'item3', 'item2')
         assert type(res[0]) == bool
-        assert res == [True, True]
+        assert res == [True, True, False]
 
-        res = env.cmd('bf.madd', 'test', 'item4', 'item5')
+        res = env.cmd('bf.madd', 'test', 'item4', 'item5', 'item2')
         assert type(res[0]) == bool
-        assert res == [True, True]
+        assert res == [True, True, False]
 
         res = env.cmd('bf.MEXISTS', 'test', 'item4', 'item5', 'item6')
         assert type(res[0]) == bool
@@ -70,7 +70,6 @@ class testResp3():
         env.assertEqual(res, [True, False])
 
         res = env.cmd('cf.info a')
-        print(res)
         assert res == {b'Size': 64, b'Number of buckets': 4,
                        b'Number of filters': 1, b'Number of items inserted': 5,
                        b'Number of items deleted': 1, b'Bucket size': 2,
