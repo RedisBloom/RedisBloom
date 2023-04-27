@@ -1,13 +1,13 @@
-Adds an item to a cuckoo filter if the item did not exist previously.
-See documentation on `CF.ADD` for more information on this command.
+Adds an item to a cuckoo filter if the item did not exist previously; creating the filter if it does not exist.
 
-This command is equivalent to a `CF.EXISTS` + `CF.ADD` command. It does not
-insert an element into the filter if its fingerprint already exists in order to
-use the available capacity more efficiently. However, deleting
-elements can introduce **false negative** error rate!
+This command is equivalent to a `CF.EXISTS` + `CF.ADD` command. It does not insert an element into the filter if its fingerprint already exists and therefore better utilizes the available capacity.
 
-Note that this command is slower than `CF.ADD` because it first checks whether the
-item exists.
+<note><b>Notes:</b>
+
+- This command is slower than `CF.ADD` because it first checks whether the item exists.
+- Since `CF.EXISTS` can result in false positive, `CF.ADDNX` may not insert an element because it is supposedly already exist, which may be wrong.
+
+</note>
 
 ## Required arguments
 
