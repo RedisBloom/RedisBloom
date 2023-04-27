@@ -18,9 +18,12 @@ One or more items to insert.
 
 ## Return value
 
-@array-reply of @integer-reply - where "0" means that an item with such fingerprint already exists in the filter, and "1" means that the item has been successfully inserted to the filter.
+Either
 
-@error-reply on error (invalid arguments, wrong key type, etc.) and also when the filter is full.
+- @array-reply where each element is either
+  - @integer-reply - where "0" means that an item with such fingerprint already exists in the filter, and "1" means that the item has been successfully inserted to the filter
+  - @error-reply when the item cannot be inserted because the filter is full
+- @error-reply (e.g., on wrong number of arguments, wrong key type)
 
 ## Examples
 
