@@ -21,7 +21,7 @@ If `key` does not exist - a new cuckoo filter is created.
 
 <details open><summary><code>ITEMS item...</code></summary>
 
-One or more items to add.
+One or more items to insert.
 </details>
 
 ## Optional arguments
