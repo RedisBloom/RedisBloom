@@ -1,36 +1,62 @@
-Adds one or more items to a cuckoo filter, allowing the filter to be created
-with a custom capacity if it does not exist yet.
+Adds one or more items to a cuckoo filter, allowing the filter to be created with a custom capacity if it does not exist yet.
 
-These commands offers more flexibility over the `ADD` command, at
-the cost of more verbosity.
+These commands offers more flexibility over the `ADD` command, at the cost of more verbosity.
 
-### Parameters
+## Required arguments
 
-* **key**: The name of the filter
-* **capacity**: Specifies the desired capacity of the new filter, if this filter
-    does not exist yet. If the filter already exists, then this parameter is
-    ignored. If the filter does not exist yet and this parameter is *not*
-    specified, then the filter is created with the module-level default capacity
-    which is 1024. See `CF.RESERVE` for more information on cuckoo filter
-    capacities.
-* **NOCREATE**: If specified, prevents automatic filter creation if the filter
-    does not exist. Instead, an error is returned if the filter does not
-    already exist. This option is mutually exclusive with `CAPACITY`.
-* **item**: One or more items to add. The `ITEMS` keyword must precede the list of items to add.
+<details open><summary><code>key</code></summary>
 
-@return
+is key name for a cuckoo filter to add items to.
 
-@integer-reply - "1" if executed correctly, or @error-reply otherwise.
+If `key` does not exist - a new cuckoo filter is created.
+</details>
 
-@examples
+<details open><summary><code>ITEMS item...</code></summary>
 
-```
+One or more items to add.
+</details>
+
+## Optional arguments
+
+<details open><summary><code>CAPACITY capacity</code></summary>
+    
+Specifies the desired capacity of the new filter, if this filter does not exist yet.
+    
+If the filter already exists, then this parameter is ignored.
+    
+If the filter does not exist yet and this parameter is *not* specified, then the filter is created with the module-level default capacity which is 1024.
+
+See `CF.RESERVE` for more information on cuckoo filter capacities.
+</details>
+    
+<details open><summary><code>NOCREATE</code></summary>
+  
+If specified, prevents automatic filter creation if the filter does not exist (Instead, an error is returned).
+    
+This option is mutually exclusive with `CAPACITY`.
+</details>
+
+## Return value
+
+@array-reply of @integer-reply - where "1" means the item has been added to the filter, and "-1" means that the item was not inserted because the filter is full.
+
+@error-reply on error (invalid arguments, wrong key type, etc.)
+
+## Examples
+
+{{< highlight bash >}}
 redis> CF.INSERT cf CAPACITY 1000 ITEMS item1 item2 
 1) (integer) 1
 2) (integer) 1
-```
 
-```
 redis> CF.INSERT cf1 CAPACITY 1000 NOCREATE ITEMS item1 item2 
 (error) ERR not found
-```
+
+redis> CF.RESERVE cf2 2 BUCKETSIZE 1 EXPANSION 0
+OK
+redis> CF.INSERT cf2 ITEMS 1 1 1 1
+1) (integer) 1
+2) (integer) 1
+3) (integer) -1
+4) (integer) -1
+{{< / highlight >}}
