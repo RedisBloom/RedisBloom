@@ -6,14 +6,14 @@ This command offers more flexibility over the `ADD` command, at the cost of more
 
 <details open><summary><code>key</code></summary>
 
-is key name for a cuckoo filter to add items to.
+is key name for a cuckoo filter to insert items to.
 
 If `key` does not exist - a new cuckoo filter is created.
 </details>
 
 <details open><summary><code>ITEMS item...</code></summary>
 
-One or more items to add.
+One or more items to insert.
 </details>
 
 ## Optional arguments
