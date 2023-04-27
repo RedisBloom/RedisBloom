@@ -1,9 +1,7 @@
 Adds an item to the cuckoo filter, creating the filter if it does not exist.
 
-Cuckoo filters can contain the same item multiple times, and consider each insert
-as separate. You can use `CF.ADDNX` to only add the item if it does not
-exist yet. Keep in mind that deleting an element inserted using `CF.ADDNX` may
-cause false-negative errors.
+Cuckoo filters can contain the same item multiple times, and consider each insert as separate.
+You can use `CF.ADDNX` to only add the item if it does not exist yet.
 
 ## Required arguments
 
