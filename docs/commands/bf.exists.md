@@ -1,20 +1,30 @@
-Determines whether an item may exist in the Bloom Filter or not.
+Determines whether an item was added to a Bloom filter.
 
-### Parameters
+## Required arguments
 
-* **key**: The name of the filter
-* **item**: The item to check for
+<details open><summary><code>key</code></summary>
 
-@return
+is key name for a Bloom filter.
 
-@integer-reply - where "1" value means the item may exist in the filter,
-and a "0" value means it does not exist in the filter.
+</details>
 
-@examples
+<details open><summary><code>item</code></summary>
 
-```
+is an item to check.
+</details>
+
+## Return value
+
+- @integer-reply - where "0" means that `key` does not exist or the item was not added to the filter, and "1" means that such item was already added to the filter (which could be wrong)
+- @error-reply on error (invalid arguments, wrong key type, etc.)
+
+## Examples
+
+{{< highlight bash >}}
+redis> BF.ADD bf item1
+(integer) 1
 redis> BF.EXISTS bf item1
 (integer) 1
-redis> BF.EXISTS bf item_new
+redis> BF.EXISTS bf item2
 (integer) 0
-```
+{{< / highlight >}}
