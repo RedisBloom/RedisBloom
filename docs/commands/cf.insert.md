@@ -48,10 +48,14 @@ This option is mutually exclusive with `CAPACITY`.
 redis> CF.INSERT cf CAPACITY 1000 ITEMS item1 item2 
 1) (integer) 1
 2) (integer) 1
+{{< / highlight >}}
 
+{{< highlight bash >}}
 redis> CF.INSERT cf1 CAPACITY 1000 NOCREATE ITEMS item1 item2 
 (error) ERR not found
+{{< / highlight >}}
 
+{{< highlight bash >}}
 redis> CF.RESERVE cf2 2 BUCKETSIZE 1 EXPANSION 0
 OK
 redis> CF.INSERT cf2 ITEMS 1 1 1 1
