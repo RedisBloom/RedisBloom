@@ -262,7 +262,15 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
         const char *s = RedisModule_StringPtrLen(items[ii], &n);
         rv = SBChain_Add(sb, s, n);
         if (rv == -2) { // decide if to make into an error
-            RedisModule_ReplyWithError(ctx, "ERR non scaling filter is full");
+            if (options->is_multi) {
+                if (_is_resp3(ctx)) {
+                    RedisModule_ReplyWithBool(ctx, false);
+                } else {
+                    RedisModule_ReplyWithLongLong(ctx, 0);
+                }
+            } else {
+                RedisModule_ReplyWithError(ctx, "ERR non scaling filter is full");
+            }
         } else {
             if (_is_resp3(ctx)) {
                 RedisModule_ReplyWithBool(ctx, !!rv);
@@ -623,16 +631,34 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
         }
         switch (insStatus) {
         case CuckooInsert_Inserted:
-            RedisModule_ReplyWithLongLong(ctx, 1);
+            if (_is_resp3(ctx) && (!options->is_nx || !options->is_multi)) {
+                // resp3 and CF.INSERT/CF.ADD/CF.ADDNX
+                RedisModule_ReplyWithBool(ctx, 1);
+            } else {
+                // CF.INSERTNX or resp2
+                RedisModule_ReplyWithLongLong(ctx, 1);
+            }
             break;
         case CuckooInsert_Exists:
-            RedisModule_ReplyWithLongLong(ctx, 0);
+            if (_is_resp3(ctx) && (!options->is_nx || !options->is_multi)) {
+                // resp3 and CF.ADDNX
+                RedisModule_ReplyWithBool(ctx, 0);
+            } else {
+                // CF.INSERTNX or resp2
+                RedisModule_ReplyWithLongLong(ctx, 0);
+            }
             break;
         case CuckooInsert_NoSpace:
             if (!options->is_multi) {
                 return RedisModule_ReplyWithError(ctx, "Filter is full");
             } else {
-                RedisModule_ReplyWithLongLong(ctx, -1);
+                if (_is_resp3(ctx) && !options->is_nx) {
+                    // resp3 and CF.INSERT
+                    RedisModule_ReplyWithBool(ctx, 0);
+                } else {
+                    // CF.INSERTNX or resp2
+                    RedisModule_ReplyWithLongLong(ctx, -1);
+                }
             }
             break;
         case CuckooInsert_MemAllocFailed:
