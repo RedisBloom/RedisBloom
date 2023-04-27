@@ -35,30 +35,28 @@ Optional parameters:
     to reduce the number of sub-filters. Otherwise, we recommend that you use an
     `expansion` of 1 to reduce memory consumption. The default expansion value is 2.
 
-@return
+## Return value
 
 An array of booleans (integers). Each element is either true or false depending
 on whether the corresponding input element was newly added to the filter or may
 have previously existed.
 
+## Examples
 
-@examples
-Add three items to a filter with default parameters if the filter does not already
-exist:
+Add three items to a filter with default parameters if the filter does not already exist:
 
-```
+{{< highlight bash >}}
 BF.INSERT filter ITEMS foo bar baz
-```
+{{< / highlight >}}
 
-Add one item to a filter with a capacity of 10000 if the filter does not
-already exist:
+Add one item to a filter with a capacity of 10000 if the filter does not already exist:
 
-```
+{{< highlight bash >}}
 BF.INSERT filter CAPACITY 10000 ITEMS hello
-```
+{{< / highlight >}}
 
 Add 2 items to a filter with an error if the filter does not already exist:
 
-```
+{{< highlight bash >}}
 BF.INSERT filter NOCREATE ITEMS foo bar
-```
+{{< / highlight >}}
