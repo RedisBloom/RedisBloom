@@ -23,7 +23,7 @@ Either
 - @array-reply where each element is either
   - @integer-reply - where "1" means that the item has been added successfully, and "0" means that such item was already added to the filter (which could be wrong)
   - @error-reply when the item cannot be added because the filter is full
-- @error-reply (invalid arguments, wrong key type, etc.)
+- @error-reply on error (invalid arguments, wrong key type, etc.)
 
 ## Examples
 
