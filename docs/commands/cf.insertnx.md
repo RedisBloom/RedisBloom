@@ -46,14 +46,14 @@ This option is mutually exclusive with `CAPACITY`.
 
 ## Return value
 
-@array-reply of @integer-reply - where "0" means that an element with such fingerprint already exist in the filter, "1" means the item has been added to the filter, and "-1" means that the item was not inserted because the filter is full.
+@array-reply of @integer-reply - where "0" means that an element with such fingerprint already exist in the filter, "1" means the item has been inserted to the filter, and "-1" means that the item was not inserted because the filter is full.
 
 @error-reply on error (invalid arguments, wrong key type, etc.)
 
 ### Complexity
 
 O(n + i), where n is the number of `sub-filters` and i is `maxIterations`.
-Adding items requires up to 2 memory accesses per `sub-filter`.
+Inserting items requires up to 2 memory accesses per `sub-filter`.
 But as the filter fills up, both locations for an item might be full. The filter attempts to `Cuckoo` swap items up to `maxIterations` times.
 
 ## Examples
