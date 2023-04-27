@@ -4,14 +4,14 @@ See the `BF.SCANDUMP` command for example usage.
 
 This command overwrites any bloom filter stored under `key`. Make sure that the bloom filter is not be changed between invocations.
 
-### Parameters
+## Required arguments
 
 <details open><summary><code>key</code></summary>
 
 is key name for a Bloom filter to restore.
 </details>
 
-<details open><summary><code>iter</code></summary>
+<details open><summary><code>iterator</code></summary>
 
 Iterator value associated with `data` (returned by `BF.SCANDUMP`)
 </details>
