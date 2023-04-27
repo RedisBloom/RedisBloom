@@ -8,6 +8,8 @@ Returns the cardinality of a Bloom filter - number of items that were added to a
 
 is key name for a Bloom filter.
 
+</details>
+
 ## Return value
  
 Either
