@@ -11,6 +11,7 @@
 
 #include "topk.h"
 #include "rm_topk.h"
+#include "rm_cms.h"
 
 // clang-format off
 #define INNER_ERROR(x) \
@@ -171,7 +172,11 @@ static int TopK_Query_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
     for (int i = 2; i < argc; ++i) {
         const char *item = RedisModule_StringPtrLen(argv[i], &itemlen);
         res = TopK_Query(topk, item, itemlen);
-        RedisModule_ReplyWithLongLong(ctx, res);
+        if (_is_resp3(ctx)) {
+            RedisModule_ReplyWithBool(ctx, !!res);
+        } else {
+            RedisModule_ReplyWithLongLong(ctx, res);
+        }
     }
 
     return REDISMODULE_OK;
@@ -246,7 +251,7 @@ static int TopK_Info_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
         return REDISMODULE_OK;
     }
 
-    RedisModule_ReplyWithArray(ctx, 4 * 2);
+    RedisModule_ReplyWithMapOrArray(ctx, 4 * 2, true);
     RedisModule_ReplyWithSimpleString(ctx, "k");
     RedisModule_ReplyWithLongLong(ctx, topk->k);
     RedisModule_ReplyWithSimpleString(ctx, "width");

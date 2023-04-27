@@ -46,6 +46,7 @@ define CC_INCLUDES +=
 	$(SRCDIR)
 	$(BINDIR)
 	$(ROOT)/deps
+	$(ROOT)/deps/RedisModulesSDK
 	$(ROOT)/src
 endef
 
