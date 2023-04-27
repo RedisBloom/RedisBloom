@@ -1,20 +1,35 @@
-Determines if one or more items may exist in the filter or not.
+Determines whether one or more items were added to a Bloom filter.
 
-### Parameters
+This command is similar to `BF.EXISTS`, except that more than one item can be checked.
 
-* **key**: The name of the filter
-* **items**: One or more items to check
+## Required arguments
 
-@return
+<details open><summary><code>key</code></summary>
 
-@array-reply of @integer-reply - for each item where "1" value means the
-corresponding item may exist in the filter, and a "0" value means it does not
-exist in the filter.
+is key name for a Bloom filter.
 
-@examples
+</details>
 
-```
-redis> BF.MEXISTS bf item1 item_new
+<details open><summary><code>item...</code></summary>
+
+One or more items to check.
+</details>
+
+## Return value
+
+Either
+
+- @array-reply of @integer-reply - where "0" means that `key` does not exist or the item was not added to the filter, and "1" means that such item was already added to the filter (which could be wrong)
+- @error-reply on error (invalid arguments, wrong key type, etc.)
+
+## Examples
+
+{{< highlight bash >}}
+redis> BF.MADD bf item1 item2
 1) (integer) 1
-2) (integer) 0
-```
+2) (integer) 1
+redis> BF.MEXISTS bf item1 item2 item3
+1) (integer) 1
+2) (integer) 1
+3) (integer) 0
+{{< / highlight >}}
