@@ -14,7 +14,7 @@ Since `CF.EXISTS` can result in false positive, `CF.ADDNX` may not insert an ele
 
 <details open><summary><code>key</code></summary>
 
-is key name for a cuckoo filter to add items to.
+is key name for a cuckoo filter to insert items to.
 
 If `key` does not exist - a new cuckoo filter is created.
 </details>
