@@ -1,4 +1,5 @@
-Creates a cuckoo filter as `key` with a single sub-filter for the initial amount of `capacity` for items.
+Creates an empty cuckoo filter with a single sub-filter for the initial specified capacity.
+
 Because of how cuckoo filters work, the filter is likely to declare itself full before `capacity` is reached and therefore fill rate will likely never reach 100%.
 The fill rate can be improved by using a larger `bucketsize` at the cost of a higher error rate.
 When the filter self-declare itself `full`, it will auto-expand by generating additional sub-filters at the cost of reduced performance and increased error rate.
