@@ -1,4 +1,4 @@
-Determines whether an item was added to a cuckoo filter.
+Determines whether a given item was added to a cuckoo filter.
 
 This command is similar to `CF.MEXISTS`, except that only one item can be checked.
 
