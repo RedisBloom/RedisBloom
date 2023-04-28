@@ -6,14 +6,14 @@ This command offers more flexibility over the `ADD` command, at the cost of more
 
 <details open><summary><code>key</code></summary>
 
-is key name for a cuckoo filter to insert items to.
+is key name for a cuckoo filter to add items to.
 
 If `key` does not exist - a new cuckoo filter is created.
 </details>
 
 <details open><summary><code>ITEMS item...</code></summary>
 
-One or more items to insert.
+One or more items to add.
 </details>
 
 ## Optional arguments
@@ -40,7 +40,7 @@ This option is mutually exclusive with `CAPACITY`.
 
 Either
 
-- @array-reply of @integer-reply - where "1" means that the item has been successfully inserted to the filter, and "-1" means that the item was not inserted because the filter is full.
+- @array-reply of @integer-reply - where "1" means that the item has been successfully added to the filter, and "-1" means that the item was not added because the filter is full.
 - @error-reply on error (invalid arguments, wrong key type, etc.)
 
 ## Examples
