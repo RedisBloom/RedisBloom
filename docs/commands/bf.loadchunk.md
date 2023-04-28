@@ -1,8 +1,8 @@
-Restores a filter previously saved using `BF.SCANDUMP`. 
+Restores a Bloom filter previously saved using `BF.SCANDUMP`.
 
 See the `BF.SCANDUMP` command for example usage.
 
-This command overwrites any bloom filter stored under `key`. Make sure that the bloom filter is not be changed between invocations.
+This command overwrites any Bloom filter stored under `key`. Make sure that the bloom filter is not be changed between invocations.
 
 ## Required arguments
 
