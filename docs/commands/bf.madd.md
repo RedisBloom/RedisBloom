@@ -2,6 +2,8 @@ Adds one or more items to the Bloom Filter.
 
 This command is similar to `BF.ADD`, except that more than one item can be added.
 
+This command is similar to `BF.INSERT`, except that the error rate, capacity, and expansion cannot be specified.
+
 ## Required arguments
 
 <details open><summary><code>key</code></summary>
