@@ -49,7 +49,7 @@ This option is mutually exclusive with `CAPACITY`.
 
 Either
 
-- @array-reply of @integer-reply - where "0" means that an item with such fingerprint already exist in the filter, "1" means that the item has been successfully added to the filter, and "-1" means that the item was not added because the filter is full.
+- @array-reply of @integer-reply - where "0" means that the item's fingerprint already exist in the filter, "1" means that the item has been successfully added to the filter, and "-1" means that the item was not added because the filter is full.
 - @error-reply on error (invalid arguments, wrong key type, etc.)
 
 ### Complexity
