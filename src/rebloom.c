@@ -770,7 +770,7 @@ static int CFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
 
     for (size_t ii = 2; ii < argc; ++ii) {
         if (is_empty == 1) {
-            if (_is_resp3(ctx)) {
+            if (_is_resp3(ctx) && !is_count) {
                 RedisModule_ReplyWithBool(ctx, 0);
             } else {
                 RedisModule_ReplyWithLongLong(ctx, 0);
