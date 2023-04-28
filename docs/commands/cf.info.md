@@ -1,16 +1,23 @@
-Return information about `key`
+Return information about a cuckoo filter.
 
-### Parameters
+## Required arguments
 
-* **key**: Name of the key to restore
+<details open><summary><code>key</code></summary>
 
-@return
+is key name for a cuckoo filter.
+</details>
 
-@array-reply with information of the filter.
+## Return value
 
-@example
+Either
 
-```
+- @array-reply with information about the filter.
+- @error-reply on error (invalid arguments, key not exist, wrong key type, etc.)
+
+
+## Examples
+
+{{< highlight bash >}}
 redis> CF.INFO cf
  1) Size
  2) (integer) 1080
@@ -28,4 +35,4 @@ redis> CF.INFO cf
 14) (integer) 1
 15) Max iteration
 16) (integer) 20
-```
+{{< / highlight >}}
