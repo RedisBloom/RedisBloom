@@ -1,4 +1,4 @@
-Return information about a Bloom filter.
+Returns information about a Bloom filter.
 
 ## Required arguments
 
