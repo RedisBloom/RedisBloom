@@ -1,25 +1,36 @@
-Returns the number of times an item may be in the filter. Because this is a
-probabilistic data structure, this may not necessarily be accurate.
+Returns an approximation of the number of times an item was added to a cuckoo filter.
 
-If you just want to know if an item exists in the filter, use `CF.EXISTS` because
-it is more efficient for that purpose.
+If you just want to determine whether an item was added to a cuckoo filter, use `CF.EXISTS`.
 
-### Parameters
+## Required arguments
 
-* **key**: The name of the filter
-* **item**: The item to count
+<details open><summary><code>key</code></summary>
 
-@return
+is key name for a cuckoo filter.
 
-@integer-reply - with the count of possible matching copies of the item in the filter.
+</details>
 
-@examples
+<details open><summary><code>item</code></summary>
 
-```
+is an item to check.
+</details>
+
+## Return value
+
+Either
+
+- @integer-reply - a positive number is an approximation of the number of times `item` was added to the filter, and "0" means that `key` does not exist or that `item` was definitely not added to the filter.
+- @error-reply on error (invalid arguments, wrong key type, etc.)
+
+## Examples
+
+{{< highlight bash >}}
+redis> CF.INSERT cf ITEMS item1 item2 item2
+1) (integer) 1
+2) (integer) 1
+3) (integer) 1
 redis> CF.COUNT cf item1
-(integer) 42
-```
-```
-redis> CF.COUNT cf item_new
-(integer) 0
-```
+(integer) 1
+redis> CF.COUNT cf item2
+(integer) 2
+{{< / highlight >}}
