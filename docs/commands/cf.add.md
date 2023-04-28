@@ -1,4 +1,4 @@
-Adds an item to the cuckoo filter, creating the filter if it does not exist.
+Adds an item to the cuckoo filter.
 
 Cuckoo filters can contain the same item multiple times, and consider each addition as separate.
 You can use `CF.ADDNX` to only add an item if it does not exist yet.
