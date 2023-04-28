@@ -1,4 +1,4 @@
-Determines whether an item was added to a Bloom filter.
+Determines whether a given item was added to a Bloom filter.
 
 This command is similar to `BF.MEXISTS`, except that only one item can be checked.
 
