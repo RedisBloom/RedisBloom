@@ -1,6 +1,6 @@
 Adds one or more items to a cuckoo filter, allowing the filter to be created with a custom capacity if it does not exist yet.
 
-This command offers more flexibility over the `ADD` command, at the cost of more verbosity.
+This command is similar to `CF.ADD`, except that more than one item can be added and capacity can be specified.
 
 ## Required arguments
 
