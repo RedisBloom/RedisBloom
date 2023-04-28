@@ -6,7 +6,7 @@ This command is similar to `CF.MEXISTS`, except that only one item can be checke
 
 <details open><summary><code>key</code></summary>
 
-is key name for a Bloom filter.
+is key name for a cuckoo filter.
 
 </details>
 
