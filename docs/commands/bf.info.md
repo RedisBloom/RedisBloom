@@ -1,29 +1,51 @@
-Return information about a Bloom filter.
+Returns information about a Bloom filter.
 
-### Parameters
+## Required arguments
 
-* **key**: key name for an existing Bloom filter.
+<details open><summary><code>key</code></summary>
 
-Optional parameters:
-* `CAPACITY` Number of unique items that can be stored in this Bloom filter before scaling would be required (including already added items)
-* `SIZE` Memory size: number of bytes allocated for this Bloom filter
-* `FILTERS` Number of sub-filters
-* `ITEMS` Number of items that were added to this Bloom filter and detected as unique (items that caused at least one bit to be set in at least one sub-filter)
-* `EXPANSION` Expansion rate
+is key name for a Bloom filter.
+</details>
 
-When no optional parameter is specified: return all information fields.
+## Optional arguments
 
-@return
+<details open><summary><code>CAPACITY</code></summary>
 
-@array-reply with information about the Bloom filter.
+Return the number of unique items that can be stored in this Bloom filter before scaling would be required (including already added items).
+</details>
 
-Error when `key` does not exist.
+<details open><summary><code>SIZE</code></summary>
 
-Error when `key` is of a type other than Bloom filter.
+Return the memory size: number of bytes allocated for this Bloom filter.
+</details>
 
-@examples
+<details open><summary><code>FILTERS</code></summary>
 
-```sql
+Return the number of sub-filters.
+</details>
+
+<details open><summary><code>ITEMS</code></summary>
+
+Return the number of items that were added to this Bloom filter and detected as unique (items that caused at least one bit to be set in at least one sub-filter).
+</details>
+
+<details open><summary><code>EXPANSION</code></summary>
+
+Return the expansion rate.
+</details>
+
+When no optional argument is specified: return all information fields.
+
+## Return value
+
+Either
+
+- @array-reply with information about the filter.
+- @error-reply on error (invalid arguments, key not exist, wrong key type, etc.)
+
+## Examples
+
+{{< highlight bash >}}
 redis> BF.ADD bf1 observation1
 (integer) 1
 redis> BF.INFO bf1
@@ -39,4 +61,4 @@ redis> BF.INFO bf1
 10) (integer) 2
 redis> BF.INFO bf1 CAPACITY
 1) (integer) 100
-```
+{{< / highlight >}}

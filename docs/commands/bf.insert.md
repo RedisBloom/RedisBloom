@@ -1,6 +1,6 @@
-BF.INSERT is a sugarcoated combination of BF.RESERVE and BF.MADD.
-It creates a new Bloom filter if the `key` does not exist using the relevant arguments (see BF.RESERVE).
-Next, all `ITEMS` are inserted.
+Creates a new Bloom filter if the `key` does not exist using the specified error rate, capacity, and expansion, then adds all specified items to the Bloom Filter.
+
+This command is similar to `BF.MADD`, except that the error rate, capacity, and expansion can be specified. It is a sugarcoated combination of `BF.RESERVE` and `BF.MADD`.
 
 ## Required arguments
 

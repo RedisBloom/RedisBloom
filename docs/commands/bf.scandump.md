@@ -1,29 +1,37 @@
-Begins an incremental save of the bloom filter. This is useful for large bloom
-filters which cannot fit into the normal `DUMP` and `RESTORE` model.
+Begins an incremental save of the bloom filter.
+This is useful for large bloom filters which cannot fit into the normal `DUMP` and `RESTORE` model.
 
-The first time this command is called, the value of `iter` should be 0. This
-command returns successive `(iter, data)` pairs until `(0, NULL)` to
-indicate completion.
+The first time this command is called, the value of `iter` should be 0. 
 
-### Parameters
+This command returns successive `(iter, data)` pairs until `(0, NULL)` to indicate completion.
 
-* **key**: Name of the filter
-* **iter**: Iterator value; either 0 or the iterator from a previous
-    invocation of this command
+## Required arguments
 
-@return
+<details open><summary><code>key</code></summary>
 
-@array-reply of @integer-reply (_Iterator_) and @binary-reply (_Data_).
-The Iterator is passed as input to the next invocation of `SCANDUMP`.
-If _Iterator_ is 0, then it means iteration has
-completed.
+is key name for a Bloom filter to save.
+</details>
 
-The iterator-data pair should also be passed to `LOADCHUNK` when restoring
-the filter.
+<details open><summary><code>iterator</code></summary>
 
-@example
+Iterator value; either 0 or the iterator from a previous invocation of this command
+</details>
 
-```
+## Return value
+
+Either
+
+- @array-reply of @integer-reply (_Iterator_) and @binary-reply (_Data_). 
+
+  The Iterator is passed as input to the next invocation of `BF.SCANDUMP`. If _Iterator_ is 0, then it means iteration has completed.
+
+  The iterator-data pair should also be passed to `BF.LOADCHUNK` when restoring the filter.
+
+- @error-reply on error (invalid arguments, key not found, wrong key type, etc.)
+
+## Examples
+
+{{< highlight bash >}}
 redis> BF.RESERVE bf 0.1 10
 OK
 redis> BF.ADD bf item1
@@ -45,10 +53,10 @@ redis> BF.LOADCHUNK bf 9 "\x01\b\x00\x80\x00\x04 \x00"
 OK
 redis> BF.EXISTS bf item1
 (integer) 1
-```
+{{< / highlight >}}
 
-python code:
-```
+Python code:
+{{< highlight bash >}}
 chunks = []
 iter = 0
 while True:
@@ -62,4 +70,4 @@ while True:
 for chunk in chunks:
     iter, data = chunk
     BF.LOADCHUNK(key, iter, data)
-```
+{{< / highlight >}}

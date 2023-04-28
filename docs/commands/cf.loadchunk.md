@@ -1,19 +1,33 @@
-Restores a filter previously saved using `SCANDUMP`. See the `SCANDUMP` command
-for example usage.
+Restores a cuckoo filter previously saved using `CF.SCANDUMP`.
 
-This command overwrites any cuckoo filter stored under `key`. Make sure that
-the cuckoo filter is not be modified between invocations.
+See the `CF.SCANDUMP` command for example usage.
 
-### Parameters
+This command overwrites any cuckoo filter stored under `key`. Make sure that the cuckoo filter is not be changed between invocations.
 
-* **key**: Name of the key to restore
-* **iter**: Iterator value associated with `data` (returned by `SCANDUMP`)
-* **data**: Current data chunk (returned by `SCANDUMP`)
+## Required arguments
 
-@return
+<details open><summary><code>key</code></summary>
 
-@simple-string-reply - `OK` if executed correctly, or @error-reply otherwise.
+is key name for a cuckoo filter to restore.
+</details>
 
-@examples
+<details open><summary><code>iterator</code></summary>
 
-See BF.SCANDUMP for an example.
+Iterator value associated with `data` (returned by `CF.SCANDUMP`)
+</details>
+
+<details open><summary><code>data</code></summary>
+
+Current data chunk (returned by `CF.SCANDUMP`)
+</details>
+
+## Return value
+
+Either
+
+- @simple-string-reply - `OK` if executed correctly
+- @error-reply on error (invalid arguments, wrong key type, wrong data, etc.)
+
+## Examples
+
+See `CF.SCANDUMP` for an example.

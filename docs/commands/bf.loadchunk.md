@@ -1,19 +1,33 @@
-Restores a filter previously saved using `SCANDUMP`. See the `SCANDUMP` command
-for example usage.
+Restores a Bloom filter previously saved using `BF.SCANDUMP`.
 
-This command overwrites any bloom filter stored under `key`. Make sure that
-the bloom filter is not be changed between invocations.
+See the `BF.SCANDUMP` command for example usage.
 
-### Parameters
+This command overwrites any Bloom filter stored under `key`. Make sure that the bloom filter is not be changed between invocations.
 
-* **key**: Name of the key to restore
-* **iter**: Iterator value associated with `data` (returned by `SCANDUMP`)
-* **data**: Current data chunk (returned by `SCANDUMP`)
+## Required arguments
 
-@return
+<details open><summary><code>key</code></summary>
 
-@simple-string-reply - `OK` if executed correctly, or @error-reply otherwise.
+is key name for a Bloom filter to restore.
+</details>
 
-@examples
+<details open><summary><code>iterator</code></summary>
 
-See BF.SCANDUMP for an example.
+Iterator value associated with `data` (returned by `BF.SCANDUMP`)
+</details>
+
+<details open><summary><code>data</code></summary>
+
+Current data chunk (returned by `BF.SCANDUMP`)
+</details>
+
+## Return value
+
+Either
+
+- @simple-string-reply - `OK` if executed correctly
+- @error-reply on error (invalid arguments, wrong key type, wrong data, etc.)
+
+## Examples
+
+See `BF.SCANDUMP` for an example.
