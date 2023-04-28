@@ -6,14 +6,14 @@ This command is similar to `BF.MADD`, except that the error rate, capacity, and 
 
 <details open><summary><code>key</code></summary>
 
-is key name for a Bloom filter to insert items to.
+is key name for a Bloom filter to add items to.
 
 If `key` does not exist - a new Bloom filter is created.
 </details>
 
 <details open><summary><code>ITEMS item...</code></summary>
 
-One or more items to insert.
+One or more items to add.
 </details>
 
 ## Optional arguments
@@ -60,25 +60,25 @@ Otherwise, we recommend that you use an `expansion` of 1 to reduce memory consum
 Either
 
 - @array-reply where each element is either
-  - @integer-reply - where "0" means that an item with such fingerprint already exists in the filter, and "1" means that the item has been successfully inserted to the filter
-  - @error-reply when the item cannot be inserted because the filter is full
-- @error-reply (e.g., on wrong number of arguments, wrong key type)
+  - @integer-reply - where "1" means that the item has been added successfully, and "0" means that such item was already added to the filter (which could be wrong)
+  - @error-reply when the item cannot be added because the filter is full
+- @error-reply (e.g., on wrong number of arguments, wrong key type) and also when `NOCREATE` is specified and `key` does not exist.
 
 ## Examples
 
-Add three items to a filter with default parameters if the filter does not already exist:
+Add three items to a filter; create the filter with default parameters if it does not already exist:
 
 {{< highlight bash >}}
 BF.INSERT filter ITEMS foo bar baz
 {{< / highlight >}}
 
-Add one item to a filter with a capacity of 10000 if the filter does not already exist:
+Add one item to a filter; create the filter with a capacity of 10000 if it does not already exist:
 
 {{< highlight bash >}}
 BF.INSERT filter CAPACITY 10000 ITEMS hello
 {{< / highlight >}}
 
-Add 2 items to a filter with an error if the filter does not already exist:
+Add 2 items to a filter; error if the filter does not already exist:
 
 {{< highlight bash >}}
 BF.INSERT filter NOCREATE ITEMS foo bar
