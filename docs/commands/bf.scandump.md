@@ -23,9 +23,9 @@ Either
 
 - @array-reply of @integer-reply (_Iterator_) and @binary-reply (_Data_). 
 
-  The Iterator is passed as input to the next invocation of `SCANDUMP`. If _Iterator_ is 0, then it means iteration has completed.
+  The Iterator is passed as input to the next invocation of `BF.SCANDUMP`. If _Iterator_ is 0, then it means iteration has completed.
 
-  The iterator-data pair should also be passed to `LOADCHUNK` when restoring the filter.
+  The iterator-data pair should also be passed to `BF.LOADCHUNK` when restoring the filter.
 
 - @error-reply on error (invalid arguments, key not found, wrong key type, etc.)
 
