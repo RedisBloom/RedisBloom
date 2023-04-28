@@ -1,5 +1,6 @@
 Begins an incremental save of the cuckoo filter.
-This is useful for large cuckoo filters which cannot fit into the normal `DUMP` and `RESTORE` model.
+
+This command is useful for large cuckoo filters which cannot fit into the normal `DUMP` and `RESTORE` model.
 
 The first time this command is called, the value of `iter` should be 0. 
 
@@ -45,8 +46,8 @@ redis> CF.SCANDUMP cf 1
 redis> CF.SCANDUMP cf 9
 1) (integer) 0
 2) (nil)
-redis> FLUSHALL
-OK
+redis> DEL bf
+(integer) 1
 redis> CF.LOADCHUNK cf 1 "\x01\x00\x00\x00\x00\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x02\x00\x14\x00\x01\x008\x9a\xe0\xd8\xc3\x7f\x00\x00"
 OK
 redis> CF.LOADCHUNK cf 9 "\x00\x00\x00\x00\a\x00\x00\x00"
