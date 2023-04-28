@@ -1,4 +1,5 @@
-Creates an empty Bloom filter with a single sub-filter for the initial capacity requested and with an upper bound `error_rate`.
+Creates an empty Bloom filter with a single sub-filter for the initial specified capacity and with an upper bound `error_rate`.
+
 By default, the filter auto-scales by creating additional sub-filters when `capacity` is reached.
 The new sub-filter is created with size of the previous sub-filter multiplied by `expansion`.
 
