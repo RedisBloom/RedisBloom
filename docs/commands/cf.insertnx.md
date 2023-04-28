@@ -1,8 +1,8 @@
 Adds one or more items to a cuckoo filter if they did not exist previously, allowing the filter to be created with a custom capacity if it does not exist yet.
 
-This command is similar to a `CF.EXISTS` + `CF.ADD` command. It does not add an item into the filter if its fingerprint already exists and therefore better utilizes the available capacity. 
+This command is similar to `CF.EXISTS` + `CF.ADD` commands. It does not add an item into the filter if its fingerprint already exists and therefore better utilizes the available capacity. 
 
-This command is similar to a `CF.ADDNX`, except that more than one item can be added and capacity can be specified.
+This command is similar to `CF.ADDNX`, except that more than one item can be added and capacity can be specified.
 
 <note><b>Notes:</b>
 
