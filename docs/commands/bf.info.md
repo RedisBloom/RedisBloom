@@ -5,7 +5,6 @@ Return information about a Bloom filter.
 <details open><summary><code>key</code></summary>
 
 is key name for a Bloom filter.
-
 </details>
 
 ## Optional arguments
@@ -41,7 +40,7 @@ When no optional argument is specified: return all information fields.
 
 Either
 
-- @array-reply with information about the Bloom filter.
+- @array-reply with information about the filter.
 - @error-reply on error (invalid arguments, key not exist, wrong key type, etc.)
 
 ## Examples
