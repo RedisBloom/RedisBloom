@@ -27,7 +27,7 @@ Either
 ## Complexity
 
 O(n + i), where n is the number of `sub-filters` and i is `maxIterations`.
-Inserting items requires up to 2 memory accesses per `sub-filter`.
+Adding items requires up to 2 memory accesses per `sub-filter`.
 But as the filter fills up, both locations for an item might be full.
 The filter attempts to `Cuckoo` swap items up to `maxIterations` times.
 
