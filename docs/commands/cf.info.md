@@ -1,4 +1,4 @@
-Return information about a cuckoo filter.
+Returns information about a cuckoo filter.
 
 ## Required arguments
 
