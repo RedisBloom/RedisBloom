@@ -785,7 +785,7 @@ static int CFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
             } else {
                 rv = CuckooFilter_Check(cf, hash);
             }
-            if (_is_resp3(ctx)) {
+            if (_is_resp3(ctx) && !is_count) {
                 RedisModule_ReplyWithBool(ctx, !!rv);
             } else {
                 RedisModule_ReplyWithLongLong(ctx, rv);
