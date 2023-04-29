@@ -11,8 +11,8 @@ is key name for an existing t-digest sketch.
 
 @array-reply with information about the sketch (name-value pairs):
 
-| Name                 | Description
-| -------------------- | -
+| Name<br>@simple-string-reply | Description
+| ---------------------------- | -
 | `Compression`        | @integer-reply<br> The compression (controllable trade-off between accuracy and memory consumption) of the sketch 
 | `Capacity`           | @integer-reply<br> Size of the buffer used for storing the centroids and for the incoming unmerged observations
 | `Merged nodes`       | @integer-reply<br> Number of merged observations
