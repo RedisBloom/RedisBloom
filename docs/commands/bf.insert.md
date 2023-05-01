@@ -67,7 +67,7 @@ Returns one of these replies:
 
 ## Examples
 
-Add three items to a filter; create the filter with default parameters if it does not already exist:
+Add three items to a filter, then create the filter with default parameters if it does not already exist.
 
 {{< highlight bash >}}
 BF.INSERT filter ITEMS foo bar baz
