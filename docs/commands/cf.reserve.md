@@ -1,6 +1,6 @@
 Creates an empty cuckoo filter with a single sub-filter for the initial specified capacity.
 
-Because of how cuckoo filters work, the filter is likely to declare itself full before `capacity` is reached and therefore fill rate will likely never reach 100%.
+According to the cuckoo filter behavior, the filter is likely to declare itself full before `capacity` is reached; therefore, the fill rate will likely never reach 100 percent.
 The fill rate can be improved by using a larger `bucketsize` at the cost of a higher error rate.
 When the filter self-declare itself `full`, it will auto-expand by generating additional sub-filters at the cost of reduced performance and increased error rate.
 The new sub-filter is created with size of the previous sub-filter multiplied by `expansion`.
