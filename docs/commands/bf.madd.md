@@ -1,4 +1,4 @@
-Adds one or more items to a Bloom Filter.
+Adds one or more items to a Bloom filter.
 
 This command is similar to `BF.ADD`, except that more than one item can be added.
 
