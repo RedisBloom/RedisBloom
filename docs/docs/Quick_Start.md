@@ -28,7 +28,8 @@ A pre-compiled version can be downloaded from [Redis download center](https://re
 ```sh
 git clone --recursive https://github.com/RedisBloom/RedisBloom.git
 cd RedisBloom
-make setup
+./sbin/setup
+bash -l
 make
 ```
 ## running
