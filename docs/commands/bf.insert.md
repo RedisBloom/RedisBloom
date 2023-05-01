@@ -53,7 +53,7 @@ When `capacity` is reached, an additional sub-filter is created.
 The size of the new sub-filter is the size of the last sub-filter multiplied by `expansion`, specified as a non-negative integer.
 
 If the number of elements to be stored in the filter is unknown, use an `expansion` of `2` or more to reduce the number of sub-filters.
-Otherwise, we recommend that you use an `expansion` of 1 to reduce memory consumption. The default value is 2.
+Otherwise, use an `expansion` of `1` to reduce memory consumption. The default value is `2`.
 </details>
 
 ## Return value
