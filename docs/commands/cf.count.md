@@ -1,6 +1,6 @@
 Returns an approximation of the number of times a given item was added to a cuckoo filter.
 
-If you just want to determine whether a given item was added to a cuckoo filter, use `CF.EXISTS`.
+If you just want to check that a given item was added to a cuckoo filter, use `CF.EXISTS`.
 
 ## Required arguments
 
