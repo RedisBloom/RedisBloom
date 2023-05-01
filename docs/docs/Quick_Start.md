@@ -28,14 +28,14 @@ A pre-compiled version can be downloaded from [Redis download center](https://re
 ```sh
 git clone --recursive https://github.com/RedisBloom/RedisBloom.git
 cd RedisBloom
-make setup
+./sbin/setup
+bash -l
 make
 ```
-## running
+## Running
 
 ```
-# Assuming you have a redis build from the unstable branch:
-/path/to/redis-server --loadmodule ./redisbloom.so
+make run
 ```
 
 # Bloom Filters
