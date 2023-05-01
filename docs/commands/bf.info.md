@@ -38,7 +38,7 @@ When no optional argument is specified: return all information fields.
 
 ## Return value
 
-When no optional argument is specified: Either
+When no optional argument is specified, returns one of these replies:
 
 - @array-reply with argument names and values (@simple-string-reply - @integer-reply pairs)
 - @error-reply on error (invalid arguments, key not exist, wrong key type, etc.)
