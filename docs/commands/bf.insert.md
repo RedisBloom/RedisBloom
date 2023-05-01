@@ -73,7 +73,7 @@ Add three items to a filter, then create the filter with default parameters if i
 BF.INSERT filter ITEMS foo bar baz
 {{< / highlight >}}
 
-Add one item to a filter; create the filter with a capacity of 10000 if it does not already exist:
+Add one item to a filter, then create the filter with a capacity of 10000 if it does not already exist.
 
 {{< highlight bash >}}
 BF.INSERT filter CAPACITY 10000 ITEMS hello
