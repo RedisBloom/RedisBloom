@@ -63,7 +63,7 @@ Returns one of these replies:
 - @array-reply where each element is one of these options:
   - @integer-reply, where `1` denotes that the item has been added successfully, and `0` means that such item had already added to the filter (which could be wrong)
   - @error-reply when the item cannot be added because the filter is full
-- @error-reply (e.g., on wrong number of arguments, wrong key type) and also when `NOCREATE` is specified and `key` does not exist.
+- @error-reply, for example, when the number of arguments or key type is wrong, and also when `NOCREATE` is specified and `key` does not exist.
 
 ## Examples
 
