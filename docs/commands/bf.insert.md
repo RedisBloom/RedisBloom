@@ -79,7 +79,7 @@ Add one item to a filter; create the filter with a capacity of 10000 if it does 
 BF.INSERT filter CAPACITY 10000 ITEMS hello
 {{< / highlight >}}
 
-Add 2 items to a filter; error if the filter does not already exist:
+Add two items to a filter, then return error if the filter does not already exist.
 
 {{< highlight bash >}}
 BF.INSERT filter NOCREATE ITEMS foo bar
