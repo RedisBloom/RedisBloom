@@ -32,7 +32,7 @@ cd RedisBloom
 bash -l
 make
 ```
-## running
+## Running
 
 ```
 make run
