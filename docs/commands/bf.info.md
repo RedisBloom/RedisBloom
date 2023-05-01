@@ -40,7 +40,7 @@ When no optional argument is specified: return all information fields.
 
 When no optional argument is specified, returns one of these replies:
 
-- @array-reply with argument names and values (@simple-string-reply - @integer-reply pairs)
+- @array-reply with argument names (@simple-string-reply) and values (@integer-reply) pairs
 - @error-reply on error (invalid arguments, key does not exist, wrong key type, and so on)
 
 When an optional argument is specified, returns one of these replies:
