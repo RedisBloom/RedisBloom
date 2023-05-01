@@ -12,7 +12,7 @@ is key name for a cuckoo filter.
 Returns one of these replies:
 
 - @array-reply with argument names and values (@simple-string-reply - @integer-reply pairs)
-- @error-reply on error (invalid arguments, key not exist, wrong key type, etc.)
+- @error-reply on error (invalid arguments, key does not exist, wrong key type, and so on)
 
 ## Examples
 
