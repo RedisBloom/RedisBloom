@@ -86,6 +86,12 @@ class testResp3():
         res = env.cmd('CF.MEXISTS a 4 3')
         assert type(res[0]) == bool
         env.assertEqual(res, [True, False])
+        res = env.cmd('CF.COUNT a 3')
+        assert type(res) == int
+        env.assertEqual(res, 0)
+        res = env.cmd('CF.COUNT a 4')
+        assert type(res) == int
+        env.assertEqual(res, 2)
 
         res = env.cmd('cf.info a')
         assert res == {b'Size': 64, b'Number of buckets': 4,
