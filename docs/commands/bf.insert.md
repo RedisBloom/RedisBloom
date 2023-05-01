@@ -8,7 +8,7 @@ This command is similar to `BF.MADD`, except that the error rate, capacity, and 
 
 is key name for a Bloom filter to add items to.
 
-If `key` does not exist - a new Bloom filter is created.
+If `key` does not exist, a new Bloom filter is created.
 </details>
 
 <details open><summary><code>ITEMS item...</code></summary>
