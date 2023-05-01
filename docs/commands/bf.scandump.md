@@ -1,6 +1,6 @@
 Begins an incremental save of the Bloom filter.
 
-This command is useful for large Bloom filters which cannot fit into the normal `DUMP` and `RESTORE` model.
+This command is useful for large Bloom filters that cannot fit into the `DUMP` and `RESTORE` model.
 
 The first time this command is called, the value of `iter` should be 0. 
 
