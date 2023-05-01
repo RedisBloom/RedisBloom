@@ -42,7 +42,7 @@ Number of attempts to swap items between buckets before declaring filter as full
 
 <details open><summary><code>EXPANSION expansion</code></summary>
 
-When a new filter is created, its size is the size of the current filter multiplied by `expansion` - a non-negative integer. Expansion is rounded to the next `2^n` number. The default value is 1.
+When a new filter is created, its size is the size of the current filter multiplied by `expansion`, specified as a non-negative integer. Expansion is rounded to the next `2^n` number. The default value is `1`.
 </details>
 
 ## Return value
