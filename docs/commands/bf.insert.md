@@ -60,7 +60,7 @@ Otherwise, use an `expansion` of `1` to reduce memory consumption. The default v
 
 Returns one of these replies:
 
-- @array-reply where each element is either
+- @array-reply where each element is one of these options:
   - @integer-reply - where "1" means that the item has been added successfully, and "0" means that such item was already added to the filter (which could be wrong)
   - @error-reply when the item cannot be added because the filter is full
 - @error-reply (e.g., on wrong number of arguments, wrong key type) and also when `NOCREATE` is specified and `key` does not exist.
