@@ -20,7 +20,7 @@ One or more items to add.
 
 ## Return value
 
-Either
+Returns one of these replies:
 
 - @array-reply where each element is either
   - @integer-reply - where "1" means that the item has been added successfully, and "0" means that such item was already added to the filter (which could be wrong)
