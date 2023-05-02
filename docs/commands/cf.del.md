@@ -26,7 +26,7 @@ checked on all `sub-filters`.
 
 ## Return value
 
-Either
+Returns one of these replies:
 
 - @integer-reply - where "1" means that the item has been deleted, and "0" means that such item was not found in the filter
 - @error-reply on error (invalid arguments, wrong key type, etc.)

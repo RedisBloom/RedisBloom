@@ -1,6 +1,6 @@
-Adds an item to a cuckoo filter if the item did not exist previously; creating the filter if it does not exist.
+Adds an item to a cuckoo filter if the item does not exist.
 
-This command is similar to `CF.EXISTS` + `CF.ADD` commands. It does not add an item into the filter if its fingerprint already exists and therefore better utilizes the available capacity.
+This command is similar to the combination of `CF.EXISTS` and `CF.ADD`. It does not add an item into the filter if its fingerprint already exists.
 
 <note><b>Notes:</b>
 
@@ -25,9 +25,9 @@ is an item to add.
 
 ## Return value
 
-Either
+Returns one of these replies:
 
-- @integer-reply - where "0" means that an item with such fingerprint already exist in the filter, and "1" means that the item has been successfully added to the filter.
+- @integer-reply, where `0` means that the item's fingerprint already exist in the filter, and `1` means that the item has been successfully added to the filter.
 - @error-reply on error (invalid arguments, wrong key type, etc.) and also when the filter is full.
 
 ## Examples

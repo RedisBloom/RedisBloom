@@ -1,4 +1,5 @@
-Creates an empty Bloom Filter with a single sub-filter for the initial capacity requested and with an upper bound `error_rate`.
+Creates an empty Bloom filter with a single sub-filter for the initial specified capacity and with an upper bound `error_rate`.
+
 By default, the filter auto-scales by creating additional sub-filters when `capacity` is reached.
 The new sub-filter is created with size of the previous sub-filter multiplied by `expansion`.
 
@@ -17,7 +18,7 @@ The number of bits per item is `-log(error)/ln(2)` ≈ 1.44.
 
 <details open><summary><code>key</code></summary>
 
-is key name for the the Bloom Filter to be created.
+is key name for the the Bloom filter to be created.
 </details>
 
 <details open><summary><code>error_rate</code></summary>
@@ -44,14 +45,15 @@ Non-scaling filters requires slightly less memory than their scaling counterpart
 <details open><summary><code>EXPANSION expansion</code></summary>
 
 When `capacity` is reached, an additional sub-filter is created.
-The size of the new sub-filter is the size of the last sub-filter multiplied by `expansion`.
-If the number of elements to be stored in the filter is unknown, we recommend that you use an `expansion` of 2 or more to reduce the number of sub-filters.
-Otherwise, we recommend that you use an `expansion` of 1 to reduce memory consumption. The default expansion value is 2.
+The size of the new sub-filter is the size of the last sub-filter multiplied by `expansion`, specified as a non-negative integer.
+
+If the number of elements to be stored in the filter is unknown, you use an `expansion` of `2` or more to reduce the number of sub-filters.
+Otherwise, you use an `expansion` of `1` to reduce memory consumption. The default value is `2`.
 </details>
 
 ## Return value
 
-Either
+Returns one of these replies:
 
 - @simple-string-reply - `OK` if filter created successfully
 - @error-reply on error (invalid arguments, key already exists, etc.)

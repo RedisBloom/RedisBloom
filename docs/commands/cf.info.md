@@ -9,11 +9,10 @@ is key name for a cuckoo filter.
 
 ## Return value
 
-Either
+Returns one of these replies:
 
-- @array-reply with information about the filter.
-- @error-reply on error (invalid arguments, key not exist, wrong key type, etc.)
-
+- @array-reply with argument name (@simple-string-reply) and value (@integer-reply) pairs
+- @error-reply on error (invalid arguments, key does not exist, wrong key type, and so on)
 
 ## Examples
 

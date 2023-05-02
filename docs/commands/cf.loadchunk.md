@@ -2,7 +2,12 @@ Restores a cuckoo filter previously saved using `CF.SCANDUMP`.
 
 See the `CF.SCANDUMP` command for example usage.
 
-This command overwrites any cuckoo filter stored under `key`. Make sure that the cuckoo filter is not be changed between invocations.
+<note><b>Notes</b>
+
+- This command overwrites the cuckoo filter stored under `key`.
+- Make sure that the cuckoo filter is not changed between invocations.
+
+</note>
 
 ## Required arguments
 
@@ -23,7 +28,7 @@ Current data chunk (returned by `CF.SCANDUMP`)
 
 ## Return value
 
-Either
+Returns one of these replies:
 
 - @simple-string-reply - `OK` if executed correctly
 - @error-reply on error (invalid arguments, wrong key type, wrong data, etc.)

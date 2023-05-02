@@ -1,6 +1,6 @@
-Adds one or more items to the Bloom Filter.
+Adds one or more items to a Bloom filter.
 
-This command is similar to `BF.ADD`, except that more than one item can be added.
+This command is similar to `BF.ADD`, except that you can add more than one item.
 
 This command is similar to `BF.INSERT`, except that the error rate, capacity, and expansion cannot be specified.
 
@@ -20,7 +20,7 @@ One or more items to add.
 
 ## Return value
 
-Either
+Returns one of these replies:
 
 - @array-reply where each element is either
   - @integer-reply - where "1" means that the item has been added successfully, and "0" means that such item was already added to the filter (which could be wrong)

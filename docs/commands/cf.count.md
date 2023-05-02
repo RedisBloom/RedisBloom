@@ -1,6 +1,6 @@
-Returns an approximation of the number of times an item was added to a cuckoo filter.
+Returns an estimation of the number of times a given item was added to a cuckoo filter.
 
-If you just want to determine whether an item was added to a cuckoo filter, use `CF.EXISTS`.
+If you just want to check that a given item was added to a cuckoo filter, use `CF.EXISTS`.
 
 ## Required arguments
 
@@ -17,9 +17,9 @@ is an item to check.
 
 ## Return value
 
-Either
+Returns one of these replies:
 
-- @integer-reply - a positive number is an approximation of the number of times `item` was added to the filter, and "0" means that `key` does not exist or that `item` was definitely not added to the filter.
+- @integer-reply, where a positive value is an estimation of the number of times `item` was added to the filter. An overestimation is possible, but not an underestimation. `0` means that `key` does not exist or that `item` had not been added to the filter. See note in `CF.DEL`.
 - @error-reply on error (invalid arguments, wrong key type, etc.)
 
 ## Examples

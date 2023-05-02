@@ -1,4 +1,4 @@
-Determines whether an item was added to a Bloom filter.
+Determines whether a given item was added to a Bloom filter.
 
 This command is similar to `BF.MEXISTS`, except that only one item can be checked.
 
@@ -17,9 +17,9 @@ is an item to check.
 
 ## Return value
 
-Either
+Returns one of these replies:
 
-- @integer-reply - where "1" means that, with high probability, `item` was already added to the filter, and "0" means that `key` does not exist or that `item` was definitely not added to the filter.
+- @integer-reply, where `1` means that, with high probability, `item` was already added to the filter, and `0` means that `key` does not exist or that `item` had not been added to the filter.
 - @error-reply on error (invalid arguments, wrong key type, etc.)
 
 ## Examples
