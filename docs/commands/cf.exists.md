@@ -19,7 +19,7 @@ is an item to check.
 
 Either
 
-- @integer-reply - where "1" means that, with high probability, `item` was already added to the filter, and "0" means that `key` does not exist or that `item` was definitely not added to the filter.
+- @integer-reply - where "1" means that, with high probability, `item` was already added to the filter, and "0" means that `key` does not exist or that `item` was not added to the filter (see note in `CF.DEL`).
 - @error-reply on error (invalid arguments, wrong key type, etc.)
 
 ## Examples
