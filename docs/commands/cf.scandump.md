@@ -20,7 +20,7 @@ Iterator value; either 0 or the iterator from a previous invocation of this comm
 
 ## Return value
 
-Either
+Returns one of these replies:
 
 - @array-reply of @integer-reply (_Iterator_) and @binary-reply (_Data_). 
 
