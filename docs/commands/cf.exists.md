@@ -17,7 +17,7 @@ is an item to check.
 
 ## Return value
 
-Either
+Returns one of these replies:
 
 - @integer-reply, where `1` means that, with high probability, `item` had already been added to the filter, and `0` means that `key` does not exist or that `item` had not been added to the filter. See note in `CF.DEL`.
 - @error-reply on error (invalid arguments, wrong key type, and so on)
