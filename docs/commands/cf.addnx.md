@@ -1,6 +1,6 @@
 Adds an item to a cuckoo filter if the item does not exist.
 
-This command is similar to `CF.EXISTS` + `CF.ADD` commands. It does not add an item into the filter if its fingerprint already exists.
+This command is similar to the combination of `CF.EXISTS` and `CF.ADD`. It does not add an item into the filter if its fingerprint already exists.
 
 <note><b>Notes:</b>
 
