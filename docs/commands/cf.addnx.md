@@ -25,7 +25,7 @@ is an item to add.
 
 ## Return value
 
-Either
+Returns one of these replies:
 
 - @integer-reply, where `0` means that the item's fingerprint already exist in the filter, and `1` means that the item has been successfully added to the filter.
 - @error-reply on error (invalid arguments, wrong key type, etc.) and also when the filter is full.
