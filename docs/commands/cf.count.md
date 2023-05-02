@@ -1,7 +1,5 @@
 Returns an estimation of the number of times a given item was added to a cuckoo filter.
 
-When the result is `0`, the item was not added to the filter. When the result is positive, it can be an overestimation, but not an underestimation (see note in `CF.DEL`).
-
 If you just want to check that a given item was added to a cuckoo filter, use `CF.EXISTS`.
 
 ## Required arguments
@@ -21,7 +19,7 @@ is an item to check.
 
 Returns one of these replies:
 
-- @integer-reply, where a positive value is an estimation of the number of times `item` was added to the filter. `0` means that `key` does not exist or that `item` had not been added to the filter.
+- @integer-reply, where a positive value is an estimation of the number of times `item` was added to the filter. An overestimation is possible, but not an underestimation. `0` means that `key` does not exist or that `item` had not been added to the filter. See note in `CF.DEL`.
 - @error-reply on error (invalid arguments, wrong key type, etc.)
 
 ## Examples
