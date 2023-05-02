@@ -28,7 +28,7 @@ Current data chunk (returned by `BF.SCANDUMP`)
 
 ## Return value
 
-Either
+Returns one of these replies:
 
 - @simple-string-reply - `OK` if executed correctly
 - @error-reply on error (invalid arguments, wrong key type, wrong data, etc.)
