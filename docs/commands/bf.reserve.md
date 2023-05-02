@@ -53,7 +53,7 @@ Otherwise, you use an `expansion` of `1` to reduce memory consumption. The defau
 
 ## Return value
 
-Either
+Returns one of these replies:
 
 - @simple-string-reply - `OK` if filter created successfully
 - @error-reply on error (invalid arguments, key already exists, etc.)
