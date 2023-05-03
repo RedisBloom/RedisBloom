@@ -2,7 +2,12 @@ Restores a Bloom filter previously saved using `BF.SCANDUMP`.
 
 See the `BF.SCANDUMP` command for example usage.
 
-This command overwrites any Bloom filter stored under `key`. Make sure that the bloom filter is not be changed between invocations.
+<note><b>Notes</b>
+
+- This command overwrites the Bloom filter stored under `key`. 
+- Make sure that the Bloom filter is not changed between invocations.
+
+</note>
 
 ## Required arguments
 
@@ -23,7 +28,7 @@ Current data chunk (returned by `BF.SCANDUMP`)
 
 ## Return value
 
-Either
+Returns one of these replies:
 
 - @simple-string-reply - `OK` if executed correctly
 - @error-reply on error (invalid arguments, wrong key type, wrong data, etc.)

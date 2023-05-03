@@ -1,5 +1,6 @@
-Creates a cuckoo filter as `key` with a single sub-filter for the initial amount of `capacity` for items.
-Because of how cuckoo filters work, the filter is likely to declare itself full before `capacity` is reached and therefore fill rate will likely never reach 100%.
+Creates an empty cuckoo filter with a single sub-filter for the initial specified capacity.
+
+According to the cuckoo filter behavior, the filter is likely to declare itself full before `capacity` is reached; therefore, the fill rate will likely never reach 100 percent.
 The fill rate can be improved by using a larger `bucketsize` at the cost of a higher error rate.
 When the filter self-declare itself `full`, it will auto-expand by generating additional sub-filters at the cost of reduced performance and increased error rate.
 The new sub-filter is created with size of the previous sub-filter multiplied by `expansion`.
@@ -41,12 +42,12 @@ Number of attempts to swap items between buckets before declaring filter as full
 
 <details open><summary><code>EXPANSION expansion</code></summary>
 
-When a new filter is created, its size is the size of the current filter multiplied by `expansion`. Expansion is rounded to the next `2^n` number. The default value is 1.
+When a new filter is created, its size is the size of the current filter multiplied by `expansion`, specified as a non-negative integer. Expansion is rounded to the next `2^n` number. The default value is `1`.
 </details>
 
 ## Return value
 
-Either
+Returns one of these replies:
 
 - @simple-string-reply - `OK` if filter created successfully
 - @error-reply on error (invalid arguments, key already exists, etc.)

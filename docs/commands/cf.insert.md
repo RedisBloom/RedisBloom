@@ -38,10 +38,10 @@ This option is mutually exclusive with `CAPACITY`.
 
 ## Return value
 
-Either
+Returns one of these replies:
 
 - @array-reply of @integer-reply - where "1" means that the item has been successfully added to the filter, and "-1" means that the item was not added because the filter is full.
-- @error-reply on error (invalid arguments, wrong key type, etc.)
+- @error-reply on error (invalid arguments, wrong key type, and so on) and also when `NOCREATE` is specified and `key` does not exist.
 
 ## Examples
 

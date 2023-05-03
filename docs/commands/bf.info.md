@@ -38,10 +38,15 @@ When no optional argument is specified: return all information fields.
 
 ## Return value
 
-Either
+When no optional argument is specified, returns one of these replies:
 
-- @array-reply with information about the filter.
-- @error-reply on error (invalid arguments, key not exist, wrong key type, etc.)
+- @array-reply with argument name (@simple-string-reply) and value (@integer-reply) pairs
+- @error-reply on error (invalid arguments, key does not exist, wrong key type, and so on)
+
+When an optional argument is specified, returns one of these replies:
+
+- @integer-reply - argument value
+- @error-reply on error (invalid arguments, key does not exist, wrong key type, and so on)
 
 ## Examples
 

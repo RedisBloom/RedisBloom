@@ -9,19 +9,19 @@ is key name for an existing t-digest sketch.
 
 ## Return value
 
-@array-reply with information about the sketch:
+@array-reply with information about the sketch (name-value pairs):
 
-| Name                 | Description
-| -------------------- | -
-| `Compression`        | The compression (controllable trade-off between accuracy and memory consumption) of the sketch 
-| `Capacity`           | Size of the buffer used for storing the centroids and for the incoming unmerged observations
-| `Merged nodes`       | Number of merged observations
-| `Unmerged nodes`     | Number of buffered nodes (uncompressed observations)
-| `Merged weight`      | Weight of values of the merged nodes
-| `Unmerged weight`    | Weight of values of the unmerged nodes (uncompressed observations)
-| `Observations`       | Number of observations added to the sketch
-| `Total compressions` | Number of times this sketch compressed data together
-| `Memory usage`       | Number of bytes allocated for the sketch
+| Name<br>@simple-string-reply | Description
+| ---------------------------- | -
+| `Compression`        | @integer-reply<br> The compression (controllable trade-off between accuracy and memory consumption) of the sketch 
+| `Capacity`           | @integer-reply<br> Size of the buffer used for storing the centroids and for the incoming unmerged observations
+| `Merged nodes`       | @integer-reply<br> Number of merged observations
+| `Unmerged nodes`     | @integer-reply<br> Number of buffered nodes (uncompressed observations)
+| `Merged weight`      | @integer-reply<br> Weight of values of the merged nodes
+| `Unmerged weight`    | @integer-reply<br> Weight of values of the unmerged nodes (uncompressed observations)
+| `Observations`       | @integer-reply<br> Number of observations added to the sketch
+| `Total compressions` | @integer-reply<br> Number of times this sketch compressed data together
+| `Memory usage`       | @integer-reply<br> Number of bytes allocated for the sketch
 
 ## Examples
 

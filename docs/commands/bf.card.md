@@ -12,7 +12,7 @@ is key name for a Bloom filter.
 
 ## Return value
  
-Either
+Returns one of these replies:
 
 - @integer-reply - the number of items that were added to this Bloom filter and detected as unique (items that caused at least one bit to be set in at least one sub-filter), or 0 when `key` does not exist.
 - @error-reply on error (invalid arguments, wrong key type, etc.)
