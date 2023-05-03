@@ -406,6 +406,15 @@ class testRedisBloom():
                          'Number of items inserted', 3, 'Expansion rate', None]
         env.assertEqual(info_actual, info_expected)
 
+    def test_invalid_expansion(self):
+        env = self.env
+        env.cmd('FLUSHALL')
+        try:
+            env.cmd('BF.RESERVE b 0.1 1 EXPANSION 0')
+            env.assertTrue(False)
+        except Exception as e:
+            env.assertEqual(str(e), 'expansion should be greater or equal to 1')
+
     def test_issue178(self):
         env = self.env
         env.cmd('FLUSHALL')
