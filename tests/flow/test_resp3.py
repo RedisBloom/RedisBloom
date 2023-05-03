@@ -11,7 +11,20 @@ def is_redis_version_smaller_than(con, _version, is_cluster=False):
         #print(((list(res.values()))[0]))
     else:
         ver = res['redis_version']
-    return (version.parse(ver) < version.parse(_version))
+    return version.parse(ver) < version.parse(_version)
+
+
+def redis_version(con, is_cluster=False):
+    res = con.execute_command('INFO')
+    ver = ""
+    if is_cluster:
+        try:
+            ver = list(res.values())[0]['redis_version']
+        except:
+            ver = res['redis_version']
+    else:
+        ver = res['redis_version']
+    return version.parse(ver)
 
 
 class testResp3():
@@ -19,9 +32,16 @@ class testResp3():
         self.env = Env(protocol=3)
 
     def test_bf_resp3(self):
+        BB()
         env = self.env
+        r_ver = redis_version(env)
+        if r_ver < version.parse("7.0.0"):
+            env.skip()
+        if r_ver >= version.parse("7.0.0"):
+            env.skipOnCluster() # TODO: remove when redis-py is fixed
         with env.getClusterConnectionIfNeeded() as r:
-            if(is_redis_version_smaller_than(r, "7.0.0")):
+            r_ver = redis_version(r)
+            if r_ver < version.parse("7.0.0"):
                 env.skip()
 
         env.cmd('FLUSHALL')
