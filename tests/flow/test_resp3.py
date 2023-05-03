@@ -32,7 +32,6 @@ class testResp3():
         self.env = Env(protocol=3)
 
     def test_bf_resp3(self):
-        BB()
         env = self.env
         r_ver = redis_version(env)
         if r_ver < version.parse("7.0.0"):
