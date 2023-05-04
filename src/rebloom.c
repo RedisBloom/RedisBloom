@@ -164,6 +164,9 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         if (RedisModule_StringToLongLong(argv[ex_loc + 1], &expansion) != REDISMODULE_OK) {
             return RedisModule_ReplyWithError(ctx, "ERR bad expansion");
         }
+        if (expansion < 1) {
+            return RedisModule_ReplyWithError(ctx, "ERR expansion should be greater or equal to 1");
+        }
     }
 
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
@@ -263,6 +266,8 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
         rv = SBChain_Add(sb, s, n);
         if (rv == -2) { // decide if to make into an error
             RedisModule_ReplyWithError(ctx, "ERR non scaling filter is full");
+        } else if (rv == -1) {
+            RedisModule_ReplyWithError(ctx, "ERR problem inserting into filter");
         } else {
             if (_is_resp3(ctx)) {
                 RedisModule_ReplyWithBool(ctx, !!rv);
