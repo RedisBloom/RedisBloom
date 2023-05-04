@@ -16,7 +16,7 @@ if [[ -f /etc/os-release ]]; then
 	fi
 fi
 
-MODERN=$MODERN_PY FORCE_MODERN=$MODERN_PY $READIES/bin/getpy3
+MODERN=$MODERN_PY $READIES/bin/getpy3
 pyenv="$(get_profile_d)/pyenv.sh"
 if [[ -f $pyenv ]]; then
 	. $pyenv
