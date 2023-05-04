@@ -36,8 +36,8 @@ class testResp3():
         r_ver = redis_version(env)
         if r_ver < version.parse("7.0.0"):
             env.skip()
-        if r_ver >= version.parse("7.0.0"):
-            env.skipOnCluster() # TODO: remove when redis-py is fixed
+        # if r_ver >= version.parse("7.0.0"):
+        #     env.skipOnCluster() # TODO: remove when redis-py is fixed
         with env.getClusterConnectionIfNeeded() as r:
             r_ver = redis_version(r)
             if r_ver < version.parse("7.0.0"):

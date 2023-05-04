@@ -8,7 +8,15 @@ READIES=$ROOT/deps/readies
 
 export HOMEBREW_NO_AUTO_UPDATE=1
 
-$READIES/bin/getpy3
+MODERN_PY=
+if [[ -f /etc/os-release ]]; then
+	. /etc/os-release
+	if [[ $ID${VERSION_ID} == amzn2 ]]; then
+		MODERN_PY=1
+	fi
+fi
+
+MODERN=$MODERN_PY $READIES/bin/getpy3
 pyenv="$(get_profile_d)/pyenv.sh"
 if [[ -f $pyenv ]]; then
 	. $pyenv

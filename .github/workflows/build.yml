@@ -18,7 +18,7 @@ jobs:
       run: |
         ./sbin/setup
         export GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
-        ./deps/readies/bin/getredis v 7 --with-github-token
+        ./deps/readies/bin/getredis -v 7 --with-github-token
     - name: Build
       run: make
     - name: Unit tests
