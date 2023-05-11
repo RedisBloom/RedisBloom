@@ -1,10 +1,15 @@
+alisaifee
 Alessandro
+Akber
 Balasco
 Campoy
 CircleCI
 CodeQL
+coredis
 Dani
 Dockerhub
+github
+https
 JReBloom
 JSON
 Jedis
@@ -53,6 +58,7 @@ roms
 rueidis
 runtime
 rustis
+Saifee
 scalable
 sdk
 submodules
