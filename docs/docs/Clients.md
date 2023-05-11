@@ -13,6 +13,7 @@ description: >
 | ------- | -------- | ------- | ------ | ----- | ------- |
 | [jedis][jedis-url] | Java | MIT | [Redis][redis-url] | ![Stars][jedis-stars] | [Maven][jedis-package]||
 | [redis-py][redis-py-url] | Python | MIT | [Redis][redis-url] | ![Stars][redis-py-stars] | [pypi][redis-py-package]||
+| [coredis][coredis-url] | Python | MIT | [Ali-Akber Saifee][https://github.com/alisaifee] | ![Stars][coredis-stars] | [pypi][coredis-package]|[Documentation][coredis-documentation]|
 | [node-redis][node-redis-url] | Node.JS | MIT | [Redis][redis-url] | ![Stars][node-redis-stars] | [npm][node-redis-package]||
 | [nredisstack][nredisstack-url] | .NET | MIT | [Redis][redis-url] | ![Stars][nredisstack-stars] | [nuget][nredisstack-package]||
 | redisbloom-go | Go | BSD | [Redis](https://redis.com) |  ![Stars](https://img.shields.io/github/stars/RedisBloom/redisbloom-go.svg?style=social&amp;label=Star&amp;maxAge=2592000) | [GitHub](https://github.com/RedisBloom/redisbloom-go) ||
@@ -28,6 +29,11 @@ description: >
 [redis-py-url]: https://github.com/redis/redis-py
 [redis-py-stars]: https://img.shields.io/github/stars/redis/redis-py.svg?style=social&amp;label=Star&amp;maxAge=2592000
 [redis-py-package]: https://pypi.python.org/pypi/redis
+
+[coredis-url]: https://github.com/redis/coredis
+[coredis-stars]: https://img.shields.io/github/stars/redis/coredis.svg?style=social&amp;label=Star&amp;maxAge=2592000
+[coredis-package]: https://pypi.python.org/pypi/coredis
+[coredis-documentation]: https://coredis.readthedocs.io/en/stable/handbook/modules.html#redisbloom
 
 [jedis-url]: https://github.com/redis/jedis
 [jedis-stars]: https://img.shields.io/github/stars/redis/jedis.svg?style=social&amp;label=Star&amp;maxAge=2592000
