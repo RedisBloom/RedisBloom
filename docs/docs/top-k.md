@@ -59,6 +59,10 @@ depth =  log(k)  # but a minimum of 5
 
 For the `decay_constant` you can use the value `0.9` which has been found as optimal in many cases, but you can experiment with different values and find what works best for your use case.
 
+## Performance
+Insertion in a top-k has time complexity of O(K + depth) ≈ O(K) and lookup has time complexity of O(K), where K is the number of top elements to be kept in the list and depth is the number of hash functions used.
+
+
 ## Academic sources
 - [HeavyKeeper: An Accurate Algorithm for Finding Top-k Elephant Flows.](https://yangtonghome.github.io/uploads/HeavyKeeper_ToN.pdf)
 

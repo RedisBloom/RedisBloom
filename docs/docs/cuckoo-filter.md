@@ -122,6 +122,12 @@ You can add the item multiple times. The filter will attempt to count it.
 (integer) 1
 ```
 
+## Performance
+Adding an element to a Cuckoo filter has a time complexity of O(1).
+
+Similarly, checking for an element and deleting an element also has a time complexity of O(1).
+
+
 
 ## Academic sources
 - [Cuckoo Filter: Practically Better Than Bloom](https://www.cs.cmu.edu/~dga/papers/cuckoo-conext2014.pdf)

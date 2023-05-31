@@ -120,6 +120,14 @@ Bloom filters typically exhibit better performance and scalability when insertin
 items (so if you're often adding items to your dataset, then a Bloom filter may be ideal).
 Cuckoo filters are quicker on check operations and also allow deletions.
 
+
+## Performance
+
+Insertion in a Bloom filter is O(K), where `k` is the number of hash functions. 
+
+Checking for an element is O(K) or O(K*n) for stacked filters, where n is the number of stacked filters.
+
+
 ## Academic sources
 - [Space/Time Trade-offs in Hash Coding with Allowable Errors](http://www.dragonwins.com/domains/getteched/bbc/literature/Bloom70.pdf) by Burton H. Bloom.
 - [Scalable Bloom Filters](https://haslab.uminho.pt/cbm/files/dbloom.pdf)

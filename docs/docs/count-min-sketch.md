@@ -79,6 +79,9 @@ threshold = error * total_count = 0.001 * 2M = 2000
 
 This threshold seems to be sitting comfortably between the 2 average counts 500 and 8000 so the initial chosen error rate should be working well for this case.
 
+## Performance
+Adding, updating and querying for elements in a CMS has a time complexity O(1).
+
 
 ## Academic sources
 - [An Improved Data Stream Summary: The Count-Min Sketch and its Applications](http://dimacs.rutgers.edu/~graham/pubs/papers/cm-full.pdf)
