@@ -1,4 +1,5 @@
 display_name: RedisBloom
+capability_name: RedisBloom
 author: Redis
 email: redismodules@redis.com
 description: Probabilistic Data Structures for Redis
