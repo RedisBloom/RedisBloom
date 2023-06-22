@@ -11,8 +11,6 @@ weight: 60
 
 Count-Min Sketch is a probabilistic data structure that estimates the frequency of events/elements in a stream of data.
 
-It is  similar to Bloom filters in a way that it uses multiple hash functions to map an element onto an array, but instead of a single bit array is consists of a two-dimensional array with as many number of rows as there are hash functions. The chosen number of rows and columns determines the error rates.   
-
 It uses a sub-linear space at the expense of over-counting some events due to collisions. It consumes a stream of events/elements and keeps estimated counters of their frequency.
 
 It is very important to know that the results coming from a Count-Min sketch lower than a certain threshold (determined by the error_rate) should be ignored and often even approximated to zero. So Count-Min sketch is indeed a data-structure for counting frequencies of elements in a stream, but it's only useful for higher counts. Very low counts should be ignored as noise.
@@ -21,7 +19,6 @@ It is very important to know that the results coming from a Count-Min sketch low
 # Sizing
 
 Even though the Count-Min sketch is similar to Bloom filter in many ways, its sizing is considerably more complex. The initialisation command receives only two sizing parameters, but you have to understand them thoroughly if you want to have a usable sketch.
-
 
 ```
 CMS.INITBYPROB key error probability
