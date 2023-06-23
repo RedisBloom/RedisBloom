@@ -30,6 +30,44 @@ t-digest can also be used to estimate other values related to percentiles, like 
 
 > A **trimmed mean** is the mean value from the sketch, excluding observation values outside the low and high cutoff percentiles. For example, a 0.1 trimmed mean is the mean value of the sketch, excluding the lowest 10% and the highest 10% of the values.
 
+## Use cases
+
+**Hardware/software monitoring**
+
+You measure your online server response latency, and you like to query:
+
+- What are the 50th, 90th, and 99th percentiles of the measured latencies?
+
+- Which fraction of the measured latencies are less than 25 milliseconds?
+
+- What is the mean latency, ignoring outliers? or What is the mean latency between the 10th and the 90th percentile?
+
+**Online gaming**
+
+Millions of people are playing a game on your online gaming platform, and you want to give the following information to each player?
+
+- Your score is better than x percent of the game sessions played.
+
+- There were about y game sessions where people scored larger than you.
+
+- To have a better score than 90% of the games played, your score should be z.
+
+**Network traffic monitoring**
+
+You measure the IP packets transferred over your network each second and try to detect denial-of-service attacks by asking:
+
+- Does the number of packets in the last second exceed 99% of previously observed values?
+
+- How many packets do I expect to see under _normal_ network conditions? 
+(Answer: between x and y, where x represents the 1st percentile and y represents the 99th percentile).
+
+**Predictive maintenance**
+
+- Was the measured parameter (noise level, current consumption, etc.) irregular? (not within the [1st percentile...99th percentile] range)?
+
+- To which values should I set my alerts?
+
+
 ## Examples
 
 #### Creating a t-digest

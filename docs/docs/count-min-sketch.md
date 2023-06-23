@@ -15,35 +15,13 @@ It uses a sub-linear space at the expense of over-counting some events due to co
 
 It is very important to know that the results coming from a Count-Min sketch lower than a certain threshold (determined by the error_rate) should be ignored and often even approximated to zero. So Count-Min sketch is indeed a data-structure for counting frequencies of elements in a stream, but it's only useful for higher counts. Very low counts should be ignored as noise.
 
+## Use cases
 
-# Sizing
+**Products (retail, online shops)** 
 
-Even though the Count-Min sketch is similar to Bloom filter in many ways, its sizing is considerably more complex. The initialisation command receives only two sizing parameters, but you have to understand them thoroughly if you want to have a usable sketch.
+This application answers this question: What was the sales volume (on a certain day) for a product? 
 
-```
-CMS.INITBYPROB key error probability
-```
-
-### 1. Error
-
-The `error` parameter will determine the width `w` of your sketch and the probability will determine the number of hash functions (depth `d`). The error rate we choose will determine the threshold above which we can trust the result from the sketch. The correlation is:
-```
-threshold = error * total_count 
-```
-or
-```
-error = threshold/total_count
-```
-
-where `total_count` is the sum of the count of all elements that can be obtained from the `count` key of the result of the `CMS.INFO` command and is of course dynamic - it changes with every new increment in the sketch. At creation time you can approximate the `total_count` ratio as a product of the average count you'll be expecting in the sketch and the average number of elements.
-
-Since the threshold is a function of the total count in the filter it's very important to note that it will grow as  the count grows, but knowing the total count we can always dynamically calculate the threshold. If a result is below it - it can be discarded.
-
-  
-### 2. Probability
-  
-`probability` in this data structure represents the chance of an element that has a count below the threshold to collide with elements that had a count above the threshold on all sketches/depths thus returning a min-count of a frequently occurring element instead of its own.
-
+Use one Count-Min sketch created per day (period). Every product sale goes into the CMS. The CMS give reasonably accurate results for the products that contribute the most toward the sales. Products with low percentage of the total sales are ignored. 
 
 ## Examples
 Let's say we choose an error of 0.1%(`0.001`) with certainty of 99.8%(`0.998`) (thus probability of error 0.02% (`0.002`)). The resulting sketch will try to keep the error within 0.1% of the sum of counts of **ALL** elements that have been added to the sketch and the probability for this error to be higher  than that (a collision of an element below the threshold with an element above the threshold) will be 0.02%. 
@@ -75,6 +53,37 @@ threshold = error * total_count = 0.001 * 2M = 2000
 ```
 
 This threshold seems to be sitting comfortably between the 2 average counts 500 and 8000 so the initial chosen error rate should be working well for this case.
+
+
+# Sizing
+
+Even though the Count-Min sketch is similar to Bloom filter in many ways, its sizing is considerably more complex. The initialisation command receives only two sizing parameters, but you have to understand them thoroughly if you want to have a usable sketch.
+
+```
+CMS.INITBYPROB key error probability
+```
+
+### 1. Error
+
+The `error` parameter will determine the width `w` of your sketch and the probability will determine the number of hash functions (depth `d`). The error rate we choose will determine the threshold above which we can trust the result from the sketch. The correlation is:
+```
+threshold = error * total_count 
+```
+or
+```
+error = threshold/total_count
+```
+
+where `total_count` is the sum of the count of all elements that can be obtained from the `count` key of the result of the `CMS.INFO` command and is of course dynamic - it changes with every new increment in the sketch. At creation time you can approximate the `total_count` ratio as a product of the average count you'll be expecting in the sketch and the average number of elements.
+
+Since the threshold is a function of the total count in the filter it's very important to note that it will grow as  the count grows, but knowing the total count we can always dynamically calculate the threshold. If a result is below it - it can be discarded.
+
+  
+### 2. Probability
+  
+`probability` in this data structure represents the chance of an element that has a count below the threshold to collide with elements that had a count above the threshold on all sketches/depths thus returning a min-count of a frequently occurring element instead of its own.
+
+
 
 ## Performance
 Adding, updating and querying for elements in a CMS has a time complexity O(1).

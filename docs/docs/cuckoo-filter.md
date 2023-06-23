@@ -13,6 +13,70 @@ Cuckoo filters, just like Bloom filters, enables you to check if an element is p
 
 While the Bloom filter is a bit array with flipped bits at positions decided by the hash function, a Cuckoo filter is an array of buckets, storing fingerprints of the values in one of the buckets at positions decided by the two hash functions. A membership query for item `x` searches the possible buckets for the fingerprint of `x`, and returns true if an identical fingerprint is found. A cuckoo filter's fingerprint size will directly determine the false positive rate.
 
+
+## Use cases
+
+**Targeted ad campaigns (advertising, retail)** 
+
+This application answers this question: Has the user signed up for this campaign yet?
+
+Use a Cuckoo filter for every campaign, populated with targeted users' ids. On every visit, the user id is checked against one of the Cuckoo filters. 
+
+- If yes, the user has not signed up for campaign. Show the ad.
+- If the user clicks ad and signs up, remove the user id from that Cuckoo filter. 
+- If no, the user has signed up for that campaign. Try the next ad/Cuckoo filter. 
+ 
+**Discount code/coupon validation (retail, online shops)** 
+
+This application answers this question: Has this discount code/coupon been used yet?
+
+Use a Cuckoo filter populated with all discount codes/coupons. On every try, the entered code is checked against the filter. 
+
+- If no, the coupon is not valid. 
+- If yes, the coupon can be valid. Check the main database. If valid, remove from Cuckoo filter as `used`.
+
+Note> In addition to these two cases, Cuckoo filters serve very well all the Bloom filter use cases.
+
+## Examples
+
+* Cuckoo: Adding new items to a filter
+
+
+> Create an empty cuckoo filter with an initial capacity (of 1000 items)
+
+```
+> CF.RESERVE newCuckooFilter 1000
+(integer) 1
+```
+
+> A new filter is created for you if it does not yet exist
+
+```
+> CF.ADD newCuckooFilter foo
+(integer) 1
+```
+
+You can add the item multiple times. The filter will attempt to count it.
+
+* Cuckoo: Checking whether item exists
+
+```
+> CF.EXISTS newCuckooFilter foo
+(integer) 1
+```
+
+```
+> CF.EXISTS newCuckooFilter notpresent
+(integer) 0
+```
+
+* Cuckoo: Deleting item from filter
+
+```
+> CF.DEL newCuckooFilter foo
+(integer) 1
+```
+
 ## Bloom vs. Cuckoo filters
 Bloom filters typically exhibit better performance and scalability when inserting
 items (so if you're often adding items to your dataset, then a Bloom filter may be ideal).
@@ -80,47 +144,7 @@ The expansion factor will be rounded up to the next "power of two (2<sup>n</sup>
 - The filter can grow up to 32 times. 
 - You can delete items to stay within filter limits instead of rebuilding
 - Adding the same element multiple times will create multiple entries, thus filling up your filter.
-  
 
-## Examples
-
-* Cuckoo: Adding new items to a filter
-
-
-> Create an empty cuckoo filter with an initial capacity (of 1000 items)
-
-```
-> CF.RESERVE newCuckooFilter 1000
-(integer) 1
-```
-
-> A new filter is created for you if it does not yet exist
-
-```
-> CF.ADD newCuckooFilter foo
-(integer) 1
-```
-
-You can add the item multiple times. The filter will attempt to count it.
-
-* Cuckoo: Checking whether item exists
-
-```
-> CF.EXISTS newCuckooFilter foo
-(integer) 1
-```
-
-```
-> CF.EXISTS newCuckooFilter notpresent
-(integer) 0
-```
-
-* Cuckoo: Deleting item from filter
-
-```
-> CF.DEL newCuckooFilter foo
-(integer) 1
-```
 
 ## Performance
 Adding an element to a Cuckoo filter has a time complexity of O(1).
