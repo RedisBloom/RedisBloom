@@ -6,15 +6,15 @@ description: >
     "Quick start guide"
 ---
 
-# Quick Start Guide for RedisBloom
+# Quick Start Guide for RedisProbabilistic
 
 ## Redis Cloud
 
-RedisBloom is available on all Redis Cloud managed services.  Redis Cloud Essentials offers a completely free managed database up to 30MB.
+Probabilistic is available on all Redis Cloud managed services.  Redis Cloud Essentials offers a completely free managed database up to 30MB.
 
 [Get started here](https://redis.com/try-free/)
 
-## Launch RedisBloom with Docker
+## Launch Probabilistic with Docker
 ```
 docker run -p 6379:6379 --name redis-redisbloom redis/redis-stack-server
 ```

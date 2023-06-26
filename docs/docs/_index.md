@@ -1,5 +1,5 @@
 ---
-title: RedisBloom
+title: Redis Probabilistic
 linkTitle: Probabilistic
 description: Bloom filters and other probabilistic data structures for Redis
 type: docs
@@ -8,7 +8,7 @@ type: docs
 [![Discord](https://img.shields.io/discord/697882427875393627?style=flat-square)](https://discord.gg/wXhwjCQ)
 [![GitHub](https://img.shields.io/static/v1?label=&message=repository&color=5961FF&logo=github)](https://github.com/RedisBloom/RedisBloom/)
 
-RedisBloom contains a set of useful probabilistic data structures. Probabilistic data structures allow developers to control the accuracy of returned results while gaining performance and reducing memory. 
+Redis Probabilistic contains a set of useful probabilistic data structures. Probabilistic data structures allow developers to control the accuracy of returned results while gaining performance and reducing memory. 
 These data structures are ideal for analyzing streaming data and large datasets.
 
 Use these data structures to answer a set of common questions concerning data streams:
@@ -118,7 +118,7 @@ t-digest
 1. [Meet Top-K: an Awesome Probabilistic Addition to RedisBloom](https://redis.com/blog/meet-top-k-awesome-probabilistic-addition-redisbloom/)
 
 ## Mailing List / Forum
-Got questions? Feel free to ask at the [RedisBloom forum](https://forum.redis.com/c/modules/redisbloom).
+Got questions? Feel free to ask at the [Probabilistic forum](https://forum.redis.com/c/modules/redisbloom).
 
 ## License
-RedisBloom is licensed under the [Redis Source Available License 2.0 (RSALv2)](https://redis.com/legal/rsalv2-agreement) or the [Server Side Public License v1 (SSPLv1)](https://www.mongodb.com/licensing/server-side-public-license).
+Redis Probabilistic is licensed under the [Redis Source Available License 2.0 (RSALv2)](https://redis.com/legal/rsalv2-agreement) or the [Server Side Public License v1 (SSPLv1)](https://www.mongodb.com/licensing/server-side-public-license).
