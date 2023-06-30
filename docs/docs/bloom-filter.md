@@ -24,7 +24,7 @@ This application answers the question, "Has the user paid from this location bef
  
 Use one Bloom filter per user, checked for every transaction. Provide an extremely fast response (local latency). Replicate in different regions in case the user moves. Prevent decreasing performance with scale.  
 
-Using RedisBloom for this type of application provides these benefits: 
+Using Redis Probabilistic for this type of application provides these benefits: 
 
 - Fast transaction completion 
 - Decreased possibility for transaction to brake in case of network partitions (connection needs to be kept open for a shorter time) 
@@ -48,7 +48,7 @@ Use a Bloom filter for every user, storing all bought products. The recommendati
 - If no, the ad is shown to the user and is added to the Bloom filter. 
 - If yes, the process restarts and repeats until it finds a product that is not present in the filter. 
 
-Using RedisBloom for this type of application provides these benefits: 
+Using Redis Probabilistic for this type of application provides these benefits: 
 
 - Cost efficient way to a customized near real-time experience 
 - No need to invest in expensive infrastructure  
@@ -64,7 +64,7 @@ Use a Bloom filter for every username that has signed up. A new user types in th
 
 The query time stays the same at scale. 
 
-Using RedisBloom for this type of application provides these benefits: 
+Using Redis Probabilistic for this type of application provides these benefits: 
 
 - Very fast and efficient way to do a common operation 
 - No need to invest in expensive infrastructure  
@@ -120,7 +120,7 @@ OK
 ```
 
 ## Sizing Bloom filters
-In RedisBloom most of the sizing work is done for you: 
+In Redis Probabilistic most of the sizing work is done for you: 
 
 ```
 BF.RESERVE {key} {error_rate} {capacity} [EXPANSION expansion] [NONSCALING]

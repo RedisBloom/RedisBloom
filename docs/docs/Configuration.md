@@ -3,7 +3,7 @@ title: "Configuration Parameters"
 linkTitle: "Configuration"
 weight: 100
 description: >
-    RedisBloom supports multiple module configuration parameters. All of these parameters can only be set at load-time.
+    Redis Probabilistic supports multiple module configuration parameters. All of these parameters can only be set at load-time.
 ---
 
 ## Setting configuration parameters on module load
@@ -28,7 +28,7 @@ From the command line:
 $ redis-server --loadmodule ./redisbloom.so [OPT VAL]...
 ```
 
-## RedisBloom configuration parameters
+## Redis Probabilistic configuration parameters
 
 The following table summarizes which configuration parameters can be set at module load-time and which can be set on run-time:
 
