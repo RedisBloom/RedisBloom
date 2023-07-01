@@ -628,20 +628,12 @@ workflows:
           requires:
             - lint
           context: common
-      - benchmark-bloom-oss-standalone-profiler:
-          <<: *on-integ-and-version-tags
-          requires:
-            - lint
-          context: common
 
   benchmark_flow_label:
     when:
       << pipeline.parameters.run_benchmark_flow_label >>
     jobs:
       - benchmark-bloom-oss-standalone:
-          <<: *on-any-branch
-          context: common
-      - benchmark-bloom-oss-standalone-profiler:
           <<: *on-any-branch
           context: common
 
@@ -655,6 +647,4 @@ workflows:
               only: master
     jobs:
       - benchmark-bloom-oss-standalone:
-          context: common
-      - benchmark-bloom-oss-standalone-profiler:
           context: common
