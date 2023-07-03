@@ -3,7 +3,7 @@ title: "Client Libraries"
 linkTitle: "Clients"
 weight: 4
 description: >
-    Redis Probabilistic has several client libraries, written by the module authors and community members - abstracting the API in different programming languages.
+    Redis Stack has several client libraries, written by the module authors and community members - abstracting the API in different programming languages.
     While it is possible and simple to use the raw Redis commands API, in most cases it's easier to just use a client library abstracting it.
 ---
 

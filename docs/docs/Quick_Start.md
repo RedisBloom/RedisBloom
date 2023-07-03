@@ -10,11 +10,11 @@ description: >
 
 ## Redis Cloud
 
-Probabilistic is available on all Redis Cloud managed services.  Redis Cloud Fixed offers a completely free managed database up to 30MB.
+Redis Stack's probabilistic data structures are available on all Redis Cloud managed services. Redis Cloud Fixed offers a completely free managed database up to 30MB.
 
 [Get started here](https://redis.com/try-free/)
 
-## Launch Probabilistic with Docker
+## Launch Redis Stack with Docker
 ```
 docker run -p 6379:6379 --name redis-redisbloom redis/redis-stack-server
 ```
