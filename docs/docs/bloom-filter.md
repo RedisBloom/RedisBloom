@@ -24,7 +24,7 @@ This application answers the question, "Has the user paid from this location bef
  
 Use one Bloom filter per user, checked for every transaction. Provide an extremely fast response (local latency). Replicate in different regions in case the user moves. Prevent decreasing performance with scale.  
 
-Using Redis Probabilistic for this type of application provides these benefits: 
+Using Redis Stack's bloom filters for this type of application provides these benefits: 
 
 - Fast transaction completion 
 - Decreased possibility for transaction to brake in case of network partitions (connection needs to be kept open for a shorter time) 
@@ -48,7 +48,7 @@ Use a Bloom filter for every user, storing all bought products. The recommendati
 - If no, the ad is shown to the user and is added to the Bloom filter. 
 - If yes, the process restarts and repeats until it finds a product that is not present in the filter. 
 
-Using Redis Probabilistic for this type of application provides these benefits: 
+Using Redis Stack's bloom filters for this type of application provides these benefits: 
 
 - Cost efficient way to a customized near real-time experience 
 - No need to invest in expensive infrastructure  
@@ -64,7 +64,7 @@ Use a Bloom filter for every username that has signed up. A new user types in th
 
 The query time stays the same at scale. 
 
-Using Redis Probabilistic for this type of application provides these benefits: 
+Using Redis Stack's bloom filters for this type of application provides these benefits: 
 
 - Very fast and efficient way to do a common operation 
 - No need to invest in expensive infrastructure  
@@ -120,7 +120,7 @@ OK
 ```
 
 ## Sizing Bloom filters
-In Redis Probabilistic most of the sizing work is done for you: 
+With Redis Stack's bloom filters most of the sizing work is done for you: 
 
 ```
 BF.RESERVE {key} {error_rate} {capacity} [EXPANSION expansion] [NONSCALING]
@@ -133,7 +133,7 @@ The rate is a decimal value between 0 and 1. For example, for a desired false po
 This is the number of elements you expect having in your filter in total and is trivial when you have a static set but it becomes more challenging when your set grows over time. It's important to get the number right because if you **oversize** - you'll end up wasting memory. If you **undersize**, the filter will fill up and a new one will have to be stacked on top of it (sub-filter stacking). In the cases when a filter consists of multiple sub-filters stacked on top of each other latency for adds stays the same, but the latency for presence checks increases. The reason for this is the way the checks work: a regular check would first be performed on the top (latest) filter and if a negative answer is returned the next one is checked and so on. That's where the added latency comes from.
 
 #### 3. Scaling (`EXPANSION`)
-Adding an element to a Bloom filter never fails due to the data structure "filling up". Instead the error rate starts to grow. To keep the error close to the one set on filter initialisation - RedisBloom will auto-scale, meaning when capacity is reached an additional sub-filter will be created.  
+Adding an element to a Bloom filter never fails due to the data structure "filling up". Instead the error rate starts to grow. To keep the error close to the one set on filter initialisation - the bloom filter will auto-scale, meaning when capacity is reached an additional sub-filter will be created.  
  The size of the new sub-filter is the size of the last sub-filter multiplied by `EXPANSION`. If the number of elements to be stored in the filter is unknown, we recommend that you use an expansion of 2 or more to reduce the number of sub-filters. Otherwise, we recommend that you use an expansion of 1 to reduce memory consumption. The default expansion value is 2. 
  
  The filter will keep adding more hash functions for every new sub-filter in order to keep your desired error rate. 
