@@ -5,6 +5,8 @@ description: Bloom filters are a probabilistic data structure that checks for pr
 type: docs
 weight: 10
 stack: true
+aliases:
+    - /docs/stack/bloom/
 ---
 
 
