@@ -1,7 +1,7 @@
 ---
 title: Count-min sketch
 linkTitle: Count-min sketch
-description: Count-min sketch is a probabilistic data structure that allows you to count the number of times an item appears in a data stream.
+description: Count-min sketch is a probabilistic data structure that estimates the frequency of an element in a data stream.
 type: docs
 stack: true
 weight: 60
@@ -9,7 +9,7 @@ weight: 60
 
 # Count-min sketch
 
-Count-Min Sketch is a probabilistic data structure that estimates the frequency of events/elements in a stream of data.
+Count-Min Sketch is a probabilistic data structure in Redis Stack that estimates the frequency of events/elements in a stream of data.
 
 It uses a sub-linear space at the expense of over-counting some events due to collisions. It consumes a stream of events/elements and keeps estimated counters of their frequency.
 

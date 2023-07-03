@@ -1,7 +1,7 @@
 ---
 title: Bloom filter
 linkTitle: Bloom filter
-description: Bloom filters are a probabilistic data structure that allows you to answer the question "does this item exist in a set?" with a certain level of accuracy.
+description: Bloom filters are a probabilistic data structure that checks for presence of an element in a set
 type: docs
 weight: 10
 stack: true
@@ -10,7 +10,7 @@ stack: true
 
 # Bloom Filters
 
-A Bloom filter is a probabilistic data structure that enables you to check if an element is present in a set using a very small memory space of a fixed size.
+A Bloom filter is a probabilistic data structure in Redis Stack that enables you to check if an element is present in a set using a very small memory space of a fixed size.
 
 Instead of storing all of the elements in the set, Bloom Filters store only the elements' hashed representation, thus sacrificing some precision. The trade-off is that Bloom Filters are very space-efficient and fast.
 

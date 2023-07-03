@@ -7,7 +7,7 @@ stack: true
 weight: 50
 ---
 
-Top K is a probabilistic data structure used to estimate the `K` highest-rank elements from a stream.
+Top K is a probabilistic data structure in Redis Stack used to estimate the `K` highest-rank elements from a stream.
 
 "Highest-rank" in this case means "elements with a highest number or score attached to them", where the score can be a count of how many times the element has appeared in the stream - thus making the data structure perfect for finding the elements with the highest frequency in a stream.
 One very common application is detecting network anomalies and DDoS attacks where Top K can answer the question: Is there a sudden increase in the flux of requests to the same address or from the same IP?
