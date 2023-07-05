@@ -2,14 +2,18 @@ Alessandro
 Balasco
 Campoy
 CircleCI
+cli
 CodeQL
 Dani
 Dockerhub
+ESC
+htmlcontent
 JReBloom
 JSON
 Jedis
 Kolevska's
 Lexicographically
+macOS
 NRedisBloom
 QL
 RSALv
@@ -58,4 +62,5 @@ sdk
 submodules
 vertx
 wjso
+wq
 yadazula
