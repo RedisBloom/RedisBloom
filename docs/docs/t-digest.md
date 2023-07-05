@@ -7,21 +7,13 @@ stack: true
 weight: 40
 ---
 
-The t-digest is a sketch data structure in Redis Stack for estimating quantiles from a data stream or a large dataset using a compact sketch.
+The t-digest is a sketch data structure in Redis Stack for estimating percentiles from a data stream or a large dataset using a compact sketch.
 
 It can answer questions like:
 - Which fraction of the values in the data stream are smaller than a given value?
 - How many values in the data stream are smaller than a given value?
 - What's the highest value that's smaller than *p* percent of the values in the data stream? (what is the p-percentile value)?
 
-### What is a quantile?
-Before digging into t-digest, we need to understand quantiles and percentiles. The word **“quantile”** comes from the word quantity. In simple terms, quantiles are the points where a sample is divided into equal-sized groups. It can also refer to dividing a probability distribution into areas of equal probability. Let's illustrate this with a simple example:
-
-<img style="width: 100%;margin: auto;max-width: 1000px;" src="/docs/data-types/probabilistic/images/quantiles.png" alt="Quantile points on an axis">
-
-Above we see 12 data points divided into four groups of an equal number of elements (3). The values that divide those groups are called quantiles. The 0.25 quantile has 25% of all the data points to its left. The 0.5 quantile is the point that splits the data in two and is equal to the **median** value of the dataset.
-
-**A percentile is a special quantile, where we divide the whole set in 100 groups (or hundred quantiles). So a 0.25 quantile would be a 25th percentile.** In the rest of the training we'll work with percentiles, because they're more intuitive to understand.
 
 ### What is t-digest?
 t-digest is a data structure that will estimate a percentile point without having to store and order all the data points in a set. For example: to answer the question "What's the average latency for 99% of my database operations" we would have to store the average latency for every user, order the values, cut out the last 1% and only then find the average value of all the rest. This kind of process is costly not just in terms of the processing needed to order those values but also in terms of the space needed to store them. Those are precisely the problems t-digest solves.
