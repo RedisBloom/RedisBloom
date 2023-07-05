@@ -1,7 +1,7 @@
 ---
 title: "Configuration Parameters"
 linkTitle: "Configuration"
-weight: 5
+weight: 100
 description: >
     RedisBloom supports multiple module configuration parameters. All of these parameters can only be set at load-time.
 ---
