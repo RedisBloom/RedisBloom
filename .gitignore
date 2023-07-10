@@ -19,3 +19,4 @@
 /tests/benchmarks/profile_*
 /bin/
 /1/
+.DS_Store
