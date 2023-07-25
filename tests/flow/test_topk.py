@@ -187,3 +187,10 @@ class testTopK():
         self.cmd('topk.add', 'topk', 'j', 'h', 'd', 'j', 'h', 'h', 'j', 'g', 'e', 'g', 'i', 'f', 'g', 'f', 'a', 'j', 'c', 'i', 'a', 'd')
         heapList = self.cmd('topk.list', 'topk')
         self.assertEqual(len(set(heapList)), len(heapList))
+
+    def test_cstring(self):
+        self.cmd('FLUSHALL')
+        self.cmd('topk.reserve', 'topk', '3')
+        self.cmd('topk.add', 'topk', 'Lets\nCrash')
+        res = self.cmd('TOPK.LIST', 'topk')
+        assert res == ['Lets\nCrash']
