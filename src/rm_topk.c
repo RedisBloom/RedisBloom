@@ -112,7 +112,7 @@ static int TopK_Add_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         if (expelledItem == NULL) {
             RedisModule_ReplyWithNull(ctx);
         } else {
-            RedisModule_ReplyWithSimpleString(ctx, expelledItem);
+            RedisModule_ReplyWithCString(ctx, expelledItem);
             TOPK_FREE(expelledItem);
         }
     }
@@ -149,7 +149,7 @@ static int TopK_Incrby_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         if (expelledItem == NULL) {
             RedisModule_ReplyWithNull(ctx);
         } else {
-            RedisModule_ReplyWithSimpleString(ctx, expelledItem);
+            RedisModule_ReplyWithCString(ctx, expelledItem);
             TOPK_FREE(expelledItem);
         }
     }
@@ -225,7 +225,7 @@ static int TopK_List_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     long arrlen = 0;
     for (int i = 0; i < topk->k; ++i) {
         if (heapList[i].count != 0) {
-            RedisModule_ReplyWithSimpleString(ctx, heapList[i].item);
+            RedisModule_ReplyWithCString(ctx, heapList[i].item);
             if (withCount) {
                 RedisModule_ReplyWithLongLong(ctx, heapList[i].count);
             }
