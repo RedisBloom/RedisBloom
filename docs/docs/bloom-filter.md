@@ -71,57 +71,33 @@ Using Redis Stack's Bloom filter for this type of application provides these ben
 - Very fast and efficient way to do a common operation 
 - No need to invest in expensive infrastructure  
 
-## Examples:
+## Example:
 
-* Adding new items to the filter
+If we're making a million different kinds of bikes, we'd prefer to not use a model model name rather than have a duplicate.
+So we'll create a new filter and say we'll be inserting 1,000,000 things and we want a 0.1% error rate.
+We'll add one model name, and check if it exists. Then we'll add multiple model names and check if they exist.
 
-> A new filter is created for you if it does not yet exist
 
-```
-> BF.ADD newFilter foo
+{{< clients-example bf_tutorial bloom >}}
+> BF.RESERVE bikes:models 0.001 1000000
+OK
+> BF.ADD bikes:models "Smoky Mountain Striker"
 (integer) 1
-```
-
-* Checking if an item exists in the filter
-
-```
-> BF.EXISTS newFilter foo
+> BF.EXISTS bikes:models "Smoky Mountain Striker"
 (integer) 1
-```
-
-```
-> BF.EXISTS newFilter notpresent
-(integer) 0
-```
-
-* Adding and checking multiple items
-
-```
-> BF.MADD myFilter foo bar baz
+> BF.MADD bikes:models "Rocky Mountain Racer" "Cloudy City Cruiser" "Windy City Wippet"
 1) (integer) 1
 2) (integer) 1
 3) (integer) 1
-```
-
-```
-> BF.MEXISTS myFilter foo nonexist bar
+> BF.MEXISTS bikes:models "Rocky Mountain Racer" "Cloudy City Cruiser" "Windy City Wippet"
 1) (integer) 1
-2) (integer) 0
+2) (integer) 1
 3) (integer) 1
-```
+{{< /clients-example >}}
 
-* Creating a new filter with custom properties
+There is always a chance that even with this few items, there's a collision and we get a false positive.
 
-```
-> BF.RESERVE customFilter 0.0001 600000
-OK
-```
-
-```
-> BF.MADD customFilter foo bar baz
-```
-
-## Sizing Bloom filters
+## Reserving Bloom filters
 With Redis Stack's bloom filters most of the sizing work is done for you: 
 
 ```
