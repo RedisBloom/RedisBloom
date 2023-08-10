@@ -586,13 +586,15 @@ workflows:
           context: common
           matrix:
             parameters:
-              platform: [lunar, jammy, focal, bionic, amzn2, rocky9, rocky8, centos7, bullseye, bookworm]
+              # platform: [jammy, focal, bionic, amzn2, rocky8, centos7, bullseye]
+              platform: [lunar, rocky9, bookworm]
       - build-arm-platforms:
           <<: *always
           context: common
           matrix:
             parameters:
-              platform: [lunar, jammy, focal, bionic, bookworm]
+              # platform: [lunar, jammy, focal, bionic, bookworm]
+              platform: [lunar, bookworm]
       - build-macos-x64:
           context: common
           <<: *always
