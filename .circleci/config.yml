@@ -597,10 +597,10 @@ workflows:
               platform: [lunar, bookworm]
       - build-macos-x64:
           context: common
-          <<: *always
+          <<: *on-version-tags
       - build-macos-m1:
           context: common
-          <<: *always
+          <<: *on-version-tags
       - upload-artifacts:
           name: upload-artifacts-to-staging-lab
           staging-lab: "1"
