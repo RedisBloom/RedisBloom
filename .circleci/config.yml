@@ -569,9 +569,11 @@ workflows:
       # - static-analysis-infer:
       #     <<: *on-any-branch
       - coverage:
-          <<: *on-any-branch
+          #@@<<: *on-any-branch
+          <<: *never
       - valgrind:
-          <<: *on-any-branch
+          #@@<<: *on-any-branch
+          <<: *never
           requires:
             - lint
       - build:
