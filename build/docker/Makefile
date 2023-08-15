@@ -2,7 +2,7 @@
 ROOT=../..
 include $(ROOT)/deps/readies/mk/main
 
-REDIS_VERSION=7.2-rc3
+REDIS_VERSION=7.2
 REPO=rebloom
 
 OSNICK.official=bullseye
