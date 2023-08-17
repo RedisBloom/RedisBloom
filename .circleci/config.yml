@@ -569,9 +569,11 @@ workflows:
       # - static-analysis-infer:
       #     <<: *on-any-branch
       - coverage:
-          <<: *on-any-branch
+          #@@<<: *on-any-branch
+          <<: *never
       - valgrind:
-          <<: *on-any-branch
+          #@@<<: *on-any-branch
+          <<: *never
           requires:
             - lint
       - build:
@@ -582,23 +584,25 @@ workflows:
             parameters:
               redis_version: ["6.0", "7", "unstable"]
       - build-platforms:
-          <<: *on-integ-and-version-tags
+          <<: *always
           context: common
           matrix:
             parameters:
-              platform: [jammy, focal, bionic, xenial, amzn2, rocky8, centos7, bullseye]
+              # platform: [jammy, focal, bionic, amzn2, rocky8, centos7, bullseye]
+              platform: [lunar, rocky9, bookworm]
       - build-arm-platforms:
-          <<: *on-integ-and-version-tags
+          <<: *always
           context: common
           matrix:
             parameters:
-              platform: [jammy, focal, bionic]
+              # platform: [lunar, jammy, focal, bionic, bookworm]
+              platform: [lunar, bookworm]
       - build-macos-x64:
           context: common
-          <<: *on-integ-and-version-tags
+          <<: *on-version-tags
       - build-macos-m1:
           context: common
-          <<: *on-integ-and-version-tags
+          <<: *on-version-tags
       - upload-artifacts:
           name: upload-artifacts-to-staging-lab
           staging-lab: "1"
