@@ -31,6 +31,7 @@ class RedisBloomSetup(paella.Setup):
 
     def linux_last(self):
         self.install("valgrind")
+        self.run(f"{ROOT}/sbin/get-fbinfer")
 
     def macos(self):
         self.install_gnu_utils()
@@ -41,7 +42,6 @@ class RedisBloomSetup(paella.Setup):
             self.install("lcov-git", aur=True)
         else:
             self.install("lcov")
-        self.run(f"{ROOT}/sbin/get-fbinfer")
         self.run(f"{self.python} {READIES}/bin/getrmpytools --reinstall --modern")
         self.run(f"{self.python} {READIES}/bin/getcmake --usr")
         self.pip_install("-r tests/flow/requirements.txt")
