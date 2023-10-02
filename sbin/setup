@@ -8,19 +8,9 @@ READIES=$ROOT/deps/readies
 
 export HOMEBREW_NO_AUTO_UPDATE=1
 
-MODERN_PY=
-if [[ -f /etc/os-release ]]; then
-	. /etc/os-release
-	if [[ $ID${VERSION_ID} == amzn2 ]]; then
-		MODERN_PY=1
-	fi
-fi
+$READIES/bin/getpy3
+activate_python
 
-MODERN=$MODERN_PY $READIES/bin/getpy3
-pyenv="$(get_profile_d)/pyenv.sh"
-if [[ -f $pyenv ]]; then
-	. $pyenv
-fi
 if [[ $VERBOSE == 1 ]]; then
 	python3 --version
 	python3 -m pip list
