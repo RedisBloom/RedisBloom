@@ -582,29 +582,28 @@ workflows:
             parameters:
               redis_version: ["6.0", "7", "unstable"]
       - build-platforms:
-#          <<: *on-integ-and-version-tags
-          <<: *on-any-branch  # temp
+          <<: *on-integ-and-version-tags
           context: common
           matrix:
             parameters:
               platform: [jammy, focal, bionic, xenial, amzn2, rocky8, centos7, bullseye, rocky9]
       - build-arm-platforms:
-          <<: *on-any-branch  # temp
+          <<: *on-integ-and-version-tags
           context: common
           matrix:
             parameters:
               platform: [jammy, focal, bionic]
       - build-macos-x64:
           context: common
-          <<: *on-any-branch  # temp
+          <<: *on-integ-and-version-tags
       - build-macos-m1:
           context: common
-          <<: *on-any-branch  # temp
+          <<: *on-integ-and-version-tags
       - upload-artifacts:
           name: upload-artifacts-to-staging-lab
           staging-lab: "1"
           context: common
-          <<: *on-any-branch  # temp
+          <<: *on-integ-branch
           requires:
             - build-platforms
             - build-arm-platforms
