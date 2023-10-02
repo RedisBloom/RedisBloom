@@ -142,6 +142,7 @@ setup_rltest() {
 	fi
 
 	RLTEST_ARGS+=" --enable-debug-command"
+	echo "Enabled debug command in tests for redis >= 7"
 
 	if [[ $RLTEST_VERBOSE == 1 ]]; then
 		RLTEST_ARGS+=" -v"
