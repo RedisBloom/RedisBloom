@@ -39,43 +39,20 @@ Note> In addition to these two cases, Cuckoo filters serve very well all the Blo
 
 ## Examples
 
-* Cuckoo: Adding new items to a filter
+> We'll ddemonstrate creating an empty cuckoo filter with an initial capacity (of 1000 items), adding items to it, checking if they exist, and deleting them. While the `CF.ADD` command will create a new filter if one does not exist, it likely will not be optimally sized for your use case. We recommend using `CF.RESERVE` to create a filter with the desired capacity. 
 
-
-> Create an empty cuckoo filter with an initial capacity (of 1000 items)
-
-```
-> CF.RESERVE newCuckooFilter 1000
+{{< clients-example cuckoo_tutorial cuckoo >}}
+> CF.RESERVE bikes:models 1000000
+OK
+> CF.ADD bikes:models "Smoky Mountain Striker"
 (integer) 1
-```
-
-> A new filter is created for you if it does not yet exist
-
-```
-> CF.ADD newCuckooFilter foo
+> CF.EXISTS bikes:models "Smoky Mountain Striker"
 (integer) 1
-```
-
-You can add the item multiple times. The filter will attempt to count it.
-
-* Cuckoo: Checking whether item exists
-
-```
-> CF.EXISTS newCuckooFilter foo
-(integer) 1
-```
-
-```
-> CF.EXISTS newCuckooFilter notpresent
+> CF.EXISTS bikes:models "Terrible Bike Name"
 (integer) 0
-```
-
-* Cuckoo: Deleting item from filter
-
-```
-> CF.DEL newCuckooFilter foo
+> CF.DEL bikes:models "Smoky Mountain Striker"
 (integer) 1
-```
+{{< /clients-example >}}
 
 ## Bloom vs. Cuckoo filters
 Bloom filters typically exhibit better performance and scalability when inserting
