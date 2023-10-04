@@ -248,6 +248,7 @@ TEST_F(encoding, testEncodingSimple) {
 
     ASSERT_EQ(nColls, nColls_2);
 
+    SB_FreeEncodedHeader(hdr);
     SBChain_Free(chain);
     SBChain_Free(chain2);
     free(encs);
