@@ -34,15 +34,19 @@ OK
 > CMS.INCRBY bikes:profit "Rocky Mountain Racer" 200 "Cloudy City Cruiser" 150
 1) (integer) 200
 2) (integer) 150
-> CMS.QUERY bikes:profit element1
-(integer) 100
+> CMS.QUERY bikes:profit "Smokey Mountain Striker" "Rocky Mountain Racer" "Cloudy City Cruiser" "Terrible Bike Name"
+1) (integer) 100
+2) (integer) 200
+3) (integer) 150
+4) (integer) 0
 > CMS.INFO bikes:profit
 1) width
 2) (integer) 2000
 3) depth
 4) (integer) 9
 5) count
-6) (integer) 300
+6) (integer) 450
+{{< /clients-example >}}
 
 ##### Example 1:
 If we had a uniform distribution of 1000 elements where each has a count of around 500 the threshold would be 500: 
