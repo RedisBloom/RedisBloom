@@ -24,11 +24,25 @@ This application answers this question: What was the sales volume (on a certain 
 Use one Count-Min sketch created per day (period). Every product sale goes into the CMS. The CMS give reasonably accurate results for the products that contribute the most toward the sales. Products with low percentage of the total sales are ignored. 
 
 ## Examples
-Let's say we choose an error of 0.1%(`0.001`) with certainty of 99.8%(`0.998`) (thus probability of error 0.02% (`0.002`)). The resulting sketch will try to keep the error within 0.1% of the sum of counts of **ALL** elements that have been added to the sketch and the probability for this error to be higher  than that (a collision of an element below the threshold with an element above the threshold) will be 0.02%. 
+Let's say we choose an error of 0.1%(`0.001`) with certainty of 99.8%(`0.998`) (thus probability of error 0.02% (`0.002`)). The resulting sketch will try to keep the error within 0.1% of the sum of counts of **ALL** elements that have been added to the sketch and the probability for this error to be higher than that (a collision of an element below the threshold with an element above the threshold) will be 0.02%. We'll add a few things to the CMS and then check their frequency. Note that like other probablilistic data structures, this small of an example likely won't show any collisions.
 
-```
-> CMS.INITBYPROB key 0.001 0.002
-```
+{{< clients-example cms_tutorial cms >}}
+> CMS.INITBYPROB bikes:profit 0.001 0.002
+OK
+> CMS.INCRBY bikes:profit "Smokey Mountain Striker" 100
+(integer) 100
+> CMS.INCRBY bikes:profit "Rocky Mountain Racer" 200 "Cloudy City Cruiser" 150
+1) (integer) 200
+2) (integer) 150
+> CMS.QUERY bikes:profit element1
+(integer) 100
+> CMS.INFO bikes:profit
+1) width
+2) (integer) 2000
+3) depth
+4) (integer) 9
+5) count
+6) (integer) 300
 
 ##### Example 1:
 If we had a uniform distribution of 1000 elements where each has a count of around 500 the threshold would be 500: 
