@@ -32,7 +32,7 @@ jobs:
     - name: Install terraform
       env:
         VERSION: 0.14.8
-      run: ./tests/benchmarks/getterraform
+      run: ./deps/readies/bin/getterraform
     
     - name: install benchmark dependencies
       run: pip3 install -r ./tests/benchmarks/requirements.txt
