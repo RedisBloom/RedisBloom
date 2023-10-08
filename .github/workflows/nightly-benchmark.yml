@@ -1,26 +1,20 @@
-name: Check if needs trigger CI benchmark
+name: Run nightly CI benchmarks
 
 on:
-  pull_request:
-   types: [opened, labeled, unlabeled, synchronize]
+  push:
+    branches:
+      - master
+      - 2.6
+
+  workflow_dispatch:
+
+  schedule:
+    - cron: "0 0 * * 1,4"
+
 
 jobs:
-  haslabel:
-    name: analyse labels
-    runs-on: ubuntu-latest
-    outputs:
-      benchmark: ${{ steps.haslabel.outputs.labeled-run-benchmark }}
-    steps:
-      - uses: actions/checkout@v2
-      - name: Labeled with run-benchmark
-        id: haslabel
-        uses: DanielTamkin/HasLabel@v1.0.4
-        with:
-          contains: 'run-benchmark'
   perf-ci:
-    name: Trigger CI benchmarks from label
-    needs: haslabel
-    if: needs.haslabel.outputs.benchmark
+    name: Trigger nightly CI benchmarks
     runs-on: ubuntu-20.04
 
     steps:
@@ -63,14 +57,3 @@ jobs:
           --redistimeseries_port ${{ secrets.PERFORMANCE_RTS_PORT }} \
           --redistimeseries_pass '${{ secrets.PERFORMANCE_RTS_AUTH }}'
   
-    - name: Generate Pull Request Performance info
-      if: ${{ github.ref_type == 'branch' }}
-      run: |
-        redisbench-admin compare  \
-          --defaults_filename ./tests/benchmarks/defaults.yml \
-          --comparison-branch ${{ github.head_ref || github.ref_name }} \
-          --auto-approve \
-          --pull-request ${{github.event.pull_request.number}} \
-          --redistimeseries_host ${{ secrets.PERFORMANCE_RTS_HOST }} \
-          --redistimeseries_port ${{ secrets.PERFORMANCE_RTS_PORT }} \
-          --redistimeseries_pass '${{ secrets.PERFORMANCE_RTS_AUTH }}'

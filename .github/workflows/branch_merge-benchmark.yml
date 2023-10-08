@@ -1,26 +1,24 @@
-name: Check if needs trigger CI benchmark
+name: Branch Merge benchmarks
 
 on:
-  pull_request:
-   types: [opened, labeled, unlabeled, synchronize]
+  push:
+      paths-ignore:
+          - '.circleci/**'
+          - 'docs/**'
+          - '*.md'
+      branches:
+          - main
+          - master
+          - '[0-9]+.[0-9]+.[0-9]+'
+          - '[0-9]+.[0-9]+'
+      tags:
+          - 'v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+'
+          - 'v[0-9]+.[0-9]+.[0-9]+-m[0-9]+'
+          - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
-  haslabel:
-    name: analyse labels
-    runs-on: ubuntu-latest
-    outputs:
-      benchmark: ${{ steps.haslabel.outputs.labeled-run-benchmark }}
-    steps:
-      - uses: actions/checkout@v2
-      - name: Labeled with run-benchmark
-        id: haslabel
-        uses: DanielTamkin/HasLabel@v1.0.4
-        with:
-          contains: 'run-benchmark'
   perf-ci:
-    name: Trigger CI benchmarks from label
-    needs: haslabel
-    if: needs.haslabel.outputs.benchmark
+    name: Trigger CI benchmarks from merge
     runs-on: ubuntu-20.04
 
     steps:
@@ -59,18 +57,6 @@ jobs:
           --triggering_env circleci \
           --fail_fast \
           --push_results_redistimeseries \
-          --redistimeseries_host ${{ secrets.PERFORMANCE_RTS_HOST }} \
-          --redistimeseries_port ${{ secrets.PERFORMANCE_RTS_PORT }} \
-          --redistimeseries_pass '${{ secrets.PERFORMANCE_RTS_AUTH }}'
-  
-    - name: Generate Pull Request Performance info
-      if: ${{ github.ref_type == 'branch' }}
-      run: |
-        redisbench-admin compare  \
-          --defaults_filename ./tests/benchmarks/defaults.yml \
-          --comparison-branch ${{ github.head_ref || github.ref_name }} \
-          --auto-approve \
-          --pull-request ${{github.event.pull_request.number}} \
           --redistimeseries_host ${{ secrets.PERFORMANCE_RTS_HOST }} \
           --redistimeseries_port ${{ secrets.PERFORMANCE_RTS_PORT }} \
           --redistimeseries_pass '${{ secrets.PERFORMANCE_RTS_AUTH }}'
