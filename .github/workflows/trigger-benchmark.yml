@@ -64,6 +64,9 @@ jobs:
           --redistimeseries_pass '${{ secrets.PERFORMANCE_RTS_AUTH }}'
   
     - name: Generate Pull Request Performance info
+      env:
+        PERFORMANCE_GH_TOKEN: ${{ secrets.PERFORMANCE_GH_TOKEN }}
+        PERFORMANCE_WH_TOKEN: ${{ secrets.PERFORMANCE_WH_TOKEN }}
       if: ${{ github.ref_type == 'branch' }}
       run: |
         redisbench-admin compare  \
