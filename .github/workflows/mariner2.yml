@@ -17,22 +17,27 @@ jobs:
     container:
       image: mcr.microsoft.com/cbl-mariner/base/core:2.0
     steps:
-      - name: install pre-checkout dependencies
+      - name: Install pre-checkout dependencies
         run: tdnf install --noplugins --skipsignature -y ca-certificates git
       - name: checkout
         uses: actions/checkout@v4
         with:
           submodules: 'recursive'
-          set-safe-directory: true
-      - name: install dependencies
+      - name: Install dependencies
         run: |
           bash .install/mariner2.sh
-      - name: get redis latest
-        run: |
-          bash .install/get_redis.sh
-      - name: build and test
+      - name: Get Redis
+        uses: actions/checkout@v4
+        with:
+          repository: redis/redis
+          ref: '7.2.1'  # todo: use this is a parameter when we have flows for multiple platforms
+          path: redis
+      - name: Build Redis
+        working-directory: redis
+        run: make install
+      - name: Build and test Bloom
         run: make test
-      - name: pack module
+      - name: Pack module
         run: make pack BRANCH=${{ github.ref_name }} SHOW=1
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -40,8 +45,8 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: "us-east-1"
-      - name: upload artifacts to s3 - staging
+      - name: Upload artifacts to s3 - staging
         run: make upload-artifacts SHOW=1 STAGING=1 VERBOSE=1
-      - name: upload artifacts to s3 - release  # todo: trigger this manually instead
+      - name: Upload artifacts to s3 - release  # todo: trigger this manually instead
         if: ${{ github.ref != 'refs/heads/master' }}
         run: make upload-artifacts SHOW=1 VERBOSE=1
