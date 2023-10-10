@@ -55,6 +55,7 @@ ARCH=$($READIES/bin/platform --arch)
 
 OS=$($READIES/bin/platform --os)
 [[ $OS == linux ]] && OS=Linux
+[[ $OS == arm64v8 ]] && OS=aarch64
 
 OSNICK=$($READIES/bin/platform --osnick)
 [[ $OSNICK == trusty ]]  && OSNICK=ubuntu14.04
