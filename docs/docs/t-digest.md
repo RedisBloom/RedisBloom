@@ -62,23 +62,17 @@ You measure the IP packets transferred over your network each second and try to 
 
 ## Examples
 
-#### Creating a t-digest
+We'll demonstrate creating a t-digest with an initial compression of 100, adding items to it, and checking the estimated percentile of a value. Note that the `COMPRESSION` argument is used to specify the tradeoff between accuracy and memory consumption. The default is 100. Higher values mean more accuracy. Note also that unlike some of the other probabilistic data structures, the `TDIGEST.ADD` command will not create a new structure if the key does not exist.
 
-```
-> TDIGEST.CREATE my-tdigest COMPRESSION 100
-```
+{{< clients-example tdigest_tutorial tdig_start >}}
+> TDIGEST.CREATE bikes:sales COMPRESSION 100
+OK
+> TDIGEST.ADD bikes:sales 21
+OK
+> TDIGEST.ADD bikes:sales 150 95 75 34
+OK
+{{< /clients-example >}}
 
-The `COMPRESSION` argument is used to specify the tradeoff between accuracy and memory consumption. The default is 100. Higher values mean more accuracy.
-
-#### Adding a single element to the t-digest:
-```
-> TDIGEST.ADD my-tdigest 20.9
-```
-
-#### Adding multiple elements to the t-digest:
-```
-> TDIGEST.ADD my-tdigest 308 315.9
-```
 
 You can repeat calling [TDIGEST.ADD](https://redis.io/commands/tdigest.add/) whenever new observations are available
 
@@ -86,38 +80,38 @@ You can repeat calling [TDIGEST.ADD](https://redis.io/commands/tdigest.add/) whe
 
 Another helpful feature in t-digest is CDF (definition of rank) which gives us the fraction of observations smaller or equal to a certain value. This command is very useful to answer questions like "*What's the percentage of observations with a value lower or equal to X*".
 
->More precisely, `TDIGEST.CDF` will return the estimated fraction of observations in the sketch that are smaller than X plus half the number of observations that are equal to X
+>More precisely, `TDIGEST.CDF` will return the estimated fraction of observations in the sketch that are smaller than X plus half the number of observations that are equal to X. We can also use the `TDIGEST.RANK` command, which is very similar. Instead of returning a fraction, it returns the **number** of observations in the sketch that are smaller than X plus half the number of observations that are equal to X, or in other words - the estimated rank of a value. The `TDIGEST.RANK` command is also variadic.
 
-Let's illustrate this with an example: if we have a set of observations of people's age with gaussian distribution, we can ask a question like "What's the percentage of people younger than 50 years?"
+Let's illustrate this with an example: if we have a set of observations of people's age with gaussian distribution, we can ask a question like "What's the percentage of bike racers are younger than 50 years?"
 
-```
-> TDIGEST.ADD my-tdigest 45.88 44.2 58.03 19.76 39.84 69.28 50.97 25.41 19.27 85.71 42.63
+{{< clients-example tdigest_tutorial tdig_cdf >}}
+> TDIGEST.CREATE racer_ages
+OK
+> TDIGEST.ADD racer_ages 45.88 44.2 58.03 19.76 39.84 69.28 50.97 25.41 19.27 85.71 42.63
+OK
+> TDIGEST.CDF racer_ages 50
+1) "0.63636363636363635"
+> TDIGEST.RANK racer_ages 50
+1) (integer) 7
+> TDIGEST.RANK racer_ages 50 40
+1) (integer) 7
+2) (integer) 4
+{{< /clients-example >}}
 
-> TDIGEST.CDF my-tdigest 50
-```
-
-The `TDIGEST.RANK` command is very similar to `TDIGEST.CDF` but instead of returning a fraction, it returns the **number** of observations in the sketch that are smaller than X plus half the number of observations that are equal to X, or in other words - the estimated rank of a value.
-
-```
-> TDIGEST.RANK my-tdigest 50
-```
 
 And lastly, `TDIGEST.REVRANK key value...` is similar to [TDIGEST.RANK](https://redis.io/commands/tdigest.rank/), but returns, for each input value, an estimation of the number of (observations larger than a given value + half the observations equal to the given value).
 
 
 #### Estimating values by fractions or ranks
 
-`TDIGEST.QUANTILE key fraction...` returns, for each input fraction, an estimation of the value (floating point) that is smaller than the given fraction of observations.
+`TDIGEST.QUANTILE key fraction...` returns, for each input fraction, an estimation of the value (floating point) that is smaller than the given fraction of observations. `TDIGEST.BYRANK key rank...` returns, for each input rank, an estimation of the value (floating point) with that rank.
 
-```
-> TDIGEST.QUANTILE my-tdigest 0.5
-```
-
-`TDIGEST.BYRANK key rank...` returns, for each input rank, an estimation of the value (floating point) with that rank.
-
-```
-> TDIGEST.BYRANK my-tdigest 4
-```
+{{< clients-example tdigest_tutorial tdig_quant >}}
+> TDIGEST.QUANTILE racer_ages .5
+1) "44.200000000000003"
+> TDIGEST.BYRANK racer_ages 4
+1) "42.630000000000003"
+{{< /clients-example >}}
 
 `TDIGEST.BYREVRANK key rank...` returns, for each input **reverse rank**, an estimation of the **value** (floating point) with that reverse rank.
 
@@ -141,20 +135,25 @@ If `destKey` is an existing sketch, its values are merged with the values of the
 
 Use `TDIGEST.MIN` and `TDIGEST.MAX` to retrieve the minimal and maximal values in the sketch, respectively.
 
-```
-> TDIGEST.MIN my-tdigest
-> TDIGEST.MAX my-tdigest
-```
+{{< clients-example tdigest_tutorial tdig_min >}}
+> TDIGEST.MIN racer_ages
+"19.27"
+> TDIGEST.MAX racer_ages
+"85.709999999999994"
+{{< /clients-example >}}
 
 Both return nan when the sketch is empty.
 
-Both commands return accurate results and are equivalent to `TDIGEST.BYRANK my-tdigest 0` and `TDIGEST.BYREVRANK my-tdigest 0` respectively.
+Both commands return accurate results and are equivalent to `TDIGEST.BYRANK racer_ages 0` and `TDIGEST.BYREVRANK racer_ages 0` respectively.
 
-Use `TDIGEST.INFO my-tdigest` to retrieve some additional information about the sketch.
+Use `TDIGEST.INFO racer_ages` to retrieve some additional information about the sketch.
 
 #### Resetting a sketch
 
-`TDIGEST.RESET my-tdigest`
+{{< clients-example tdigest_tutorial tdig_reset >}}
+> TDIGEST.RESET racer_ages
+OK
+{{< /clients-example >}}
 
 ## Academic sources
 - [The _t_-digest: Efficient estimates of distributions](https://www.sciencedirect.com/science/article/pii/S2665963820300403)
