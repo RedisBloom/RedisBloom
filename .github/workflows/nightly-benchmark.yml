@@ -1,0 +1,22 @@
+name: Run nightly CI benchmarks
+
+on:
+  push:
+    branches:
+      - master
+      - 2.6
+
+  workflow_dispatch:
+
+  schedule:
+    - cron: "0 0 * * 1,4"
+
+
+jobs:
+  run-benchmarks:
+    uses: ./.github/workflows/benchmark-runner.yml
+    secrets: inherit
+    with:
+      extended: true
+
+  
