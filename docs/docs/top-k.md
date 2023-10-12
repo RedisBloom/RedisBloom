@@ -41,37 +41,42 @@ The `TOPK.LIST` command has a time complexity of `O(K)` so if `K` is small, ther
 
 ## Examples
 
-* Initialize a Top-K with specific parameters
-```
-> TOPK.RESERVE my-topk 50 2000 7 0.925
-```
-
-* Add elements to the Top-K
-
-Multiple items can be added at once. If an item enters the Top-K list, the item which is expelled is returned. This allows dynamic heavy-hitter detection of items being entered or expelled from Top-K list.* 
-
-```
-> TOPK.ADD my-topk foo bar 42
-```
-
-* Return list of the top K items
-
-```
-> TOPK.LIST my-topk 
-```
-
-* Check whether an item is one of Top-K items
-```
-> TOPK.QUERY my-topk 42
-```
-
-## Sizing
-
-Choosing the size for a Top K sketch is relatively easy, because the only two parameters you need to set are a direct function of the number of elements (K) you want to keep in your list.
+* We'll demonstrate initializing a Top-K with specific parameters; though `width`, `depth`, and `decay_constant` can be left out and default values will be used.
 
  ```
  > TOPK.RESERVE key k width depth decay_constant
  ```
+ 
+ Then, how multiple items can be added at once. If an item enters the Top-K list, and an item is expelled, that item is returned, otherwise the return is nil. This allows dynamic heavy-hitter detection of items being entered or expelled from Top-K list. We'll then return list of the top K items in the Top-K list as well as check whether an item is one of Top-K items.
+
+In this example we'll be tracking key words used with "bike" when online shopping. You'll note that 'pedals' kicks out 'handlebars' even though each have only been added once. This is in part because part of this structure is a min-heap, so the new item will kick out an old item with the same score. The `nil` response for 'store' and 'seat' are beacuse they're already _in_ the `Top-K` and so they're not expelling other items.
+
+{{< clients-example topk_tutorial topk >}}
+> TOPK.RESERVE bikes:keywords 5 2000 7 0.925
+OK
+> TOPK.ADD bikes:keywords store seat handlebars handles pedals tires store seat
+1) (nil)
+2) (nil)
+3) (nil)
+4) (nil)
+5) (nil)
+6) handlebars
+7) (nil)
+8) (nil)
+> TOPK.LIST bikes:keywords
+1) store
+2) seat
+3) pedals
+4) tires
+5) handles
+> TOPK.QUERY bikes:keywords store handlebars
+1) (integer) 1
+2) (integer) 0
+{{< /clients-example >}}
+
+## Sizing
+
+Choosing the size for a Top K sketch is relatively easy, because the only two parameters you need to set are a direct function of the number of elements (K) you want to keep in your list.
 
 If you start by knowing your desired `k` you can easily derive the width and depth:
 
