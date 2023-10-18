@@ -210,19 +210,19 @@ class testTDigest:
 
     def test_tdigest_merge_to_empty(self):
         self.cmd("FLUSHALL")
-        self.assertOk(self.cmd("tdigest.create", "to-tdigest", "compression", 100))
-        self.assertOk(self.cmd("tdigest.create", "from-tdigest", "compression", 100))
+        self.assertOk(self.cmd("tdigest.create", "to-tdigest{1}", "compression", 100))
+        self.assertOk(self.cmd("tdigest.create", "from-tdigest{1}", "compression", 100))
         # insert datapoints into sketch
         for _ in range(100):
-            self.assertOk(self.cmd("tdigest.add", "from-tdigest", 1.0))
+            self.assertOk(self.cmd("tdigest.add", "from-tdigest{1}", 1.0))
         # merge from-tdigest into to-tdigest
-        self.assertOk(self.cmd("tdigest.merge", "to-tdigest", 1 ,"from-tdigest"))
+        self.assertOk(self.cmd("tdigest.merge", "to-tdigest{1}", 1 ,"from-tdigest{1}"))
         # assert we have same merged weight on both histograms ( given the to-histogram was empty )
-        from_info = parse_tdigest_info(self.cmd("tdigest.info", "from-tdigest"))
+        from_info = parse_tdigest_info(self.cmd("tdigest.info", "from-tdigest{1}"))
         total_weight_from = float(from_info["Merged weight"]) + float(
             from_info["Unmerged weight"]
         )
-        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest"))
+        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest{1}"))
         total_weight_to = float(to_info["Merged weight"]) + float(
             to_info["Unmerged weight"]
         )
@@ -253,33 +253,35 @@ class testTDigest:
 
     def test_tdigest_merge(self):
         self.cmd("FLUSHALL")
-        self.assertOk(self.cmd("tdigest.create", "to-tdigest", "compression", 100))
-        self.assertOk(self.cmd("tdigest.create", "from-tdigest", "compression", 100))
+        to_tdigest = "to-tdigest{1}"
+        from_tdigest = "from-tdigest{1}"
+        self.assertOk(self.cmd("tdigest.create", to_tdigest, "compression", 100))
+        self.assertOk(self.cmd("tdigest.create", from_tdigest, "compression", 100))
         # insert datapoints into sketch
         for _ in range(100):
-            self.assertOk(self.cmd("tdigest.add", "from-tdigest", 1.0))
+            self.assertOk(self.cmd("tdigest.add", from_tdigest, 1.0))
         for _ in range(1000):
-            self.assertOk(self.cmd("tdigest.add", "to-tdigest", 1.0))
+            self.assertOk(self.cmd("tdigest.add", to_tdigest, 1.0))
         # merge from-tdigest into to-tdigest
-        self.assertOk(self.cmd("tdigest.merge", "to-tdigest", 1, "from-tdigest"))
+        self.assertOk(self.cmd("tdigest.merge", to_tdigest, 1, from_tdigest))
         # we should now have 1100 weight on to-histogram
-        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest"))
+        to_info = parse_tdigest_info(self.cmd("tdigest.info", to_tdigest))
         total_weight_to = float(to_info["Merged weight"]) + float(
             to_info["Unmerged weight"]
         )
         self.assertEqual(1100, total_weight_to)
         self.cmd("FLUSHALL")
-        self.assertOk(self.cmd("tdigest.create", "to-1", "compression", 55))
-        self.assertOk(self.cmd("tdigest.create", "from-1", "compression", 100))
-        self.assertOk(self.cmd("tdigest.create", "from-2", "compression", 200))
-        self.assertOk(self.cmd("tdigest.create", "from-3", "compression", 300))
+        self.assertOk(self.cmd("tdigest.create", "to-1{1}", "compression", 55))
+        self.assertOk(self.cmd("tdigest.create", "from-1{1}", "compression", 100))
+        self.assertOk(self.cmd("tdigest.create", "from-2{1}", "compression", 200))
+        self.assertOk(self.cmd("tdigest.create", "from-3{1}", "compression", 300))
         # insert datapoints into sketch
-        self.assertOk(self.cmd("tdigest.add", "from-1", 1.0))
+        self.assertOk(self.cmd("tdigest.add", "from-1{1}", 1.0))
         for _ in range(0,10):
-            self.assertOk(self.cmd("tdigest.add", "from-2", 1.0))
+            self.assertOk(self.cmd("tdigest.add", "from-2{1}", 1.0))
         # merge to a t-digest with max compression of all inputs which is 200
-        self.assertOk(self.cmd("tdigest.merge", "to-tdigest-100", "2", "from-1", "from-2"))
-        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest-100"))
+        self.assertOk(self.cmd("tdigest.merge", "to-tdigest-100{1}", "2", "from-1{1}", "from-2{1}"))
+        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest-100{1}"))
         # ensure tha the destination t-digest has the largest compression of all input t-digests
         compression = int(to_info["Compression"])
         self.assertEqual(200, compression)
@@ -291,61 +293,61 @@ class testTDigest:
         self.assertEqual(total_weight_from, total_weight_to)
 
         # merge to a t-digest that already exists so we will preserve its compression
-        self.assertOk(self.cmd("tdigest.merge", "to-1", "2", "from-1", "from-2"))
-        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-1"))
+        self.assertOk(self.cmd("tdigest.merge", "to-1{1}", "2", "from-1{1}", "from-2{1}"))
+        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-1{1}"))
         # ensure tha the destination t-digest has the largest compression of all input t-digests
         compression = int(to_info["Compression"])
         self.assertEqual(55, compression)
 
         # merge to a t-digest with non-default compression
-        self.assertOk(self.cmd("tdigest.merge", "to-tdigest-50", "2","from-1", "from-2", "COMPRESSION", "50"))
+        self.assertOk(self.cmd("tdigest.merge", "to-tdigest-50{1}", "2","from-1{1}", "from-2{1}", "COMPRESSION", "50"))
         # ensure tha the destination t-digest has the passed compression
-        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest-50"))
+        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest-50{1}"))
         compression = int(to_info["Compression"])
         self.assertEqual(50, compression)
 
         # merge to a t-digest that already exists with non-default compression
-        self.assertOk(self.cmd("tdigest.merge", "to-tdigest-50", "2","from-1", "from-2", "COMPRESSION", "500"))
+        self.assertOk(self.cmd("tdigest.merge", "to-tdigest-50{1}", "2","from-1{1}", "from-2{1}", "COMPRESSION", "500"))
         # ensure tha the destination t-digest has the passed compression
-        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest-50"))
+        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest-50{1}"))
         compression = int(to_info["Compression"])
         self.assertEqual(500, compression)
 
         # merge to a t-digest that already exists but given we specify override it will use the max compression of all inputs
-        self.assertOk(self.cmd("tdigest.merge", "to-tdigest-50", "2","from-1", "from-2", "OVERRIDE"))
+        self.assertOk(self.cmd("tdigest.merge", "to-tdigest-50{1}", "2","from-1{1}", "from-2{1}", "OVERRIDE"))
         # ensure tha the destination t-digest has the passed compression
-        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest-50"))
+        to_info = parse_tdigest_info(self.cmd("tdigest.info", "to-tdigest-50{1}"))
         compression = int(to_info["Compression"])
         self.assertEqual(200, compression)
 
     def test_tdigest_merge_percentile(self):
         self.cmd("FLUSHALL")
-        self.assertOk(self.cmd("tdigest.create", "from-1", "compression", 500))
+        self.assertOk(self.cmd("tdigest.create", "from-1{1}", "compression", 500))
         # insert datapoints into sketch
         for x in range(1, 10000):
-            self.assertOk(self.cmd("tdigest.add", "from-1", x * 0.01))
+            self.assertOk(self.cmd("tdigest.add", "from-1{1}", x * 0.01))
         # merge to a t-digest with default compression
-        self.assertOk(self.cmd("tdigest.merge", "to-tdigest-500", "1","from-1", "COMPRESSION", "500"))
+        self.assertOk(self.cmd("tdigest.merge", "to-tdigest-500{1}", "1","from-1{1}", "COMPRESSION", "500"))
         # assert min min/max have same result as quantile 0 and 1
         self.assertEqual(
-            float(self.cmd("tdigest.max", "to-tdigest-500")),
-            float(self.cmd("tdigest.quantile", "to-tdigest-500", 1.0)[0]),
+            float(self.cmd("tdigest.max", "to-tdigest-500{1}")),
+            float(self.cmd("tdigest.quantile", "to-tdigest-500{1}", 1.0)[0]),
         )
         self.assertEqual(
-            float(self.cmd("tdigest.min", "to-tdigest-500")),
-            float(self.cmd("tdigest.quantile", "to-tdigest-500", 0.0)[0]),
+            float(self.cmd("tdigest.min", "to-tdigest-500{1}")),
+            float(self.cmd("tdigest.quantile", "to-tdigest-500{1}", 0.0)[0]),
         )
         self.assertAlmostEqual(
-            1.0, float(self.cmd("tdigest.quantile", "to-tdigest-500", 0.01)[0]), 0.01
+            1.0, float(self.cmd("tdigest.quantile", "to-tdigest-500{1}", 0.01)[0]), 0.01
         )
         self.assertAlmostEqual(
-            99.0, float(self.cmd("tdigest.quantile", "to-tdigest-500", 0.99)[0]), 0.01
+            99.0, float(self.cmd("tdigest.quantile", "to-tdigest-500{1}", 0.99)[0]), 0.01
         )
         self.assertAlmostEqual(
-            99.0, float(self.cmd("tdigest.quantile", "to-tdigest-500", 0.01, 0.99)[1]), 0.01
+            99.0, float(self.cmd("tdigest.quantile", "to-tdigest-500{1}", 0.01, 0.99)[1]), 0.01
         )
         expected = [1,50,95,99]
-        res = self.cmd("tdigest.quantile", "to-tdigest-500", 0.01, 0.5, 0.95, 0.99)
+        res = self.cmd("tdigest.quantile", "to-tdigest-500{1}", 0.01, 0.5, 0.95, 0.99)
         self.env.debugPrint(res)
         for i in range(len(res)):
             self.assertAlmostEqual(expected[i], float(res[i]), 0.01)
@@ -436,14 +438,14 @@ class testTDigest:
 
     def test_negative_tdigest_merge_crashes_recursive(self):
         self.cmd('FLUSHALL')
-        self.assertOk(self.cmd('tdigest.create x COMPRESSION 1000'))
-        self.assertOk(self.cmd('tdigest.create y COMPRESSION 1000'))
-        self.assertOk(self.cmd('tdigest.add x 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20'))
-        self.assertOk(self.cmd('tdigest.add y 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120'))
+        self.assertOk(self.cmd('tdigest.create x{1} COMPRESSION 1000'))
+        self.assertOk(self.cmd('tdigest.create y{1} COMPRESSION 1000'))
+        self.assertOk(self.cmd('tdigest.add x{1} 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20'))
+        self.assertOk(self.cmd('tdigest.add y{1} 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120'))
         try:
             for x in range(1,500):
-                self.cmd('tdigest.merge z 5 x y x y x')
-                self.cmd('tdigest.merge z 5 z z z z z')
+                self.cmd('tdigest.merge z{1} 5 x{1} y{1} x{1} y{1} x{1}')
+                self.cmd('tdigest.merge z{1} 5 z{1} z{1} z{1} z{1} z{1}')
         except redis.exceptions.ResponseError as e:
             error_str = e.__str__()
             self.assertTrue("overflow detected" in error_str)
