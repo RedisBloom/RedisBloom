@@ -30,6 +30,20 @@ Answering each of these questions accurately can require a huge amount of memory
 
 RedisBloom is part of [Redis Stack](https://github.com/redis-stack).
 
+### How do I Redis?
+
+[Learn for free at Redis University](https://university.redis.com/)
+
+[Build faster with the Redis Launchpad](https://launchpad.redis.com/)
+
+[Try the Redis Cloud](https://redis.com/try-free/)
+
+[Dive in developer tutorials](https://developer.redis.com/)
+
+[Join the Redis community](https://redis.com/community/)
+
+[Work at Redis](https://redis.com/company/careers/jobs/)
+
 ## Setup
 
 You can either get RedisBloom setup in a Docker container or on your own machine.
