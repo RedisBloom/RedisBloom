@@ -2,9 +2,6 @@ version: 0.2
 name: "tdigest_add_comp200"
 description: "Benchmarking adding an item to the t-Digest sketch, 
               with an desired compression of 200"
-remote:
- - type: oss-standalone
- - setup: redisbloom-m5
 dbconfig:
   - init_commands:
     - 'TDIGEST.CREATE t-digest:200 compression 200'
