@@ -62,7 +62,7 @@ You measure the IP packets transferred over your network each second and try to 
 
 ## Examples
 
-We'll demonstrate creating a t-digest with an initial compression of 100, adding items to it, and checking the estimated percentile of a value. Note that the `COMPRESSION` argument is used to specify the tradeoff between accuracy and memory consumption. The default is 100. Higher values mean more accuracy. Note also that unlike some of the other probabilistic data structures, the `TDIGEST.ADD` command will not create a new structure if the key does not exist.
+In the following example, you'll create a t-digest with a compression of 100 and add items to it. The `COMPRESSION` argument is used to specify the tradeoff between accuracy and memory consumption. The default value is 100. Higher values mean more accuracy. Note: unlike some of the other probabilistic data structures, the `TDIGEST.ADD` command will not create a new structure if the key does not exist.
 
 {{< clients-example tdigest_tutorial tdig_start >}}
 > TDIGEST.CREATE bikes:sales COMPRESSION 100
@@ -80,9 +80,9 @@ You can repeat calling [TDIGEST.ADD](https://redis.io/commands/tdigest.add/) whe
 
 Another helpful feature in t-digest is CDF (definition of rank) which gives us the fraction of observations smaller or equal to a certain value. This command is very useful to answer questions like "*What's the percentage of observations with a value lower or equal to X*".
 
->More precisely, `TDIGEST.CDF` will return the estimated fraction of observations in the sketch that are smaller than X plus half the number of observations that are equal to X. We can also use the `TDIGEST.RANK` command, which is very similar. Instead of returning a fraction, it returns the **number** of observations in the sketch that are smaller than X plus half the number of observations that are equal to X, or in other words - the estimated rank of a value. The `TDIGEST.RANK` command is also variadic.
+>More precisely, `TDIGEST.CDF` will return the estimated fraction of observations in the sketch that are smaller than X plus half the number of observations that are equal to X. We can also use the `TDIGEST.RANK` command, which is very similar. Instead of returning a fraction, it returns the ----estimated---- rank of a value. The `TDIGEST.RANK` command is also variadic, meaning you can send one number to query or multiple.
 
-Let's illustrate this with an example: if we have a set of observations of people's age with gaussian distribution, we can ask a question like "What's the percentage of bike racers are younger than 50 years?"
+Here's an example. If you have a set of observations of people's ages, you can ask a question like "What's the percentage of bike racers that are younger than 50 years?"
 
 {{< clients-example tdigest_tutorial tdig_cdf >}}
 > TDIGEST.CREATE racer_ages
@@ -142,9 +142,9 @@ Use `TDIGEST.MIN` and `TDIGEST.MAX` to retrieve the minimal and maximal values i
 "85.709999999999994"
 {{< /clients-example >}}
 
-Both return nan when the sketch is empty.
+Both return `nan` when the sketch is empty.
 
-Both commands return accurate results and are equivalent to `TDIGEST.BYRANK racer_ages 0` and `TDIGEST.BYREVRANK racer_ages 0` respectively.
+Both commands return accurate results and are equivalent to `TDIGEST.BYRANK racer_ages 0` and `TDIGEST.BYREVRANK racer_ages 0`, respectively.
 
 Use `TDIGEST.INFO racer_ages` to retrieve some additional information about the sketch.
 
