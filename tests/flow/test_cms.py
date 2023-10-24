@@ -110,38 +110,38 @@ class testCMS():
 
     def test_merge(self):
         self.cmd('FLUSHALL')
-        self.cmd('cms.initbydim', 'small_1', '20', '5')
-        self.cmd('cms.initbydim', 'small_2', '20', '5')
-        self.cmd('cms.initbydim', 'small_3', '20', '5')
-        self.cmd('cms.initbydim', 'large_4', '2000', '10')
-        self.cmd('cms.initbydim', 'large_5', '2000', '10')
-        self.cmd('cms.initbydim', 'large_6', '2000', '10')
+        self.cmd('cms.initbydim', 'small_1{1}', '20', '5')
+        self.cmd('cms.initbydim', 'small_2{1}', '20', '5')
+        self.cmd('cms.initbydim', 'small_3{1}', '20', '5')
+        self.cmd('cms.initbydim', 'large_4{1}', '2000', '10')
+        self.cmd('cms.initbydim', 'large_5{1}', '2000', '10')
+        self.cmd('cms.initbydim', 'large_6{1}', '2000', '10')
 
         # empty small batch
-        self.assertOk(self.cmd('cms.merge', 'small_3', 2, 'small_1', 'small_2'))
+        self.assertOk(self.cmd('cms.merge', 'small_3{1}', 2, 'small_1{1}', 'small_2{1}'))
         self.assertEqual(['width', 20, 'depth', 5, 'count', 0],
-                         self.cmd('cms.info', 'small_3'))
+                         self.cmd('cms.info', 'small_3{1}'))
 
         # empty large batch
-        self.assertOk(self.cmd('cms.merge', 'large_6', 2, 'large_4', 'large_5'))
+        self.assertOk(self.cmd('cms.merge', 'large_6{1}', 2, 'large_4{1}', 'large_5{1}'))
         self.assertEqual(['width', 2000, 'depth', 10, 'count', 0],
-                         self.cmd('cms.info', 'large_6'))
+                         self.cmd('cms.info', 'large_6{1}'))
 
         # non-empty small batch
-        self.cmd('cms.incrby', 'small_1', 'a', '21')
-        self.cmd('cms.incrby', 'small_2', 'a', '21')
-        self.assertOk(self.cmd('cms.merge', 'small_3', 2, 'small_1', 'small_2'))
-        self.assertEqual([42], self.cmd('cms.query', 'small_3', 'a'))
+        self.cmd('cms.incrby', 'small_1{1}', 'a', '21')
+        self.cmd('cms.incrby', 'small_2{1}', 'a', '21')
+        self.assertOk(self.cmd('cms.merge', 'small_3{1}', 2, 'small_1{1}', 'small_2{1}'))
+        self.assertEqual([42], self.cmd('cms.query', 'small_3{1}', 'a'))
 
         # non-empty small batch
-        self.cmd('cms.incrby', 'large_4', 'a', '21')
-        self.cmd('cms.incrby', 'large_5', 'a', '21')
-        self.assertOk(self.cmd('cms.merge', 'large_6', 2, 'large_4', 'large_5'))
-        self.assertEqual([42], self.cmd('cms.query', 'large_6', 'a'))
+        self.cmd('cms.incrby', 'large_4{1}', 'a', '21')
+        self.cmd('cms.incrby', 'large_5{1}', 'a', '21')
+        self.assertOk(self.cmd('cms.merge', 'large_6{1}', 2, 'large_4{1}', 'large_5{1}'))
+        self.assertEqual([42], self.cmd('cms.query', 'large_6{1}', 'a'))
 
         # mixed batch
-        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'small_3', 2,
-                          'small_2', 'large_5')
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'small_3{1}', 2,
+                          'small_2{1}', 'large_5{1}')
 
     def test_errors(self):
         self.cmd('FLUSHALL')
@@ -165,18 +165,18 @@ class testCMS():
 
     def test_merge_extensive(self):
         self.cmd('FLUSHALL')
-        self.cmd('cms.initbydim', 'A', '2000', '10')
-        self.cmd('cms.initbydim', 'B', '2000', '10')
-        self.cmd('cms.initbydim', 'C', '2000', '10')
+        self.cmd('cms.initbydim', 'A{1}', '2000', '10')
+        self.cmd('cms.initbydim', 'B{1}', '2000', '10')
+        self.cmd('cms.initbydim', 'C{1}', '2000', '10')
 
         itemsA = []
         itemsB = []
         for i in range(10000):
             itemsA.append(randint(0, 100))
-            self.cmd('cms.incrby', 'A', str(i), itemsA[i])
+            self.cmd('cms.incrby', 'A{1}', str(i), itemsA[i])
             itemsB.append(randint(0, 100))
-            self.cmd('cms.incrby', 'B', str(i), itemsB[i])
-        self.assertOk(self.cmd('cms.merge', 'C', 2, 'A', 'B'))
+            self.cmd('cms.incrby', 'B{1}', str(i), itemsB[i])
+        self.assertOk(self.cmd('cms.merge', 'C{1}', 2, 'A{1}', 'B{1}'))
 
     def test_overflow(self):
         large_val = 1024*1024*1024*2 - 1
