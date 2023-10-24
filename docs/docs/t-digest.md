@@ -80,9 +80,9 @@ You can repeat calling [TDIGEST.ADD](https://redis.io/commands/tdigest.add/) whe
 
 Another helpful feature in t-digest is CDF (definition of rank) which gives us the fraction of observations smaller or equal to a certain value. This command is very useful to answer questions like "*What's the percentage of observations with a value lower or equal to X*".
 
->More precisely, `TDIGEST.CDF` will return the estimated fraction of observations in the sketch that are smaller than X plus half the number of observations that are equal to X. We can also use the `TDIGEST.RANK` command, which is very similar. Instead of returning a fraction, it returns the ----estimated---- rank of a value. The `TDIGEST.RANK` command is also variadic, meaning you can send one number to query or multiple.
+>More precisely, `TDIGEST.CDF` will return the estimated fraction of observations in the sketch that are smaller than X plus half the number of observations that are equal to X. We can also use the `TDIGEST.RANK` command, which is very similar. Instead of returning a fraction, it returns the ----estimated---- rank of a value. The `TDIGEST.RANK` command is also variadic, meaning you can use a single command to retrieve estimations for one or more values.
 
-Here's an example. If you have a set of observations of people's ages, you can ask a question like "What's the percentage of bike racers that are younger than 50 years?"
+Here's an example. Given a set of biker's ages, you can ask a question like "What's the percentage of bike racers that are younger than 50 years?"
 
 {{< clients-example tdigest_tutorial tdig_cdf >}}
 > TDIGEST.CREATE racer_ages
