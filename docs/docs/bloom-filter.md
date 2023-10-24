@@ -71,12 +71,9 @@ Using Redis Stack's Bloom filter for this type of application provides these ben
 - Very fast and efficient way to do a common operation 
 - No need to invest in expensive infrastructure  
 
-## Example:
+## Example
 
-If we're making a million different kinds of bikes, we'd prefer to not use a model model name rather than have a duplicate.
-So we'll create a new filter and say we'll be inserting 1,000,000 things and we want a 0.1% error rate.
-We'll add one model name, and check if it exists. Then we'll add multiple model names and check if they exist.
-
+Consider a bike manufacturer that makes a million different kinds of bikes and you'd like to avoid using a duplicate model name in new models. A bloom filter can be used to detect duplicates. In the example that follows,  you'll create a filter with space for a million entries and with a 0.1% error rate. Add one model name and check if it exists. Then add multiple model names and check if they exist.
 
 {{< clients-example bf_tutorial bloom >}}
 > BF.RESERVE bikes:models 0.001 1000000
@@ -95,7 +92,7 @@ OK
 3) (integer) 1
 {{< /clients-example >}}
 
-There is always a chance that even with this few items, there's a collision and we get a false positive.
+Note: there is always a chance that even with just a few items, there could be a collision, yielding a false positive.
 
 ## Reserving Bloom filters
 With Redis Stack's bloom filters most of the sizing work is done for you: 
