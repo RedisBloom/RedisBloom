@@ -93,7 +93,7 @@ OK
 3) (integer) 1
 {{< /clients-example >}}
 
-Note: there is always a chance that even with just a few items, there could be a collision, yielding a false positive.
+Note: there is always a chance that even with just a few items, there could be a false positive, meaning an item could "exist" even though it has not been explicitly added to the Bloom filter. For a more in depth understanding of the probabilistic nature of a Bloom filter, check out the blog posts linked at the bottom of this page.
 
 ## Reserving Bloom filters
 With Redis Stack's Bloom filters most of the sizing work is done for you: 
