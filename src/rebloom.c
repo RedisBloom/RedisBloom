@@ -1340,11 +1340,11 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
                     REBLOOM_VERSION_MINOR, REBLOOM_VERSION_PATCH, REDISBLOOM_GIT_SHA);
 
     if (argc == 1) {
-        RedisModule_Log(ctx, "notice", "Found empty string. Assuming ramp-packer validation");
-        // Hack for ramp-packer which gives us an empty string.
         size_t tmp;
         RedisModule_StringPtrLen(argv[0], &tmp);
         if (tmp == 0) {
+            RedisModule_Log(ctx, "notice", "Found empty string. Assuming ramp-packer validation");
+            // Hack for ramp-packer which gives us an empty string.
             argc = 0;
         }
     }
