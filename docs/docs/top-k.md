@@ -14,7 +14,7 @@ One very common application is detecting network anomalies and DDoS attacks wher
  
 There is, indeed, some overlap with the functionality of Count-Min Sketch, but the two data structures have their differences and should be applied for different use cases. 
 
-The Redis Stack implementation of Top-K is based on the [HeavyKeepers](https://www.usenix.org/conference/atc18/presentation/gong) algorithm presented by Junzhi Gong et al. It discards some older approaches like "count-all" and "admit-all-count-some" in favour of a "**count-with-exponential-decay**" strategy which is biased against mouse (small) flows and has a limited impact on elephant (large) flows. This ensures high accuracy with shorter execution times than previous probabilistic algorithms allowed, while keeping memory utilization to a fraction of what is typically required by a Sorted Set and also having the additional benefit of being able to get real time notifications when elements are added or removed from the Top K list.
+The Redis Stack implementation of Top-K is based on the [HeavyKeepers](https://www.usenix.org/conference/atc18/presentation/gong) algorithm presented by Junzhi Gong et al. It discards some older approaches like "count-all" and "admit-all-count-some" in favour of a "**count-with-exponential-decay**" strategy which is biased against mouse (small) flows and has a limited impact on elephant (large) flows. This implementation involves using two data structures in tandem; a hash table to hold the probabilitic counts (much like the Count-Min Sketch), along with a min heap that holds the `K` items with the highest counts. This ensures high accuracy with shorter execution times than previous probabilistic algorithms allowed, while keeping memory utilization to a fraction of what is typically required by a Sorted Set and also having the additional benefit of being able to get real time notifications when elements are added or removed from the Top K list. 
 
 ## Use cases
 
@@ -26,7 +26,7 @@ Data flow is the incoming game scores. Flow id is the user id, and the value is 
 Every time a user scores points, they're added to the Top K list. 
 
 - If the result is `nil`, the user is already in the Top K. Update the sorted set with the user's new score. 
-- if the result is an id of another player, the player you just added (`id1`) took over the player who got returned (`id2`). Remove player `id2` from the sorted set and add player `id1`. 
+- If the result is an id of another player, the player you just added (`id1`) took over the player who got returned (`id2`). Remove player `id2` from the sorted set and add player `id1`. 
 
 **Trending hashtags (social media platforms, news distribution networks)** 
 
@@ -39,18 +39,23 @@ Data flow is the incoming social media posts from which you parse out the differ
 
 The `TOPK.LIST` command has a time complexity of `O(K)` so if `K` is small, there is no need to keep a separate set or sorted set of all the hashtags. You can query directly from the Top K itself. 
 
-## Examples
+## Example
 
-* We'll demonstrate initializing a Top-K with specific parameters; though `width`, `depth`, and `decay_constant` can be left out and default values will be used.
-
+This example will show you how to track key words used "bike" when shopping online; e.g., "bike store" and "bike handlebars". Proceed as follows.
+​
+* Use `TOPK.RESERVE` to initialize a top K sketch with specific parameters. Note: the `width`, `depth`, and `decay_constant` parameters can be omitted, as they will be set to the default values 7, 8, and 0.9, respectively, if not present.
+​
  ```
  > TOPK.RESERVE key k width depth decay_constant
  ```
  
- Then, how multiple items can be added at once. If an item enters the Top-K list, and an item is expelled, that item is returned, otherwise the return is nil. This allows dynamic heavy-hitter detection of items being entered or expelled from Top-K list. We'll then return list of the top K items in the Top-K list as well as check whether an item is one of Top-K items.
-
-In this example we'll be tracking key words used with "bike" when online shopping. You'll note that 'pedals' kicks out 'handlebars' even though each have only been added once. This is in part because part of this structure is a min-heap, so the new item will kick out an old item with the same score. The `nil` response for 'store' and 'seat' are beacuse they're already _in_ the `Top-K` and so they're not expelling other items.
-
+ * Use `TOPK.ADD` to add items to the sketch. As you can see, multiple items can be added at the same time. If an item is returned when adding additional items, it means that item was demoted out of the min heap of the top items, below it will mean the returned item is no longer in the top 5, otherwise `nil` is returned. This allows dynamic heavy-hitter detection of items being entered or expelled from top K list.
+​
+In the example below, "pedals" displaces "handlebars", which is returned after "pedals" is added. Also note that the addition of both "store" and "seat" a second time don't return anything, as they're already in the top K.
+ 
+ * Use `TOPK.LIST` to list the items entered thus far.
+​
+ * Use `TOPK.QUERY` to see if an item is on the top K list. Just like `TOPK.ADD` multiple items can be queried at the same time.
 {{< clients-example topk_tutorial topk >}}
 > TOPK.RESERVE bikes:keywords 5 2000 7 0.925
 OK
