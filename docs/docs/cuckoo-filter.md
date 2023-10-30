@@ -39,7 +39,7 @@ Note> In addition to these two cases, Cuckoo filters serve very well all the Blo
 
 ## Examples
 
-> We'll ddemonstrate creating an empty cuckoo filter with an initial capacity (of 1000 items), adding items to it, checking if they exist, and deleting them. While the `CF.ADD` command will create a new filter if one does not exist, it likely will not be optimally sized for your use case. We recommend using `CF.RESERVE` to create a filter with the desired capacity. 
+> You'll learn how to create an empty cuckoo filter with an initial capacity for 1,000 items, add items, check their existence, and remove them. Even though the `CF.ADD` command can create a new filter if one isn't present, it might not be optimally sized for your needs. It's better to use the `CF.RESERVE` command to set up a filter with your preferred capacity.
 
 {{< clients-example cuckoo_tutorial cuckoo >}}
 > CF.RESERVE bikes:models 1000000
