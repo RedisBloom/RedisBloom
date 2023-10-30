@@ -3,9 +3,6 @@ name: "bf_add_cap10M_err0.001"
 description: "Benchmarking adding an item to the Bloom Filter, 
               with an desired false positive rate of 0.1%, and 
               an initial capacity of 10M items"
-remote:
- - type: oss-standalone
- - setup: redisbloom-m5
 dbconfig:
   - init_commands:
     - 'BF.RESERVE largebloom 0.001 10000000'
