@@ -1,4 +1,8 @@
 version: 0.1
+remote:
+ - type: oss-standalone
+ - setup: redisbloom-m5
+ - spot_instance: oss-redisbloom-m5-spot-instances
 exporter:
   redistimeseries:
     timemetric: "$.StartTime"
