@@ -4,9 +4,6 @@ parameters:
   run_default_flow:
     default: true
     type: boolean
-  run_benchmark_flow_label:
-    default: false
-    type: boolean
 
 commands:
   early-returns:
@@ -237,71 +234,6 @@ commands:
             make publish OSNICK=<<parameters.platform>> VERSION="$CIRCLE_TAG" BRANCH="$CIRCLE_BRANCH" OFFICIAL=1 SHOW=1
       - persist-artifacts
 
-  benchmark-steps:
-    parameters:
-      github_actor:
-        type: string
-        default: $CIRCLE_USERNAME
-      module_path:
-        type: string
-        default: bin/linux-x64-release/redisbloom.so
-      profile_env:
-        type: string
-        default: "0"
-      benchmark_glob:
-        type: string
-        default: "*.yml"
-      triggering_env:
-        type: string
-        default: "circleci"
-      allowed_envs:
-        type: string
-        default: "oss-standalone"
-    steps:
-      - run:
-          name: Prepare automation
-          command: |
-            ./deps/readies/bin/getpy3
-            python3 -m pip install -r tests/benchmarks/requirements.txt
-            VERSION=0.14.8 ./deps/readies/bin/getterraform
-      - run:
-          name: Run CI benchmarks on aws
-          timeout: 60m
-          no_output_timeout: 30m
-          command: |
-            ROOT="$PWD"
-            cd tests/benchmarks
-            export AWS_ACCESS_KEY_ID=$PERFORMANCE_EC2_ACCESS_KEY
-            export AWS_SECRET_ACCESS_KEY=$PERFORMANCE_EC2_SECRET_KEY
-            export AWS_DEFAULT_REGION=$PERFORMANCE_EC2_REGION
-            export EC2_PRIVATE_PEM=$PERFORMANCE_EC2_PRIVATE_PEM
-            export PROFILE=<< parameters.profile_env >>
-            export BENCHMARK_GLOB=<< parameters.benchmark_glob >>
-            export PERF_CALLGRAPH_MODE="dwarf"
-            redisbench-admin run-remote \
-              --required-module bf \
-              --module_path "$ROOT/<< parameters.module_path >>" \
-              --github_actor "<< parameters.github_actor >>" \
-              --github_repo $CIRCLE_PROJECT_REPONAME \
-              --github_org $CIRCLE_PROJECT_USERNAME \
-              --github_sha $CIRCLE_SHA1 \
-              --github_branch $CIRCLE_BRANCH \
-              --upload_results_s3 \
-              --triggering_env << parameters.triggering_env >> \
-              --fail_fast \
-              --push_results_redistimeseries \
-              --allowed-envs << parameters.allowed_envs >>
-      - run:
-          name: Generate Pull Request Performance info
-          command: |
-            if [[ -n ${CIRCLE_PULL_REQUEST##*/} ]]; then
-                redisbench-admin compare  \
-                  --defaults_filename ./tests/benchmarks/defaults.yml \
-                  --comparison-branch $CIRCLE_BRANCH \
-                  --auto-approve \
-                  --pull-request ${CIRCLE_PULL_REQUEST##*/}
-            fi
-
 jobs:
   lint:
     docker:
@@ -469,24 +401,6 @@ jobs:
           name: Run QA Automation
           command: ./tests/qa/qatests -m "$CIRCLE_TAG"
 
-  benchmark-bloom-oss-standalone:
-    docker:
-      - image: redisfab/rmbuilder:6.2.7-x64-focal
-    steps:
-      - build-steps
-      - benchmark-steps
-
-  benchmark-bloom-oss-standalone-profiler:
-    docker:
-      - image: redisfab/rmbuilder:6.2.7-x64-focal
-    steps:
-      - checkout-all
-      - setup-automation
-      - build-steps
-      - benchmark-steps:
-          profile_env: "1"
-          triggering_env: "circleci.profilers" # results generated with profilers attached are not mixed with the ones without it
-
 #----------------------------------------------------------------------------------------------------------------------------------
 
 on-any-branch: &on-any-branch
@@ -623,28 +537,3 @@ workflows:
           <<: *on-version-tags
           requires:
             - upload-release-artifacts
-      - benchmark-bloom-oss-standalone:
-          <<: *on-integ-and-version-tags
-          requires:
-            - lint
-          context: common
-
-  benchmark_flow_label:
-    when:
-      << pipeline.parameters.run_benchmark_flow_label >>
-    jobs:
-      - benchmark-bloom-oss-standalone:
-          <<: *on-any-branch
-          context: common
-
-  nightly-perf-once-a-week:
-    triggers:
-      - schedule:
-          #  “At 07:00 on Mondays.”
-          cron: "00 07 * * 1"
-          filters:
-            branches:
-              only: master
-    jobs:
-      - benchmark-bloom-oss-standalone:
-          context: common

@@ -3,9 +3,6 @@ name: "tdigest_quantile_p50_1M_samples_comp500"
 description: "Benchmarking p50 calculation of 1 t-digest data sketch with 1M elements.
               The T-Digest sketch has a compression of 500.
         "
-remote:
- - type: oss-standalone
- - setup: redisbloom-m5
 dbconfig:
   - dataset: "https://s3.amazonaws.com/benchmarks.redislabs/redisbloom/datasets/tdigest_1M_samples_compression-50-1000_v2.4.0_dump.rdb"
   - dataset_load_timeout_secs: 180
