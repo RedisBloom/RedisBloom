@@ -36,7 +36,7 @@ Other questions a Bloom filter can help answer in the finance industry are:
 
 - Has the user ever made purchases in this category of products/services? 
 - Do I need to skip some security steps when the user is buying with a vetted online shop (big retailers like Amazon, Apple app store...)? 
-- Has this credit card been reported as lost/stolen? An additional benefit of using a bloom filter in the last case is that financial organizations can exchange their lists of stolen/blocked credit card numbers without revealing the numbers themselves. 
+- Has this credit card been reported as lost/stolen? An additional benefit of using a Bloom filter in the last case is that financial organizations can exchange their lists of stolen/blocked credit card numbers without revealing the numbers themselves. 
 
 **Ad placement (retail, advertising)**
 
@@ -71,58 +71,32 @@ Using Redis Stack's Bloom filter for this type of application provides these ben
 - Very fast and efficient way to do a common operation 
 - No need to invest in expensive infrastructure  
 
-## Examples:
+## Example
 
-* Adding new items to the filter
+Consider a bike manufacturer that makes a million different kinds of bikes and you'd like to avoid using a duplicate model name in new models. A Bloom filter can be used to detect duplicates. In the example that follows,  you'll create a filter with space for a million entries and with a 0.1% error rate. Add one model name and check if it exists. Then add multiple model names and check if they exist.
 
-> A new filter is created for you if it does not yet exist
 
-```
-> BF.ADD newFilter foo
+{{< clients-example bf_tutorial bloom >}}
+> BF.RESERVE bikes:models 0.001 1000000
+OK
+> BF.ADD bikes:models "Smoky Mountain Striker"
 (integer) 1
-```
-
-* Checking if an item exists in the filter
-
-```
-> BF.EXISTS newFilter foo
+> BF.EXISTS bikes:models "Smoky Mountain Striker"
 (integer) 1
-```
-
-```
-> BF.EXISTS newFilter notpresent
-(integer) 0
-```
-
-* Adding and checking multiple items
-
-```
-> BF.MADD myFilter foo bar baz
+> BF.MADD bikes:models "Rocky Mountain Racer" "Cloudy City Cruiser" "Windy City Wippet"
 1) (integer) 1
 2) (integer) 1
 3) (integer) 1
-```
-
-```
-> BF.MEXISTS myFilter foo nonexist bar
+> BF.MEXISTS bikes:models "Rocky Mountain Racer" "Cloudy City Cruiser" "Windy City Wippet"
 1) (integer) 1
-2) (integer) 0
+2) (integer) 1
 3) (integer) 1
-```
+{{< /clients-example >}}
 
-* Creating a new filter with custom properties
+Note: there is always a chance that even with just a few items, there could be a false positive, meaning an item could "exist" even though it has not been explicitly added to the Bloom filter. For a more in depth understanding of the probabilistic nature of a Bloom filter, check out the blog posts linked at the bottom of this page.
 
-```
-> BF.RESERVE customFilter 0.0001 600000
-OK
-```
-
-```
-> BF.MADD customFilter foo bar baz
-```
-
-## Sizing Bloom filters
-With Redis Stack's bloom filters most of the sizing work is done for you: 
+## Reserving Bloom filters
+With Redis Stack's Bloom filters most of the sizing work is done for you: 
 
 ```
 BF.RESERVE {key} {error_rate} {capacity} [EXPANSION expansion] [NONSCALING]
@@ -135,7 +109,7 @@ The rate is a decimal value between 0 and 1. For example, for a desired false po
 This is the number of elements you expect having in your filter in total and is trivial when you have a static set but it becomes more challenging when your set grows over time. It's important to get the number right because if you **oversize** - you'll end up wasting memory. If you **undersize**, the filter will fill up and a new one will have to be stacked on top of it (sub-filter stacking). In the cases when a filter consists of multiple sub-filters stacked on top of each other latency for adds stays the same, but the latency for presence checks increases. The reason for this is the way the checks work: a regular check would first be performed on the top (latest) filter and if a negative answer is returned the next one is checked and so on. That's where the added latency comes from.
 
 #### 3. Scaling (`EXPANSION`)
-Adding an element to a Bloom filter never fails due to the data structure "filling up". Instead the error rate starts to grow. To keep the error close to the one set on filter initialisation - the bloom filter will auto-scale, meaning when capacity is reached an additional sub-filter will be created.  
+Adding an element to a Bloom filter never fails due to the data structure "filling up". Instead the error rate starts to grow. To keep the error close to the one set on filter initialisation - the Bloom filter will auto-scale, meaning when capacity is reached an additional sub-filter will be created.  
  The size of the new sub-filter is the size of the last sub-filter multiplied by `EXPANSION`. If the number of elements to be stored in the filter is unknown, we recommend that you use an expansion of 2 or more to reduce the number of sub-filters. Otherwise, we recommend that you use an expansion of 1 to reduce memory consumption. The default expansion value is 2. 
  
  The filter will keep adding more hash functions for every new sub-filter in order to keep your desired error rate. 
