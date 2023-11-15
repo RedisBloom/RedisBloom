@@ -16,17 +16,7 @@ There is, indeed, some overlap with the functionality of Count-Min Sketch, but t
 
 The Redis Stack implementation of Top-K is based on the [HeavyKeepers](https://www.usenix.org/conference/atc18/presentation/gong) algorithm presented by Junzhi Gong et al. It discards some older approaches like "count-all" and "admit-all-count-some" in favour of a "**count-with-exponential-decay**" strategy which is biased against mouse (small) flows and has a limited impact on elephant (large) flows. This implementation uses two data structures in tandem: a hash table that holds the probabilistic counts (much like the Count-Min Sketch), and a min heap that holds the `K` items with the highest counts. This ensures high accuracy with shorter execution times than previous probabilistic algorithms allowed, while keeping memory utilization to a fraction of what is typically required by a Sorted Set. It has the additional benefit of being able to get real time notifications when elements are added or removed from the Top K list. 
 
-## Use cases
-
-**Leader boards (gaming)** 
-
-This application answers this question: Who are the K players with the highest score?
-
-Data flow is the incoming game scores. Flow id is the user id, and the value is the score. A separate sorted set is kept, storing the top K users' ids and their scores. 
-Every time a user scores points, they're added to the Top K list. 
-
-- If the result is `nil`, the user is already in the Top K. Update the sorted set with the user's new score. 
-- If the result is an id of another player, the player you just added (`id1`) took over the player who got returned (`id2`). Remove player `id2` from the sorted set and add player `id1`. 
+## Use case
 
 **Trending hashtags (social media platforms, news distribution networks)** 
 
