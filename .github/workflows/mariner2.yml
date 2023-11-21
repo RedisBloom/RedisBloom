@@ -2,10 +2,10 @@ name: build for mariner2
 
 on:
   push:
-#    branches:
-#      - master
-#    tags:
-#      - 'v[0-9]+.[0-9]+.[0-9]+'
+    branches:
+      - master
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
   build-mariner2:
@@ -34,8 +34,8 @@ jobs:
       - name: Build Redis
         working-directory: redis
         run: make install
-#      - name: Build and test Bloom
-#        run: make test
+      - name: Build and test Bloom
+        run: make test
       - name: Pack module
         run: make pack BRANCH=${{ github.ref_name }} SHOW=1
       - name: Configure AWS credentials
