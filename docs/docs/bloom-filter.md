@@ -29,7 +29,7 @@ Use one Bloom filter per user, checked for every transaction. Provide an extreme
 Using Redis Stack's Bloom filter for this type of application provides these benefits: 
 
 - Fast transaction completion 
-- Decreased possibility for transaction to brake in case of network partitions (connection needs to be kept open for a shorter time) 
+- Decreased possibility for transaction to break in case of network partitions (connection needs to be kept open for a shorter time) 
 - Extra layer of security for both credit card owners and retailers
 
 Other questions a Bloom filter can help answer in the finance industry are: 
