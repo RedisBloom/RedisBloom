@@ -214,6 +214,7 @@ class testTopK():
         self.cmd('topk.add', 'topk', 'foo', '')
         heapList = self.cmd('topk.list', 'topk', 'WITHCOUNT')
         self.assertEqual(['', 104, 'foo', 4, 'bar', 3], heapList)
+        self.assertEqual(self.cmd('topk.query', 'topk', 'bla', 'foo', ''), [0, 1, 1])
 
         self.cmd('topk.incrby', 'topk', 'foo', 500, 'bar', 500, 'baz', 500)
         heapList = self.cmd('topk.list', 'topk', 'WITHCOUNT')
