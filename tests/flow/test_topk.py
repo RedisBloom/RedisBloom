@@ -187,3 +187,28 @@ class testTopK():
         self.cmd('topk.add', 'topk', 'j', 'h', 'd', 'j', 'h', 'h', 'j', 'g', 'e', 'g', 'i', 'f', 'g', 'f', 'a', 'j', 'c', 'i', 'a', 'd')
         heapList = self.cmd('topk.list', 'topk')
         self.assertEqual(len(set(heapList)), len(heapList))
+
+    def test_empty_string(self):
+        self.cmd('FLUSHALL')
+        self.cmd('topk.reserve', 'topk', '3')
+        self.cmd('topk.add', 'topk', '')
+
+        self.assertEqual(self.cmd('topk.list', 'topk'), [''])
+        self.assertEqual(self.cmd('topk.list', 'topk', 'withcount'), ['', 1])
+        self.assertEqual(self.cmd('topk.query', 'topk', ''), [1])
+        self.assertEqual(self.cmd('topk.count', 'topk', ''), [1])
+
+        self.cmd('topk.incrby', 'topk', '', 100)
+        self.assertEqual(self.cmd('topk.list', 'topk', 'withcount'), ['', 101])
+
+        self.cmd('topk.add', 'topk', 'foo', 'bar', 'baz')
+        self.cmd('topk.add', 'topk', 'foo', 'bar', 'baz', '')
+        self.cmd('topk.add', 'topk', 'foo', 'bar', '')
+        self.cmd('topk.add', 'topk', 'foo', '')
+        heapList = self.cmd('topk.list', 'topk', 'WITHCOUNT')
+        self.assertEqual(['', 104, 'foo', 4, 'bar', 3], heapList)
+        self.assertEqual(self.cmd('topk.query', 'topk', 'bla', 'foo', ''), [0, 1, 1])
+
+        self.cmd('topk.incrby', 'topk', 'foo', 500, 'bar', 500, 'baz', 500)
+        heapList = self.cmd('topk.list', 'topk', 'WITHCOUNT')
+        self.assertEqual(['foo', 504, 'bar', 503, 'baz', 502], heapList)
