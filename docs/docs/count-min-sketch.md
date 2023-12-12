@@ -24,11 +24,29 @@ This application answers this question: What was the sales volume (on a certain 
 Use one Count-Min sketch created per day (period). Every product sale goes into the CMS. The CMS give reasonably accurate results for the products that contribute the most toward the sales. Products with low percentage of the total sales are ignored. 
 
 ## Examples
-Let's say we choose an error of 0.1%(`0.001`) with certainty of 99.8%(`0.998`) (thus probability of error 0.02% (`0.002`)). The resulting sketch will try to keep the error within 0.1% of the sum of counts of **ALL** elements that have been added to the sketch and the probability for this error to be higher  than that (a collision of an element below the threshold with an element above the threshold) will be 0.02%. 
+Assume you select an error rate of 0.1% (0.001) with a certainty of 99.8% (0.998). This means you have an error probability of 0.02% (0.002). Your sketch strives to keep the error within 0.1% of the total count of all elements you've added. There's a 0.02% chance the error might exceed this—like when an element below the threshold overlaps with one above it. When you add a few items to the CMS and evaluate their frequency, remember that in such a small sample, collisions are rare, as seen with other probabilistic data structures.
 
-```
-> CMS.INITBYPROB key 0.001 0.002
-```
+{{< clients-example cms_tutorial cms >}}
+> CMS.INITBYPROB bikes:profit 0.001 0.002
+OK
+> CMS.INCRBY bikes:profit "Smokey Mountain Striker" 100
+(integer) 100
+> CMS.INCRBY bikes:profit "Rocky Mountain Racer" 200 "Cloudy City Cruiser" 150
+1) (integer) 200
+2) (integer) 150
+> CMS.QUERY bikes:profit "Smokey Mountain Striker" "Rocky Mountain Racer" "Cloudy City Cruiser" "Terrible Bike Name"
+1) (integer) 100
+2) (integer) 200
+3) (integer) 150
+4) (integer) 0
+> CMS.INFO bikes:profit
+1) width
+2) (integer) 2000
+3) depth
+4) (integer) 9
+5) count
+6) (integer) 450
+{{< /clients-example >}}
 
 ##### Example 1:
 If we had a uniform distribution of 1000 elements where each has a count of around 500 the threshold would be 500: 

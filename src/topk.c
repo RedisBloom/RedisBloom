@@ -112,7 +112,6 @@ static HeapBucket *checkExistInHeap(TopK *topk, const char *item, size_t itemlen
 char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment) {
     assert(topk);
     assert(item);
-    assert(itemlen);
 
     Bucket *runner;
     counter_t *countPtr;
@@ -187,7 +186,6 @@ bool TopK_Query(TopK *topk, const char *item, size_t itemlen) {
 size_t TopK_Count(TopK *topk, const char *item, size_t itemlen) {
     assert(topk);
     assert(item);
-    assert(itemlen);
 
     Bucket *runner = NULL;
     uint32_t fp = TOPK_HASH(item, itemlen, GA);
