@@ -1,2 +1,2 @@
-RLTest ~= 0.7.2
+RLTest == 0.7.5
 numpy
