@@ -16,6 +16,7 @@ jobs:
         submodules: true
     - name: Setup
       run: |
+        pip install --upgrade setuptools
         ./sbin/setup
         export GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
         ./deps/readies/bin/getredis -v 7 --with-github-token
