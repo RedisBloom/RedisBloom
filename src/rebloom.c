@@ -19,6 +19,7 @@
 #include <strings.h> // strncasecmp
 #include <string.h>
 #include <ctype.h>
+#include <inttypes.h>
 
 #ifndef REDISBLOOM_GIT_SHA
 #define REDISBLOOM_GIT_SHA "unknown"
@@ -418,8 +419,8 @@ static int BFDebug_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
     for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         const SBLink *lb = sb->filters + ii;
         info_s = RedisModule_CreateStringPrintf(
-            ctx, "bytes:%lu bits:%llu hashes:%u hashwidth:%u capacity:%lu size:%lu ratio:%g",
-            lb->inner.bytes, lb->inner.bits ? lb->inner.bits : 1LLU << lb->inner.n2,
+            ctx, "bytes:%"PRIu64" bits:%"PRIu64" hashes:%u hashwidth:%u capacity:%"PRIu64" size:%zu ratio:%g",
+            lb->inner.bytes, lb->inner.bits ? lb->inner.bits : UINT64_C(1) << lb->inner.n2,
             lb->inner.hashes, sb->options & BLOOM_OPT_FORCE64 ? 64 : 32, lb->inner.entries,
             lb->size, lb->inner.error);
         RedisModule_ReplyWithString(ctx, info_s);
@@ -1092,7 +1093,7 @@ static int CFDebug_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
 
     RedisModuleString *resp = RedisModule_CreateStringPrintf(
         ctx,
-        "bktsize:%u buckets:%lu items:%lu deletes:%lu filters:%u max_iterations:%u expansion:%u",
+        "bktsize:%u buckets:%"PRIu64" items:%"PRIu64" deletes:%"PRIu64" filters:%u max_iterations:%u expansion:%u",
         cf->bucketSize, cf->numBuckets, cf->numItems, cf->numDeletes, cf->numFilters,
         cf->maxIterations, cf->expansion);
     return RedisModule_ReplyWithString(ctx, resp);
