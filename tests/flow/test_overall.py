@@ -425,6 +425,20 @@ class testRedisBloom():
         env.assertEqual(info["Capacity"], 300000000)
         env.assertEqual(info["Size"], 1132420232)
 
+    def test_very_high_error_rate(self):
+        env = self.env
+        env.cmd('FLUSHALL')
+
+        env.cmd('bf.reserve', 'bf1', 0.99, 3, "NONSCALING")
+        env.cmd('bf.add', 'bf1', 1)
+
+        env.cmd('bf.reserve', 'bf2', 0.95, 8, "NONSCALING")
+        env.cmd('bf.add', 'bf2', 1)
+
+        env.cmd('bf.reserve', 'bf3', 0.9999999999999999, 100, "NONSCALING")
+        env.cmd('bf.add', 'bf3', 1)
+
+
 class testRedisBloomNoCodec():
     def __init__(self):
         self.env = Env(decodeResponses=False)
