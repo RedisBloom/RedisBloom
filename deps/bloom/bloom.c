@@ -149,7 +149,13 @@ int bloom_init(struct bloom *bloom, uint64_t entries, double error, unsigned opt
 
     } else if (options & BLOOM_OPT_NOROUND) {
         // Don't perform any rounding. Conserve memory instead
-        bits = bloom->bits = (uint64_t)(entries * bloom->bpe);
+        bits = (uint64_t)(entries * bloom->bpe);
+
+        // Guard against very small 'bpe'. Have at least one bit in the filter.
+        if (bits == 0) {
+            bits = 1;
+        }
+        bloom->bits = bits;
         bloom->n2 = 0;
 
     } else {
