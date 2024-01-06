@@ -154,7 +154,7 @@ int CMSketch_IncrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
 done:
     if (pairArray)
-        CMS_FREE(pairArray);
+        //CMS_FREE(pairArray);
     RedisModule_CloseKey(key);
     return REDISMODULE_OK;
 }
@@ -244,8 +244,8 @@ int CMSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
     CMS_MergeParams(params);
 
-    CMS_FREE(params.cmsArray);
-    CMS_FREE(params.weights);
+    //CMS_FREE(params.cmsArray);
+    //CMS_FREE(params.weights);
     RedisModule_ReplicateVerbatim(ctx);
     RedisModule_ReplyWithSimpleString(ctx, "OK");
     return REDISMODULE_OK;

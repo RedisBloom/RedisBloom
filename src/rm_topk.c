@@ -113,7 +113,7 @@ static int TopK_Add_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             RedisModule_ReplyWithNull(ctx);
         } else {
             RedisModule_ReplyWithCString(ctx, expelledItem);
-            TOPK_FREE(expelledItem);
+            //TOPK_FREE(expelledItem);
         }
     }
     RedisModule_ReplicateVerbatim(ctx);
@@ -150,7 +150,7 @@ static int TopK_Incrby_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
             RedisModule_ReplyWithNull(ctx);
         } else {
             RedisModule_ReplyWithCString(ctx, expelledItem);
-            TOPK_FREE(expelledItem);
+            //TOPK_FREE(expelledItem);
         }
     }
 final:
@@ -236,7 +236,7 @@ static int TopK_List_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     }
     RedisModule_ReplySetArrayLength(ctx, arrlen);
 
-    TOPK_FREE(heapList);
+    //TOPK_FREE(heapList);
 
     return REDISMODULE_OK;
 }
