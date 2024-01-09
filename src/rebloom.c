@@ -541,8 +541,8 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         if (RedisModule_StringToLongLong(argv[mi_loc + 1], &maxIterations) != REDISMODULE_OK) {
             return RedisModule_ReplyWithError(ctx, "Couldn't parse MAXITERATIONS");
         } else if (maxIterations <= 0 || maxIterations > CF_MAX_ITERATIONS) {
-            return RedisModule_ReplyWithError(
-                ctx, "MAXITERATIONS parameter must be between 1 and 65535 (both are inclusive).");
+            return RedisModule_ReplyWithError(ctx, "MAXITERATIONS parameter must be an integer "
+                                                   "between 1 and 65535 (both are inclusive).");
         }
     }
 
@@ -553,7 +553,8 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
             return RedisModule_ReplyWithError(ctx, "Couldn't parse BUCKETSIZE");
         } else if (bucketSize <= 0 || bucketSize > CF_MAX_BUCKET_SIZE) {
             return RedisModule_ReplyWithError(
-                ctx, "BUCKETSIZE parameter must be between 1 and 255 (both are inclusive).");
+                ctx,
+                "BUCKETSIZE parameter must be an integer between 1 and 255 (both are inclusive).");
         }
     }
 
@@ -564,7 +565,8 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
             return RedisModule_ReplyWithError(ctx, "Couldn't parse EXPANSION");
         } else if (expansion < 0 || expansion > CF_MAX_EXPANSION) {
             return RedisModule_ReplyWithError(
-                ctx, "EXPANSION parameter must be between 0 and 32768 (both are inclusive).");
+                ctx,
+                "EXPANSION parameter must be an integer between 0 and 32768 (both are inclusive).");
         }
     }
 
