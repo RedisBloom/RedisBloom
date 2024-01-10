@@ -346,6 +346,19 @@ class testCuckoo():
         self.assertRaises(ResponseError, self.cmd, 'CF.LOADCHUNK err iterator') # missing data
         self.assertRaises(ResponseError, self.cmd, 'CF.SCANDUMP err')
 
+    def test_reserve_limits(self):
+        self.cmd('FLUSHALL')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE cf 100 BUCKETSIZE 33554432')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE cf 100 MAXITERATIONS 165536')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE cf 100 EXPANSION 327695')
+        self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE CF 67108864 BUCKETSIZE 33554432 MAXITERATIONS 1337 EXPANSION 1337')
+
+        self.cmd('CF.RESERVE cf 67108864 BUCKETSIZE 255 MAXITERATIONS 65535 EXPANSION 32768')
+        info = self.cmd('CF.INFO cf')
+        self.assertEqual(info[info.index('Bucket size') + 1], 255)
+        self.assertEqual(info[info.index('Expansion rate') + 1], 32768)
+        self.assertEqual(info[info.index('Max iterations') + 1], 65535)
+
 class testCuckooNoCodec():
     def __init__(self):
         self.env = Env(decodeResponses=False)
