@@ -1,11 +1,7 @@
 name: build for mariner2
 
 on:
-  push:
-    branches:
-      - master
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
 
 jobs:
   build-mariner2:
