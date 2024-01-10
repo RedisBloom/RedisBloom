@@ -84,7 +84,7 @@ const char *CF_GetEncodedChunk(const CuckooFilter *cf, long long *pos, size_t *b
 }
 
 int CF_LoadEncodedChunk(const CuckooFilter *cf, long long pos, const char *data, size_t datalen) {
-    if (datalen == 0) {
+    if (datalen == 0 || pos <= 0 || (size_t)(pos - 1) < datalen) {
         return REDISMODULE_ERR;
     }
 
@@ -100,6 +100,12 @@ int CF_LoadEncodedChunk(const CuckooFilter *cf, long long pos, const char *data,
             break;
         }
         offset -= currentSize;
+    }
+
+    // Boundary check before memcpy()
+    if (!filter || ((size_t)offset > SIZE_MAX - datalen) ||
+        filter->bucketSize * filter->numBuckets < offset + datalen) {
+        return REDISMODULE_ERR;
     }
 
     // copy data to filter
