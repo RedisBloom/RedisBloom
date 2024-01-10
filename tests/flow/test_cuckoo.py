@@ -467,3 +467,13 @@ class testCuckooNoCodec():
         # check loaded filter
         for x in range(6):
             self.assertEqual(1, self.cmd('cf.exists', 'cf', 'foo'))
+
+    def test_scandump_invalid(self):
+        self.cmd('FLUSHALL')
+        self.cmd('cf.reserve', 'cf', 4)
+        self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf', '-9223372036854775808', '1')
+        self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf', '922337203685477588', '1')
+        self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf', '4', 'kdoasdksaodsadsadsadsadsadadsadadsdad')
+        self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf', '4', 'abcd')
+        self.cmd('cf.add', 'cf', 'x')
+        self.assertRaises(ResponseError, self.cmd, 'cf.scandump', 'cf', '-1')

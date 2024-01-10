@@ -856,7 +856,7 @@ static int CFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
     }
 
     long long pos;
-    if (RedisModule_StringToLongLong(argv[2], &pos) != REDISMODULE_OK) {
+    if (RedisModule_StringToLongLong(argv[2], &pos) != REDISMODULE_OK || pos < 0) {
         return RedisModule_ReplyWithError(ctx, "Invalid position");
     }
 
