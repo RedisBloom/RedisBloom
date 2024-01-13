@@ -43,10 +43,9 @@ jobs:
         shell: bash -l -eo pipefail {0}
     steps:
       - name: Install build dependencies
-        run: | 
-          yum -y install gcc make
-          yum install http://opensource.wandisco.com/centos/7/git/x86_64/wandisco-git-release-7-2.noarch.rpm
-          yum install git
+        run: |
+          yum -y install http://opensource.wandisco.com/centos/7/git/x86_64/wandisco-git-release-7-2.noarch.rpm
+          yum -y install gcc make git
           git --version
       - name: Setup Python for testing
         uses: actions/setup-python@v1
