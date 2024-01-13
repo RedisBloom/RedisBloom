@@ -50,7 +50,7 @@ jobs:
       - name: Setup Python for testing
         uses: actions/setup-python@v1
         with:
-          python-version: '3.9'
+          python-version: '3.6'
           architecture: 'x64'
       - uses: actions/checkout@v3
         with:
