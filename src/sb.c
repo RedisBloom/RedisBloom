@@ -40,11 +40,11 @@ static int SBChain_AddLink(SBChain *chain, uint64_t size, double error_rate) {
 }
 
 void SBChain_Free(SBChain *sb) {
-    for (size_t ii = 0; ii < sb->nfilters; ++ii) {
-        bloom_free(&sb->filters[ii].inner);
-    }
-    RedisModule_Free(sb->filters);
-    RedisModule_Free(sb);
+    //for (size_t ii = 0; ii < sb->nfilters; ++ii) {
+        //bloom_free(&sb->filters[ii].inner);
+    //}
+    //RedisModule_Free(sb->filters);
+    //RedisModule_Free(sb);
 }
 
 static int SBChain_AddToLink(SBLink *lb, bloom_hashval hash) {
