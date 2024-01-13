@@ -1,6 +1,7 @@
 name: Build on Linux Platforms
 
 on:
+  push:
   workflow_dispatch:
     inputs:
       platforms:
