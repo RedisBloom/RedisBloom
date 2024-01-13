@@ -32,7 +32,5 @@ jobs:
       run: cd redis && make -j 4
     - name: Build
       run: make
-    - name: Unit tests
-      run: make unit-tests
-    - name: Flow tests
-      run: make flow-tests
+    - name: Run tests
+      run: make tests  REDIS_SERVER=../redis/src/redis-server
