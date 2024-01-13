@@ -48,7 +48,7 @@ jobs:
           yum -y install gcc make git
           git --version
       - name: Setup Python for testing
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: '3.6'
           architecture: 'x64'
