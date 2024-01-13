@@ -27,10 +27,10 @@ jobs:
       with:
         repository: 'redis/redis'
         ref: 'unstable'
-        path: 'redis'
+        path: '../../redis'
     - name: Build Redis
       run: cd redis && make -j 4
     - name: Build
       run: make
     - name: Run tests
-      run: make test REDIS_SERVER=./redis/src/redis-server
+      run: make test REDIS_SERVER=/redis/src/redis-server
