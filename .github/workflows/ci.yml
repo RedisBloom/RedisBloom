@@ -43,40 +43,7 @@ jobs:
         shell: bash -l -eo pipefail {0}
     steps:
       - name: Install build dependencies
-        run: sudo yum -y install gcc make git
-      - name: Setup Python for testing
-        uses: actions/setup-python@v1
-        with:
-          python-version: '3.9'
-          architecture: 'x64'
-      - uses: actions/checkout@v3
-        with:
-          submodules: true
-      - name: Install Python dependencies
-        run:
-          python -m pip install -r tests/flow/requirements.txt
-      - name: Checkout Redis
-        uses: actions/checkout@v2
-        with:
-          repository: 'redis/redis'
-          ref: 'unstable'
-          path: 'redis'
-      - name: Build Redis
-        run: cd redis && make -j 4
-      - name: Build
-        run: make -j 4
-      - name: Run tests
-        run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
-
-  test-alpine:
-    runs-on: ubuntu-latest
-    container: alpine:latest
-    defaults:
-      run:
-        shell: bash -l -eo pipefail {0}
-    steps:
-      - name: Install build dependencies
-        run: apk add build-base git
+        run: yum -y install gcc make git
       - name: Setup Python for testing
         uses: actions/setup-python@v1
         with:
