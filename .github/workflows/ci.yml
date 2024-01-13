@@ -1,12 +1,6 @@
 name: Build on Linux Platforms
 
-on:
-  push:
-  workflow_dispatch:
-    inputs:
-      platforms:
-        description: 'Build platforms'
-        default: '["ubuntu:jammy"]'
+on: [push, pull_request]
 
 jobs:
   build-linux-matrix:
@@ -14,10 +8,6 @@ jobs:
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
-    strategy:
-      matrix:
-        OS: ${{ fromJson(inputs.platforms) }}
-      fail-fast: false
     steps:
     - uses: actions/checkout@v3
       with:
