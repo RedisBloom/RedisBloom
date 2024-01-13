@@ -33,4 +33,4 @@ jobs:
     - name: Build
       run: make
     - name: Run tests
-      run: make test REDIS_SERVER=../redis/src/redis-server
+      run: make test REDIS_SERVER=redis/src/redis-server
