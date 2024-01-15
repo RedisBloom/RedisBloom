@@ -67,7 +67,7 @@ jobs:
       - name: Run tests
         run: make test VG=1 REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
 
-  test-sanitizer:
+  test-address-sanitizer:
     runs-on: ubuntu-latest
     defaults:
       run:
