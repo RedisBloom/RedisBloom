@@ -1,0 +1,100 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test-ubuntu:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l -eo pipefail {0}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential autoconf automake libtool cmake lcov
+      - name: Setup Python for testing
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.9'
+          architecture: 'x64'
+      - name: Install Python dependencies
+        run:
+          python -m pip install -r tests/flow/requirements.txt
+      - name: Checkout Redis
+        uses: actions/checkout@v2
+        with:
+          repository: 'redis/redis'
+          ref: 'unstable'
+          path: 'redis'
+      - name: Build Redis
+        run: cd redis && make -j 4
+      - name: Build
+        run: make -j 4
+      - name: Run tests
+        run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+
+  test-valgrind:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l -eo pipefail {0}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential autoconf automake libtool cmake lcov valgrind
+      - name: Setup Python for testing
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.9'
+          architecture: 'x64'
+      - name: Install Python dependencies
+        run:
+          python -m pip install -r tests/flow/requirements.txt
+      - name: Checkout Redis
+        uses: actions/checkout@v2
+        with:
+          repository: 'redis/redis'
+          ref: 'unstable'
+          path: 'redis'
+      - name: Build Redis
+        run: cd redis && make valgrind -j 4
+      - name: Build
+        run: make -j 4
+      - name: Run tests
+        run: make test VG=1 REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+
+  test-sanitizer:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l -eo pipefail {0}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential autoconf automake libtool cmake lcov valgrind
+      - name: Setup Python for testing
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.9'
+          architecture: 'x64'
+      - name: Install Python dependencies
+        run:
+          python -m pip install -r tests/flow/requirements.txt
+      - name: Checkout Redis
+        uses: actions/checkout@v2
+        with:
+          repository: 'redis/redis'
+          ref: 'unstable'
+          path: 'redis'
+      - name: Build Redis
+        run: cd redis && make SANITIZER=address -j 4
+      - name: Build
+        run: make -j 4
+      - name: Run tests
+        run: make test SAN=addr REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
