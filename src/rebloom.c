@@ -1217,8 +1217,8 @@ static size_t BFMemUsage(const void *value) {
 }
 
 static void CFFree(void *value) {
-    CuckooFilter_Free(value);
-    RedisModule_Free(value);
+    //CuckooFilter_Free(value);
+    //RedisModule_Free(value);
 }
 
 static void CFRdbSave(RedisModuleIO *io, void *obj) {
