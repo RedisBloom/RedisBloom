@@ -361,10 +361,29 @@ jobs:
       - vm-build-platforms-steps:
           platform: <<parameters.platform>>
 
-  build-macos:
+  build-macos-x64:
     macos:
       xcode: 12.5.1
     resource_class: macos.x86.medium.gen2
+    parameters:
+      upload:
+        type: string
+        default: "yes"
+    steps:
+      - early-returns
+      - build-steps
+      - run:
+          name: Upload artifacts to S3
+          command: |
+            if [[ -n $CIRCLE_BRANCH && "<<parameters.upload>>" == "yes" ]]; then
+                make upload-artifacts SHOW=1 VERBOSE=1
+            fi
+      - persist-artifacts
+
+  build-macos-m1:
+    macos:
+      xcode: 14.2.0
+    resource_class: macos.m1.large.gen1
     parameters:
       upload:
         type: string
@@ -435,7 +454,7 @@ jobs:
             if [[ -n $CIRCLE_TAG && "<<parameters.staging-lab>>" != 1 ]]; then
                 make upload-release SHOW=1
             else
-                make upload-release SHOW=1 STAGING=1
+                make upload-release SHOW=1
             fi
 
   release-qa-tests:
@@ -562,19 +581,7 @@ workflows:
             alias: build-with-redis-ver
             parameters:
               redis_version: ["6.0", "6.2"]
-      - build-platforms:
-          <<: *on-integ-and-version-tags
-          context: common
-          matrix:
-            parameters:
-              platform: [jammy, focal, bionic, xenial, amzn2, rocky8, centos7, bullseye]
-      - build-arm-platforms:
-          <<: *on-integ-and-version-tags
-          context: common
-          matrix:
-            parameters:
-              platform: [jammy, focal, bionic]
-      - build-macos:
+      - build-macos-m1:
           context: common
           <<: *on-integ-and-version-tags
       - upload-artifacts:
@@ -583,43 +590,13 @@ workflows:
           context: common
           <<: *on-integ-branch
           requires:
-            - build-platforms
-            - build-arm-platforms
-            - build-macos
+            - build-macos-m1
       - upload-artifacts:
           name: upload-release-artifacts
           context: common
           <<: *on-version-tags
           requires:
-            - build-platforms
-            - build-arm-platforms
-            - build-macos
-      - release-qa-tests:
-          context: common
-          <<: *on-version-tags
-          requires:
-            - upload-release-artifacts
-      - benchmark-bloom-oss-standalone:
-          <<: *on-integ-and-version-tags
-          requires:
-            - lint
-          context: common
-      - benchmark-bloom-oss-standalone-profiler:
-          <<: *on-integ-and-version-tags
-          requires:
-            - lint
-          context: common
-
-  benchmark_flow_label:
-    when:
-      << pipeline.parameters.run_benchmark_flow_label >>
-    jobs:
-      - benchmark-bloom-oss-standalone:
-          <<: *on-any-branch
-          context: common
-      - benchmark-bloom-oss-standalone-profiler:
-          <<: *on-any-branch
-          context: common
+            - build-macos-m1
 
   nightly-perf-once-a-week:
     triggers:
