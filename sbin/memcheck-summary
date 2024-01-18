@@ -16,10 +16,10 @@ valgrind_check() {
 	for file in "$logdir"/*.valgrind.log; do
 		if grep -q -e "definitely lost" -e "0x" -e "Invalid" -e "Mismatched" \
 		            -e "uninitialized" -e "has a fishy" -e "overlap" "$file"; then
-				echo
-				echo "### Valgrind error in $file:"
-			  cat "$file"
-			  E=1
+    	echo
+    	echo "### Valgrind error in $file:"
+    	cat "$file"
+    	E=1
 		fi
 	done
 }
@@ -31,10 +31,10 @@ sanitizer_check() {
 
 	for file in "$logdir"/*.asan.log*; do
 		if grep -q -e "runtime error" -e "Sanitizer" "$file"; then
-				echo
-				echo "### Sanitizer error in $file:"
-			  cat "$file"
-			  E=1
+    	echo
+    	echo "### Sanitizer error in $file:"
+    	cat "$file"
+    	E=1
 		fi
 	done
 }
