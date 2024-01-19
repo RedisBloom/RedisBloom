@@ -18,9 +18,9 @@ cd $HERE
 help() {
 	cat <<-'END'
 		Run flow tests
-	
+
 		[ARGVARS...] tests.sh [--help|help] [<module-so-path>]
-		
+
 		Argument variables:
 		MODULE=path           Path to redisbloom.so
 		MODARGS=args          RediSearch module arguments
@@ -32,7 +32,7 @@ help() {
 		SLAVES=1              Tests with --test-slaves
 		CLUSTER=1             Test with OSS cluster, one shard
 		QUICK=1               Perform only GEN=1 test variant
-		
+
 		TEST=name             Run specific test (e.g. test.py:test_name)
 		TESTFILE=file         Run tests listed in `file`
 		FAILEDFILE=file       Write failed tests into `file`
@@ -55,7 +55,7 @@ help() {
 		COV=1                 Run with coverage analysis
 		VG=1                  Run with Valgrind
 		VG_LEAKS=0            Do not detect leaks
-		SAN=type              Use LLVM sanitizer (type=address|memory|leak|thread) 
+		SAN=type              Use LLVM sanitizer (type=address|memory|leak|thread)
 		BB=1                  Enable Python debugger (break using BB() in tests)
 		GDB=1                 Enable interactive gdb debugging (in single-test mode)
 
@@ -322,7 +322,7 @@ run_tests() {
 	fi
 
 	[[ $RLEC == 1 ]] && export RLEC_CLUSTER=1
-	
+
 	local E=0
 	if [[ $NOP != 1 ]]; then
 		{ $OP python3 -m RLTest @$rltest_config; (( E |= $? )); } || true
@@ -509,13 +509,13 @@ if [[ $GEN == 1 ]]; then
 	{ (run_tests "general"); (( E |= $? )); } || true
 fi
 if [[ $VG != 1 && $SLAVES == 1 ]]; then
-	{ (RLTEST_ARGS+=" --use-slaves" run_tests "--use-slaves"); (( E |= $? )); } || true
+	{ (RLTEST_ARGS+=" --use-slaves --enable-debug-command" run_tests "--use-slaves"); (( E |= $? )); } || true
 fi
 if [[ $AOF == 1 ]]; then
-	{ (RLTEST_ARGS+=" --use-aof" run_tests "--use-aof"); (( E |= $? )); } || true
+	{ (RLTEST_ARGS+=" --use-aof --enable-debug-command" run_tests "--use-aof"); (( E |= $? )); } || true
 fi
 if [[ $CLUSTER == 1 ]]; then
-	{ (RLTEST_ARGS+=" --env oss-cluster --shards-count 1" run_tests "--env oss-cluster"); (( E |= $? )); } || true
+	{ (RLTEST_ARGS+=" --env oss-cluster --shards-count 1 --enable-debug-command" run_tests "--env oss-cluster"); (( E |= $? )); } || true
 fi
 
 #-------------------------------------------------------------------------------------- Summary
