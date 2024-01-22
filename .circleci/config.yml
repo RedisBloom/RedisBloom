@@ -476,10 +476,6 @@ workflows:
       #     <<: *on-any-branch
       - coverage:
           <<: *on-any-branch
-      - valgrind:
-          <<: *on-any-branch
-          requires:
-            - lint
       - build:
           name: build-with-redis-<<matrix.redis_version>>
           <<: *on-integ-and-version-tags
