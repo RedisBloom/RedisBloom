@@ -1,3 +1,4 @@
+import random
 
 from common import *
 
@@ -468,6 +469,33 @@ class testCuckooNoCodec():
         for x in range(6):
             self.assertEqual(1, self.cmd('cf.exists', 'cf', 'foo'))
 
+    def test_scandump_with_content(self):
+        # Basic success scenario with content validation
+
+        self.cmd('FLUSHALL')
+        self.cmd('cf.reserve', 'cf', 1024 * 1024 * 64)
+
+        for x in range(1000):
+            self.cmd('cf.add', 'cf', 'foo' + str(x))
+        for x in range(1000):
+            self.assertEqual(1, self.cmd('cf.exists', 'cf', 'foo' + str(x)))
+
+        chunks = []
+        while True:
+            last_pos = chunks[-1][0] if chunks else 0
+            chunk = self.cmd('cf.scandump', 'cf', last_pos)
+            if not chunk[0]:
+                break
+            chunks.append(chunk)
+
+        for chunk in chunks:
+            self.cmd('cf.loadchunk', 'cf2', *chunk)
+
+        # check loaded filter
+        for x in range(1000):
+            self.assertEqual(1, self.cmd('cf.exists', 'cf2', 'foo' + str(x)))
+
+
     def test_scandump_invalid(self):
         self.cmd('FLUSHALL')
         self.cmd('cf.reserve', 'cf', 4)
@@ -477,3 +505,131 @@ class testCuckooNoCodec():
         self.assertRaises(ResponseError, self.cmd, 'cf.loadchunk', 'cf', '4', 'abcd')
         self.cmd('cf.add', 'cf', 'x')
         self.assertRaises(ResponseError, self.cmd, 'cf.scandump', 'cf', '-1')
+
+
+    def test_scandump_invalid_header(self):
+        env = self.env
+        env.cmd('FLUSHALL')
+
+        env.cmd('cf.reserve', 'cf', 100)
+        for x in range(50):
+            env.cmd('cf.add', 'cf', 'foo' + str(x))
+
+        chunk = env.cmd('cf.scandump', 'cf', 0)
+        env.cmd('del', 'cf')
+
+        arr = bytearray(chunk[1])
+
+        # It corrupts first 8 bytes in the response. See struct CFHeader
+        # for internals.
+        for i in range(9):
+            arr[i] = 0
+
+        thrown = None
+        try:
+            env.cmd('cf.loadchunk', 'cf', 1, bytes(arr))
+        except Exception as e:
+            thrown = e
+
+        if thrown is None or str(thrown) != "Couldn't create filter!":
+            print("Exception was: " + str(thrown))
+            assert False
+
+
+    def test_scandump_random_scan_small(self):
+        self.cmd('FLUSHALL')
+        self.cmd('cf.reserve', 'cf', 50)
+
+        for i in range(0, 10000):
+            try:
+                self.cmd('cf.add', 'cf', 'x' + str(i))
+            except ResponseError as e:
+                if str(e) == "Maximum expansions reached":
+                    break
+                raise e
+
+        info = self.cmd('CF.INFO', 'cf')
+        size = info[info.index(b'Size') + 1]
+
+        for i in range(0, size + 1024):
+            self.cmd('cf.scandump', 'cf', i)
+
+
+    def test_scandump_scan_big(self):
+        self.cmd('FLUSHALL')
+        self.cmd('cf.reserve', 'cf', 1024, 'EXPANSION', 30000)
+
+        for i in range(0, 100):
+            arr = []
+            for j in range(0, 10000):
+                arr.append('x' + str(i) + str(j))
+
+            try:
+                self.cmd('cf.insert', 'cf', 'ITEMS', *arr)
+            except ResponseError as e:
+                if str(e) == "Maximum expansions reached":
+                    break
+                raise e
+
+        info = self.cmd('CF.INFO', 'cf')
+        size = info[info.index(b'Size') + 1]
+
+        for i in range(0, 100):
+            self.cmd('cf.scandump', 'cf', random.randint(0, size * 2))
+
+
+    def test_scandump_load_small(self):
+        self.cmd('FLUSHALL')
+        self.cmd('cf.reserve', 'cf', 10)
+
+        for i in range(0, 100):
+            arr = []
+            for j in range(0, 1000):
+                arr.append('x' + str(i) + str(j))
+
+            try:
+                self.cmd('cf.insert', 'cf', 'ITEMS', *arr)
+            except ResponseError as e:
+                if str(e) == "Maximum expansions reached":
+                    break
+                raise e
+
+        info = self.cmd('CF.INFO', 'cf')
+        size = info[info.index(b'Size') + 1]
+
+        for i in range (0, size + 100):
+            b = bytearray(os.urandom(random.randint(0, 100)))
+            try:
+                self.cmd('cf.loadchunk', 'cf', random.randint(0, 10000), bytes(b))
+            except Exception as e:
+                if (str(e) != "Couldn't load chunk!" and
+                        str(e) != "Invalid position"):
+                    raise e
+
+
+    def test_scandump_load_big(self):
+        self.cmd('FLUSHALL')
+        self.cmd('cf.reserve', 'cf', 1024, 'EXPANSION', 30000)
+
+        for i in range(0, 100):
+            arr = []
+            for j in range(0, 1000):
+                arr.append('x' + str(i) + str(j))
+
+            try:
+                self.cmd('cf.insert', 'cf', 'ITEMS', *arr)
+            except ResponseError as e:
+                if str(e) == "Maximum expansions reached":
+                    break
+                raise e
+
+        info = self.cmd('CF.INFO', 'cf')
+        size = info[info.index(b'Size') + 1]
+
+        for i in range (0, 100):
+            b = bytearray(os.urandom(random.randint(1024, 36 * 1024 * 1024)))
+            try:
+                self.cmd('cf.loadchunk', 'cf', random.randint(2, size), bytes(b))
+            except Exception as e:
+                if str(e) != "Couldn't load chunk!":
+                    raise e

@@ -26,15 +26,14 @@ bloom_hashval bloom_calc_hash64(const void *buffer, int len);
 #define CUR_FILTER(sb) ((sb)->filters + ((sb)->nfilters - 1))
 
 static int SBChain_AddLink(SBChain *chain, uint64_t size, double error_rate) {
-    if (!chain->filters) {
-        chain->filters = RedisModule_Calloc(1, sizeof(*chain->filters));
-    } else {
-        chain->filters =
-            RedisModule_Realloc(chain->filters, sizeof(*chain->filters) * (chain->nfilters + 1));
-    }
+    chain->filters =
+        RedisModule_Realloc(chain->filters, sizeof(*chain->filters) * (chain->nfilters + 1));
 
     SBLink *newlink = chain->filters + chain->nfilters;
-    newlink->size = 0;
+    *newlink = (SBLink){
+        .size = 0,
+    };
+
     chain->nfilters++;
     return bloom_init(&newlink->inner, size, error_rate, chain->options);
 }
@@ -150,7 +149,9 @@ typedef struct __attribute__((packed)) {
 } dumpedChainHeader;
 
 static SBLink *getLinkPos(const SBChain *sb, long long curIter, size_t *offset) {
-    // printf("Requested %lld\n", curIter);
+    if (curIter < 1) {
+        return NULL;
+    }
 
     curIter--;
     SBLink *link = NULL;
@@ -218,6 +219,26 @@ char *SBChain_GetEncodedHeader(const SBChain *sb, size_t *hdrlen) {
 
 void SB_FreeEncodedHeader(char *s) { RedisModule_Free(s); }
 
+// Returns 0 on success
+int SB_ValidateIntegrity(const SBChain *sb)
+{
+    if (sb->options &
+        ~(BLOOM_OPT_NOROUND | BLOOM_OPT_ENTS_IS_BITS | BLOOM_OPT_FORCE64 | BLOOM_OPT_NO_SCALING)) {
+        return 1;
+    }
+
+    size_t total = 0;
+    for (size_t i = 0; i < sb->nfilters; i++) {
+        total += sb->filters[i].size;
+    }
+
+    if (sb->size != total) {
+        return 1;
+    }
+
+    return 0;
+}
+
 SBChain *SB_NewChainFromHeader(const char *buf, size_t bufLen, const char **errmsg) {
     const dumpedChainHeader *header = (const void *)buf;
     if (bufLen < sizeof(dumpedChainHeader)) {
@@ -243,10 +264,23 @@ SBChain *SB_NewChainFromHeader(const char *buf, size_t bufLen, const char **errm
 #define X(encfld, dstfld) dstfld = encfld;
         X_ENCODED_LINK(X, srclink, dstlink)
 #undef X
-        dstlink->inner.bf = RedisModule_Alloc(dstlink->inner.bytes);
+
+        if (bloom_validate_integrity(&dstlink->inner) != 0) {
+            SBChain_Free(sb);
+            *errmsg = "ERR received bad data";
+            return NULL;
+        }
+
+        dstlink->inner.bf = RedisModule_Calloc(1, dstlink->inner.bytes);
         if (sb->options & BLOOM_OPT_FORCE64) {
             dstlink->inner.force64 = 1;
         }
+    }
+
+    if (SB_ValidateIntegrity(sb) != 0) {
+        SBChain_Free(sb);
+        *errmsg = "ERR received bad data";
+        return NULL;
     }
 
     return sb;
@@ -254,6 +288,10 @@ SBChain *SB_NewChainFromHeader(const char *buf, size_t bufLen, const char **errm
 
 int SBChain_LoadEncodedChunk(SBChain *sb, long long iter, const char *buf, size_t bufLen,
                              const char **errmsg) {
+    if (!buf || iter <= 0 || iter < bufLen) {
+        *errmsg = "ERR received bad data";
+        return -1;
+    }
     // Load the chunk
     size_t offset;
     iter -= bufLen;
