@@ -593,10 +593,53 @@ class testRedisBloomNoCodec():
         env.cmd('del', 'bf')
         arr = bytearray(chunk[1])
 
-        # It corrupts second link in the response. See struct dumpedChainHeader
-        # for internals.
+        # See 'struct dumpedChainHeader' for internals.
+        # It corrupts second link in the response.
         for i in range(8):
             arr[72 + i] = 0
+
+        thrown = None
+        try:
+            env.cmd('bf.loadchunk', 'bf', 1, bytes(arr))
+        except Exception as e:
+            thrown = e
+
+        if thrown is None or str(thrown) != "received bad data":
+            raise thrown
+
+        # It corrupts 'options' field in the response.
+        arr = bytearray(chunk[1])
+        for i in range(4):
+            arr[12 + i] = 255
+
+        thrown = None
+        try:
+            env.cmd('bf.loadchunk', 'bf', 1, bytes(arr))
+        except Exception as e:
+            thrown = e
+
+        if thrown is None or str(thrown) != "received bad data":
+            raise thrown
+
+        # It corrupts first field in the response.
+        arr = bytearray(chunk[1])
+        for i in range(4):
+            arr[i] = 255
+
+        thrown = None
+        try:
+            env.cmd('bf.loadchunk', 'bf', 1, bytes(arr))
+        except Exception as e:
+            thrown = e
+
+        if thrown is None or str(thrown) != "received bad data":
+            raise thrown
+
+        # It corrupts second link in the response.
+        arr = bytearray(chunk[1])
+        for i in range(8):
+            arr[36 + i] = 255
+            arr[0 + i] = 255
 
         thrown = None
         try:

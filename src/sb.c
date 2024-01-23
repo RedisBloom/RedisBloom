@@ -228,6 +228,9 @@ int SB_ValidateIntegrity(const SBChain *sb) {
 
     size_t total = 0;
     for (size_t i = 0; i < sb->nfilters; i++) {
+        if (sb->filters[i].size > SIZE_MAX - total) {
+            return 1;
+        }
         total += sb->filters[i].size;
     }
 
