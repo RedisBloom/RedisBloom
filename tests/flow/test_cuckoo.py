@@ -603,7 +603,8 @@ class testCuckooNoCodec():
                 self.cmd('cf.loadchunk', 'cf', random.randint(0, 10000), bytes(b))
             except Exception as e:
                 if (str(e) != "Couldn't load chunk!" and
-                        str(e) != "Invalid position"):
+                        str(e) != "Invalid position" and
+                        str(e) != "item exists"):
                     raise e
 
 

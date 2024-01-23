@@ -220,8 +220,7 @@ char *SBChain_GetEncodedHeader(const SBChain *sb, size_t *hdrlen) {
 void SB_FreeEncodedHeader(char *s) { RedisModule_Free(s); }
 
 // Returns 0 on success
-int SB_ValidateIntegrity(const SBChain *sb)
-{
+int SB_ValidateIntegrity(const SBChain *sb) {
     if (sb->options &
         ~(BLOOM_OPT_NOROUND | BLOOM_OPT_ENTS_IS_BITS | BLOOM_OPT_FORCE64 | BLOOM_OPT_NO_SCALING)) {
         return 1;
