@@ -139,6 +139,7 @@ CuckooFilter *CFHeader_Load(const CFHeader *header) {
 
 error:
     CuckooFilter_Free(filter);
+    RedisModule_Free(filter);
     return NULL;
 }
 
