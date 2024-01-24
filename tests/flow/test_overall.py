@@ -1,3 +1,4 @@
+import random
 
 from common import *
 
@@ -521,3 +522,225 @@ class testRedisBloomNoCodec():
         # check loaded filter
         for x in range(6):
             env.assertEqual(1, env.cmd('bf.exists', 'bf', 'foo'))
+
+
+    def test_scandump_with_content(self):
+        # Basic success scenario with content validation
+
+        env = self.env
+        env.cmd('FLUSHALL')
+
+        env.cmd('bf.reserve', 'bf', 0.01, 1024 * 1024 * 64)
+        for x in range(1000):
+            env.cmd('bf.add', 'bf', 'foo' + str(x))
+        for x in range(1000):
+            env.assertEqual(1, env.cmd('bf.exists', 'bf', 'foo' + str(x)))
+
+        chunks = []
+        while True:
+            last_pos = chunks[-1][0] if chunks else 0
+            chunk = env.cmd('bf.scandump', 'bf', last_pos)
+            if not chunk[0]:
+                break
+            chunks.append(chunk)
+
+        env.cmd('del', 'bf')
+
+        for chunk in chunks:
+            env.cmd('bf.loadchunk', 'bf2', *chunk)
+
+        # Validate items in the loaded filter
+        for x in range(1000):
+            env.assertEqual(1, env.cmd('bf.exists', 'bf2', 'foo' + str(x)))
+
+
+    def test_scandump_invalid(self):
+        env = self.env
+        env.cmd('FLUSHALL')
+        env.cmd('bf.reserve', 'bf', 0.1, 4)
+        env.assertRaises(ResponseError, env.cmd, 'bf.loadchunk', 'bf', '-9223372036854775808', '1')
+        env.assertRaises(ResponseError, env.cmd, 'bf.loadchunk', 'bf', '922337203685477588', '1')
+        env.assertRaises(ResponseError, env.cmd, 'bf.loadchunk', 'bf', '4', 'kdoasdksaodsadsadsadsadsadadsadadsdad')
+        env.assertRaises(ResponseError, env.cmd, 'bf.loadchunk', 'bf', '4', 'abcd')
+        env.cmd('bf.add', 'bf', 'x')
+        env.cmd('bf.add', 'bf', 'y')
+
+
+    def test_scandump_invalid_header(self):
+        env = self.env
+        env.cmd('FLUSHALL')
+
+        env.cmd('bf.reserve', 'bf', 0.01, 5)
+        for x in range(50):
+            env.cmd('bf.add', 'bf', 'foo' + str(x))
+
+        chunk = env.cmd('bf.scandump', 'bf', 0)
+
+        env.cmd('del', 'bf')
+        arr = bytearray(chunk[1])
+
+        # See 'struct dumpedChainHeader' for internals.
+        # It corrupts second link in the response.
+        for i in range(8):
+            arr[72 + i] = 0
+
+        thrown = None
+        try:
+            env.cmd('bf.loadchunk', 'bf', 1, bytes(arr))
+        except Exception as e:
+            thrown = e
+
+        if thrown is None or str(thrown) != "received bad data":
+            raise thrown
+
+        # It corrupts 'options' field in the response.
+        arr = bytearray(chunk[1])
+        for i in range(4):
+            arr[12 + i] = 255
+
+        thrown = None
+        try:
+            env.cmd('bf.loadchunk', 'bf', 1, bytes(arr))
+        except Exception as e:
+            thrown = e
+
+        if thrown is None or str(thrown) != "received bad data":
+            raise thrown
+
+        # It corrupts first field in the response.
+        arr = bytearray(chunk[1])
+        for i in range(4):
+            arr[i] = 255
+
+        thrown = None
+        try:
+            env.cmd('bf.loadchunk', 'bf', 1, bytes(arr))
+        except Exception as e:
+            thrown = e
+
+        if thrown is None or str(thrown) != "received bad data":
+            raise thrown
+
+        # It corrupts second link in the response.
+        arr = bytearray(chunk[1])
+        for i in range(8):
+            arr[36 + i] = 255
+            arr[0 + i] = 255
+
+        thrown = None
+        try:
+            env.cmd('bf.loadchunk', 'bf', 1, bytes(arr))
+        except Exception as e:
+            thrown = e
+
+        if thrown is None or str(thrown) != "received bad data":
+            raise thrown
+
+
+    def test_scandump_scan_small(self):
+        env = self.env
+        env.cmd('FLUSHALL')
+        env.cmd('bf.reserve', 'bf', 0.1, 50)
+
+        for i in range(0, 1500):
+            try:
+                env.cmd('bf.add', 'bf', 'x' + str(i))
+            except ResponseError as e:
+                if str(e) == "Maximum expansions reached":
+                    break
+                raise e
+
+        info = env.cmd('BF.INFO', 'bf')
+        size = info[info.index(b'Size') + 1]
+
+        # Verify random scandump does not cause any problem
+        for i in range(0, size + 1024):
+            env.cmd('bf.scandump', 'bf', i)
+
+
+    def test_scandump_scan_big(self):
+        env = self.env
+        env.cmd('FLUSHALL')
+        env.cmd('bf.reserve', 'bf', 0.001, 1024, 'EXPANSION', 30000)
+
+        for i in range(0, 100):
+            arr = []
+            for j in range(0, 10000):
+                arr.append('x' + str(i) + str(j))
+
+            try:
+                env.cmd('bf.insert', 'bf', 'ITEMS', *arr)
+            except ResponseError as e:
+                if str(e) == "Maximum expansions reached":
+                    break
+                raise e
+
+        info = env.cmd('bf.INFO', 'bf')
+        size = info[info.index(b'Size') + 1]
+
+        # Verify random scandump does not cause any problem
+        for i in range(0, 100):
+            env.cmd('bf.scandump', 'bf', random.randint(0, size * 2))
+
+
+    def test_scandump_load_small(self):
+        env = self.env
+        env.cmd('FLUSHALL')
+        env.cmd('bf.reserve', 'bf', 0.01, 10)
+
+        for i in range(0, 100):
+            arr = []
+            for j in range(0, 1000):
+                arr.append('x' + str(i) + str(j))
+
+            try:
+                env.cmd('bf.insert', 'bf', 'ITEMS', *arr)
+            except ResponseError as e:
+                if str(e) == "Maximum expansions reached":
+                    break
+                raise e
+
+        info = env.cmd('BF.INFO', 'bf')
+        size = info[info.index(b'Size') + 1]
+
+        # Try loading chunks with random size and content
+        for i in range (0, 100):
+            b = bytearray(os.urandom(random.randint(0, 4096)))
+            try:
+                env.cmd('bf.loadchunk', 'bf', random.randint(0, size * 2), bytes(b))
+            except Exception as e:
+                if (str(e) != "invalid offset - no link found" and
+                        str(e) != "invalid chunk - Too big for current filter" and
+                        str(e) != "received bad data"):
+                    raise e
+
+
+    def test_scandump_load_big(self):
+        env = self.env
+        env.cmd('FLUSHALL')
+        env.cmd('bf.reserve', 'bf', 0.01, 1024, 'EXPANSION', 30000)
+
+        for i in range(0, 100):
+            arr = []
+            for j in range(0, 1000):
+                arr.append('x' + str(i) + str(j))
+
+            try:
+                env.cmd('bf.insert', 'bf', 'ITEMS', *arr)
+            except ResponseError as e:
+                if str(e) == "Maximum expansions reached":
+                    break
+                raise e
+
+        info = env.cmd('BF.INFO', 'bf')
+        size = info[info.index(b'Size') + 1]
+
+        # Try loading chunks with random size and content
+        for i in range (0, 100):
+            b = bytearray(os.urandom(random.randint(1024, 36 * 1024 * 1024)))
+            try:
+                env.cmd('bf.loadchunk', 'bf', random.randint(0, size), bytes(b))
+            except Exception as e:
+                if (str(e) != "invalid offset - no link found" and
+                        str(e) != "received bad data"):
+                    raise e

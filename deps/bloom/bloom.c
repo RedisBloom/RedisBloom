@@ -42,6 +42,8 @@ extern void * (*RedisModule_Calloc)(size_t nmemb, size_t size);
 #define MODE_READ 0
 #define MODE_WRITE 1
 
+#define LN2 (0.693147180559945)
+
 inline static int test_bit_set_bit(unsigned char *buf, uint64_t x, int mode) {
     uint64_t byte = x >> 3;
     uint8_t mask = 1 << (x % 8);
@@ -176,7 +178,7 @@ int bloom_init(struct bloom *bloom, uint64_t entries, double error, unsigned opt
     bloom->bits = bloom->bytes * 8;
 
     bloom->force64 = (options & BLOOM_OPT_FORCE64);
-    bloom->hashes = (int)ceil(0.693147180559945 * bloom->bpe); // ln(2)
+    bloom->hashes = (int)ceil(LN2 * bloom->bpe); // ln(2)
     bloom->bf = (unsigned char *)BLOOM_CALLOC(bloom->bytes, sizeof(unsigned char));
     if (bloom->bf == NULL) {
         return 1;
@@ -220,3 +222,15 @@ int bloom_add(struct bloom *bloom, const void *buffer, int len) {
 void bloom_free(struct bloom *bloom) { BLOOM_FREE(bloom->bf); }
 
 const char *bloom_version() { return MAKESTRING(BLOOM_VERSION); }
+
+// Returns 0 on success
+int bloom_validate_integrity(struct bloom *bloom) {
+    if (bloom->error <= 0 || bloom->error >= 1.0 ||
+        (bloom->n2 != 0 && bloom->bits < (1ULL << bloom->n2)) ||
+        bloom->bits == 0 || bloom->bits != bloom->bytes * 8 ||
+        bloom->hashes != (int)ceil(LN2 * bloom->bpe)) {
+        return 1;
+    }
+
+    return 0;
+}

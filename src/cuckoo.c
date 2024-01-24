@@ -397,3 +397,15 @@ void CuckooFilter_GetInfo(const CuckooFilter *cf, CuckooHash hash, CuckooKey *ou
     assert(getAltHash(params.fp, out->h1, cf->numBuckets) == out->h2);
     assert(getAltHash(params.fp, out->h2, cf->numBuckets) == out->h1);
 }*/
+
+// Returns 0 on success
+int CuckooFilter_ValidateIntegrity(const CuckooFilter *cf) {
+    if (cf->bucketSize == 0 || cf->bucketSize > CF_MAX_BUCKET_SIZE ||
+        cf->numBuckets == 0 || cf->numBuckets > CF_MAX_NUM_BUCKETS ||
+        cf->numFilters == 0 || cf->numFilters > CF_MAX_NUM_FILTERS ||
+        cf->maxIterations == 0 || !isPower2(cf->numBuckets) ) {
+        return 1;
+    }
+
+    return 0;
+}
