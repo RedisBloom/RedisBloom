@@ -160,6 +160,13 @@ void bloom_free(struct bloom *bloom);
  */
 const char *bloom_version();
 
+/**
+ * Validates filter state
+ *
+ * Return: 0 on success
+ */
+int bloom_validate_integrity(struct bloom *bloom);
+
 #ifdef __cplusplus
 }
 #endif
