@@ -8,8 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TODO: figure out the Redis version we need to test on.
-        redis-version: ['unstable']
+        redis-version: ["6.0.20", "7.2.4", "unstable"]
         # jammy and bionic
         builder-os: ['ubuntu-22.04', 'ubuntu-20.04']
     defaults:
@@ -33,7 +32,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: 'redis/redis'
-          ref: 'unstable'
+          ref: ${{ matrix.redis-version }}
           path: 'redis'
       - name: Build Redis
         run: cd redis && make -j 4
@@ -48,8 +47,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TODO: figure out the Redis version we need to test on.
-        redis-version: ['unstable']
+        redis-version: ["6.0.20", "7.2.4", "unstable"]
         builder-container: ['ubuntu:xenial', 'ubuntu:bionic']
     defaults:
       run:
@@ -93,7 +91,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: 'redis/redis'
-          ref: 'unstable'
+          ref: ${{ matrix.redis-version }}
           path: 'redis'
       - name: Build Redis
         run: cd redis && make -j `nproc`
@@ -108,8 +106,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TODO: figure out the Redis version we need to test on.
-        redis-version: ['unstable']
+        redis-version: ["6.0.20", "7.2.4", "unstable"]
         builder-container: ['debian:bullseye']
     defaults:
       run:
@@ -134,7 +131,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: 'redis/redis'
-          ref: 'unstable'
+          ref: ${{ matrix.redis-version }}
           path: 'redis'
       - name: Build Redis
         run: cd redis && make -j `nproc`
@@ -145,6 +142,10 @@ jobs:
 
   test-valgrind:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        redis-version: ["6.0.20", "7.2.4", "unstable"]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
@@ -166,7 +167,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: 'redis/redis'
-          ref: 'unstable'
+          ref: ${{ matrix.redis-version }}
           path: 'redis'
       - name: Build Redis
         run: cd redis && make valgrind -j 4
@@ -177,6 +178,10 @@ jobs:
 
   test-address-sanitizer:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        redis-version: ["7.2.4", "unstable"]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
@@ -198,7 +203,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: 'redis/redis'
-          ref: 'unstable'
+          ref: ${{ matrix.redis-version }}
           path: 'redis'
       - name: Build Redis
         run: cd redis && make SANITIZER=address -j 4
@@ -213,8 +218,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TODO: figure out the Redis version we need to test on.
-        redis-version: ['unstable']
+        redis-version: ["6.2.14", "7.2.4", "unstable"]
         builder-container: ['centos:7']
     defaults:
       run:
@@ -226,8 +230,8 @@ jobs:
           yum -y install http://opensource.wandisco.com/centos/7/git/x86_64/wandisco-git-release-7-2.noarch.rpm
           yum -y install gcc make cmake3 git python-pip openssl-devel bzip2-devel libffi-devel zlib-devel wget centos-release-scl scl-utils
           yum groupinstall "Development Tools" -y
-          yum install -y devtoolset-10
-          . scl_source enable devtoolset-10 || true
+          yum install -y devtoolset-11
+          . scl_source enable devtoolset-11 || true
           make --version
           gcc --version
           git --version
@@ -247,7 +251,7 @@ jobs:
           submodules: true
       - name: Install Python dependencies
         run: |
-          scl enable devtoolset-10 bash
+          scl enable devtoolset-11 bash
           python3 -m pip install -r tests/flow/requirements.txt
       - name: Checkout Redis
         uses: actions/checkout@v3
@@ -260,11 +264,11 @@ jobs:
           cd redis && make -j `nproc`
       - name: Build RedisBloom
         run: |
-          . scl_source enable devtoolset-10 || true
+          . scl_source enable devtoolset-11 || true
           make -j `nproc`
       - name: Run tests
         run: |
-          . scl_source enable devtoolset-10 || true
+          . scl_source enable devtoolset-11 || true
           make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
 
   amazon-linux:
@@ -273,8 +277,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TODO: figure out the Redis version we need to test on.
-        redis-version: ['unstable']
+        redis-version: ["6.0.20", "7.2.4", "unstable"]
         builder-container: ['amazonlinux:2']
     defaults:
       run:
@@ -332,8 +335,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TODO: figure out the Redis version we need to test on.
-        redis-version: ['unstable']
+        redis-version: ["6.0.20", "7.2.4", "unstable"]
         builder-container: ['rockylinux:8', 'rockylinux:9']
     defaults:
       run:
@@ -343,7 +345,7 @@ jobs:
         run: |
           yum -y install epel-release
           yum -y install http://opensource.wandisco.com/centos/7/git/x86_64/wandisco-git-release-7-2.noarch.rpm
-          yum -y install gcc make cmake3 git openssl-devel bzip2-devel libffi-devel zlib-devel wget scl-utils gcc-toolset-13
+          yum -y install gcc make cmake3 git openssl-devel bzip2-devel libffi-devel zlib-devel wget scl-utils gcc-toolset-13 which
           yum groupinstall "Development Tools" -y
           . scl_source enable gcc-toolset-13 || true
           make --version
@@ -391,7 +393,7 @@ jobs:
       fail-fast: false
       # TODO: figure out the version we need to test on.
       matrix:
-        redis-version: ['unstable']
+        redis-version: ["6.0.20", "7.2.4", "unstable"]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
