@@ -18,9 +18,9 @@ cd $HERE
 help() {
 	cat <<-'END'
 		Run flow tests
-	
+
 		[ARGVARS...] tests.sh [--help|help] [<module-so-path>]
-		
+
 		Argument variables:
 		MODULE=path           Path to redisbloom.so
 		MODARGS=args          RediSearch module arguments
@@ -32,7 +32,7 @@ help() {
 		SLAVES=1              Tests with --test-slaves
 		CLUSTER=1             Test with OSS cluster, one shard
 		QUICK=1               Perform only GEN=1 test variant
-		
+
 		TEST=name             Run specific test (e.g. test.py:test_name)
 		TESTFILE=file         Run tests listed in `file`
 		FAILEDFILE=file       Write failed tests into `file`
@@ -55,7 +55,7 @@ help() {
 		COV=1                 Run with coverage analysis
 		VG=1                  Run with Valgrind
 		VG_LEAKS=0            Do not detect leaks
-		SAN=type              Use LLVM sanitizer (type=address|memory|leak|thread) 
+		SAN=type              Use LLVM sanitizer (type=address|memory|leak|thread)
 		BB=1                  Enable Python debugger (break using BB() in tests)
 		GDB=1                 Enable interactive gdb debugging (in single-test mode)
 
@@ -159,42 +159,14 @@ setup_rltest() {
 
 #----------------------------------------------------------------------------------------------
 
-setup_clang_sanitizer() {
-	local ignorelist=$ROOT/tests/memcheck/redis.san-ignorelist
-	if ! grep THPIsEnabled $ignorelist &> /dev/null; then
-		echo "fun:THPIsEnabled" >> $ignorelist
-	fi
-
-	# for RediSearch module
-	export RS_GLOBAL_DTORS=1
-
+setup_sanitizer() {
 	# for RLTest
 	export SANITIZER="$SAN"
 	export SHORT_READ_BYTES_DELTA=512
-	
+
+	export ASAN_OPTIONS="detect_odr_violation=0:halt_on_error=0:detect_leaks=1"
 	# --no-output-catch --exit-on-failure --check-exitcode
 	RLTEST_SAN_ARGS="--sanitizer $SAN"
-
-	if [[ $SAN == addr || $SAN == address ]]; then
-		REDIS_SERVER=${REDIS_SERVER:-redis-server-asan-$SAN_REDIS_VER}
-		if ! command -v $REDIS_SERVER > /dev/null; then
-			echo Building Redis for clang-asan ...
-			$READIES/bin/getredis --force -v $SAN_REDIS_VER --own-openssl --no-run \
-				--suffix asan --clang-asan --clang-san-blacklist $ignorelist
-		fi
-
-		export ASAN_OPTIONS="detect_odr_violation=0:halt_on_error=0:detect_leaks=1"
-		export LSAN_OPTIONS="suppressions=$ROOT/tests/memcheck/asan.supp"
-
-	elif [[ $SAN == mem || $SAN == memory ]]; then
-		REDIS_SERVER=${REDIS_SERVER:-redis-server-msan-$SAN_REDIS_VER}
-		if ! command -v $REDIS_SERVER > /dev/null; then
-			echo Building Redis for clang-msan ...
-			$READIES/bin/getredis --force -v $SAN_REDIS_VER  --no-run --own-openssl \
-				--suffix msan --clang-msan --llvm-dir /opt/llvm-project/build-msan \
-				--clang-san-blacklist $ignorelist
-		fi
-	fi
 }
 
 #----------------------------------------------------------------------------------------------
@@ -211,12 +183,6 @@ setup_redis_server() {
 #----------------------------------------------------------------------------------------------
 
 setup_valgrind() {
-	REDIS_SERVER=${REDIS_SERVER:-redis-server-vg}
-	if ! is_command $REDIS_SERVER; then
-		echo Building Redis for Valgrind ...
-		$READIES/bin/getredis -v $VALGRIND_REDIS_VER --valgrind --suffix vg
-	fi
-
 	if [[ $VG_LEAKS == 0 ]]; then
 		VG_LEAK_CHECK=no
 		RLTEST_VG_NOLEAKS="--vg-no-leakcheck"
@@ -232,7 +198,7 @@ setup_valgrind() {
 		--track-origins=yes \
 		--show-possibly-lost=no"
 
-	VALGRIND_SUPRESSIONS=$ROOT/tests/memcheck/valgrind.supp
+	VALGRIND_SUPRESSIONS=$ROOT/tests/memcheck/redis_valgrind.sup
 
 	RLTEST_VG_ARGS+="\
 		--use-valgrind \
@@ -356,7 +322,7 @@ run_tests() {
 	fi
 
 	[[ $RLEC == 1 ]] && export RLEC_CLUSTER=1
-	
+
 	local E=0
 	if [[ $NOP != 1 ]]; then
 		{ $OP python3 -m RLTest @$rltest_config; (( E |= $? )); } || true
@@ -441,12 +407,6 @@ fi
 [[ $SAN == addr ]] && SAN=address
 [[ $SAN == mem ]] && SAN=memory
 
-if [[ -n $TEST ]]; then
-	[[ $LOG != 1 ]] && RLTEST_LOG=0
-	# export BB=${BB:-1}
-	export RUST_BACKTRACE=1
-fi
-
 #-------------------------------------------------------------------------------- Platform Mode
 
 if [[ $PLATFORM_MODE == 1 ]]; then
@@ -525,7 +485,7 @@ fi
 setup_rltest
 
 if [[ -n $SAN ]]; then
-	setup_clang_sanitizer
+	setup_sanitizer
 fi
 
 if [[ $VG == 1 ]]; then
@@ -549,13 +509,13 @@ if [[ $GEN == 1 ]]; then
 	{ (run_tests "general"); (( E |= $? )); } || true
 fi
 if [[ $VG != 1 && $SLAVES == 1 ]]; then
-	{ (RLTEST_ARGS+=" --use-slaves" run_tests "--use-slaves"); (( E |= $? )); } || true
+	{ (RLTEST_ARGS+=" --use-slaves --enable-debug-command" run_tests "--use-slaves"); (( E |= $? )); } || true
 fi
 if [[ $AOF == 1 ]]; then
-	{ (RLTEST_ARGS+=" --use-aof" run_tests "--use-aof"); (( E |= $? )); } || true
+	{ (RLTEST_ARGS+=" --use-aof --enable-debug-command" run_tests "--use-aof"); (( E |= $? )); } || true
 fi
 if [[ $CLUSTER == 1 ]]; then
-	{ (RLTEST_ARGS+=" --env oss-cluster --shards-count 1" run_tests "--env oss-cluster"); (( E |= $? )); } || true
+	{ (RLTEST_ARGS+=" --env oss-cluster --shards-count 1 --enable-debug-command" run_tests "--env oss-cluster"); (( E |= $? )); } || true
 fi
 
 #-------------------------------------------------------------------------------------- Summary
@@ -564,7 +524,7 @@ if [[ $NO_SUMMARY == 1 ]]; then
 	exit 0
 fi
 
-if [[ $NOP != 1 && -n $SAN ]]; then
+if [[ $NOP != 1 ]]; then
 	if [[ -n $SAN || $VG == 1 ]]; then
 		{ FLOW=1 $ROOT/sbin/memcheck-summary; (( E |= $? )); } || true
 	fi

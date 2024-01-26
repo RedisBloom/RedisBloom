@@ -104,6 +104,9 @@ SBChain *SB_NewChainFromHeader(const char *buf, size_t bufLen, const char **errm
  */
 int SBChain_LoadEncodedChunk(SBChain *sb, long long iter, const char *buf, size_t bufLen,
                              const char **errmsg);
+
+int SB_ValidateIntegrity(const SBChain *sb);
+
 #ifdef __cplusplus
 }
 #endif
