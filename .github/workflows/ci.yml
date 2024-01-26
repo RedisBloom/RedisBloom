@@ -4,13 +4,15 @@ on: [push, pull_request]
 
 jobs:
   test-recent-ubuntu:
-    runs-on: ${{ matrix.builder-os }}
+    runs-on: ${{ matrix.builder.os }}
     strategy:
       fail-fast: false
       matrix:
         redis-version: ["6.0.20", "7.2.4", "unstable"]
-        # jammy and bionic
-        builder-os: ['ubuntu-22.04', 'ubuntu-20.04']
+        builder: [
+          { os: 'ubuntu-22.04', nick: 'jammy' },
+          { os: 'ubuntu-20.04', nick: 'focal' }
+        ]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
@@ -40,15 +42,32 @@ jobs:
         run: make -j 4
       - name: Run tests
         run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: "us-east-1"
+      - name: Upload artifacts to S3
+        run: make upload-artifacts OSNICK=${{ matrix.builder.nick }} SHOW=1 VERBOSE=1
 
   test-old-ubuntu:
     runs-on: ubuntu-latest
-    container: ${{ matrix.builder-container }}
+    container: ${{ matrix.builder.image }}
     strategy:
       fail-fast: false
       matrix:
         redis-version: ["6.0.20", "7.2.4", "unstable"]
-        builder-container: ['ubuntu:xenial', 'ubuntu:bionic']
+        builder: [
+          {
+            image: 'ubuntu:xenial',
+            nick: 'xenial'
+          },
+          {
+            image: 'ubuntu:focal',
+            nick: 'focal'
+          }
+        ]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
@@ -99,15 +118,28 @@ jobs:
         run: make -j `nproc`
       - name: Run tests
         run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: "us-east-1"
+      - name: Upload artifacts to S3
+        run: make upload-artifacts OSNICK=${{ matrix.builder.nick }} SHOW=1 VERBOSE=1
 
   debian:
     runs-on: ubuntu-latest
-    container: ${{ matrix.builder-container }}
+    container: ${{ matrix.builder.image }}
     strategy:
       fail-fast: false
       matrix:
         redis-version: ["6.0.20", "7.2.4", "unstable"]
-        builder-container: ['debian:bullseye']
+        builder: [
+          {
+            image: 'debian:bullseye',
+            nick: 'bullseye'
+          }
+        ]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
@@ -139,6 +171,14 @@ jobs:
         run: make -j `nproc`
       - name: Run tests
         run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: "us-east-1"
+      - name: Upload artifacts to S3
+        run: make upload-artifacts OSNICK=${{ matrix.builder.nick }} SHOW=1 VERBOSE=1
 
   test-valgrind:
     runs-on: ubuntu-latest
@@ -214,12 +254,17 @@ jobs:
 
   centos:
     runs-on: ubuntu-latest
-    container: ${{ matrix.builder-container }}
+    container: ${{ matrix.builder.image }}
     strategy:
       fail-fast: false
       matrix:
         redis-version: ["6.2.14", "7.2.4", "unstable"]
-        builder-container: ['centos:7']
+        builder: [
+          {
+            image: 'centos:7',
+            nick: 'centos7'
+          }
+        ]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
@@ -270,15 +315,28 @@ jobs:
         run: |
           . scl_source enable devtoolset-11 || true
           make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: "us-east-1"
+      - name: Upload artifacts to S3
+        run: make upload-artifacts OSNICK=${{ matrix.builder.nick }} SHOW=1 VERBOSE=1
 
   amazon-linux:
     runs-on: ubuntu-latest
-    container: ${{ matrix.builder-container }}
+    container: ${{ matrix.builder.image }}
     strategy:
       fail-fast: false
       matrix:
         redis-version: ["6.0.20", "7.2.4", "unstable"]
-        builder-container: ['amazonlinux:2']
+        builder: [
+          {
+            image: 'amazonlinux:2',
+            nick: 'amzn2'
+          }
+        ]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
@@ -328,15 +386,31 @@ jobs:
         run: |
           . scl_source enable devtoolset-11 || true
           make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: "us-east-1"
+      - name: Upload artifacts to S3
+        run: make upload-artifacts OSNICK=${{ matrix.builder.nick }} SHOW=1 VERBOSE=1
 
   rocky-linux:
     runs-on: ubuntu-latest
-    container: ${{ matrix.builder-container }}
+    container: ${{ matrix.builder.image }}
     strategy:
       fail-fast: false
       matrix:
         redis-version: ["6.0.20", "7.2.4", "unstable"]
-        builder-container: ['rockylinux:8', 'rockylinux:9']
+        builder: [{
+            image: 'rockylinux:8',
+            nick: 'rocky8'
+          },
+          {
+            image: 'rockylinux:9',
+            nick: 'rocky9'
+          }
+        ]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
@@ -386,12 +460,19 @@ jobs:
         run: |
           . scl_source enable gcc-toolset-13 || true
           make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: "us-east-1"
+      - name: Upload artifacts to S3
+        run: make upload-artifacts OSNICK=${{ matrix.builder.nick }} SHOW=1 VERBOSE=1
 
   macos-x86_64:
     runs-on: macos-13
     strategy:
       fail-fast: false
-      # TODO: figure out the version we need to test on.
       matrix:
         redis-version: ["6.0.20", "7.2.4", "unstable"]
     defaults:
@@ -424,3 +505,11 @@ jobs:
       - name: Run tests
         run: |
           gmake test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: "us-east-1"
+      - name: Upload artifacts to S3
+        run: make upload-artifacts SHOW=1 VERBOSE=1
