@@ -1,9 +1,47 @@
-name: CI
+name: CI Full suite
+# This is a full workflow for the production branches and tags, which
+# includes building and testing on all supported platforms, and
+# uploading the artifacts to S3.
 
-on: [push, pull_request]
+on:
+  push:
+      paths-ignore:
+          - '.circleci/**'
+          - 'docs/**'
+          - '*.md'
+      branches:
+          - main
+          - master
+          - '[0-9]+.[0-9]+.[0-9]+'
+          - '[0-9]+.[0-9]+'
+          - 'feature-*'
+      tags:
+          - 'v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+'
+          - 'v[0-9]+.[0-9]+.[0-9]+-m[0-9]+'
+          - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
-  test-recent-ubuntu:
+  setup-environment:
+    runs-on: ubuntu-latest
+    outputs:
+      STAGING: ${{ steps.set-environment.outputs.STAGING }}
+    steps:
+      - name: Set environment
+        id: set-environment
+        run: |
+          # If this is a version tag, then set to false, meaning this
+          # is not a production build.
+          export REF="${{ github.ref }}"
+          export PATTERN="refs/tags/v[0-9]+.*"
+          if [[ $REF =~ $PATTERN ]]; then
+            echo "This is a production build"
+            echo "STAGING=0" >> $GITHUB_OUTPUT
+          else
+            echo "This is a staging build"
+            echo "STAGING=1" >> $GITHUB_OUTPUT
+          fi
+
+  recent-ubuntu:
     runs-on: ${{ matrix.builder.os }}
     strategy:
       fail-fast: false
@@ -16,6 +54,7 @@ jobs:
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
+    needs: setup-environment
     steps:
       - name: Install build dependencies
         run: sudo apt-get update && sudo apt-get install -y build-essential autoconf automake libtool cmake lcov valgrind
@@ -49,136 +88,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
-        run: make upload-artifacts OSNICK=${{ matrix.builder.nick }} SHOW=1 VERBOSE=1
-
-  test-old-ubuntu:
-    runs-on: ubuntu-latest
-    container: ${{ matrix.builder.image }}
-    strategy:
-      fail-fast: false
-      matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
-        builder: [
-          {
-            image: 'ubuntu:xenial',
-            nick: 'xenial'
-          },
-          {
-            image: 'ubuntu:focal',
-            nick: 'focal'
-          }
-        ]
-    defaults:
-      run:
-        shell: bash -l -eo pipefail {0}
-    steps:
-      - name: Install build dependencies
+        env:
+          STAGING: ${{ needs.setup-environment.outputs.STAGING }}
         run: |
-          apt-get update && apt-get install -y software-properties-common
-          add-apt-repository ppa:git-core/ppa -y
-          apt-get update
-          apt-get install -y build-essential make autoconf automake libtool lcov git wget zlib1g-dev lsb-release libssl-dev openssl ca-certificates
-          wget https://cmake.org/files/v3.28/cmake-3.28.0.tar.gz
-          tar -xzvf cmake-3.28.0.tar.gz
-          cd cmake-3.28.0
-          ./configure
-          make -j `nproc`
-          make install
-          cd ..
-          ln -s /usr/local/bin/cmake /usr/bin/cmake
-          wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz
-          tar -xvf Python-3.9.6.tgz
-          cd Python-3.9.6
-          ./configure
-          make -j `nproc`
-          make altinstall
-          cd ..
-          rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
-          rm /usr/bin/lsb_release
-          python3 --version
-          make --version
-          cmake --version
-          python3 -m pip install --upgrade pip
-      - name: Checkout RedisBloom
-        uses: actions/checkout@v3
-        with:
-          submodules: true
-      - name: Install Python dependencies
-        run:
-          python3 -m pip install -r tests/flow/requirements.txt
-      - name: Checkout Redis
-        uses: actions/checkout@v3
-        with:
-          repository: 'redis/redis'
-          ref: ${{ matrix.redis-version }}
-          path: 'redis'
-      - name: Build Redis
-        run: cd redis && make -j `nproc`
-      - name: Build RedisBloom
-        run: make -j `nproc`
-      - name: Run tests
-        run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: "us-east-1"
-      - name: Upload artifacts to S3
-        run: make upload-artifacts OSNICK=${{ matrix.builder.nick }} SHOW=1 VERBOSE=1
-
-  debian:
-    runs-on: ubuntu-latest
-    container: ${{ matrix.builder.image }}
-    strategy:
-      fail-fast: false
-      matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
-        builder: [
-          {
-            image: 'debian:bullseye',
-            nick: 'bullseye'
-          }
-        ]
-    defaults:
-      run:
-        shell: bash -l -eo pipefail {0}
-    steps:
-      - name: Install build dependencies
-        run: |
-          apt-get update
-          apt-get install -y build-essential make cmake autoconf automake libtool lcov git wget zlib1g-dev lsb-release libssl-dev openssl ca-certificates python3 python3-pip
-          python3 --version
-          make --version
-          cmake --version
-          python3 -m pip install --upgrade pip
-      - name: Checkout RedisBloom
-        uses: actions/checkout@v3
-        with:
-          submodules: true
-      - name: Install Python dependencies
-        run:
-          python3 -m pip install -r tests/flow/requirements.txt
-      - name: Checkout Redis
-        uses: actions/checkout@v3
-        with:
-          repository: 'redis/redis'
-          ref: ${{ matrix.redis-version }}
-          path: 'redis'
-      - name: Build Redis
-        run: cd redis && make -j `nproc`
-      - name: Build RedisBloom
-        run: make -j `nproc`
-      - name: Run tests
-        run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: "us-east-1"
-      - name: Upload artifacts to S3
-        run: make upload-artifacts OSNICK=${{ matrix.builder.nick }} SHOW=1 VERBOSE=1
+          mkdir -p bin
+          ln -s ~/workspace/artifacts bin/artifacts
+          if [[ $STAGING -eq 1 ]]; then
+            make upload-artifacts SHOW=1 VERBOSE=1
+          fi
+          make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
 
   test-valgrind:
     runs-on: ubuntu-latest
@@ -252,6 +170,153 @@ jobs:
       - name: Run tests
         run: make test SAN=addr REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
 
+  old-ubuntu:
+    runs-on: ubuntu-latest
+    container: ${{ matrix.builder.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        builder: [
+          {
+            image: 'ubuntu:xenial',
+            nick: 'xenial'
+          },
+          {
+            image: 'ubuntu:focal',
+            nick: 'focal'
+          }
+        ]
+    defaults:
+      run:
+        shell: bash -l -eo pipefail {0}
+    needs: setup-environment
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update && apt-get install -y software-properties-common
+          add-apt-repository ppa:git-core/ppa -y
+          apt-get update
+          apt-get install -y build-essential make autoconf automake libtool lcov git wget zlib1g-dev lsb-release libssl-dev openssl ca-certificates
+          wget https://cmake.org/files/v3.28/cmake-3.28.0.tar.gz
+          tar -xzvf cmake-3.28.0.tar.gz
+          cd cmake-3.28.0
+          ./configure
+          make -j `nproc`
+          make install
+          cd ..
+          ln -s /usr/local/bin/cmake /usr/bin/cmake
+          wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz
+          tar -xvf Python-3.9.6.tgz
+          cd Python-3.9.6
+          ./configure
+          make -j `nproc`
+          make altinstall
+          cd ..
+          rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
+          rm /usr/bin/lsb_release
+          python3 --version
+          make --version
+          cmake --version
+          python3 -m pip install --upgrade pip
+      - name: Checkout RedisBloom
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install Python dependencies
+        run:
+          python3 -m pip install -r tests/flow/requirements.txt
+      - name: Checkout Redis
+        uses: actions/checkout@v3
+        with:
+          repository: 'redis/redis'
+          ref: ${{ matrix.redis-version }}
+          path: 'redis'
+      - name: Build Redis
+        run: cd redis && make -j `nproc`
+      - name: Build RedisBloom
+        run: make -j `nproc`
+      - name: Run tests
+        run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: "us-east-1"
+      - name: Upload artifacts to S3
+        env:
+          STAGING: ${{ needs.setup-environment.outputs.STAGING }}
+        run: |
+          mkdir -p bin
+          ln -s ~/workspace/artifacts bin/artifacts
+          if [[ $STAGING -eq 1 ]]; then
+            make upload-artifacts SHOW=1 VERBOSE=1
+          fi
+          make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
+
+  debian:
+    runs-on: ubuntu-latest
+    container: ${{ matrix.builder.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        builder: [
+          {
+            image: 'debian:bullseye',
+            nick: 'bullseye'
+          }
+        ]
+    defaults:
+      run:
+        shell: bash -l -eo pipefail {0}
+    needs: setup-environment
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          apt-get install -y build-essential make cmake autoconf automake libtool lcov git wget zlib1g-dev lsb-release libssl-dev openssl ca-certificates python3 python3-pip
+          python3 --version
+          make --version
+          cmake --version
+          python3 -m pip install --upgrade pip
+      - name: Checkout RedisBloom
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install Python dependencies
+        run:
+          python3 -m pip install -r tests/flow/requirements.txt
+      - name: Checkout Redis
+        uses: actions/checkout@v3
+        with:
+          repository: 'redis/redis'
+          ref: ${{ matrix.redis-version }}
+          path: 'redis'
+      - name: Build Redis
+        run: cd redis && make -j `nproc`
+      - name: Build RedisBloom
+        run: make -j `nproc`
+      - name: Run tests
+        run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: "us-east-1"
+      - name: Upload artifacts to S3
+        env:
+          STAGING: ${{ needs.setup-environment.outputs.STAGING }}
+        run: |
+          mkdir -p bin
+          ln -s ~/workspace/artifacts bin/artifacts
+          if [[ $STAGING -eq 1 ]]; then
+            make upload-artifacts SHOW=1 VERBOSE=1
+          fi
+          make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
+
   centos:
     runs-on: ubuntu-latest
     container: ${{ matrix.builder.image }}
@@ -268,6 +333,7 @@ jobs:
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
+    needs: setup-environment
     steps:
       - name: Install build dependencies
         run: |
@@ -322,7 +388,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
-        run: make upload-artifacts OSNICK=${{ matrix.builder.nick }} SHOW=1 VERBOSE=1
+        env:
+          STAGING: ${{ needs.setup-environment.outputs.STAGING }}
+        run: |
+          mkdir -p bin
+          ln -s ~/workspace/artifacts bin/artifacts
+          if [[ $STAGING -eq 1 ]]; then
+            make upload-artifacts SHOW=1 VERBOSE=1
+          fi
+          make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
 
   amazon-linux:
     runs-on: ubuntu-latest
@@ -340,6 +414,7 @@ jobs:
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
+    needs: setup-environment
     steps:
       - name: Install build dependencies
         run: |
@@ -393,7 +468,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
-        run: make upload-artifacts OSNICK=${{ matrix.builder.nick }} SHOW=1 VERBOSE=1
+        env:
+          STAGING: ${{ needs.setup-environment.outputs.STAGING }}
+        run: |
+          mkdir -p bin
+          ln -s ~/workspace/artifacts bin/artifacts
+          if [[ $STAGING -eq 1 ]]; then
+            make upload-artifacts SHOW=1 VERBOSE=1
+          fi
+          make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
 
   rocky-linux:
     runs-on: ubuntu-latest
@@ -414,6 +497,7 @@ jobs:
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
+    needs: setup-environment
     steps:
       - name: Install build dependencies
         run: |
@@ -467,7 +551,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
-        run: make upload-artifacts OSNICK=${{ matrix.builder.nick }} SHOW=1 VERBOSE=1
+        env:
+          STAGING: ${{ needs.setup-environment.outputs.STAGING }}
+        run: |
+          mkdir -p bin
+          ln -s ~/workspace/artifacts bin/artifacts
+          if [[ $STAGING -eq 1 ]]; then
+            make upload-artifacts SHOW=1 VERBOSE=1
+          fi
+          make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
 
   macos-x86_64:
     runs-on: macos-13
@@ -478,6 +570,7 @@ jobs:
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
+    needs: setup-environment
     steps:
       - name: Install prerequisites
         run: |
@@ -512,4 +605,12 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
-        run: make upload-artifacts SHOW=1 VERBOSE=1
+        env:
+          STAGING: ${{ needs.setup-environment.outputs.STAGING }}
+        run: |
+          mkdir -p bin
+          ln -s ~/workspace/artifacts bin/artifacts
+          if [[ $STAGING -eq 1 ]]; then
+            make upload-artifacts SHOW=1 VERBOSE=1
+          fi
+          make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
