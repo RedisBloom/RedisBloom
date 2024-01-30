@@ -3,6 +3,21 @@ name: CI Full suite
 # includes building and testing on all supported platforms, and
 # uploading the artifacts to S3.
 
+# TODO:
+#
+# 1. Remove the use of "readies" completely.
+# 2. Remove the use of all the scripts for anything and do everything
+#    right here in the workflow.
+# 3. Use the corresponding actions for the end goal: aws s3 upload
+#    action, docker publish action, etc. This also will remove the need
+#    for the installation of aws-cli and docker steps.
+#
+# More info: jobs.steps.uses: docker://alpine:3.8 for docker images,
+# To use the AWS CLI: https://hub.docker.com/r/amazon/aws-cli
+#
+# To build and push docker images, instead of the Makefile/scripts, use
+# https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
+
 on:
   push:
       paths-ignore:
@@ -24,10 +39,26 @@ jobs:
   setup-environment:
     runs-on: ubuntu-latest
     outputs:
-      STAGING: ${{ steps.set-environment.outputs.STAGING }}
+      STAGING: ${{ steps.set-staging.outputs.STAGING }}
+      TAG: ${{ steps.set-git-info.outputs.TAG }}
+      BRANCH: ${{ steps.set-git-info.outputs.BRANCH }}
     steps:
-      - name: Set environment
-        id: set-environment
+      - name: Set the branch and tag outputs
+        id: set-git-info
+        run: |
+          export REF="${{ github.ref }}"
+          export BRANCH_PATTERN="^refs/heads/(.*)$"
+          export TAG_PATTERN="^refs/tags/(.*)$"
+
+          if [[ $REF =~ $BRANCH_PATTERN ]]; then
+            echo "BRANCH=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
+          fi
+
+          if [[ $REF =~ $TAG_PATTERN ]]; then
+            echo "TAG=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
+          fi
+      - name: Set the staging flag
+        id: set-staging
         run: |
           # If this is a version tag, then set to false, meaning this
           # is not a production build.
@@ -43,6 +74,10 @@ jobs:
 
   recent-ubuntu:
     runs-on: ${{ matrix.builder.os }}
+    env:
+      STAGING: ${{ needs.setup-environment.outputs.STAGING }}
+      VERSION: ${{ needs.setup-environment.outputs.TAG }}
+      BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
     strategy:
       fail-fast: false
       matrix:
@@ -84,19 +119,35 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
+          unset-current-credentials: true
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: "us-east-1"
+          # aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: "us-east-2"
       - name: Upload artifacts to S3
-        env:
-          STAGING: ${{ needs.setup-environment.outputs.STAGING }}
         run: |
+          # TODO: Get rid of this in favour of GitHub actions or a docker image:
+          # https://hub.docker.com/r/amazon/aws-cli
+          export HOMEBREW_NO_AUTO_UPDATE=1
+          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
             make upload-artifacts SHOW=1 VERBOSE=1
           fi
           make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
+      - name: Publish docker image
+        run: |
+          # TODO: GET RID OF THIS in favour of GitHub actions or a docker image.
+          # https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
+          ./deps/readies/bin/getdocker
+          docker login -u redisfab -p ${{ secrets.DOCKER_REDISFAB_PASSWORD }}
+          cd build/docker
+          make publish OSNICK=${{ matrix.builder.nick }} VERSION="$VERSION" BRANCH="$BRANCH" OFFICIAL=1 SHOW=1
+      - name: List artifacts
+        run: |
+          cd bin/artifacts
+          du -ah --apparent-size *
 
   test-valgrind:
     runs-on: ubuntu-latest
@@ -173,6 +224,10 @@ jobs:
   old-ubuntu:
     runs-on: ubuntu-latest
     container: ${{ matrix.builder.image }}
+    env:
+      STAGING: ${{ needs.setup-environment.outputs.STAGING }}
+      VERSION: ${{ needs.setup-environment.outputs.TAG }}
+      BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
     strategy:
       fail-fast: false
       matrix:
@@ -245,19 +300,37 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
-        env:
-          STAGING: ${{ needs.setup-environment.outputs.STAGING }}
         run: |
+          # TODO: Get rid of this in favour of GitHub actions or a docker image:
+          # https://hub.docker.com/r/amazon/aws-cli
+          export HOMEBREW_NO_AUTO_UPDATE=1
+          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
             make upload-artifacts SHOW=1 VERBOSE=1
           fi
           make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
+      - name: Publish docker image
+        run: |
+          # TODO: GET RID OF THIS in favour of GitHub actions or a docker image.
+          # https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
+          ./deps/readies/bin/getdocker
+          docker login -u redisfab -p ${{ secrets.DOCKER_REDISFAB_PASSWORD }}
+          cd build/docker
+          make publish OSNICK=${{ matrix.builder.nick }} VERSION="$VERSION" BRANCH="$BRANCH" OFFICIAL=1 SHOW=1
+      - name: List artifacts
+        run: |
+          cd bin/artifacts
+          du -ah --apparent-size *
 
   debian:
     runs-on: ubuntu-latest
     container: ${{ matrix.builder.image }}
+    env:
+      STAGING: ${{ needs.setup-environment.outputs.STAGING }}
+      VERSION: ${{ needs.setup-environment.outputs.TAG }}
+      BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
     strategy:
       fail-fast: false
       matrix:
@@ -307,19 +380,37 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
-        env:
-          STAGING: ${{ needs.setup-environment.outputs.STAGING }}
         run: |
+          # TODO: Get rid of this in favour of GitHub actions or a docker image:
+          # https://hub.docker.com/r/amazon/aws-cli
+          export HOMEBREW_NO_AUTO_UPDATE=1
+          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
             make upload-artifacts SHOW=1 VERBOSE=1
           fi
           make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
+      - name: Publish docker image
+        run: |
+          # TODO: GET RID OF THIS in favour of GitHub actions or a docker image.
+          # https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
+          ./deps/readies/bin/getdocker
+          docker login -u redisfab -p ${{ secrets.DOCKER_REDISFAB_PASSWORD }}
+          cd build/docker
+          make publish OSNICK=${{ matrix.builder.nick }} VERSION="$VERSION" BRANCH="$BRANCH" OFFICIAL=1 SHOW=1
+      - name: List artifacts
+        run: |
+          cd bin/artifacts
+          du -ah --apparent-size *
 
   centos:
     runs-on: ubuntu-latest
     container: ${{ matrix.builder.image }}
+    env:
+      STAGING: ${{ needs.setup-environment.outputs.STAGING }}
+      VERSION: ${{ needs.setup-environment.outputs.TAG }}
+      BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
     strategy:
       fail-fast: false
       matrix:
@@ -388,19 +479,37 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
-        env:
-          STAGING: ${{ needs.setup-environment.outputs.STAGING }}
         run: |
+          # TODO: Get rid of this in favour of GitHub actions or a docker image:
+          # https://hub.docker.com/r/amazon/aws-cli
+          export HOMEBREW_NO_AUTO_UPDATE=1
+          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
             make upload-artifacts SHOW=1 VERBOSE=1
           fi
           make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
+      - name: Publish docker image
+        run: |
+          # TODO: GET RID OF THIS in favour of GitHub actions or a docker image.
+          # https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
+          ./deps/readies/bin/getdocker
+          docker login -u redisfab -p ${{ secrets.DOCKER_REDISFAB_PASSWORD }}
+          cd build/docker
+          make publish OSNICK=${{ matrix.builder.nick }} VERSION="$VERSION" BRANCH="$BRANCH" OFFICIAL=1 SHOW=1
+      - name: List artifacts
+        run: |
+          cd bin/artifacts
+          du -ah --apparent-size *
 
   amazon-linux:
     runs-on: ubuntu-latest
     container: ${{ matrix.builder.image }}
+    env:
+      STAGING: ${{ needs.setup-environment.outputs.STAGING }}
+      VERSION: ${{ needs.setup-environment.outputs.TAG }}
+      BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
     strategy:
       fail-fast: false
       matrix:
@@ -468,15 +577,29 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
-        env:
-          STAGING: ${{ needs.setup-environment.outputs.STAGING }}
         run: |
+          # TODO: Get rid of this in favour of GitHub actions or a docker image:
+          # https://hub.docker.com/r/amazon/aws-cli
+          export HOMEBREW_NO_AUTO_UPDATE=1
+          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
             make upload-artifacts SHOW=1 VERBOSE=1
           fi
           make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
+      - name: Publish docker image
+        run: |
+          # TODO: GET RID OF THIS in favour of GitHub actions or a docker image.
+          # https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
+          ./deps/readies/bin/getdocker
+          docker login -u redisfab -p ${{ secrets.DOCKER_REDISFAB_PASSWORD }}
+          cd build/docker
+          make publish OSNICK=${{ matrix.builder.nick }} VERSION="$VERSION" BRANCH="$BRANCH" OFFICIAL=1 SHOW=1
+      - name: List artifacts
+        run: |
+          cd bin/artifacts
+          du -ah --apparent-size *
 
   rocky-linux:
     runs-on: ubuntu-latest
@@ -551,15 +674,29 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
-        env:
-          STAGING: ${{ needs.setup-environment.outputs.STAGING }}
         run: |
+          # TODO: Get rid of this in favour of GitHub actions or a docker image:
+          # https://hub.docker.com/r/amazon/aws-cli
+          export HOMEBREW_NO_AUTO_UPDATE=1
+          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
             make upload-artifacts SHOW=1 VERBOSE=1
           fi
           make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
+      - name: Publish docker image
+        run: |
+          # TODO: GET RID OF THIS in favour of GitHub actions or a docker image.
+          # https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
+          ./deps/readies/bin/getdocker
+          docker login -u redisfab -p ${{ secrets.DOCKER_REDISFAB_PASSWORD }}
+          cd build/docker
+          make publish OSNICK=${{ matrix.builder.nick }} VERSION="$VERSION" BRANCH="$BRANCH" OFFICIAL=1 SHOW=1
+      - name: List artifacts
+        run: |
+          cd bin/artifacts
+          du -ah --apparent-size *
 
   macos-x86_64:
     runs-on: macos-13
@@ -605,12 +742,26 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
-        env:
-          STAGING: ${{ needs.setup-environment.outputs.STAGING }}
         run: |
+          # TODO: Get rid of this in favour of GitHub actions or a docker image:
+          # https://hub.docker.com/r/amazon/aws-cli
+          export HOMEBREW_NO_AUTO_UPDATE=1
+          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
             make upload-artifacts SHOW=1 VERBOSE=1
           fi
           make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
+      - name: Publish docker image
+        run: |
+          # TODO: GET RID OF THIS in favour of GitHub actions or a docker image.
+          # https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
+          ./deps/readies/bin/getdocker
+          docker login -u redisfab -p ${{ secrets.DOCKER_REDISFAB_PASSWORD }}
+          cd build/docker
+          make publish OSNICK=${{ matrix.builder.nick }} VERSION="$VERSION" BRANCH="$BRANCH" OFFICIAL=1 SHOW=1
+      - name: List artifacts
+        run: |
+          cd bin/artifacts
+          du -ah --apparent-size *
