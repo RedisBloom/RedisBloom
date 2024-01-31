@@ -42,6 +42,7 @@ jobs:
       STAGING: ${{ steps.set-staging.outputs.STAGING }}
       TAG: ${{ steps.set-git-info.outputs.TAG }}
       BRANCH: ${{ steps.set-git-info.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ steps.set-git-info.outputs.TAG }}${{ steps.set-git-info.outputs.BRANCH }}
     steps:
       - name: Set the branch and tag outputs
         id: set-git-info
@@ -78,6 +79,7 @@ jobs:
       STAGING: ${{ needs.setup-environment.outputs.STAGING }}
       VERSION: ${{ needs.setup-environment.outputs.TAG }}
       BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
     strategy:
       fail-fast: false
       matrix:
@@ -102,8 +104,9 @@ jobs:
         with:
           submodules: true
       - name: Install Python dependencies
-        run:
+        run: |
           python3 -m pip install -r tests/flow/requirements.txt
+          python3 -m pip install jinja2 ramp-packer
       - name: Checkout Redis
         uses: actions/checkout@v3
         with:
@@ -111,11 +114,18 @@ jobs:
           ref: ${{ matrix.redis-version }}
           path: 'redis'
       - name: Build Redis
-        run: cd redis && make -j 4
+        run: |
+          cd redis && make -j `nproc`
+          echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
+          echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
+          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
+          redis-server --version
       - name: Build
         run: make -j 4
       - name: Run tests
         run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Pack module
+        run: make pack BRANCH=$TAG_OR_BRANCH SHOW=1
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -179,9 +189,14 @@ jobs:
           ref: ${{ matrix.redis-version }}
           path: 'redis'
       - name: Build Redis
-        run: cd redis && make valgrind -j 4
+        run: |
+          cd redis && make valgrind -j `nproc`
+          echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
+          echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
+          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
+          redis-server --version
       - name: Build
-        run: make -j 4
+        run: make -j `nproc`
       - name: Run tests
         run: make test VG=1 REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
 
@@ -215,9 +230,14 @@ jobs:
           ref: ${{ matrix.redis-version }}
           path: 'redis'
       - name: Build Redis
-        run: cd redis && make SANITIZER=address -j 4
+        run: |
+          cd redis && make SANITIZER=address -j `nproc`
+          echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
+          echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
+          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
+          redis-server --version
       - name: Build
-        run: make -j 4
+        run: make -j `nproc`
       - name: Run tests
         run: make test SAN=addr REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
 
@@ -228,6 +248,7 @@ jobs:
       STAGING: ${{ needs.setup-environment.outputs.STAGING }}
       VERSION: ${{ needs.setup-environment.outputs.TAG }}
       BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
     strategy:
       fail-fast: false
       matrix:
@@ -279,8 +300,9 @@ jobs:
         with:
           submodules: true
       - name: Install Python dependencies
-        run:
+        run: |
           python3 -m pip install -r tests/flow/requirements.txt
+          python3 -m pip install jinja2 ramp-packer
       - name: Checkout Redis
         uses: actions/checkout@v3
         with:
@@ -288,11 +310,18 @@ jobs:
           ref: ${{ matrix.redis-version }}
           path: 'redis'
       - name: Build Redis
-        run: cd redis && make -j `nproc`
+        run: |
+          cd redis && make -j `nproc`
+          echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
+          echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
+          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
+          redis-server --version
       - name: Build RedisBloom
         run: make -j `nproc`
       - name: Run tests
         run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Pack module
+        run: make pack BRANCH=$TAG_OR_BRANCH SHOW=1
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -331,6 +360,7 @@ jobs:
       STAGING: ${{ needs.setup-environment.outputs.STAGING }}
       VERSION: ${{ needs.setup-environment.outputs.TAG }}
       BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
     strategy:
       fail-fast: false
       matrix:
@@ -359,8 +389,9 @@ jobs:
         with:
           submodules: true
       - name: Install Python dependencies
-        run:
+        run: |
           python3 -m pip install -r tests/flow/requirements.txt
+          python3 -m pip install jinja2 ramp-packer
       - name: Checkout Redis
         uses: actions/checkout@v3
         with:
@@ -368,11 +399,20 @@ jobs:
           ref: ${{ matrix.redis-version }}
           path: 'redis'
       - name: Build Redis
-        run: cd redis && make -j `nproc`
+        run: |
+          cd redis && make -j `nproc`
+          echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
+          echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
+          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
+          redis-server --version
       - name: Build RedisBloom
         run: make -j `nproc`
       - name: Run tests
         run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Pack module
+        run: |
+          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
+          make pack BRANCH=$TAG_OR_BRANCH SHOW=1
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -411,6 +451,7 @@ jobs:
       STAGING: ${{ needs.setup-environment.outputs.STAGING }}
       VERSION: ${{ needs.setup-environment.outputs.TAG }}
       BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
     strategy:
       fail-fast: false
       matrix:
@@ -455,6 +496,7 @@ jobs:
         run: |
           scl enable devtoolset-11 bash
           python3 -m pip install -r tests/flow/requirements.txt
+          python3 -m pip install jinja2 ramp-packer
       - name: Checkout Redis
         uses: actions/checkout@v3
         with:
@@ -463,7 +505,12 @@ jobs:
           path: 'redis'
       - name: Build Redis
         run: |
+          . scl_source enable devtoolset-11 || true
           cd redis && make -j `nproc`
+          echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
+          echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
+          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
+          redis-server --version
       - name: Build RedisBloom
         run: |
           . scl_source enable devtoolset-11 || true
@@ -472,6 +519,10 @@ jobs:
         run: |
           . scl_source enable devtoolset-11 || true
           make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Pack module
+        run: |
+          . scl_source enable devtoolset-11 || true
+          make pack BRANCH=$TAG_OR_BRANCH SHOW=1
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -510,6 +561,7 @@ jobs:
       STAGING: ${{ needs.setup-environment.outputs.STAGING }}
       VERSION: ${{ needs.setup-environment.outputs.TAG }}
       BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
     strategy:
       fail-fast: false
       matrix:
@@ -553,6 +605,7 @@ jobs:
         run: |
           scl enable devtoolset-11 bash
           python3 -m pip install -r tests/flow/requirements.txt
+          python3 -m pip install jinja2 ramp-packer
       - name: Checkout Redis
         uses: actions/checkout@v3
         with:
@@ -561,7 +614,12 @@ jobs:
           path: 'redis'
       - name: Build Redis
         run: |
+          . scl_source enable devtoolset-11 || true
           cd redis && make -j `nproc`
+          echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
+          echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
+          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
+          redis-server --version
       - name: Build RedisBloom
         run: |
           . scl_source enable devtoolset-11 || true
@@ -570,6 +628,10 @@ jobs:
         run: |
           . scl_source enable devtoolset-11 || true
           make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Pack module
+        run: |
+          . scl_source enable devtoolset-11 || true
+          make pack BRANCH=$TAG_OR_BRANCH SHOW=1
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -604,6 +666,11 @@ jobs:
   rocky-linux:
     runs-on: ubuntu-latest
     container: ${{ matrix.builder.image }}
+    env:
+      STAGING: ${{ needs.setup-environment.outputs.STAGING }}
+      VERSION: ${{ needs.setup-environment.outputs.TAG }}
+      BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
     strategy:
       fail-fast: false
       matrix:
@@ -650,6 +717,7 @@ jobs:
         run: |
           . scl_source enable gcc-toolset-13 || true
           python3 -m pip install -r tests/flow/requirements.txt
+          python3 -m pip install jinja2 ramp-packer
       - name: Checkout Redis
         uses: actions/checkout@v3
         with:
@@ -659,6 +727,10 @@ jobs:
       - name: Build Redis
         run: |
           cd redis && make -j `nproc`
+          echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
+          echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
+          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
+          redis-server --version
       - name: Build RedisBloom
         run: |
           . scl_source enable gcc-toolset-13 || true
@@ -667,6 +739,8 @@ jobs:
         run: |
           . scl_source enable gcc-toolset-13 || true
           make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Pack module
+        run: make pack BRANCH=$TAG_OR_BRANCH SHOW=1
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -698,12 +772,20 @@ jobs:
           cd bin/artifacts
           du -ah --apparent-size *
 
-  macos-x86_64:
-    runs-on: macos-13
+  macos:
+    runs-on: ${{ matrix.os }}
+    env:
+      STAGING: ${{ needs.setup-environment.outputs.STAGING }}
+      VERSION: ${{ needs.setup-environment.outputs.TAG }}
+      BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        # 6.0.20 can't be built due to Redis bug.
+        redis-version: ["6.2.14", "7.2.4", "unstable"]
+        # MacOS 13 - x86-64, MacOS 14 - ARM (Apple Chips).
+        os: ["macos-13", "macos-14"]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
@@ -712,6 +794,7 @@ jobs:
       - name: Install prerequisites
         run: |
           brew install make
+
       - name: Checkout sources
         uses: actions/checkout@v3
         with:
@@ -720,6 +803,7 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip setuptools wheel
           python3 -m pip install -r tests/flow/requirements.txt
+          python3 -m pip install jinja2 ramp-packer
       - name: Checkout Redis
         uses: actions/checkout@v3
         with:
@@ -728,13 +812,19 @@ jobs:
           path: 'redis'
       - name: Build Redis
         run: |
-          cd redis && make -j `sysctl -n hw.logicalcpu`
+          cd redis && gmake -j `sysctl -n hw.logicalcpu`
+          echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
+          echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
+          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
+          redis-server --version
       - name: Build RedisBloom
         run: |
           gmake -j `sysctl -n hw.logicalcpu`
       - name: Run tests
         run: |
-          gmake test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+          gmake test
+      - name: Pack module
+        run: gmake pack BRANCH=$TAG_OR_BRANCH SHOW=1
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -760,7 +850,7 @@ jobs:
           ./deps/readies/bin/getdocker
           docker login -u redisfab -p ${{ secrets.DOCKER_REDISFAB_PASSWORD }}
           cd build/docker
-          make publish OSNICK=${{ matrix.builder.nick }} VERSION="$VERSION" BRANCH="$BRANCH" OFFICIAL=1 SHOW=1
+          make publish VERSION="$VERSION" BRANCH="$BRANCH" OFFICIAL=1 SHOW=1
       - name: List artifacts
         run: |
           cd bin/artifacts
