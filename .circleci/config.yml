@@ -159,42 +159,42 @@ commands:
             make test <<parameters.test_params>> SHOW=1
       - save-tests-logs
 
-  build-platforms-steps:
-    parameters:
-      platform:
-        type: string
-    steps:
-      - early-returns
-      - setup-executor
-      - checkout-all
-      - install-prerequisites
-      - run:
-          name: Build for platform
-          command: |
-            ROOT=$PWD
-            cd build/docker
-            make build OSNICK=<<parameters.platform>> VERSION="$CIRCLE_TAG" BRANCH="$CIRCLE_BRANCH" TEST=1 OFFICIAL=1 SHOW=1
-            cd $ROOT
-            mkdir -p tests/flow/logs
-            tar -C tests/flow/logs -xzf bin/artifacts/tests-flow-logs*.tgz
-          no_output_timeout: 30m
-      - save-tests-logs
-      - early-return-for-forked-pull-requests
-      - run:
-          name: Upload artifacts to S3
-          shell: /bin/bash -l -eo pipefail
-          command: |
-            if [[ -n $CIRCLE_BRANCH ]]; then
-                make upload-artifacts OSNICK=<<parameters.platform>> SHOW=1 VERBOSE=1
-            fi
-      - run:
-          name: Publish container
-          shell: /bin/bash -l -eo pipefail
-          command: |
-            docker login -u redisfab -p $DOCKER_REDISFAB_PWD
-            cd build/docker
-            make publish OSNICK=<<parameters.platform>> VERSION="$CIRCLE_TAG" BRANCH="$CIRCLE_BRANCH" OFFICIAL=1 SHOW=1
-      - persist-artifacts
+  # build-platforms-steps:
+  #   parameters:
+  #     platform:
+  #       type: string
+  #   steps:
+  #     - early-returns
+  #     - setup-executor
+  #     - checkout-all
+  #     - install-prerequisites
+  #     - run:
+  #         name: Build for platform
+  #         command: |
+  #           ROOT=$PWD
+  #           cd build/docker
+  #           make build OSNICK=<<parameters.platform>> VERSION="$CIRCLE_TAG" BRANCH="$CIRCLE_BRANCH" TEST=1 OFFICIAL=1 SHOW=1
+  #           cd $ROOT
+  #           mkdir -p tests/flow/logs
+  #           tar -C tests/flow/logs -xzf bin/artifacts/tests-flow-logs*.tgz
+  #         no_output_timeout: 30m
+  #     - save-tests-logs
+  #     - early-return-for-forked-pull-requests
+  #     - run:
+  #         name: Upload artifacts to S3
+  #         shell: /bin/bash -l -eo pipefail
+  #         command: |
+  #           if [[ -n $CIRCLE_BRANCH ]]; then
+  #               make upload-artifacts OSNICK=<<parameters.platform>> SHOW=1 VERBOSE=1
+  #           fi
+  #     - run:
+  #         name: Publish container
+  #         shell: /bin/bash -l -eo pipefail
+  #         command: |
+  #           docker login -u redisfab -p $DOCKER_REDISFAB_PWD
+  #           cd build/docker
+  #           make publish OSNICK=<<parameters.platform>> VERSION="$CIRCLE_TAG" BRANCH="$CIRCLE_BRANCH" OFFICIAL=1 SHOW=1
+  #     - persist-artifacts
 
   vm-build-platforms-steps:
     parameters:
