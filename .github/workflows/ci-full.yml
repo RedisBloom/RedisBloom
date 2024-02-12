@@ -9,14 +9,10 @@ name: CI Full suite
 # 2. Remove the use of all the scripts for anything and do everything
 #    right here in the workflow.
 # 3. Use the corresponding actions for the end goal: aws s3 upload
-#    action, docker publish action, etc. This also will remove the need
-#    for the installation of aws-cli and docker steps.
+#    action. This also will remove the need for the installation of aws-cli.
 #
 # More info: jobs.steps.uses: docker://alpine:3.8 for docker images,
 # To use the AWS CLI: https://hub.docker.com/r/amazon/aws-cli
-#
-# To build and push docker images, instead of the Makefile/scripts, use
-# https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
 
 on:
   push:
@@ -146,14 +142,6 @@ jobs:
             make upload-artifacts SHOW=1 VERBOSE=1
           fi
           make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
-      - name: Publish docker image
-        run: |
-          # TODO: GET RID OF THIS in favour of GitHub actions or a docker image.
-          # https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
-          ./deps/readies/bin/getdocker
-          docker login -u redisfab -p ${{ secrets.DOCKER_REDISFAB_PASSWORD }}
-          cd build/docker
-          make publish OSNICK=${{ matrix.builder.nick }} VERSION="$VERSION" BRANCH="$BRANCH" OFFICIAL=1 SHOW=1
       - name: List artifacts
         run: |
           cd bin/artifacts
@@ -340,14 +328,6 @@ jobs:
             make upload-artifacts SHOW=1 VERBOSE=1
           fi
           make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
-      - name: Publish docker image
-        run: |
-          # TODO: GET RID OF THIS in favour of GitHub actions or a docker image.
-          # https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
-          ./deps/readies/bin/getdocker
-          docker login -u redisfab -p ${{ secrets.DOCKER_REDISFAB_PASSWORD }}
-          cd build/docker
-          make publish OSNICK=${{ matrix.builder.nick }} VERSION="$VERSION" BRANCH="$BRANCH" OFFICIAL=1 SHOW=1
       - name: List artifacts
         run: |
           cd bin/artifacts
@@ -431,14 +411,6 @@ jobs:
             make upload-artifacts SHOW=1 VERBOSE=1
           fi
           make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
-      - name: Publish docker image
-        run: |
-          # TODO: GET RID OF THIS in favour of GitHub actions or a docker image.
-          # https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
-          ./deps/readies/bin/getdocker
-          docker login -u redisfab -p ${{ secrets.DOCKER_REDISFAB_PASSWORD }}
-          cd build/docker
-          make publish OSNICK=${{ matrix.builder.nick }} VERSION="$VERSION" BRANCH="$BRANCH" OFFICIAL=1 SHOW=1
       - name: List artifacts
         run: |
           cd bin/artifacts
@@ -541,14 +513,6 @@ jobs:
             make upload-artifacts SHOW=1 VERBOSE=1
           fi
           make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
-      - name: Publish docker image
-        run: |
-          # TODO: GET RID OF THIS in favour of GitHub actions or a docker image.
-          # https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
-          ./deps/readies/bin/getdocker
-          docker login -u redisfab -p ${{ secrets.DOCKER_REDISFAB_PASSWORD }}
-          cd build/docker
-          make publish OSNICK=${{ matrix.builder.nick }} VERSION="$VERSION" BRANCH="$BRANCH" OFFICIAL=1 SHOW=1
       - name: List artifacts
         run: |
           cd bin/artifacts
@@ -650,14 +614,6 @@ jobs:
             make upload-artifacts SHOW=1 VERBOSE=1
           fi
           make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
-      - name: Publish docker image
-        run: |
-          # TODO: GET RID OF THIS in favour of GitHub actions or a docker image.
-          # https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
-          ./deps/readies/bin/getdocker
-          docker login -u redisfab -p ${{ secrets.DOCKER_REDISFAB_PASSWORD }}
-          cd build/docker
-          make publish OSNICK=${{ matrix.builder.nick }} VERSION="$VERSION" BRANCH="$BRANCH" OFFICIAL=1 SHOW=1
       - name: List artifacts
         run: |
           cd bin/artifacts
@@ -759,14 +715,6 @@ jobs:
             make upload-artifacts SHOW=1 VERBOSE=1
           fi
           make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
-      - name: Publish docker image
-        run: |
-          # TODO: GET RID OF THIS in favour of GitHub actions or a docker image.
-          # https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
-          ./deps/readies/bin/getdocker
-          docker login -u redisfab -p ${{ secrets.DOCKER_REDISFAB_PASSWORD }}
-          cd build/docker
-          make publish OSNICK=${{ matrix.builder.nick }} VERSION="$VERSION" BRANCH="$BRANCH" OFFICIAL=1 SHOW=1
       - name: List artifacts
         run: |
           cd bin/artifacts
@@ -843,14 +791,6 @@ jobs:
             make upload-artifacts SHOW=1 VERBOSE=1
           fi
           make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
-      - name: Publish docker image
-        run: |
-          # TODO: GET RID OF THIS in favour of GitHub actions or a docker image.
-          # https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
-          ./deps/readies/bin/getdocker
-          docker login -u redisfab -p ${{ secrets.DOCKER_REDISFAB_PASSWORD }}
-          cd build/docker
-          make publish VERSION="$VERSION" BRANCH="$BRANCH" OFFICIAL=1 SHOW=1
       - name: List artifacts
         run: |
           cd bin/artifacts
