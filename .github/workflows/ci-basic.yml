@@ -1,0 +1,133 @@
+name: CI Basic
+# This is a basic workflow for the non-production branches and tags.
+# It will run the tests on the two latest Ubuntu LTS releases and run
+# the tests with a few supported Redis versions. It will not publish
+# the artifacts of the builds and will not test against all the
+# supported platforms.
+
+on:
+  push:
+      paths-ignore:
+          - '.circleci/**'
+          - 'docs/**'
+          - '*.md'
+      branches-ignore:
+          - main
+          - master
+          - '[0-9]+.[0-9]+.[0-9]+'
+          - '[0-9]+.[0-9]+'
+          - 'feature-*'
+      tags-ignore:
+          - 'v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+'
+          - 'v[0-9]+.[0-9]+.[0-9]+-m[0-9]+'
+          - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  recent-ubuntu:
+    runs-on: ${{ matrix.builder-os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        builder-os: ['ubuntu-22.04', 'ubuntu-20.04']
+    defaults:
+      run:
+        shell: bash -l -eo pipefail {0}
+    steps:
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential autoconf automake libtool cmake lcov valgrind
+      - name: Setup Python for testing
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          architecture: 'x64'
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install Python dependencies
+        run:
+          python3 -m pip install -r tests/flow/requirements.txt
+      - name: Checkout Redis
+        uses: actions/checkout@v3
+        with:
+          repository: 'redis/redis'
+          ref: ${{ matrix.redis-version }}
+          path: 'redis'
+      - name: Build Redis
+        run: cd redis && make -j 4
+      - name: Build
+        run: make -j 4
+      - name: Run tests
+        run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+
+  test-valgrind:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        redis-version: ["6.0.20", "7.2.4", "unstable"]
+    defaults:
+      run:
+        shell: bash -l -eo pipefail {0}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential autoconf automake libtool cmake lcov valgrind
+      - name: Setup Python for testing
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          architecture: 'x64'
+      - name: Install Python dependencies
+        run:
+          python -m pip install -r tests/flow/requirements.txt
+      - name: Checkout Redis
+        uses: actions/checkout@v3
+        with:
+          repository: 'redis/redis'
+          ref: ${{ matrix.redis-version }}
+          path: 'redis'
+      - name: Build Redis
+        run: cd redis && make valgrind -j 4
+      - name: Build
+        run: make -j 4
+      - name: Run tests
+        run: make test VG=1 REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+
+  test-address-sanitizer:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        redis-version: ["7.2.4", "unstable"]
+    defaults:
+      run:
+        shell: bash -l -eo pipefail {0}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential autoconf automake libtool cmake lcov valgrind
+      - name: Setup Python for testing
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          architecture: 'x64'
+      - name: Install Python dependencies
+        run:
+          python -m pip install -r tests/flow/requirements.txt
+      - name: Checkout Redis
+        uses: actions/checkout@v3
+        with:
+          repository: 'redis/redis'
+          ref: ${{ matrix.redis-version }}
+          path: 'redis'
+      - name: Build Redis
+        run: cd redis && make SANITIZER=address -j 4
+      - name: Build
+        run: make -j 4
+      - name: Run tests
+        run: make test SAN=addr REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
