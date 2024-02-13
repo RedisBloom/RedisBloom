@@ -744,11 +744,8 @@ jobs:
       - name: Install prerequisites
         run: |
           brew install make coreutils
-          echo $PATH
           export PATH=$(brew --prefix)/opt/make/libexec/gnubin:$PATH
           export PATH=$(brew --prefix)/opt/coreutils/libexec/gnubin:$PATH
-          echo $PATH
-          du -ah --apparent-size *
 
       - name: Checkout sources
         uses: actions/checkout@v3
