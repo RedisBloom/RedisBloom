@@ -743,7 +743,7 @@ jobs:
     steps:
       - name: Install prerequisites
         run: |
-          brew install make
+          brew install make coreutils
 
       - name: Checkout sources
         uses: actions/checkout@v3
