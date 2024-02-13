@@ -744,8 +744,8 @@ jobs:
       - name: Install prerequisites
         run: |
           brew install make coreutils
-          echo "$(brew --prefix)/opt/make/libexec/gnubin" >> $GITHUB_PATH
-          echo "$(brew --prefix)/opt/coreutils/libexec/gnubin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/$(brew --prefix)/opt/make/libexec/gnubin" >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/$(brew --prefix)/opt/coreutils/libexec/gnubin" >> $GITHUB_PATH
           export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$PATH"
           export PATH="$(brew --prefix)/opt/make/libexec/gnubin:$PATH"
           echo $PATH
@@ -776,6 +776,7 @@ jobs:
           redis-server --version
       - name: Build RedisBloom
         run: |
+          echo $PATH
           make -j `sysctl -n hw.logicalcpu`
       - name: Run tests
         run: |
