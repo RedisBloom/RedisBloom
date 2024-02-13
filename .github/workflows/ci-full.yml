@@ -744,6 +744,9 @@ jobs:
       - name: Install prerequisites
         run: |
           brew install make coreutils
+          export PATH="$(brew --prefix)/make/libexec/gnubin:$PATH"
+          export PATH="$(brew --prefix)/coreutils/libexec/gnubin:$PATH"
+          echo $PATH
 
       - name: Checkout sources
         uses: actions/checkout@v3
@@ -762,19 +765,19 @@ jobs:
           path: 'redis'
       - name: Build Redis
         run: |
-          cd redis && gmake -j `sysctl -n hw.logicalcpu`
+          cd redis && make -j `sysctl -n hw.logicalcpu`
           echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
           echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
           export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
           redis-server --version
       - name: Build RedisBloom
         run: |
-          gmake -j `sysctl -n hw.logicalcpu`
+          make -j `sysctl -n hw.logicalcpu`
       - name: Run tests
         run: |
-          gmake test
+          make test
       - name: Pack module
-        run: gmake pack BRANCH=$TAG_OR_BRANCH SHOW=1
+        run: make pack BRANCH=$TAG_OR_BRANCH SHOW=1
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -790,10 +793,10 @@ jobs:
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
-            gmake upload-artifacts SHOW=1 VERBOSE=1
+            make upload-artifacts SHOW=1 VERBOSE=1
           fi
-          gmake upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
+          make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
       - name: List artifacts
         run: |
           cd bin/artifacts
-          du -ah *
+          du -ah --apparent-size *
