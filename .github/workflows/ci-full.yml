@@ -128,7 +128,6 @@ jobs:
           unset-current-credentials: true
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          # aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: "us-east-2"
       - name: Upload artifacts to S3
         run: |
@@ -311,7 +310,7 @@ jobs:
       - name: Pack module
         run: make pack BRANCH=$TAG_OR_BRANCH SHOW=1
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v3
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -496,13 +495,14 @@ jobs:
           . scl_source enable devtoolset-11 || true
           make pack BRANCH=$TAG_OR_BRANCH SHOW=1
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v3
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
         run: |
+          . scl_source enable devtoolset-11 || true
           # TODO: Get rid of this in favour of GitHub actions or a docker image:
           # https://hub.docker.com/r/amazon/aws-cli
           export HOMEBREW_NO_AUTO_UPDATE=1
@@ -597,13 +597,14 @@ jobs:
           . scl_source enable devtoolset-11 || true
           make pack BRANCH=$TAG_OR_BRANCH SHOW=1
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v3
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
         run: |
+          . scl_source enable devtoolset-11 || true
           # TODO: Get rid of this in favour of GitHub actions or a docker image:
           # https://hub.docker.com/r/amazon/aws-cli
           export HOMEBREW_NO_AUTO_UPDATE=1
@@ -705,6 +706,7 @@ jobs:
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
         run: |
+          . scl_source enable gcc-toolset-13 || true
           # TODO: Get rid of this in favour of GitHub actions or a docker image:
           # https://hub.docker.com/r/amazon/aws-cli
           export HOMEBREW_NO_AUTO_UPDATE=1
@@ -788,10 +790,10 @@ jobs:
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
-            make upload-artifacts SHOW=1 VERBOSE=1
+            gmake upload-artifacts SHOW=1 VERBOSE=1
           fi
-          make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
+          gmake upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
       - name: List artifacts
         run: |
           cd bin/artifacts
-          du -ah --apparent-size *
+          du -ah *
