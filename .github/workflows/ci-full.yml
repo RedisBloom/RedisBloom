@@ -745,8 +745,8 @@ jobs:
         run: |
           brew install make coreutils
           echo $PATH
-          export PATH=/opt/homebrew/opt/make/libexec/gnubin:$PATH
-          export PATH=/opt/homebrew/opt/coreutils/libexec/gnubin:$PATH
+          export PATH=/opt/local/opt/make/libexec/gnubin:$PATH
+          export PATH=/opt/local/opt/coreutils/libexec/gnubin:$PATH
           echo $PATH
           du -ah --apparent-size *
 
