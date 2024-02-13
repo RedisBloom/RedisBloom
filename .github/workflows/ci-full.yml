@@ -744,8 +744,8 @@ jobs:
       - name: Install prerequisites
         run: |
           brew install make coreutils
-          echo "$(brew --prefix)/opt/make/libexec/gnubin" >> $GITHUB_PATH
-          echo "$(brew --prefix)/opt/coreutils/libexec/gnubin" >> $GITHUB_PATH
+          echo "PATH=$(brew --prefix)/opt/make/libexec/gnubin:$PATH" >> $GITHUB_ENV
+          echo "PATH=$(brew --prefix)/opt/coreutils/libexec/gnubin:$PATH" >> $GITHUB_ENV
           export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$PATH"
           export PATH="$(brew --prefix)/opt/make/libexec/gnubin:$PATH"
           echo $PATH
