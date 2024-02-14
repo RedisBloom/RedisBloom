@@ -744,14 +744,6 @@ jobs:
       - name: Install prerequisites
         run: |
           brew install make coreutils
-          echo "PATH=$(brew --prefix)/opt/make/libexec/gnubin:$PATH" >> $GITHUB_ENV
-          echo "PATH=$(brew --prefix)/opt/coreutils/libexec/gnubin:$PATH" >> $GITHUB_ENV
-          export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$PATH"
-          export PATH="$(brew --prefix)/opt/make/libexec/gnubin:$PATH"
-          echo $PATH
-          make --version
-          du --version
-          which make
 
       - name: Checkout sources
         uses: actions/checkout@v3
@@ -777,9 +769,8 @@ jobs:
           redis-server --version
       - name: Build RedisBloom
         run: |
-          echo $PATH
-          make --version
-          which make
+          export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$PATH"
+          export PATH="$(brew --prefix)/opt/make/libexec/gnubin:$PATH"
           make -j `sysctl -n hw.logicalcpu`
       - name: Run tests
         run: |
@@ -794,6 +785,9 @@ jobs:
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
         run: |
+          export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$PATH"
+          export PATH="$(brew --prefix)/opt/make/libexec/gnubin:$PATH"
+
           # TODO: Get rid of this in favour of GitHub actions or a docker image:
           # https://hub.docker.com/r/amazon/aws-cli
           export HOMEBREW_NO_AUTO_UPDATE=1
@@ -804,7 +798,3 @@ jobs:
             make upload-artifacts SHOW=1 VERBOSE=1
           fi
           make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
-      - name: List artifacts
-        run: |
-          cd bin/artifacts
-          du -ah --apparent-size *
