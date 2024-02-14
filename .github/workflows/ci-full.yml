@@ -783,8 +783,8 @@ jobs:
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
         run: |
+          # Upload script needs GNU du 
           export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$PATH"
-          export PATH="$(brew --prefix)/opt/make/libexec/gnubin:$PATH"
 
           # TODO: Get rid of this in favour of GitHub actions or a docker image:
           # https://hub.docker.com/r/amazon/aws-cli
@@ -793,6 +793,6 @@ jobs:
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
-            make upload-artifacts SHOW=1 VERBOSE=1
+            gmake upload-artifacts SHOW=1 VERBOSE=1
           fi
-          make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
+          gmake upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
