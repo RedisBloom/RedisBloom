@@ -762,21 +762,19 @@ jobs:
           path: 'redis'
       - name: Build Redis
         run: |
-          cd redis && make -j `sysctl -n hw.logicalcpu`
+          cd redis && gmake -j `sysctl -n hw.logicalcpu`
           echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
           echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
           export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
           redis-server --version
       - name: Build RedisBloom
         run: |
-          export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$PATH"
-          export PATH="$(brew --prefix)/opt/make/libexec/gnubin:$PATH"
-          make -j `sysctl -n hw.logicalcpu`
+          gmake -j `sysctl -n hw.logicalcpu`
       - name: Run tests
         run: |
-          make test
+          gmake test
       - name: Pack module
-        run: make pack BRANCH=$TAG_OR_BRANCH SHOW=1
+        run: gmake pack BRANCH=$TAG_OR_BRANCH SHOW=1
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
