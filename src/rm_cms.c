@@ -205,8 +205,7 @@ static int parseMergeArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
                    REDISMODULE_OK) {
             INNER_ERROR("CMS: invalid weight value");
         }
-        if (GetCMSKey(ctx, argv[i], &(params->cmsArray[i]), REDISMODULE_READ) !=
-            REDISMODULE_OK) {
+        if (GetCMSKey(ctx, argv[i], &(params->cmsArray[i]), REDISMODULE_READ) != REDISMODULE_OK) {
             return REDISMODULE_ERR;
         }
         if (params->cmsArray[i]->width != width || params->cmsArray[i]->depth != depth) {
@@ -225,7 +224,7 @@ int CMSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
     mergeParams params = {0};
 
-    if (GetCMSKey(ctx, argv[1], &(params->dest), REDISMODULE_READ | REDISMODULE_WRITE) !=
+    if (GetCMSKey(ctx, argv[1], &(params.dest), REDISMODULE_READ | REDISMODULE_WRITE) !=
         REDISMODULE_OK) {
         return REDISMODULE_ERR;
     }
