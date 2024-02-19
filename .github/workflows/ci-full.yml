@@ -278,6 +278,9 @@ jobs:
           make --version
           cmake --version
           python3 -m pip install --upgrade pip
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
       - name: Checkout RedisBloom
         uses: actions/checkout@v3
         with:
@@ -355,6 +358,9 @@ jobs:
           make --version
           cmake --version
           python3 -m pip install --upgrade pip
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
       - name: Checkout RedisBloom
         uses: actions/checkout@v3
         with:
@@ -447,6 +453,9 @@ jobs:
           rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
           ln -s `which cmake3` /usr/bin/cmake
           python3 --version
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
       - name: Checkout sources
         uses: actions/checkout@v3
         with:
@@ -545,6 +554,9 @@ jobs:
           rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
           ln -s `which cmake3` /usr/bin/cmake
           python3 --version
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
       - name: Checkout sources
         uses: actions/checkout@v3
         with:
@@ -646,6 +658,9 @@ jobs:
           rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
           cmake --version
           python3 --version
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
       - name: Checkout sources
         uses: actions/checkout@v3
         with:
