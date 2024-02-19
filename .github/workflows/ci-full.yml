@@ -131,10 +131,6 @@ jobs:
           aws-region: "us-east-2"
       - name: Upload artifacts to S3
         run: |
-          # TODO: Get rid of this in favour of GitHub actions or a docker image:
-          # https://hub.docker.com/r/amazon/aws-cli
-          export HOMEBREW_NO_AUTO_UPDATE=1
-          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
@@ -317,10 +313,6 @@ jobs:
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
         run: |
-          # TODO: Get rid of this in favour of GitHub actions or a docker image:
-          # https://hub.docker.com/r/amazon/aws-cli
-          export HOMEBREW_NO_AUTO_UPDATE=1
-          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
@@ -400,10 +392,6 @@ jobs:
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
         run: |
-          # TODO: Get rid of this in favour of GitHub actions or a docker image:
-          # https://hub.docker.com/r/amazon/aws-cli
-          export HOMEBREW_NO_AUTO_UPDATE=1
-          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
@@ -503,10 +491,6 @@ jobs:
       - name: Upload artifacts to S3
         run: |
           . scl_source enable devtoolset-11 || true
-          # TODO: Get rid of this in favour of GitHub actions or a docker image:
-          # https://hub.docker.com/r/amazon/aws-cli
-          export HOMEBREW_NO_AUTO_UPDATE=1
-          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
@@ -605,10 +589,6 @@ jobs:
       - name: Upload artifacts to S3
         run: |
           . scl_source enable devtoolset-11 || true
-          # TODO: Get rid of this in favour of GitHub actions or a docker image:
-          # https://hub.docker.com/r/amazon/aws-cli
-          export HOMEBREW_NO_AUTO_UPDATE=1
-          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
@@ -707,10 +687,6 @@ jobs:
       - name: Upload artifacts to S3
         run: |
           . scl_source enable gcc-toolset-13 || true
-          # TODO: Get rid of this in favour of GitHub actions or a docker image:
-          # https://hub.docker.com/r/amazon/aws-cli
-          export HOMEBREW_NO_AUTO_UPDATE=1
-          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
@@ -786,10 +762,6 @@ jobs:
           # Upload script needs GNU du 
           export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$PATH"
 
-          # TODO: Get rid of this in favour of GitHub actions or a docker image:
-          # https://hub.docker.com/r/amazon/aws-cli
-          export HOMEBREW_NO_AUTO_UPDATE=1
-          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
