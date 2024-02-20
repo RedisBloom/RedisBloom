@@ -131,10 +131,6 @@ jobs:
           aws-region: "us-east-2"
       - name: Upload artifacts to S3
         run: |
-          # TODO: Get rid of this in favour of GitHub actions or a docker image:
-          # https://hub.docker.com/r/amazon/aws-cli
-          export HOMEBREW_NO_AUTO_UPDATE=1
-          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
@@ -260,7 +256,7 @@ jobs:
           apt-get update && apt-get install -y software-properties-common
           add-apt-repository ppa:git-core/ppa -y
           apt-get update
-          apt-get install -y build-essential make autoconf automake libtool lcov git wget zlib1g-dev lsb-release libssl-dev openssl ca-certificates
+          apt-get install -y build-essential make autoconf automake libtool lcov git wget zlib1g-dev lsb-release libssl-dev openssl ca-certificates curl unzip
           wget https://cmake.org/files/v3.28/cmake-3.28.0.tar.gz
           tar -xzvf cmake-3.28.0.tar.gz
           cd cmake-3.28.0
@@ -282,6 +278,9 @@ jobs:
           make --version
           cmake --version
           python3 -m pip install --upgrade pip
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
       - name: Checkout RedisBloom
         uses: actions/checkout@v3
         with:
@@ -317,10 +316,6 @@ jobs:
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
         run: |
-          # TODO: Get rid of this in favour of GitHub actions or a docker image:
-          # https://hub.docker.com/r/amazon/aws-cli
-          export HOMEBREW_NO_AUTO_UPDATE=1
-          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
@@ -358,11 +353,14 @@ jobs:
       - name: Install build dependencies
         run: |
           apt-get update
-          apt-get install -y build-essential make cmake autoconf automake libtool lcov git wget zlib1g-dev lsb-release libssl-dev openssl ca-certificates python3 python3-pip
+          apt-get install -y build-essential make cmake autoconf automake libtool lcov git wget zlib1g-dev lsb-release libssl-dev openssl ca-certificates python3 python3-pip curl unzip
           python3 --version
           make --version
           cmake --version
           python3 -m pip install --upgrade pip
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
       - name: Checkout RedisBloom
         uses: actions/checkout@v3
         with:
@@ -400,10 +398,6 @@ jobs:
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
         run: |
-          # TODO: Get rid of this in favour of GitHub actions or a docker image:
-          # https://hub.docker.com/r/amazon/aws-cli
-          export HOMEBREW_NO_AUTO_UPDATE=1
-          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
@@ -459,6 +453,9 @@ jobs:
           rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
           ln -s `which cmake3` /usr/bin/cmake
           python3 --version
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
       - name: Checkout sources
         uses: actions/checkout@v3
         with:
@@ -503,10 +500,6 @@ jobs:
       - name: Upload artifacts to S3
         run: |
           . scl_source enable devtoolset-11 || true
-          # TODO: Get rid of this in favour of GitHub actions or a docker image:
-          # https://hub.docker.com/r/amazon/aws-cli
-          export HOMEBREW_NO_AUTO_UPDATE=1
-          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
@@ -546,7 +539,7 @@ jobs:
           amazon-linux-extras install epel -y
           yum -y install epel-release yum-utils
           yum-config-manager --add-repo http://mirror.centos.org/centos/7/sclo/x86_64/rh/
-          yum -y install gcc make cmake3 git python-pip openssl-devel bzip2-devel libffi-devel zlib-devel wget centos-release-scl scl-utils which tar
+          yum -y install gcc make cmake3 git python-pip openssl-devel bzip2-devel libffi-devel zlib-devel wget centos-release-scl scl-utils which tar unzip
           yum -y install devtoolset-11-gcc devtoolset-11-gcc-c++ devtoolset-11-make --nogpgcheck
           . scl_source enable devtoolset-11 || true
           make --version
@@ -561,6 +554,9 @@ jobs:
           rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
           ln -s `which cmake3` /usr/bin/cmake
           python3 --version
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
       - name: Checkout sources
         uses: actions/checkout@v3
         with:
@@ -605,10 +601,6 @@ jobs:
       - name: Upload artifacts to S3
         run: |
           . scl_source enable devtoolset-11 || true
-          # TODO: Get rid of this in favour of GitHub actions or a docker image:
-          # https://hub.docker.com/r/amazon/aws-cli
-          export HOMEBREW_NO_AUTO_UPDATE=1
-          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
@@ -666,6 +658,9 @@ jobs:
           rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
           cmake --version
           python3 --version
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
       - name: Checkout sources
         uses: actions/checkout@v3
         with:
@@ -707,10 +702,6 @@ jobs:
       - name: Upload artifacts to S3
         run: |
           . scl_source enable gcc-toolset-13 || true
-          # TODO: Get rid of this in favour of GitHub actions or a docker image:
-          # https://hub.docker.com/r/amazon/aws-cli
-          export HOMEBREW_NO_AUTO_UPDATE=1
-          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
@@ -786,10 +777,6 @@ jobs:
           # Upload script needs GNU du 
           export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$PATH"
 
-          # TODO: Get rid of this in favour of GitHub actions or a docker image:
-          # https://hub.docker.com/r/amazon/aws-cli
-          export HOMEBREW_NO_AUTO_UPDATE=1
-          ./deps/readies/bin/getaws
           mkdir -p bin
           ln -s ~/workspace/artifacts bin/artifacts
           if [[ $STAGING -eq 1 ]]; then
