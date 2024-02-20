@@ -256,7 +256,7 @@ jobs:
           apt-get update && apt-get install -y software-properties-common
           add-apt-repository ppa:git-core/ppa -y
           apt-get update
-          apt-get install -y build-essential make autoconf automake libtool lcov git wget zlib1g-dev lsb-release libssl-dev openssl ca-certificates curl
+          apt-get install -y build-essential make autoconf automake libtool lcov git wget zlib1g-dev lsb-release libssl-dev openssl ca-certificates curl unzip
           wget https://cmake.org/files/v3.28/cmake-3.28.0.tar.gz
           tar -xzvf cmake-3.28.0.tar.gz
           cd cmake-3.28.0
