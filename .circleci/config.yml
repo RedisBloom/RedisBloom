@@ -9,7 +9,7 @@ commands:
   early-returns:
     steps:
       - run:
-          name: Early return if this is a docs build
+          name: Early return if this is a docs build.
           command: |
             if [[ $CIRCLE_BRANCH == *docs ]]; then
               echo "Identifies as documents PR, no testing required."
