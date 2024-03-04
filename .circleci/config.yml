@@ -276,7 +276,7 @@ jobs:
     #   - image: debian:bullseye
     machine:
       enabled: true
-      image: ubuntu-2004:202010-01
+      image: ubuntu-2004:2022.10.1
       resource_class: large
     steps:
       - vm-build-platforms-steps:
@@ -287,7 +287,7 @@ jobs:
       platform:
         type: string
     machine:
-      image: ubuntu-2004:202101-01
+      image: ubuntu-2004:2022.10.1
     resource_class: arm.medium
     steps:
       - vm-build-platforms-steps:
