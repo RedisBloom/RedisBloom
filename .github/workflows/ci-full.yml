@@ -742,6 +742,8 @@ jobs:
           submodules: true
       - name: Install Python dependencies
         run: |
+          python3 -m venv .venv
+          source .venv/bin/activate
           python3 -m pip install --upgrade pip setuptools wheel
           python3 -m pip install -r tests/flow/requirements.txt
           python3 -m pip install jinja2 ramp-packer
@@ -763,9 +765,12 @@ jobs:
           gmake -j `sysctl -n hw.logicalcpu`
       - name: Run tests
         run: |
+          source .venv/bin/activate
           gmake test
       - name: Pack module
-        run: gmake pack BRANCH=$TAG_OR_BRANCH SHOW=1
+        run: |
+          source .venv/bin/activate
+          gmake pack BRANCH=$TAG_OR_BRANCH SHOW=1
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -774,6 +779,7 @@ jobs:
           aws-region: "us-east-1"
       - name: Upload artifacts to S3
         run: |
+          source .venv/bin/activate
           # Upload script needs GNU du 
           export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$PATH"
 
