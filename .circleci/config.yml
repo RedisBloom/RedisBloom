@@ -494,7 +494,7 @@ workflows:
           matrix:
             alias: build-with-redis-ver
             parameters:
-              redis_version: ["6.0", "7", "unstable"]
+              redis_version: ["7.4", "unstable"]
       - build-platforms:
           <<: *on-integ-and-version-tags
           context: common
