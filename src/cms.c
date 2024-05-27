@@ -81,8 +81,7 @@ size_t CMS_Query(CMSketch *cms, const char *item, size_t itemlen) {
 }
 
 static int checkOverflow(CMSketch *dest, size_t quantity, const CMSketch **src,
-                         const long long *weights)
-{
+                         const long long *weights) {
     int64_t itemCount = 0;
     int64_t cmsCount = 0;
     size_t width = dest->width;
@@ -146,7 +145,7 @@ int CMS_Merge(CMSketch *dest, size_t quantity, const CMSketch **src, const long 
         for (size_t j = 0; j < width; ++j) {
             itemCount = 0;
             for (size_t k = 0; k < quantity; ++k) {
-                itemCount += (int64_t) src[k]->array[(i * width) + j] * weights[k];
+                itemCount += (int64_t)src[k]->array[(i * width) + j] * weights[k];
             }
             dest->array[(i * width) + j] = itemCount;
         }
@@ -161,8 +160,7 @@ int CMS_Merge(CMSketch *dest, size_t quantity, const CMSketch **src, const long 
 }
 
 int CMS_MergeParams(mergeParams params) {
-    return CMS_Merge(params.dest, params.numKeys,
-                     (const CMSketch **)params.cmsArray,
+    return CMS_Merge(params.dest, params.numKeys, (const CMSketch **)params.cmsArray,
                      (const long long *)params.weights);
 }
 
