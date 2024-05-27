@@ -80,21 +80,73 @@ size_t CMS_Query(CMSketch *cms, const char *item, size_t itemlen) {
     return minCount;
 }
 
-void CMS_Merge(CMSketch *dest, size_t quantity, const CMSketch **src, const long long *weights) {
-    assert(dest);
-    assert(src);
-    assert(weights);
-
-    size_t itemCount = 0;
-    size_t cmsCount = 0;
+static int checkOverflow(CMSketch *dest, size_t quantity, const CMSketch **src,
+                         const long long *weights)
+{
+    int64_t itemCount = 0;
+    int64_t cmsCount = 0;
     size_t width = dest->width;
     size_t depth = dest->depth;
 
     for (size_t i = 0; i < depth; ++i) {
         for (size_t j = 0; j < width; ++j) {
+            // Note: It is okay if itemCount becomes negative while looping.
+            // e.g. weight[0] is negative. When the loop is done, total count
+            // must be non-negative.
             itemCount = 0;
             for (size_t k = 0; k < quantity; ++k) {
-                itemCount += src[k]->array[(i * width) + j] * weights[k];
+                int64_t mul = 0;
+
+                // Validation for:
+                //   itemCount += src[k]->array[(i * width) + j] * weights[k];
+                if (__builtin_mul_overflow(src[k]->array[(i * width) + j], weights[k], &mul) ||
+                    (__builtin_add_overflow(itemCount, mul, &itemCount))) {
+                    return -1;
+                }
+            }
+
+            if (itemCount < 0 || itemCount > UINT32_MAX) {
+                return -1;
+            }
+        }
+    }
+
+    for (size_t i = 0; i < quantity; ++i) {
+        int64_t mul = 0;
+        // Validation for
+        //    cmsCount += src[i]->counter * weights[i];
+        if (__builtin_mul_overflow(src[i]->counter, weights[i], &mul) ||
+            (__builtin_add_overflow(cmsCount, mul, &cmsCount))) {
+            return -1;
+        }
+    }
+
+    if (cmsCount < 0) {
+        return -1;
+    }
+
+    return 0;
+}
+
+int CMS_Merge(CMSketch *dest, size_t quantity, const CMSketch **src, const long long *weights) {
+    assert(dest);
+    assert(src);
+    assert(weights);
+
+    int64_t itemCount = 0;
+    int64_t cmsCount = 0;
+    size_t width = dest->width;
+    size_t depth = dest->depth;
+
+    if (checkOverflow(dest, quantity, src, weights) != 0) {
+        return -1;
+    }
+
+    for (size_t i = 0; i < depth; ++i) {
+        for (size_t j = 0; j < width; ++j) {
+            itemCount = 0;
+            for (size_t k = 0; k < quantity; ++k) {
+                itemCount += (int64_t) src[k]->array[(i * width) + j] * weights[k];
             }
             dest->array[(i * width) + j] = itemCount;
         }
@@ -104,11 +156,14 @@ void CMS_Merge(CMSketch *dest, size_t quantity, const CMSketch **src, const long
         cmsCount += src[i]->counter * weights[i];
     }
     dest->counter = cmsCount;
+
+    return 0;
 }
 
-void CMS_MergeParams(mergeParams params) {
-    CMS_Merge(params.dest, params.numKeys, (const CMSketch **)params.cmsArray,
-              (const long long *)params.weights);
+int CMS_MergeParams(mergeParams params) {
+    return CMS_Merge(params.dest, params.numKeys,
+                     (const CMSketch **)params.cmsArray,
+                     (const long long *)params.weights);
 }
 
 /************ used for debugging *******************
