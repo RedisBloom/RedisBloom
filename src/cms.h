@@ -51,9 +51,12 @@ size_t CMS_Query(CMSketch *cms, const char *item, size_t strlen);
 /*  Merges multiple CMSketches into a single one.
     All sketches must have identical width and depth.
     dest must be already initialized.
+
+    Returns non-zero if overflow validation fails. In this case,
+    merge operation will be aborted with no side effects.
 */
-void CMS_Merge(CMSketch *dest, size_t quantity, const CMSketch **src, const long long *weights);
-void CMS_MergeParams(mergeParams params);
+int CMS_Merge(CMSketch *dest, size_t quantity, const CMSketch **src, const long long *weights);
+int CMS_MergeParams(mergeParams params);
 
 /* Help function */
 void CMS_Print(const CMSketch *cms);
