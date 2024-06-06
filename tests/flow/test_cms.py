@@ -205,3 +205,181 @@ class testCMS():
         self.assertEqual(['width', 2, 'depth', 2, 'count', 52],
                          self.cmd('cms.info', 'cms1'))
         self.assertEqual([10, 42], self.cmd('cms.incrby', 'cms1', 'foo', '0', 'bar', '0'))
+
+    def test_merge_success(self):
+        # Merge three sketches and then delete one sketch (merge with -1 weight)
+        # Validate content after merge operations.
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd('cms.initbydim', 'cms1{t}', '1000', '5'))
+        self.assertOk(self.cmd('cms.initbydim', 'cms2{t}', '1000', '5'))
+        self.assertOk(self.cmd('cms.initbydim', 'cms3{t}', '1000', '5'))
+        self.assertOk(self.cmd('cms.initbydim', 'cms4{t}', '1000', '5'))
+        self.assertOk(self.cmd('cms.initbydim', 'cms5{t}', '1000', '5'))
+        self.assertOk(self.cmd('cms.initbydim', 'cms6{t}', '1000', '5'))
+
+        for i in range(0, 100):
+            self.assertOk(self.cmd('cms.incrby', 'cms1{t}', 'foo' + str(i), 1))
+            self.assertOk(self.cmd('cms.incrby', 'cms2{t}', 'bar' + str(i), 1))
+            self.assertOk(self.cmd('cms.incrby', 'cms3{t}', 'baz' + str(i), 1))
+
+        # Merge cms1{t} and cms2{t} into cms4{t}
+        self.env.expect('cms.merge', 'cms4{t}', 2, 'cms1{t}', 'cms2{t}', 'weights', '1', '1').ok()
+        for i in range(0, 100):
+            self.assertEqual([1], self.cmd('cms.query', 'cms4{t}', 'foo' + str(i)))
+            self.assertEqual([1], self.cmd('cms.query', 'cms4{t}', 'bar' + str(i)))
+
+        # Merge cms1{t}, cms2{t} and cms3{t} into cms5{t}
+        self.env.expect('cms.merge', 'cms5{t}', 3,
+                        'cms1{t}', 'cms2{t}', 'cms3{t}',
+                        'weights', '1', '1', '1').ok()
+        for i in range(0, 100):
+            self.assertEqual([1], self.cmd('cms.query', 'cms5{t}', 'foo' + str(i)))
+            self.assertEqual([1], self.cmd('cms.query', 'cms5{t}', 'bar' + str(i)))
+            self.assertEqual([1], self.cmd('cms.query', 'cms5{t}', 'baz' + str(i)))
+
+        # Delete cms3{t} from cms5{t} and store in cms6{t}
+        self.env.expect('cms.merge', 'cms6{t}', 2, 'cms5{t}', 'cms3{t}', 'weights', '1', '-1').ok()
+        self.assertEqual(['width', 1000, 'depth', 5, 'count', 200], self.cmd('cms.info', 'cms6{t}'))
+        # Validate cms6{t} has cms1{t} and cms2{t} only.
+        for i in range(0, 100):
+            self.assertEqual([1], self.cmd('cms.query', 'cms6{t}', 'foo' + str(i)))
+            self.assertEqual([1], self.cmd('cms.query', 'cms6{t}', 'bar' + str(i)))
+            self.assertEqual([0], self.cmd('cms.query', 'cms6{t}', 'baz' + str(i)))
+
+        # Same test as above, negative weight first.
+        self.env.expect('cms.merge', 'cms6{t}', 2, 'cms3{t}', 'cms5{t}', 'weights', '-1', '1').ok()
+        self.assertEqual(['width', 1000, 'depth', 5, 'count', 200], self.cmd('cms.info', 'cms6{t}'))
+        # Validate cms6{t} has cms1{t} and cms2{t} only.
+        for i in range(0, 100):
+            self.assertEqual([1], self.cmd('cms.query', 'cms6{t}', 'foo' + str(i)))
+            self.assertEqual([1], self.cmd('cms.query', 'cms6{t}', 'bar' + str(i)))
+            self.assertEqual([0], self.cmd('cms.query', 'cms6{t}', 'baz' + str(i)))
+
+        # Validate you can't delete cms3{t} again.
+        self.env.expect('cms.merge', 'cms6{t}', 2, 'cms6{t}', 'cms3{t}',
+                        'weights', '1', '-1').error().contains('CMS: MERGE overflow')
+
+        self.env.expect('cms.merge', 'cms6{t}', 2, 'cms3{t}', 'cms6{t}',
+                        'weights', '-1', '1').error().contains('CMS: MERGE overflow')
+
+    def test_merge_success_large(self):
+        # Create relatively big sketches and verify merge operation works fine
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd('cms.initbydim', 'cms1{t}', '3000', '30'))
+        self.assertOk(self.cmd('cms.initbydim', 'cms2{t}', '3000', '30'))
+        self.assertOk(self.cmd('cms.initbydim', 'cms3{t}', '3000', '30'))
+
+        for i in range(0, 1000):
+            self.assertOk(self.cmd('cms.incrby', 'cms1{t}', 'foo' + str(i), 1))
+            self.assertOk(self.cmd('cms.incrby', 'cms2{t}', 'foo' + str(i), 1))
+            self.assertOk(self.cmd('cms.incrby', 'cms3{t}', 'bar' + str(i), 1))
+
+        self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms2{t}',
+                        'weights', '1', '-1').ok()
+        self.assertEqual(['width', 3000, 'depth', 30, 'count', 0],
+                         self.cmd('cms.info', 'cms1{t}'))
+
+        for i in range(0, 1000):
+            self.assertEqual([0], self.cmd('cms.query', 'cms1{t}', 'foo' + str(i)))
+
+        self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms2{t}',
+                        'weights', '1', '2').ok()
+        self.assertEqual(['width', 3000, 'depth', 30, 'count', 2000],
+                         self.cmd('cms.info', 'cms1{t}'))
+
+        for i in range(0, 1000):
+            self.assertEqual([2], self.cmd('cms.query', 'cms1{t}', 'foo' + str(i)))
+
+        self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms2{t}',
+                        'weights', '1', '-1').ok()
+        self.assertEqual(['width', 3000, 'depth', 30, 'count', 1000],
+                         self.cmd('cms.info', 'cms1{t}'))
+        for i in range(0, 1000):
+            self.assertEqual([1], self.cmd('cms.query', 'cms1{t}', 'foo' + str(i)))
+
+        # Repeatedly add cms3{t} to cms1{t} and verify content.
+        for i in range(0, 10):
+            self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms3{t}',
+                            'weights', '1', '1').ok()
+            for j in range(0, 1000):
+                self.assertEqual([i + 1], self.cmd('cms.query', 'cms1{t}', 'bar' + str(j)))
+                self.assertEqual([1], self.cmd('cms.query', 'cms1{t}', 'foo' + str(j)))
+
+        # Repeatedly delete cms3{t} from cms1{t} and verify content.
+        # 'i' will increment by 2, and it will delete cms3{t} with weight -2
+        for i in range(0, 10, 2):
+            self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms3{t}',
+                            'weights', '1', '-2').ok()
+            for j in range(0, 1000):
+                self.assertEqual([8 - i], self.cmd('cms.query', 'cms1{t}', 'bar' + str(j)))
+                self.assertEqual([1], self.cmd('cms.query', 'cms1{t}', 'foo' + str(j)))
+
+        # Validate you can't delete cms3{t} again.
+        self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms3{t}',
+                        'weights', '1', '-1').error().contains('CMS: MERGE overflow')
+
+    def test_merge_overflow_large_cell(self):
+        # Validate cms.merge fails if there is overflow while merging cells
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd('cms.initbydim', 'cms1{t}', '2', '2'))
+        self.assertOk(self.cmd('cms.initbydim', 'cms2{t}', '2', '2'))
+
+        # 4000000000 will fit into 32-bit unsigned integer.
+        self.assertEqual([4000000000], self.cmd('cms.incrby', 'cms1{t}', 'foo', '4000000000'))
+        self.assertEqual([4000000000], self.cmd('cms.incrby', 'cms2{t}', 'foo', '4000000000'))
+
+        self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms2{t}',
+                        'weights', '1', '-2').error().contains('CMS: MERGE overflow')
+        self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms2{t}',
+                        'weights', '-2', '-2').error().contains('CMS: MERGE overflow')
+        self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms2{t}',
+                        'weights', '-2', '1').error().contains('CMS: MERGE overflow')
+        self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms2{t}',
+                        'weights', '2', '0').error().contains('CMS: MERGE overflow')
+        self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms2{t}',
+                        'weights', '0', '2').error().contains('CMS: MERGE overflow')
+        self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms2{t}',
+                        'weights', '-1', '-1').error().contains('CMS: MERGE overflow')
+
+        # Validate keys did not change
+        self.assertEqual(['width', 2, 'depth', 2, 'count', 4000000000],
+                         self.cmd('cms.info', 'cms1{t}'))
+        self.assertEqual(['width', 2, 'depth', 2, 'count', 4000000000],
+                         self.cmd('cms.info', 'cms2{t}'))
+        self.assertEqual([4000000000], self.cmd('cms.query', 'cms1{t}', 'foo'))
+        self.assertEqual([4000000000], self.cmd('cms.query', 'cms2{t}', 'foo'))
+
+    def test_merge_overflow_large_weight(self):
+        # Validate cms.merge fails if there is overflow due to large weight arg
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd('cms.initbydim', 'cms1{t}', '2', '2'))
+        self.assertOk(self.cmd('cms.initbydim', 'cms2{t}', '2', '2'))
+        self.assertEqual([4], self.cmd('cms.incrby', 'cms1{t}', 'foo', '4'))
+        self.assertEqual([4], self.cmd('cms.incrby', 'cms2{t}', 'foo', '4'))
+
+        # Test boundaries
+        self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms2{t}',
+                        'weights', '9223372036854775807', '-4000000000').error().contains('CMS: MERGE overflow')
+        self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms2{t}',
+                        'weights', '8000000000', '-4000000000').error().contains('CMS: MERGE overflow')
+        self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms2{t}',
+                        'weights', '-8000000000', '4000000000').error().contains('CMS: MERGE overflow')
+        self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms2{t}',
+                        'weights', '-800000000000', '8000000000').error().contains('CMS: MERGE overflow')
+        self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms2{t}',
+                        'weights', '-1', '-1').error().contains('CMS: MERGE overflow')
+        self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms2{t}',
+                        'weights', '-5', '-4').error().contains('CMS: MERGE overflow')
+
+        # Validate keys did not change
+        self.assertEqual(['width', 2, 'depth', 2, 'count', 4], self.cmd('cms.info', 'cms1{t}'))
+        self.assertEqual(['width', 2, 'depth', 2, 'count', 4], self.cmd('cms.info', 'cms2{t}'))
+        self.assertEqual([4], self.cmd('cms.query', 'cms1{t}', 'foo'))
+        self.assertEqual([4], self.cmd('cms.query', 'cms2{t}', 'foo'))
+
+        # An extreme test for a success scenario
+        self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms2{t}',
+                        'weights', '-922337203685477500', '922337203685477502').ok()
+        self.assertEqual(['width', 2, 'depth', 2, 'count', 8], self.cmd('cms.info', 'cms1{t}'))
+        self.assertEqual([8], self.cmd('cms.query', 'cms1{t}', 'foo'))
+
