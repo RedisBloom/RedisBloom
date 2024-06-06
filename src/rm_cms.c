@@ -242,7 +242,12 @@ int CMSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_OK;
     }
 
-    CMS_MergeParams(params);
+    if (CMS_MergeParams(params) != 0) {
+        RedisModule_ReplyWithError(ctx, "CMS: MERGE overflow");
+        CMS_FREE(params.cmsArray);
+        CMS_FREE(params.weights);
+        return REDISMODULE_OK;
+    }
 
     CMS_FREE(params.cmsArray);
     CMS_FREE(params.weights);
