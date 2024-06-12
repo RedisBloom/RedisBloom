@@ -9,7 +9,7 @@ commands:
   early-returns:
     steps:
       - run:
-          name: Early return if this is a docs build
+          name: Early return if this is a docs build.
           command: |
             if [[ $CIRCLE_BRANCH == *docs ]]; then
               echo "Identifies as documents PR, no testing required."
@@ -276,7 +276,7 @@ jobs:
     #   - image: debian:bullseye
     machine:
       enabled: true
-      image: ubuntu-2004:202010-01
+      image: ubuntu-2004:2022.10.1
       resource_class: large
     steps:
       - vm-build-platforms-steps:
@@ -287,7 +287,7 @@ jobs:
       platform:
         type: string
     machine:
-      image: ubuntu-2004:202101-01
+      image: ubuntu-2004:2022.10.1
     resource_class: arm.medium
     steps:
       - vm-build-platforms-steps:
@@ -496,13 +496,13 @@ workflows:
             parameters:
               redis_version: ["6.0", "7", "unstable"]
       - build-platforms:
-          <<: *on-integ-and-version-tags
+          <<: *on-any-branch
           context: common
           matrix:
             parameters:
               platform: [jammy, focal, bionic, xenial, amzn2, rocky8, centos7, bullseye, rocky9]
       - build-arm-platforms:
-          <<: *on-integ-and-version-tags
+          <<: *on-any-branch
           context: common
           matrix:
             parameters:
