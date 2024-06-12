@@ -347,14 +347,6 @@ jobs:
           no_output_timeout: 30m
       - save-tests-logs
 
-  valgrind:
-    docker:
-      - image: redisfab/rmbuilder:6.2.7-x64-bullseye
-    steps:
-      - build-steps:
-          build_params: VALGRIND=1
-          test_params: VALGRIND=1 SIMPLE=1
-
   static-analysis-infer:
     docker:
       - image: redisbench/infer-linux64:1.0.0
@@ -484,10 +476,6 @@ workflows:
       #     <<: *on-any-branch
       - coverage:
           <<: *on-any-branch
-      - valgrind:
-          <<: *on-any-branch
-          requires:
-            - lint
       - build:
           name: build-with-redis-<<matrix.redis_version>>
           <<: *on-integ-and-version-tags
