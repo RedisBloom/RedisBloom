@@ -69,6 +69,20 @@ jobs:
             echo "STAGING=1" >> $GITHUB_OUTPUT
           fi
 
+  linter:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l -eo pipefail {0}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential
+      - name: Linter
+        run: make lint
+
   recent-ubuntu:
     runs-on: ${{ matrix.builder.os }}
     env:
