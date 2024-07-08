@@ -163,6 +163,11 @@ class testCMS():
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 'A', 'foo', 'weights', 1)
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 3, 'bar', 'baz' 'weights', 1, 'a')
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 3, 'bar', 'baz' 'weights', 1)
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', '0')
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', '0', 'weights')
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', '-1')
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', '-1', 'foo', 'bar')
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', '-1', 'foo', 'bar', 'weights', 1, 1)
 
     def test_merge_extensive(self):
         self.cmd('FLUSHALL')
