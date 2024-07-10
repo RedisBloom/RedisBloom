@@ -10,6 +10,7 @@
 #include "rmutil/util.h"
 #include "version.h"
 
+#include <limits.h>
 #include <math.h>
 #include <stdlib.h>
 #include <strings.h>
@@ -66,6 +67,10 @@ static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
             INNER_ERROR("CMS: invalid prob value");
         }
         CMS_DimFromProb(overEst, prob, (size_t *)width, (size_t *)depth);
+    }
+
+    if (*width < 1 || *depth < 1 || *width > LLONG_MAX / *depth) {
+        INNER_ERROR("CMS: invalid init arguments");
     }
 
     return REDISMODULE_OK;
