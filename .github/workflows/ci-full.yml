@@ -449,8 +449,8 @@ jobs:
       - name: Install build dependencies
         run: |
           yum -y install epel-release
-          yum-config-manager --add-repo http://vault.centos.org/centos/7/sclo/x86_64/rh/
           yum -y install http://opensource.wandisco.com/centos/7/git/x86_64/wandisco-git-release-7-2.noarch.rpm
+          yum-config-manager --add-repo http://vault.centos.org/centos/7/sclo/x86_64/rh/
           yum -y install gcc make cmake3 git python-pip openssl-devel bzip2-devel libffi-devel zlib-devel wget centos-release-scl scl-utils
           yum groupinstall "Development Tools" -y
           yum install -y devtoolset-11
