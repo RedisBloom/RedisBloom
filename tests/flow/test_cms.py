@@ -49,6 +49,7 @@ class testCMS():
                 ('foo', '0', '0'),
                 ('foo', '0', '100'),
                 ('foo', '100', '0'),
+                ('foo', '8589934592', '8589934592'),
         ):
             self.assertRaises(ResponseError, self.cmd, 'cms.initbydim', *args)
 
@@ -66,6 +67,8 @@ class testCMS():
                 ('foo', '0', '0'),
                 ('foo', '1000', '0',),
                 ('foo', '0', '100'),
+                ('foo', '0.9', '0.9999999999999999'),
+                ('foo', '0.0000000000000000001', '0.9'),
         ):
             self.assertRaises(ResponseError, self.cmd, 'cms.initbyprob', *args)
 
