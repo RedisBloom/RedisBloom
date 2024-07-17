@@ -28,6 +28,13 @@ typedef struct SBChain {
     unsigned growth;
 } SBChain;
 
+enum sb_rc {
+    SB_SUCCESS = 0,
+    SB_ERR = -1,
+    SB_FULL = -2,
+    SB_OOM = -3,
+    SB_INVALID = -4,
+};
 /**
  * Create a new chain
  * initsize: The initial desired capacity of the chain
@@ -36,7 +43,8 @@ typedef struct SBChain {
  *
  * Free with SBChain_Free when done.
  */
-SBChain *SB_NewChain(uint64_t initsize, double error_rate, unsigned options, unsigned growth);
+SBChain *SB_NewChain(uint64_t initsize, double error_rate, unsigned options, unsigned growth,
+                     int *err);
 
 /**
  * Create a new chain from a 'template'. This template will copy an existing

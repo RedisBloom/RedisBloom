@@ -28,8 +28,10 @@
 
 extern void (*RedisModule_Free)(void *ptr);
 extern void * (*RedisModule_Calloc)(size_t nmemb, size_t size);
+extern void * (*RedisModule_TryCalloc)(size_t nmemb, size_t size);
 
-#define BLOOM_CALLOC RedisModule_Calloc
+#define BLOOM_TRYCALLOC(...) \
+    RedisModule_TryCalloc ? RedisModule_TryCalloc(__VA_ARGS__) : RedisModule_Calloc(__VA_ARGS__)
 #define BLOOM_FREE RedisModule_Free
 
 /*
@@ -125,6 +127,10 @@ static double calc_bpe(double error) {
     return bpe;
 }
 
+// Returns
+//   0 on success.
+//   1 on invalid argument
+//  -1 on insufficient memory
 int bloom_init(struct bloom *bloom, uint64_t entries, double error, unsigned options) {
     if (entries < 1 || error <= 0 || error >= 1.0) {
         return 1;
@@ -185,9 +191,9 @@ int bloom_init(struct bloom *bloom, uint64_t entries, double error, unsigned opt
 
     bloom->force64 = (options & BLOOM_OPT_FORCE64);
     bloom->hashes = (int)ceil(LN2 * bloom->bpe); // ln(2)
-    bloom->bf = (unsigned char *)BLOOM_CALLOC(bloom->bytes, sizeof(unsigned char));
+    bloom->bf = (unsigned char *)BLOOM_TRYCALLOC(bloom->bytes, sizeof(unsigned char));
     if (bloom->bf == NULL) {
-        return 1;
+        return -1;
     }
 
     return 0;
