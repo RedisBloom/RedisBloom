@@ -450,7 +450,6 @@ jobs:
     steps:
       - name: Install build dependencies
         run: |
-          yum -y install epel-release
           yum-config-manager --add-repo http://vault.centos.org/centos/7/sclo/x86_64/rh/
           rpm --import https://vault.centos.org/RPM-GPG-KEY-CentOS-7
           # http://mirror.centos.org/centos/7/ is deprecated, so we have to disable mirrorlists
