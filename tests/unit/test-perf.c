@@ -14,7 +14,9 @@ int main(int argc, char **argv) {
     RedisModule_Free = free_wrap;
     RedisModule_Realloc = realloc;
 
-    SBChain *chain = SB_NewChain(NUM_ITEMS, ERROR_RATE, 0, 2);
+    int err;
+
+    SBChain *chain = SB_NewChain(NUM_ITEMS, ERROR_RATE, 0, 2, &err);
     for (size_t ii = 0; ii < NUM_ITERATIONS; ++ii) {
         size_t elem = ii % NUM_ITEMS;
         SBChain_Add(chain, &elem, sizeof elem);

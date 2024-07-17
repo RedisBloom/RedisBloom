@@ -391,3 +391,10 @@ class testCMS():
         self.assertEqual(['width', 2, 'depth', 2, 'count', 8], self.cmd('cms.info', 'cms1{t}'))
         self.assertEqual([8], self.cmd('cms.query', 'cms1{t}', 'foo'))
 
+    def test_insufficient_memory(self):
+        self.env.skipOnVersionSmaller('7.4')
+        self.cmd('FLUSHALL')
+        self.env.expect('CMS.INITBYPROB', 'x', '0.0000000000000001', '0.0000000000000001').error().contains('CMS: Insufficient memory to create the key')
+        self.env.expect('CMS.INITBYDIM',  'x', '1000000000', '1000000000').error().contains('CMS: Insufficient memory to create the key')
+        self.env.expect('CMS.INITBYDIM',  'x', '2294967296', '2294967296').error().contains('CMS: Insufficient memory to create the key')
+        self.env.expect('CMS.INITBYDIM',  'x', '100000000000000', '100000000000000').error().contains('CMS: invalid init arguments')

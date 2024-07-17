@@ -18,6 +18,8 @@
 #include "redismodule.h"
 
 #define TOPK_CALLOC(count, size) RedisModule_Calloc(count, size)
+#define TOPK_TRYCALLOC(...)                                                                        \
+    RedisModule_TryCalloc ? RedisModule_TryCalloc(__VA_ARGS__) : RedisModule_Calloc(__VA_ARGS__)
 #define TOPK_FREE(ptr) RedisModule_Free(ptr)
 #else
 // #define TOPK_CALLOC(count, size) calloc(count, size)
