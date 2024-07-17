@@ -57,6 +57,9 @@ int CuckooFilter_Init(CuckooFilter *filter, uint64_t capacity, uint16_t bucketSi
 }
 
 void CuckooFilter_Free(CuckooFilter *filter) {
+    if (!filter) {
+        return;
+    }
     for (uint16_t ii = 0; ii < filter->numFilters; ++ii) {
         CUCKOO_FREE(filter->filters[ii].data);
     }
@@ -70,18 +73,35 @@ static int CuckooFilter_Grow(CuckooFilter *filter) {
     if (!filtersArray) {
         return -1; // LCOV_EXCL_LINE memory failure
     }
+
+    filter->filters = filtersArray;
     SubCF *currentFilter = filtersArray + filter->numFilters;
+    *currentFilter = (SubCF) {
+        .bucketSize = filter->bucketSize,
+        .data = NULL
+    };
+
     size_t growth = pow(filter->expansion, filter->numFilters);
-    currentFilter->bucketSize = filter->bucketSize;
+    // filter->numBuckets variable is 56 bits. Check if multiplication
+    // will fit into this variable.
+    if (growth > CF_MAX_NUM_BUCKETS / filter->numBuckets) {
+        return -1;
+    }
     currentFilter->numBuckets = filter->numBuckets * growth;
+
+    // Max bucketsize is limited to 256 at most. Unlikely to overflow here but
+    // just in case.
+    if (filter->bucketSize > SIZE_MAX / currentFilter->numBuckets) {
+        return -1;
+    }
     currentFilter->data =
-        CUCKOO_CALLOC((size_t)currentFilter->numBuckets * filter->bucketSize, sizeof(CuckooBucket));
+        CUCKOO_TRYCALLOC((size_t)currentFilter->numBuckets * filter->bucketSize, sizeof(CuckooBucket));
     if (!currentFilter->data) {
-        return -1; // LCOV_EXCL_LINE memory failure
+        return -1;
     }
 
     filter->numFilters++;
-    filter->filters = filtersArray;
+
     return 0;
 }
 

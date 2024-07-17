@@ -407,3 +407,10 @@ class testCMS():
                 self.env.assertTrue(False, message='Multi transaction was not failed when it should have')
             except redis.exceptions.WatchError as e:
                 self.env.assertContains('Watched variable changed', str(e))
+    def test_insufficient_memory(self):
+        self.env.skipOnVersionSmaller('7.4')
+        self.cmd('FLUSHALL')
+        self.env.expect('CMS.INITBYPROB', 'x', '0.0000000000000001', '0.0000000000000001').error().contains('CMS: Insufficient memory to create the key')
+        self.env.expect('CMS.INITBYDIM',  'x', '1000000000', '1000000000').error().contains('CMS: Insufficient memory to create the key')
+        self.env.expect('CMS.INITBYDIM',  'x', '2294967296', '2294967296').error().contains('CMS: Insufficient memory to create the key')
+        self.env.expect('CMS.INITBYDIM',  'x', '100000000000000', '100000000000000').error().contains('CMS: invalid init arguments')
