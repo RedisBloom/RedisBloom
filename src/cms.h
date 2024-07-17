@@ -11,6 +11,8 @@
 #ifdef REDIS_MODULE_TARGET
 #include "redismodule.h"
 #define CMS_CALLOC(count, size) RedisModule_Calloc(count, size)
+#define CMS_TRYCALLOC(...)                                                                         \
+    RedisModule_TryCalloc ? RedisModule_TryCalloc(__VA_ARGS__) : RedisModule_Calloc(__VA_ARGS__)
 #define CMS_FREE(ptr) RedisModule_Free(ptr)
 #else
 // #define CMS_CALLOC(count, size) calloc(count, size)

@@ -164,7 +164,7 @@ setup_sanitizer() {
 	export SANITIZER="$SAN"
 	export SHORT_READ_BYTES_DELTA=512
 
-	export ASAN_OPTIONS="detect_odr_violation=0:halt_on_error=0:detect_leaks=1"
+	export ASAN_OPTIONS="detect_odr_violation=0:halt_on_error=0:detect_leaks=1:allocator_may_return_null=1"
 	# --no-output-catch --exit-on-failure --check-exitcode
 	RLTEST_SAN_ARGS="--sanitizer $SAN"
 }

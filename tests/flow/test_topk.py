@@ -231,3 +231,10 @@ class testTopK():
                 self.env.cmd('TOPK.ADD', 'topkmyk1', '%d' % i)
             results.append(self.env.cmd('TOPK.LIST', 'topkmyk1'))
         self.env.assertEqual(results[0], results[1])
+    def test_insufficient_memory(self):
+        self.env.skipOnVersionSmaller('7.4')
+        self.cmd('FLUSHALL')
+
+        self.env.expect('topk.reserve', 'x', '3', '2000000000', '200000000', '1').error().contains('Insufficient memory to create topk data structure')
+        self.env.expect('topk.reserve', 'x', '3', '900000000000', '1', '1').error().contains('TopK: invalid width')
+        self.env.expect('topk.reserve', 'x', '3', '1', '900000000000', '1').error().contains('TopK: invalid depth')
