@@ -765,7 +765,7 @@ jobs:
         # 6.0.20 can't be built due to Redis bug.
         redis-version: ["6.2.14", "7.2.4", "unstable"]
         # MacOS 13 - x86-64, MacOS 14 - ARM (Apple Chips).
-        os: ["macos-13", "macos-13-xlarge", "macos-14"]
+        os: ["macos-12", "macos-13", "macos-14"]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
