@@ -156,6 +156,180 @@ jobs:
           cd bin/artifacts
           du -ah --apparent-size *
 
+  arm64-recent-ubuntu:
+    runs-on: [self-hosted,ubuntu-2204-arm64]
+    env:
+      STAGING: ${{ needs.setup-environment.outputs.STAGING }}
+      VERSION: ${{ needs.setup-environment.outputs.TAG }}
+      BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
+    strategy:
+      fail-fast: false
+      matrix:
+        redis-version: ["6.0.20", "7.2.4", "unstable"]
+    defaults:
+      run:
+        shell: bash -l -eo pipefail {0}
+    needs: setup-environment
+    steps:
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential autoconf automake libtool cmake lcov valgrind
+      - name: Setup Python for testing
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          architecture: 'arm64'
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install Python dependencies
+        run: |
+          uname -a
+          python3 -m pip install -r tests/flow/requirements.txt
+          python3 -m pip install jinja2 ramp-packer
+      - name: Checkout Redis
+        uses: actions/checkout@v3
+        with:
+          repository: 'redis/redis'
+          ref: ${{ matrix.redis-version }}
+          path: 'redis'
+      - name: Build Redis
+        run: |
+          cd redis && make -j `nproc`
+          echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
+          echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
+          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
+          redis-server --version
+      - name: Build
+        run: make -j 4
+      - name: Run tests
+        run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Pack module
+        run: make pack BRANCH=$TAG_OR_BRANCH SHOW=1
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          unset-current-credentials: true
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: "us-east-2"
+      - name: Upload artifacts to S3
+        run: |
+          mkdir -p bin
+          ln -s ~/workspace/artifacts bin/artifacts
+          if [[ $STAGING -eq 1 ]]; then
+            make upload-artifacts SHOW=1 VERBOSE=1
+          fi
+          make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
+      - name: List artifacts
+        run: |
+          cd bin/artifacts
+          du -ah --apparent-size *
+
+  arm64-old-ubuntu:
+    runs-on: [self-hosted,ubuntu-2204-arm64]
+    container: ${{ matrix.builder.image }}
+    env:
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+      STAGING: ${{ needs.setup-environment.outputs.STAGING }}
+      VERSION: ${{ needs.setup-environment.outputs.TAG }}
+      BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
+    strategy:
+      fail-fast: false
+      matrix:
+        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        builder: [
+          {
+            image: 'ubuntu:focal',
+            nick: 'focal'
+          },
+          {
+            image: 'ubuntu:bionic',
+            nick: 'bionic'
+          }
+        ]
+    defaults:
+      run:
+        shell: bash -l -eo pipefail {0}
+    needs: setup-environment
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update && apt-get install -y software-properties-common
+          add-apt-repository ppa:git-core/ppa -y
+          apt-get update
+          apt-get install -y build-essential make autoconf automake libtool lcov git wget zlib1g-dev lsb-release libssl-dev openssl ca-certificates curl unzip
+          wget https://cmake.org/files/v3.28/cmake-3.28.0.tar.gz
+          tar -xzvf cmake-3.28.0.tar.gz
+          cd cmake-3.28.0
+          ./configure
+          make -j `nproc`
+          make install
+          cd ..
+          ln -s /usr/local/bin/cmake /usr/bin/cmake
+          wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz
+          tar -xvf Python-3.9.6.tgz
+          cd Python-3.9.6
+          ./configure
+          make -j `nproc`
+          make altinstall
+          cd ..
+          rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
+          rm /usr/bin/lsb_release
+          python3 --version
+          make --version
+          cmake --version
+          python3 -m pip install --upgrade pip
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
+      - name: Checkout RedisBloom
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install -r tests/flow/requirements.txt
+          python3 -m pip install jinja2 ramp-packer
+      - name: Checkout Redis
+        uses: actions/checkout@v3
+        with:
+          repository: 'redis/redis'
+          ref: ${{ matrix.redis-version }}
+          path: 'redis'
+      - name: Build Redis
+        run: |
+          cd redis && make -j `nproc`
+          echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
+          echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
+          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
+          redis-server --version
+      - name: Build RedisBloom
+        run: make -j `nproc`
+      - name: Run tests
+        run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Pack module
+        run: make pack BRANCH=$TAG_OR_BRANCH SHOW=1
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: "us-east-1"
+      - name: Upload artifacts to S3
+        run: |
+          mkdir -p bin
+          ln -s ~/workspace/artifacts bin/artifacts
+          if [[ $STAGING -eq 1 ]]; then
+            make upload-artifacts SHOW=1 VERBOSE=1
+          fi
+          make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
+      - name: List artifacts
+        run: |
+          cd bin/artifacts
+          du -ah --apparent-size *
+
   test-valgrind:
     runs-on: ubuntu-latest
     strategy:
@@ -253,12 +427,16 @@ jobs:
         redis-version: ["6.0.20", "7.2.4", "unstable"]
         builder: [
           {
-            image: 'ubuntu:xenial',
-            nick: 'xenial'
-          },
-          {
             image: 'ubuntu:focal',
             nick: 'focal'
+          },
+          {
+            image: 'ubuntu:bionic',
+            nick: 'bionic'
+          },
+          {
+            image: 'ubuntu:xenial',
+            nick: 'xenial'
           }
         ]
     defaults:
@@ -754,7 +932,7 @@ jobs:
         # 6.0.20 can't be built due to Redis bug.
         redis-version: ["6.2.14", "7.2.4", "unstable"]
         # MacOS 13 - x86-64, MacOS 14 - ARM (Apple Chips).
-        os: ["macos-13", "macos-14"]
+        os: ["macos-13", "macos-13-xlarge", "macos-14"]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
