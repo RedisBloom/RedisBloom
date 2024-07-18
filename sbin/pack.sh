@@ -168,7 +168,7 @@ pack_ramp() {
 
 	cd $ARTDIR/snapshots
 	if [[ ! -z $BRANCH ]]; then
-		local snap_package=$stem.${BRANCH}${_VARIANT}.zip
+		local snap_package=$stem.${verspec}.zip
 		ln -sf ../$fq_package $snap_package
 	fi
 
