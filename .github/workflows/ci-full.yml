@@ -1,18 +1,14 @@
 name: CI Full suite
 # This is a full workflow for the production branches and tags, which
-# includes building and testing on all supported platforms, and
-# uploading the artifacts to S3.
+# includes building and testing on all supported platforms
 
 # TODO:
 #
 # 1. Remove the use of "readies" completely.
 # 2. Remove the use of all the scripts for anything and do everything
 #    right here in the workflow.
-# 3. Use the corresponding actions for the end goal: aws s3 upload
-#    action. This also will remove the need for the installation of aws-cli.
 #
 # More info: jobs.steps.uses: docker://alpine:3.8 for docker images,
-# To use the AWS CLI: https://hub.docker.com/r/amazon/aws-cli
 
 on:
   push:
@@ -120,27 +116,6 @@ jobs:
         run: make -j 4
       - name: Run tests
         run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
-      - name: Pack module
-        run: make pack BRANCH=$TAG_OR_BRANCH SHOW=1
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          unset-current-credentials: true
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: "us-east-2"
-      - name: Upload artifacts to S3
-        run: |
-          mkdir -p bin
-          ln -s ~/workspace/artifacts bin/artifacts
-          if [[ $STAGING -eq 1 ]]; then
-            make upload-artifacts SHOW=1 VERBOSE=1
-          fi
-          make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
-      - name: List artifacts
-        run: |
-          cd bin/artifacts
-          du -ah --apparent-size *
 
   test-valgrind:
     runs-on: ubuntu-latest
@@ -278,9 +253,6 @@ jobs:
           make --version
           cmake --version
           python3 -m pip install --upgrade pip
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          ./aws/install
       - name: Checkout RedisBloom
         uses: actions/checkout@v3
         with:
@@ -306,26 +278,6 @@ jobs:
         run: make -j `nproc`
       - name: Run tests
         run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
-      - name: Pack module
-        run: make pack BRANCH=$TAG_OR_BRANCH SHOW=1
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v3
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: "us-east-1"
-      - name: Upload artifacts to S3
-        run: |
-          mkdir -p bin
-          ln -s ~/workspace/artifacts bin/artifacts
-          if [[ $STAGING -eq 1 ]]; then
-            make upload-artifacts SHOW=1 VERBOSE=1
-          fi
-          make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
-      - name: List artifacts
-        run: |
-          cd bin/artifacts
-          du -ah --apparent-size *
 
   debian:
     runs-on: ubuntu-latest
@@ -358,9 +310,6 @@ jobs:
           make --version
           cmake --version
           python3 -m pip install --upgrade pip
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          ./aws/install
       - name: Checkout RedisBloom
         uses: actions/checkout@v3
         with:
@@ -386,28 +335,6 @@ jobs:
         run: make -j `nproc`
       - name: Run tests
         run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
-      - name: Pack module
-        run: |
-          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
-          make pack BRANCH=$TAG_OR_BRANCH SHOW=1
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: "us-east-1"
-      - name: Upload artifacts to S3
-        run: |
-          mkdir -p bin
-          ln -s ~/workspace/artifacts bin/artifacts
-          if [[ $STAGING -eq 1 ]]; then
-            make upload-artifacts SHOW=1 VERBOSE=1
-          fi
-          make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
-      - name: List artifacts
-        run: |
-          cd bin/artifacts
-          du -ah --apparent-size *
 
   centos:
     runs-on: ubuntu-latest
@@ -453,9 +380,6 @@ jobs:
           rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
           ln -s `which cmake3` /usr/bin/cmake
           python3 --version
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          ./aws/install
       - name: Checkout sources
         uses: actions/checkout@v3
         with:
@@ -487,29 +411,6 @@ jobs:
         run: |
           . scl_source enable devtoolset-11 || true
           make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
-      - name: Pack module
-        run: |
-          . scl_source enable devtoolset-11 || true
-          make pack BRANCH=$TAG_OR_BRANCH SHOW=1
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v3
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: "us-east-1"
-      - name: Upload artifacts to S3
-        run: |
-          . scl_source enable devtoolset-11 || true
-          mkdir -p bin
-          ln -s ~/workspace/artifacts bin/artifacts
-          if [[ $STAGING -eq 1 ]]; then
-            make upload-artifacts SHOW=1 VERBOSE=1
-          fi
-          make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
-      - name: List artifacts
-        run: |
-          cd bin/artifacts
-          du -ah --apparent-size *
 
   amazon-linux:
     runs-on: ubuntu-latest
@@ -554,9 +455,6 @@ jobs:
           rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
           ln -s `which cmake3` /usr/bin/cmake
           python3 --version
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          ./aws/install
       - name: Checkout sources
         uses: actions/checkout@v3
         with:
@@ -588,29 +486,6 @@ jobs:
         run: |
           . scl_source enable devtoolset-11 || true
           make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
-      - name: Pack module
-        run: |
-          . scl_source enable devtoolset-11 || true
-          make pack BRANCH=$TAG_OR_BRANCH SHOW=1
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v3
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: "us-east-1"
-      - name: Upload artifacts to S3
-        run: |
-          . scl_source enable devtoolset-11 || true
-          mkdir -p bin
-          ln -s ~/workspace/artifacts bin/artifacts
-          if [[ $STAGING -eq 1 ]]; then
-            make upload-artifacts SHOW=1 VERBOSE=1
-          fi
-          make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
-      - name: List artifacts
-        run: |
-          cd bin/artifacts
-          du -ah --apparent-size *
 
   rocky-linux:
     runs-on: ubuntu-latest
@@ -658,9 +533,6 @@ jobs:
           rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
           cmake --version
           python3 --version
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          ./aws/install
       - name: Checkout sources
         uses: actions/checkout@v3
         with:
@@ -691,27 +563,6 @@ jobs:
         run: |
           . scl_source enable gcc-toolset-13 || true
           make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
-      - name: Pack module
-        run: make pack BRANCH=$TAG_OR_BRANCH SHOW=1
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: "us-east-1"
-      - name: Upload artifacts to S3
-        run: |
-          . scl_source enable gcc-toolset-13 || true
-          mkdir -p bin
-          ln -s ~/workspace/artifacts bin/artifacts
-          if [[ $STAGING -eq 1 ]]; then
-            make upload-artifacts SHOW=1 VERBOSE=1
-          fi
-          make upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
-      - name: List artifacts
-        run: |
-          cd bin/artifacts
-          du -ah --apparent-size *
 
   macos:
     runs-on: ${{ matrix.os }}
@@ -767,25 +618,3 @@ jobs:
         run: |
           source .venv/bin/activate
           gmake test
-      - name: Pack module
-        run: |
-          source .venv/bin/activate
-          gmake pack BRANCH=$TAG_OR_BRANCH SHOW=1
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: "us-east-1"
-      - name: Upload artifacts to S3
-        run: |
-          source .venv/bin/activate
-          # Upload script needs GNU du 
-          export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$PATH"
-
-          mkdir -p bin
-          ln -s ~/workspace/artifacts bin/artifacts
-          if [[ $STAGING -eq 1 ]]; then
-            gmake upload-artifacts SHOW=1 VERBOSE=1
-          fi
-          gmake upload-release STAGING=$STAGING SHOW=1 VERBOSE=1
