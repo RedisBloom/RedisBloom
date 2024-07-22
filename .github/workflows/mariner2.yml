@@ -40,18 +40,3 @@ jobs:
         run: make install
       - name: Build and test Bloom
         run: make test
-      - name: Pack module
-        run: make pack BRANCH=${{ github.ref_name }} SHOW=1
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: "us-east-1"
-      - name: Upload artifacts to s3 - staging
-        run: |
-          make upload-artifacts SHOW=1 VERBOSE=1
-          make upload-release SHOW=1 STAGING=1 VERBOSE=1
-      - name: Upload artifacts to s3 - release  # todo: trigger this manually instead
-        if: ${{ github.ref != 'refs/heads/master' }}
-        run: make upload-release SHOW=1 VERBOSE=1
