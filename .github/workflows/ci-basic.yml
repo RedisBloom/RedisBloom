@@ -42,7 +42,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        redis-version: ["7.2.4"]
         builder-os: ['ubuntu-22.04', 'ubuntu-20.04']
     defaults:
       run:
@@ -79,7 +79,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        redis-version: ["7.2.4"]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
@@ -115,7 +115,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["7.2.4", "unstable"]
+        redis-version: ["7.2.4"]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}

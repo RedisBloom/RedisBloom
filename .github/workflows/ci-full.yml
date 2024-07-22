@@ -93,7 +93,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        redis-version: ["7.2.4"]
         builder: [
           { os: 'ubuntu-22.04', nick: 'jammy' },
           { os: 'ubuntu-20.04', nick: 'focal' }
@@ -167,7 +167,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        redis-version: ["7.2.4"]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
@@ -240,7 +240,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        redis-version: ["7.2.4"]
         builder: [
           {
             image: 'ubuntu:focal',
@@ -338,7 +338,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        redis-version: ["7.2.4"]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
@@ -379,7 +379,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["7.2.4", "unstable"]
+        redis-version: ["7.2.4"]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
@@ -427,7 +427,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        redis-version: ["7.2.4"]
         builder: [
           {
             image: 'ubuntu:focal',
@@ -535,7 +535,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        redis-version: ["7.2.4"]
         builder: [
           {
             image: 'debian:bullseye',
@@ -619,7 +619,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.2.14", "7.2.4", "unstable"]
+        redis-version: ["7.2.4"]
         builder: [
           {
             image: 'centos:7',
@@ -735,7 +735,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        redis-version: ["7.2.4"]
         builder: [
           {
             image: 'amazonlinux:2',
@@ -837,7 +837,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        redis-version: ["7.2.4"]
         builder: [{
             image: 'rockylinux:8',
             nick: 'rocky8'
@@ -939,7 +939,7 @@ jobs:
       fail-fast: false
       matrix:
         # 6.0.20 can't be built due to Redis bug.
-        redis-version: ["6.2.14", "7.2.4", "unstable"]
+        redis-version: ["7.2.4"]
         # MacOS 13 - x86-64, MacOS 14 - ARM (Apple Chips).
         os: ["macos-13", "macos-14"]
     defaults:
