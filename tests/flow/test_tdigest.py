@@ -1,7 +1,7 @@
 
 from ast import arg
 from common import *
-from numpy import NaN
+import numpy as np
 import redis
 import math
 import random
@@ -703,7 +703,7 @@ class testTDigest:
         self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.rank")
         # parsing
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.rank", "tdigest", NaN
+            redis.exceptions.ResponseError, self.cmd, "tdigest.rank", "tdigest", np.nan
         )
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.rank", "tdigest", "a", 0.9
@@ -777,7 +777,7 @@ class testTDigest:
         )
         # parsing
         self.assertRaises(
-            redis.exceptions.ResponseError, self.cmd, "tdigest.byrank", "tdigest", NaN
+            redis.exceptions.ResponseError, self.cmd, "tdigest.byrank", "tdigest", np.nan
         )
         self.assertRaises(
             redis.exceptions.ResponseError, self.cmd, "tdigest.byrank", "tdigest", "a", 0.9
