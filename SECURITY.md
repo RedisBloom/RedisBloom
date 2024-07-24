@@ -6,14 +6,14 @@ RedisBloom is generally backwards compatible with very few exceptions, so we
 recommend users to always use the latest version to experience stability,
 performance and security.
 
-We generally backport security issues to a single previous major version,
+We generally backport security issues to a single previous version,
 unless this is not possible or feasible with a reasonable effort.
 
 | Version | Supported          |
 | ------- | ------------------ |
+| 2.8     | :white_check_mark: |
 | 2.6     | :white_check_mark: |
-| 2.4     | :white_check_mark: |
-| < 2.4   | :x:                |
+| < 2.6   | :x:                |
 
 ## Reporting a Vulnerability
 
