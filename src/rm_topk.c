@@ -45,10 +45,12 @@ static int createTopK(RedisModuleCtx *ctx, RedisModuleString **argv, int argc, T
         INNER_ERROR("TopK: invalid k");
     }
     if (argc == 6) {
-        if ((RedisModule_StringToLongLong(argv[3], &width) != REDISMODULE_OK) || width < 1) {
+        if ((RedisModule_StringToLongLong(argv[3], &width) != REDISMODULE_OK) || width < 1 ||
+            width > UINT32_MAX) {
             INNER_ERROR("TopK: invalid width");
         }
-        if ((RedisModule_StringToLongLong(argv[4], &depth) != REDISMODULE_OK) || depth < 1) {
+        if ((RedisModule_StringToLongLong(argv[4], &depth) != REDISMODULE_OK) || depth < 1 ||
+            depth > UINT32_MAX) {
             INNER_ERROR("TopK: invalid depth");
         }
         if ((RedisModule_StringToDouble(argv[5], &decay) != REDISMODULE_OK) ||
@@ -61,6 +63,9 @@ static int createTopK(RedisModuleCtx *ctx, RedisModuleString **argv, int argc, T
         decay = 0.9;
     }
     *topk = TopK_Create(k, width, depth, decay);
+    if (!(*topk)) {
+        INNER_ERROR("ERR Insufficient memory to create topk data structure");
+    }
     return REDISMODULE_OK;
 }
 

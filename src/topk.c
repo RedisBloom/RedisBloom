@@ -67,6 +67,10 @@ TopK *TopK_Create(uint32_t k, uint32_t width, uint32_t depth, double decay) {
     assert(depth > 0);
     assert(decay > 0 && decay <= 1);
 
+    if (depth > SIZE_MAX / width || (size_t)depth * width > SIZE_MAX / sizeof(Bucket)) {
+        return NULL;
+    }
+
     TopK *topk = (TopK *)TOPK_CALLOC(1, sizeof(TopK));
     topk->k = k;
     topk->width = width;
