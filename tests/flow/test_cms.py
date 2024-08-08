@@ -50,6 +50,8 @@ class testCMS():
                 ('foo', '0', '100'),
                 ('foo', '100', '0'),
                 ('foo', '8589934592', '8589934592'),
+                ('foo', '4611686018427388100', '1'),
+                ('foo', '2', '2611686018427388100'),
         ):
             self.assertRaises(ResponseError, self.cmd, 'cms.initbydim', *args)
 
@@ -391,3 +393,6 @@ class testCMS():
         self.assertEqual(['width', 2, 'depth', 2, 'count', 8], self.cmd('cms.info', 'cms1{t}'))
         self.assertEqual([8], self.cmd('cms.query', 'cms1{t}', 'foo'))
 
+    def test_insufficient_memory(self):
+        self.cmd('FLUSHALL')
+        self.env.expect('CMS.INITBYDIM',  'x', '4611686018427388100', '1').error().contains('CMS: Insufficient memory to create the key')

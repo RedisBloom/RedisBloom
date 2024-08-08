@@ -71,6 +71,12 @@ typedef enum {
     CuckooInsert_MemAllocFailed = -2
 } CuckooInsertStatus;
 
+enum CuckooRc {
+    CUCKOO_OK = 0,
+    CUCKOO_ERR = -1,
+    CUCKOO_OOM = -2,
+};
+
 int CuckooFilter_Init(CuckooFilter *filter, uint64_t capacity, uint16_t bucketSize,
                       uint16_t maxIterations, uint16_t expansion);
 void CuckooFilter_Free(CuckooFilter *filter);
