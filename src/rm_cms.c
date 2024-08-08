@@ -91,6 +91,12 @@ int CMSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_OK;
 
     cms = NewCMSketch(width, depth);
+    if (!cms) {
+        RedisModule_CloseKey(key);
+        RedisModule_ReplyWithError(ctx, "CMS: Insufficient memory to create the key");
+        return REDISMODULE_OK;
+    }
+
     RedisModule_ModuleTypeSetValue(key, CMSketchType, cms);
 
     RedisModule_CloseKey(key);
