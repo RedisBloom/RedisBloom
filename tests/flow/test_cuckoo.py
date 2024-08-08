@@ -634,3 +634,8 @@ class testCuckooNoCodec():
             except Exception as e:
                 if str(e) != "Couldn't load chunk!":
                     raise e
+
+    def test_insufficient_memory(self):
+        self.cmd('FLUSHALL')
+        self.env.expect('cf.reserve', 'cf', '9223372036854775807').error().contains('Insufficient memory to create filter')
+

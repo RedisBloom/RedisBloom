@@ -756,5 +756,6 @@ class testRedisBloomNoCodec():
                 env.cmd('bf.loadchunk', 'bf', random.randint(0, size), bytes(b))
             except Exception as e:
                 if (str(e) != "invalid offset - no link found" and
-                        str(e) != "received bad data" and str(e) != "invalid chunk - Too big for current filter"):
+                        str(e) != "invalid chunk - Too big for current filter" and
+                        str(e) != "received bad data"):
                     raise e
