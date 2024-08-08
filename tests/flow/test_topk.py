@@ -220,3 +220,9 @@ class testTopK():
         heapList = self.cmd('topk.list', 'topk', 'WITHCOUNT')
         self.assertEqual(['foo', 504, 'bar', 503, 'baz', 502], heapList)
 
+    def test_insufficient_memory(self):
+        self.cmd('FLUSHALL')
+
+        self.env.expect('topk.reserve', 'x', '3', '4294967295', '4294967295', '1').error().contains('Insufficient memory to create topk data structure')
+        self.env.expect('topk.reserve', 'x', '3', '900000000000', '1', '1').error().contains('TopK: invalid width')
+        self.env.expect('topk.reserve', 'x', '3', '1', '900000000000', '1').error().contains('TopK: invalid depth')
