@@ -116,7 +116,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python3 -m pip install -r tests/flow/requirements.txt
-          python3 -m pip install jinja2 ramp-packer
+          python3 -m pip install -r .install/build_package_requirements.txt
       - name: Checkout Redis
         uses: actions/checkout@v3
         with:
@@ -187,7 +187,7 @@ jobs:
         run: |
           uname -a
           python3 -m pip install -r tests/flow/requirements.txt
-          python3 -m pip install jinja2 ramp-packer
+          python3 -m pip install -r .install/build_package_requirements.txt
       - name: Checkout Redis
         uses: actions/checkout@v3
         with:
@@ -293,7 +293,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python3 -m pip install -r tests/flow/requirements.txt
-          python3 -m pip install jinja2 ramp-packer
+          python3 -m pip install -r .install/build_package_requirements.txt
       - name: Checkout Redis
         uses: actions/checkout@v3
         with:
@@ -484,7 +484,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python3 -m pip install -r tests/flow/requirements.txt
-          python3 -m pip install jinja2 ramp-packer
+          python3 -m pip install -r .install/build_package_requirements.txt
       - name: Checkout Redis
         uses: actions/checkout@v3
         with:
@@ -565,7 +565,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python3 -m pip install -r tests/flow/requirements.txt
-          python3 -m pip install jinja2 ramp-packer
+          python3 -m pip install -r .install/build_package_requirements.txt
       - name: Checkout Redis
         uses: actions/checkout@v3
         with:
@@ -674,7 +674,7 @@ jobs:
         run: |
           scl enable devtoolset-11 bash
           python3 -m pip install -r tests/flow/requirements.txt
-          python3 -m pip install jinja2 ramp-packer
+          python3 -m pip install -r .install/build_package_requirements.txt
       - name: Checkout Redis
         uses: actions/checkout@v3
         with:
@@ -778,7 +778,7 @@ jobs:
         run: |
           scl enable devtoolset-11 bash
           python3 -m pip install -r tests/flow/requirements.txt
-          python3 -m pip install jinja2 ramp-packer
+          python3 -m pip install -r .install/build_package_requirements.txt
       - name: Checkout Redis
         uses: actions/checkout@v3
         with:
@@ -883,7 +883,7 @@ jobs:
         run: |
           . scl_source enable gcc-toolset-13 || true
           python3 -m pip install -r tests/flow/requirements.txt
-          python3 -m pip install jinja2 ramp-packer
+          python3 -m pip install -r .install/build_package_requirements.txt
       - name: Checkout Redis
         uses: actions/checkout@v3
         with:
@@ -961,7 +961,7 @@ jobs:
           source .venv/bin/activate
           python3 -m pip install --upgrade pip setuptools wheel
           python3 -m pip install -r tests/flow/requirements.txt
-          python3 -m pip install jinja2 ramp-packer
+          python3 -m pip install -r .install/build_package_requirements.txt
       - name: Checkout Redis
         uses: actions/checkout@v3
         with:
