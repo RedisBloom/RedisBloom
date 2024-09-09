@@ -3,8 +3,6 @@ from common import *
 
 from RLTest import Defaults
 
-Defaults.decode_responses = True
-
 def enableDefrag(env):
     # make defrag as aggressive as possible
     env.cmd('CONFIG', 'SET', 'hz', '100')
@@ -26,12 +24,12 @@ def testDefrag(env):
     
     # Create a key for each datatype
     for i in range(10000):
-        env.expect('cms.initbydim', 'cms%d' % i, '20', '5').ok()
+        env.expect('cms.initbydim', 'cms%d' % i, '20', '5').equal(b'OK')
         env.expect('cf.add', 'cf%d' % i, 'k1').equal(1)
         env.expect('bf.add', 'bf%d' % i, 'k1').equal(1)
-        env.expect("tdigest.create", "tdigest%d" % i).ok()
-        env.expect("TDIGEST.ADD", "tdigest%d" % i, "20").ok()
-        env.expect('topk.reserve', 'topk%d' % i, '20', '50', '5', '0.9').ok()
+        env.expect("tdigest.create", "tdigest%d" % i).equal(b'OK')
+        env.expect("TDIGEST.ADD", "tdigest%d" % i, "20").equal(b'OK')
+        env.expect('topk.reserve', 'topk%d' % i, '20', '50', '5', '0.9').equal(b'OK')
         env.expect('topk.add', 'topk%d' % i, 'a').equal([None])
     
     # Delete keys at even position
