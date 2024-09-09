@@ -10,6 +10,7 @@
 #include "rm_cms.h"
 
 #include "redismodule.h"
+#include "common.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -898,6 +899,13 @@ void TDigestFree(void *value) {
     td_free(tdigest);
 }
 
+static int TDigestDefrag(RedisModuleDefragCtx *ctx, RedisModuleString *key, void **value) {
+    RM_DEFRAG(ctx, *value);
+    td_histogram_t *tdigest = (td_histogram_t *)*value;
+    RM_DEFRAG(ctx, tdigest->nodes_mean);
+    RM_DEFRAG(ctx, tdigest->nodes_weight);
+}
+
 size_t TDigestMemUsage(const void *value) {
     td_histogram_t *tdigest = (td_histogram_t *)value;
     size_t size = sizeof(tdigest);
@@ -912,7 +920,8 @@ int TDigestModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
                                  .rdb_save = TDigestRdbSave,
                                  .aof_rewrite = RMUtil_DefaultAofRewrite,
                                  .mem_usage = TDigestMemUsage,
-                                 .free = TDigestFree};
+                                 .free = TDigestFree,
+                                 .defrag = TDigestDefrag};
 
     TDigestSketchType = RedisModule_CreateDataType(ctx, "TDIS-TYPE", TDIGEST_ENC_VER, &tm);
     if (TDigestSketchType == NULL)

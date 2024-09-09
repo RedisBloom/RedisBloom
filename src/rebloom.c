@@ -13,6 +13,7 @@
 #include "rm_topk.h"
 #include "rm_tdigest.h"
 #include "version.h"
+#include "common.h"
 #include "rmutil/util.h"
 
 #include <assert.h>
@@ -1210,6 +1211,12 @@ static size_t BFMemUsage(const void *value) {
     return rv;
 }
 
+static int BFDefrag(RedisModuleDefragCtx *ctx, RedisModuleString *key, void **value) {
+    RM_DEFRAG(ctx, *value);
+    SBChain *sb = *value;
+    RM_DEFRAG(ctx, sb->filters);
+}
+
 static void CFFree(void *value) {
     CuckooFilter_Free(value);
     RedisModule_Free(value);
@@ -1291,6 +1298,15 @@ static size_t CFMemUsage(const void *value) {
     }
 
     return sizeof(*cf) + sizeof(*cf->filters) * cf->numFilters + filtersSize;
+}
+
+static int CFDefrag(RedisModuleDefragCtx *ctx, RedisModuleString *key, void **value) {
+    RM_DEFRAG(ctx, *value);
+    CuckooFilter *cf = *value;
+    RM_DEFRAG(ctx, cf->filters);
+    for (size_t ii = 0; ii < cf->numFilters; ++ii) {
+        RM_DEFRAG(ctx, cf->filters[ii].data);
+    }
 }
 
 static void CFAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *obj) {
@@ -1445,7 +1461,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
                                                .rdb_save = BFRdbSave,
                                                .aof_rewrite = BFAofRewrite,
                                                .free = BFFree,
-                                               .mem_usage = BFMemUsage};
+                                               .mem_usage = BFMemUsage,
+                                               .defrag = BFDefrag};
     BFType = RedisModule_CreateDataType(ctx, "MBbloom--", BF_MIN_GROWTH_ENC, &typeprocs);
     if (BFType == NULL) {
         return REDISMODULE_ERR;
@@ -1456,7 +1473,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
                                                  .rdb_save = CFRdbSave,
                                                  .aof_rewrite = CFAofRewrite,
                                                  .free = CFFree,
-                                                 .mem_usage = CFMemUsage};
+                                                 .mem_usage = CFMemUsage,
+                                                 .defrag = CFDefrag};
     CFType = RedisModule_CreateDataType(ctx, "MBbloomCF", CF_MIN_EXPANSION_VERSION, &cfTypeProcs);
     if (CFType == NULL) {
         return REDISMODULE_ERR;

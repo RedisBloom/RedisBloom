@@ -12,6 +12,7 @@
 #include "topk.h"
 #include "rm_topk.h"
 #include "rm_cms.h"
+#include "common.h"
 
 // clang-format off
 #define INNER_ERROR(x) \
@@ -312,6 +313,16 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
 
 static void TopKFree(void *value) { TopK_Destroy(value); }
 
+static int TopKDefrag(RedisModuleDefragCtx *ctx, RedisModuleString *key, void **value) {
+    RM_DEFRAG(ctx, *value);
+    TopK *topk = *value;
+    RM_DEFRAG(ctx, topk->data);
+    RM_DEFRAG(ctx, topk->heap);
+    for (uint32_t i = 0; i < topk->k; ++i) {
+        if (topk->heap[i].item) RM_DEFRAG(ctx, topk->heap[i].item);
+    }
+}
+
 static size_t TopKMemUsage(const void *value) {
     TopK *topk = (TopK *)value;
     return sizeof(TopK) + ((size_t)topk->width) * topk->depth * sizeof(Bucket) +
@@ -325,7 +336,8 @@ int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
                                  .rdb_save = TopKRdbSave,
                                  .aof_rewrite = RMUtil_DefaultAofRewrite,
                                  .mem_usage = TopKMemUsage,
-                                 .free = TopKFree};
+                                 .free = TopKFree,
+                                 .defrag = TopKDefrag};
 
     TopKType = RedisModule_CreateDataType(ctx, "TopK-TYPE", TOPK_ENC_VER, &tm);
     if (TopKType == NULL)
