@@ -10,10 +10,10 @@
 #include "readies/cetara/diag/gdb.h"
 #endif
 
-#define RM_DEFRAG(ctx, ptr) \
-    do { \
-        void *tmp = RedisModule_DefragAlloc(ctx, ptr); \
-        if (tmp) { \
-            ptr = tmp; \
-        } \
-    } while(0);
+#define RM_DEFRAG(ctx, ptr)                                                                        \
+    do {                                                                                           \
+        void *tmp = RedisModule_DefragAlloc(ctx, ptr);                                             \
+        if (tmp) {                                                                                 \
+            ptr = tmp;                                                                             \
+        }                                                                                          \
+    } while (0);

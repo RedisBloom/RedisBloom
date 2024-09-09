@@ -319,7 +319,8 @@ static int TopKDefrag(RedisModuleDefragCtx *ctx, RedisModuleString *key, void **
     RM_DEFRAG(ctx, topk->data);
     RM_DEFRAG(ctx, topk->heap);
     for (uint32_t i = 0; i < topk->k; ++i) {
-        if (topk->heap[i].item) RM_DEFRAG(ctx, topk->heap[i].item);
+        if (topk->heap[i].item)
+            RM_DEFRAG(ctx, topk->heap[i].item);
     }
 }
 
