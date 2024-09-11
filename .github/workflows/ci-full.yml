@@ -825,58 +825,35 @@ jobs:
         run: |
           sed -i 's/ID=alpine/ID=NotpineForGHA/g' /etc/os-release
 
-  macos:
-    runs-on: ${{ matrix.os }}
-    env:
-      TAGGED: ${{ needs.setup-environment.outputs.TAGGED }}
+  macos-12:
+    uses: ./.github/workflows/ci-full-macos.yml
+    with:
+      os: macos-12
+      is_tag: ${{ needs.setup-environment.outputs.TAGGED }}
+      tag_or_branch: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH }}
       VERSION: ${{ needs.setup-environment.outputs.TAG }}
       BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
-      TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
-    strategy:
-      fail-fast: false
-      matrix:
-        # 6.0.20 can't be built due to Redis bug.
-        redis-version: ["6.2.14", "7.2.4", "unstable"]
-        # MacOS 13 - x86-64, MacOS 14 - ARM (Apple Chips).
-        os: ["macos-13", "macos-14"]
-    defaults:
-      run:
-        shell: bash -l -eo pipefail {0}
     needs: setup-environment
-    steps:
-      - name: Install prerequisites
-        run: |
-          brew install make coreutils
+    secrets: inherit
 
-      - name: Checkout sources
-        uses: actions/checkout@v3
-        with:
-          submodules: true
-      - name: Install Python dependencies
-        run: |
-          python3 -m venv .venv
-          source .venv/bin/activate
-          python3 -m pip install --upgrade pip setuptools wheel
-          python3 -m pip install -r tests/flow/requirements.txt
-          python3 -m pip install -r .install/build_package_requirements.txt
-      - name: Checkout Redis
-        uses: actions/checkout@v3
-        with:
-          repository: 'redis/redis'
-          ref: ${{ matrix.redis-version }}
-          path: 'redis'
-      - name: Build Redis
-        run: |
-          cd redis && gmake -j `sysctl -n hw.logicalcpu`
-          echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
-          echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
-          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
-          redis-server --version
-          gmake install
-      - name: Build RedisBloom
-        run: |
-          gmake -j `sysctl -n hw.logicalcpu`
-      - name: Run tests
-        run: |
-          source .venv/bin/activate
-          gmake test
+  macos-13:
+    uses: ./.github/workflows/ci-full-macos.yml
+    with:
+      os: macos-13
+      is_tag: ${{ needs.setup-environment.outputs.TAGGED }}
+      tag_or_branch: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH }}
+      VERSION: ${{ needs.setup-environment.outputs.TAG }}
+      BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
+    needs: setup-environment
+    secrets: inherit
+
+  macos-14:
+    uses: ./.github/workflows/ci-full-macos.yml
+    with:
+      os: macos-14
+      is_tag: ${{ needs.setup-environment.outputs.TAGGED }}
+      tag_or_branch: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH }}
+      VERSION: ${{ needs.setup-environment.outputs.TAG }}
+      BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
+    needs: setup-environment
+    secrets: inherit
