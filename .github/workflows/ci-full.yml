@@ -11,6 +11,19 @@ name: CI Full suite
 # More info: jobs.steps.uses: docker://alpine:3.8 for docker images,
 
 on:
+  # TODO REMOVE FROM HERE
+  pull_request:
+      paths-ignore:
+          - '.circleci/**'
+          - 'docs/**'
+          - '*.md'
+      branches:
+          - main
+          - master
+          - '[0-9]+.[0-9]+.[0-9]+'
+          - '[0-9]+.[0-9]+'
+          - 'feature-*'
+  # TODO REMOVE TILL HERE
   push:
       paths-ignore:
           - '.circleci/**'
@@ -729,6 +742,86 @@ jobs:
         run: |
           . scl_source enable gcc-toolset-13 || true
           make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+
+  alpine:
+    runs-on: ${{ matrix.builder.os }}
+    container:
+      image: alpine:3
+    env:
+      TAGGED: ${{ needs.setup-environment.outputs.TAGGED }}
+      VERSION: ${{ needs.setup-environment.outputs.TAG }}
+      BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
+      # https://github.com/actions/checkout/issues/1487
+      # A workaround for the old runtime is to use these environment
+      # variables, install the latest version of git within the container,
+      # and use the actions/checkout@v3 instead of @v4, until it is fixed.
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+      ACTIONS_RUNNER_FORCED_INTERNAL_NODE_VERSION: node16
+      ACTIONS_RUNNER_FORCE_ACTIONS_NODE_VERSION: node16
+    strategy:
+      fail-fast: false
+      matrix:
+        redis-version: ["6.0.20", "7.2.5", "unstable"]
+        builder: [
+          { os: [ubuntu-latest], nick: 'ubuntu-latest-x86' },
+          { os: [self-hosted, ubuntu-2204-arm64], nick: 'ubuntu-22.04-arm64' }
+        ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Workaround alpine-arm64 GHA issues
+        shell: sh
+        run: |
+          cp /etc/os-release /etc/os-release.bak
+          sed -i 's/ID=alpine/ID=NotpineForGHA/g' /etc/os-release
+      - name: Install prerequisites
+        shell: sh
+        run: |
+          apk add bash make libtool tar cmake python3 python3-dev py3-pip gcc git curl build-base autoconf automake py3-cryptography linux-headers musl-dev libffi-dev openssl-dev openssh py-virtualenv clang18-libclang gcompat libstdc++ libgcc g++ openblas-dev xsimd git xz bsd-compat-headers clang18
+      - name: Checkout the module
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - name: Install python dependencies
+        run: |
+          pip install -q --upgrade pip setuptools wheel
+          pip install -q -r tests/flow/requirements.txt
+          pip install -q jinja2 ramp-packer
+        env:
+          PIP_BREAK_SYSTEM_PACKAGES: 1
+      - name: Checkout Redis
+        uses: actions/checkout@v3
+        with:
+          repository: 'redis/redis'
+          ref: ${{ matrix.redis-version }}
+          path: 'redis'
+      - name: Build Redis
+        working-directory: redis
+        run: |
+          make -j `nproc`
+          echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
+          echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
+          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
+          redis-server --version
+      - name: Build module
+        run: |
+          make build -j `nproc`
+      - name: Test
+        run: |
+          make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Pack module
+        run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          mv /etc/os-release.bak /etc/os-release
+          make pack BRANCH=$TAG_OR_BRANCH SHOW=1
+      - name: Workaround alpine-arm64 GHA issues (one more time)
+        shell: sh
+        run: |
+          sed -i 's/ID=alpine/ID=NotpineForGHA/g' /etc/os-release
+
+
 
   macos:
     runs-on: ${{ matrix.os }}
