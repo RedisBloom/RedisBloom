@@ -821,8 +821,6 @@ jobs:
         run: |
           sed -i 's/ID=alpine/ID=NotpineForGHA/g' /etc/os-release
 
-
-
   macos:
     runs-on: ${{ matrix.os }}
     env:
@@ -870,6 +868,7 @@ jobs:
           echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
           export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
           redis-server --version
+          gmake install
       - name: Build RedisBloom
         run: |
           gmake -j `sysctl -n hw.logicalcpu`
