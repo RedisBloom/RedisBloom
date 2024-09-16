@@ -13,32 +13,32 @@ name: CI Full suite
 on:
   # TODO REMOVE FROM HERE
   pull_request:
-      paths-ignore:
-          - '.circleci/**'
-          - 'docs/**'
-          - '*.md'
-      branches:
-          - main
-          - master
-          - '[0-9]+.[0-9]+.[0-9]+'
-          - '[0-9]+.[0-9]+'
-          - 'feature-*'
+    paths-ignore:
+      - '.circleci/**'
+      - 'docs/**'
+      - '*.md'
+    branches:
+      - main
+      - master
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+'
+      - 'feature-*'
   # TODO REMOVE TILL HERE
   push:
-      paths-ignore:
-          - '.circleci/**'
-          - 'docs/**'
-          - '*.md'
-      branches:
-          - main
-          - master
-          - '[0-9]+.[0-9]+.[0-9]+'
-          - '[0-9]+.[0-9]+'
-          - 'feature-*'
-      tags:
-          - 'v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+'
-          - 'v[0-9]+.[0-9]+.[0-9]+-m[0-9]+'
-          - 'v[0-9]+.[0-9]+.[0-9]+'
+    paths-ignore:
+      - '.circleci/**'
+      - 'docs/**'
+      - '*.md'
+    branches:
+      - main
+      - master
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+'
+      - 'feature-*'
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-m[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
   setup-environment:

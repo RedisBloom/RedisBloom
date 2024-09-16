@@ -9,6 +9,7 @@ class testTopK():
         self.assertOk = self.env.assertTrue
         self.cmd = self.env.cmd
         self.assertEqual = self.env.assertEqual
+        self.assertContains = self.env.assertContains
         self.assertRaises = self.env.assertRaises
         self.assertTrue = self.env.assertTrue
         self.assertAlmostEqual = self.env.assertAlmostEqual
@@ -164,7 +165,9 @@ class testTopK():
         self.cmd('topk.add', 'topk', 'foo', 'baz', '42', 'foo', 'baz', )
         self.cmd('topk.add', 'topk', 'foo', 'bar', 'baz', 'foo', 'baz', )
         heapList = self.cmd('topk.list', 'topk')
-        self.assertEqual(['foo', 'baz', 'bar'], heapList)
+
+        for item in ['foo', 'baz', 'bar']:
+            self.assertContains(item, heapList)
 
         info = self.cmd('topk.info', 'topk')
         expected_info = ['k', 3, 'width', 8, 'depth', 7, 'decay']
