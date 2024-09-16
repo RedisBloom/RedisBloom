@@ -444,6 +444,10 @@ jobs:
         run: make -j `nproc`
       - name: Run tests
         run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Pack module
+        run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          make pack BRANCH=$TAG_OR_BRANCH SHOW=1
 
   debian:
     runs-on: ubuntu-latest
