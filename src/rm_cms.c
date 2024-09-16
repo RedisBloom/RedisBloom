@@ -9,6 +9,7 @@
 
 #include "rmutil/util.h"
 #include "version.h"
+#include "common.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -303,6 +304,12 @@ void *CMSRdbLoad(RedisModuleIO *io, int encver) {
 
 void CMSFree(void *value) { CMS_Destroy(value); }
 
+static int CMSDefrag(RedisModuleDefragCtx *ctx, RedisModuleString *key, void **value) {
+    *value = defragPtr(ctx, *value);
+    CMSketch *cms = *value;
+    cms->array = defragPtr(ctx, cms->array);
+}
+
 size_t CMSMemUsage(const void *value) {
     CMSketch *cms = (CMSketch *)value;
     return sizeof(cms) + cms->width * cms->depth * sizeof(size_t);
@@ -315,7 +322,8 @@ int CMSModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
                                  .rdb_save = CMSRdbSave,
                                  .aof_rewrite = RMUtil_DefaultAofRewrite,
                                  .mem_usage = CMSMemUsage,
-                                 .free = CMSFree};
+                                 .free = CMSFree,
+                                 .defrag = CMSDefrag};
 
     CMSketchType = RedisModule_CreateDataType(ctx, "CMSk-TYPE", CMS_ENC_VER, &tm);
     if (CMSketchType == NULL)
