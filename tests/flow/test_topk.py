@@ -160,10 +160,11 @@ class testTopK():
     def test_no_init_params(self):
         self.cmd('FLUSHALL')
         self.cmd('topk.reserve', 'topk', '3')
-        self.cmd('topk.add', 'topk', 'foo', 'bar', 'baz', '42', 'foo', 'bar', 'baz', )
-        self.cmd('topk.add', 'topk', 'foo', 'baz', '42', 'foo', 'baz', )
-        self.cmd('topk.add', 'topk', 'foo', 'bar', 'baz', 'foo', 'baz', )
+        self.cmd('topk.add', 'topk', 'foo', 'bar', 'baz', '42', 'foo', 'bar', 'baz', 'foo', 'foo', 'foo', 'foo')
+        self.cmd('topk.add', 'topk', 'foo', 'baz', '42', 'foo', 'baz', 'foo', 'foo', 'foo', 'foo', 'foo')
+        self.cmd('topk.add', 'topk', 'foo', 'bar', 'baz', 'foo', 'baz', 'baz', 'baz', 'baz')
         heapList = self.cmd('topk.list', 'topk')
+
         self.assertEqual(['foo', 'baz', 'bar'], heapList)
 
         info = self.cmd('topk.info', 'topk')
