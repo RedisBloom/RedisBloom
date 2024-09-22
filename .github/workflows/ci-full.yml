@@ -830,7 +830,7 @@ jobs:
     with:
       os: macos-12
       is_tag: ${{ needs.setup-environment.outputs.TAGGED }}
-      tag_or_branch: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH }}
+      tag_or_branch_name: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH }}
       VERSION: ${{ needs.setup-environment.outputs.TAG }}
       BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
     needs: setup-environment
@@ -841,7 +841,7 @@ jobs:
     with:
       os: macos-13
       is_tag: ${{ needs.setup-environment.outputs.TAGGED }}
-      tag_or_branch: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH }}
+      tag_or_branch_name: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH }}
       VERSION: ${{ needs.setup-environment.outputs.TAG }}
       BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
     needs: setup-environment
@@ -852,7 +852,7 @@ jobs:
     with:
       os: macos-14
       is_tag: ${{ needs.setup-environment.outputs.TAGGED }}
-      tag_or_branch: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH }}
+      tag_or_branch_name: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH }}
       VERSION: ${{ needs.setup-environment.outputs.TAG }}
       BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
     needs: setup-environment
