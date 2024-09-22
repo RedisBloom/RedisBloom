@@ -66,11 +66,16 @@ on:
         required: true
         type: string
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
 jobs:
   macos:
     env:
       VERSION: ${{ inputs.version }}
-      BRANCH: ${{ inputs.branch || github.ref }}
+      BRANCH: ${{ inputs.branch }}
     runs-on: ${{ inputs.os || 'macos-14' }}
     strategy:
       fail-fast: false
@@ -94,6 +99,7 @@ jobs:
           redis-version: ${{ matrix.redis-version }}
       - name: Pack and upload module to s3
         uses: ./.github/actions/pack-module-and-upload-artifacts-to-s3
+        if: ${{ inputs.tag_or_branch_name != '' }}
         with:
           is_tag: ${{ inputs.is_tag }}
           tag_or_branch: ${{ inputs.tag_or_branch_name }}
