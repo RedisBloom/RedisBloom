@@ -5,7 +5,7 @@ inputs:
   is_tag:
     description: "Is this a tag?"
     required: true
-    default: 'false'
+    default: false
   tag_or_branch:
     description: 'Tag or branch name.'
     required: true
