@@ -94,8 +94,6 @@ TARGET=$(BINROOT)/redisbloom.so
 
 CC_C_STD=gnu99
 
-CC_COMMON_H=$(SRCDIR)/src/common.h
-
 define CC_DEFS +=
 	_GNU_SOURCE
 	REDIS_MODULE_TARGET

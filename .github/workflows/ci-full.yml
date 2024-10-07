@@ -1,31 +1,48 @@
 name: CI Full suite
 # This is a full workflow for the production branches and tags, which
-# includes building and testing on all supported platforms
+# includes building and testing on all supported platforms, and
+# uploading the artifacts to S3.
 
 # TODO:
 #
 # 1. Remove the use of "readies" completely.
 # 2. Remove the use of all the scripts for anything and do everything
 #    right here in the workflow.
+# 3. Use the corresponding actions for the end goal: aws s3 upload
+#    action. This also will remove the need for the installation of aws-cli.
 #
 # More info: jobs.steps.uses: docker://alpine:3.8 for docker images,
+# To use the AWS CLI: https://hub.docker.com/r/amazon/aws-cli
 
 on:
+  # TODO REMOVE FROM HERE
+  pull_request:
+    paths-ignore:
+      - '.circleci/**'
+      - 'docs/**'
+      - '*.md'
+    branches:
+      - main
+      - master
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+'
+      - 'feature-*'
+  # TODO REMOVE TILL HERE
   push:
-      paths-ignore:
-          - '.circleci/**'
-          - 'docs/**'
-          - '*.md'
-      branches:
-          - main
-          - master
-          - '[0-9]+.[0-9]+.[0-9]+'
-          - '[0-9]+.[0-9]+'
-          - 'feature-*'
-      tags:
-          - 'v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+'
-          - 'v[0-9]+.[0-9]+.[0-9]+-m[0-9]+'
-          - 'v[0-9]+.[0-9]+.[0-9]+'
+    paths-ignore:
+      - '.circleci/**'
+      - 'docs/**'
+      - '*.md'
+    branches:
+      - main
+      - master
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+'
+      - 'feature-*'
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-m[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
   setup-environment:
@@ -128,6 +145,139 @@ jobs:
           redis-server --version
       - name: Build
         run: make -j 4
+      - name: Run tests
+        run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+
+  arm64-recent-ubuntu:
+    runs-on: [self-hosted,ubuntu-2204-arm64]
+    env:
+      TAGGED: ${{ needs.setup-environment.outputs.TAGGED }}
+      VERSION: ${{ needs.setup-environment.outputs.TAG }}
+      BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
+    strategy:
+      fail-fast: false
+      matrix:
+        redis-version: ["6.0.20", "7.2.4", "unstable"]
+    defaults:
+      run:
+        shell: bash -l -eo pipefail {0}
+    needs: setup-environment
+    steps:
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential autoconf automake libtool cmake lcov valgrind
+      - name: Setup Python for testing
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          architecture: 'arm64'
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install Python dependencies
+        run: |
+          uname -a
+          python3 -m pip install -r tests/flow/requirements.txt
+          python3 -m pip install -r .install/build_package_requirements.txt
+      - name: Checkout Redis
+        uses: actions/checkout@v3
+        with:
+          repository: 'redis/redis'
+          ref: ${{ matrix.redis-version }}
+          path: 'redis'
+      - name: Build Redis
+        run: |
+          cd redis && make -j `nproc`
+          echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
+          echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
+          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
+          redis-server --version
+      - name: Build
+        run: make -j 4
+      - name: Run tests
+        run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+
+  arm64-old-ubuntu:
+    runs-on: [self-hosted,ubuntu-2204-arm64]
+    container: ${{ matrix.builder.image }}
+    env:
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+      TAGGED: ${{ needs.setup-environment.outputs.TAGGED }}
+      VERSION: ${{ needs.setup-environment.outputs.TAG }}
+      BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
+    strategy:
+      fail-fast: false
+      matrix:
+        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        builder: [
+          {
+            image: 'ubuntu:focal',
+            nick: 'focal'
+          },
+          {
+            image: 'ubuntu:bionic',
+            nick: 'bionic'
+          }
+        ]
+    defaults:
+      run:
+        shell: bash -l -eo pipefail {0}
+    needs: setup-environment
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update && apt-get install -y software-properties-common
+          add-apt-repository ppa:git-core/ppa -y
+          apt-get update
+          apt-get install -y build-essential make autoconf automake libtool lcov git wget zlib1g-dev lsb-release libssl-dev openssl ca-certificates curl unzip
+          wget https://cmake.org/files/v3.28/cmake-3.28.0.tar.gz
+          tar -xzvf cmake-3.28.0.tar.gz
+          cd cmake-3.28.0
+          ./configure
+          make -j `nproc`
+          make install
+          cd ..
+          ln -s /usr/local/bin/cmake /usr/bin/cmake
+          wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz
+          tar -xvf Python-3.9.6.tgz
+          cd Python-3.9.6
+          ./configure
+          make -j `nproc`
+          make altinstall
+          cd ..
+          rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
+          rm /usr/bin/lsb_release
+          python3 --version
+          make --version
+          cmake --version
+          python3 -m pip install --upgrade pip
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
+      - name: Checkout RedisBloom
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install -r tests/flow/requirements.txt
+          python3 -m pip install -r .install/build_package_requirements.txt
+      - name: Checkout Redis
+        uses: actions/checkout@v3
+        with:
+          repository: 'redis/redis'
+          ref: ${{ matrix.redis-version }}
+          path: 'redis'
+      - name: Build Redis
+        run: |
+          cd redis && make -j `nproc`
+          echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
+          echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
+          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
+          redis-server --version
+      - name: Build RedisBloom
+        run: make -j `nproc`
       - name: Run tests
         run: make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
 
@@ -272,6 +422,9 @@ jobs:
           make --version
           cmake --version
           python3 -m pip install --upgrade pip
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
       - name: Checkout RedisBloom
         uses: actions/checkout@v3
         with:
@@ -329,6 +482,9 @@ jobs:
           make --version
           cmake --version
           python3 -m pip install --upgrade pip
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
       - name: Checkout RedisBloom
         uses: actions/checkout@v3
         with:
@@ -389,7 +545,7 @@ jobs:
           sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo
           sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo
           yum -y install epel-release
-          yum -y install http://opensource.wandisco.com/centos/7/git/x86_64/wandisco-git-release-7-2.noarch.rpm 
+          yum -y install http://opensource.wandisco.com/centos/7/git/x86_64/wandisco-git-release-7-2.noarch.rpm
           yum -y install make cmake3 git python-pip openssl-devel bzip2-devel libffi-devel zlib-devel wget centos-release-scl scl-utils
           sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo
           sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo
@@ -411,6 +567,9 @@ jobs:
           rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
           ln -s `which cmake3` /usr/bin/cmake
           python3 --version
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
       - name: Checkout sources
         uses: actions/checkout@v3
         with:
@@ -442,6 +601,11 @@ jobs:
         run: |
           . scl_source enable devtoolset-11 || true
           make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+
+      - name: List artifacts
+        run: |
+          cd bin/artifacts
+          du -ah --apparent-size *
 
   amazon-linux:
     runs-on: ubuntu-latest
@@ -487,6 +651,9 @@ jobs:
           rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
           ln -s `which cmake3` /usr/bin/cmake
           python3 --version
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
       - name: Checkout sources
         uses: actions/checkout@v3
         with:
@@ -565,6 +732,9 @@ jobs:
           rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
           cmake --version
           python3 --version
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
       - name: Checkout sources
         uses: actions/checkout@v3
         with:
@@ -596,40 +766,54 @@ jobs:
           . scl_source enable gcc-toolset-13 || true
           make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
 
-  macos:
-    runs-on: ${{ matrix.os }}
+  alpine:
+    runs-on: ${{ matrix.builder.os }}
+    container:
+      image: alpine:3
     env:
       TAGGED: ${{ needs.setup-environment.outputs.TAGGED }}
       VERSION: ${{ needs.setup-environment.outputs.TAG }}
       BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
       TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
+      # https://github.com/actions/checkout/issues/1487
+      # A workaround for the old runtime is to use these environment
+      # variables, install the latest version of git within the container,
+      # and use the actions/checkout@v3 instead of @v4, until it is fixed.
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+      ACTIONS_RUNNER_FORCED_INTERNAL_NODE_VERSION: node16
+      ACTIONS_RUNNER_FORCE_ACTIONS_NODE_VERSION: node16
     strategy:
       fail-fast: false
       matrix:
-        # 6.0.20 can't be built due to Redis bug.
-        redis-version: ["6.2.14", "7.2.4", "unstable"]
-        # MacOS 13 - x86-64, MacOS 14 - ARM (Apple Chips).
-        os: ["macos-13", "macos-14"]
+        redis-version: ["6.0.20", "7.2.5", "unstable"]
+        builder: [
+          { os: [ubuntu-latest], nick: 'ubuntu-latest-x86' },
+          { os: [self-hosted, ubuntu-2204-arm64], nick: 'ubuntu-22.04-arm64' }
+        ]
     defaults:
       run:
-        shell: bash -l -eo pipefail {0}
-    needs: setup-environment
+        shell: bash
     steps:
-      - name: Install prerequisites
+      - name: Workaround alpine-arm64 GHA issues
+        shell: sh
         run: |
-          brew install make coreutils
-
-      - name: Checkout sources
+          cp /etc/os-release /etc/os-release.bak
+          sed -i 's/ID=alpine/ID=NotpineForGHA/g' /etc/os-release
+      - name: Install prerequisites
+        shell: sh
+        run: |
+          apk add bash make libtool tar cmake python3 python3-dev py3-pip gcc git curl build-base autoconf automake py3-cryptography linux-headers musl-dev libffi-dev openssl-dev openssh py-virtualenv clang18-libclang gcompat libstdc++ libgcc g++ openblas-dev xsimd git xz bsd-compat-headers clang18
+      - name: Checkout the module
         uses: actions/checkout@v3
         with:
-          submodules: true
-      - name: Install Python dependencies
+          submodules: 'recursive'
+      - name: Install python dependencies
         run: |
-          python3 -m venv .venv
-          source .venv/bin/activate
-          python3 -m pip install --upgrade pip setuptools wheel
-          python3 -m pip install -r tests/flow/requirements.txt
-          python3 -m pip install -r .install/build_package_requirements.txt
+          pip install -q --upgrade pip setuptools wheel
+          pip install -q -r tests/flow/requirements.txt
+          pip install -q jinja2 ramp-packer
+        env:
+          PIP_BREAK_SYSTEM_PACKAGES: 1
       - name: Checkout Redis
         uses: actions/checkout@v3
         with:
@@ -637,16 +821,49 @@ jobs:
           ref: ${{ matrix.redis-version }}
           path: 'redis'
       - name: Build Redis
+        working-directory: redis
         run: |
-          cd redis && gmake -j `sysctl -n hw.logicalcpu`
+          make -j `nproc`
           echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
           echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
           export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
           redis-server --version
-      - name: Build RedisBloom
+      - name: Build module
         run: |
-          gmake -j `sysctl -n hw.logicalcpu`
-      - name: Run tests
+          make build -j `nproc`
+      - name: Test
         run: |
-          source .venv/bin/activate
-          gmake test
+          make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+
+  macos-12:
+    uses: ./.github/workflows/ci-full-macos.yml
+    with:
+      os: macos-12
+      is_tag: ${{ needs.setup-environment.outputs.TAGGED == '1' }}
+      tag_or_branch_name: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH }}
+      version: ${{ needs.setup-environment.outputs.TAG }}
+      branch: ${{ needs.setup-environment.outputs.BRANCH }}
+    needs: setup-environment
+    secrets: inherit
+
+  macos-13:
+    uses: ./.github/workflows/ci-full-macos.yml
+    with:
+      os: macos-13
+      is_tag: ${{ needs.setup-environment.outputs.TAGGED == '1' }}
+      tag_or_branch_name: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH }}
+      version: ${{ needs.setup-environment.outputs.TAG }}
+      branch: ${{ needs.setup-environment.outputs.BRANCH }}
+    needs: setup-environment
+    secrets: inherit
+
+  macos-14:
+    uses: ./.github/workflows/ci-full-macos.yml
+    with:
+      os: macos-14
+      is_tag: ${{ needs.setup-environment.outputs.TAGGED == '1' }}
+      tag_or_branch_name: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH }}
+      version: ${{ needs.setup-environment.outputs.TAG }}
+      branch: ${{ needs.setup-environment.outputs.BRANCH }}
+    needs: setup-environment
+    secrets: inherit

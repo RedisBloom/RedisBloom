@@ -31,14 +31,11 @@ TARGET=$(BINDIR)/libtdigest_static.a
 
 include $(MK)/defs
 
-define CMAKE_DEFS +=
-	BUILD_SHARED=OFF
-	BUILD_STATIC=ON
-	ENABLE_CODECOVERAGE=OFF
-	BUILD_TESTS=OFF
-	BUILD_BENCHMARK=OFF
-	BUILD_EXAMPLES=OFF
-endef
+# CMAKE_FLAGS will be used to compile tdigest using cmake, notice that we only want to compile the static library
+# and we compile it with costume allocator that allocate data using the RedisModule Allocator.
+# If we will try to compile the tests with this option it will failed to compile but because we do
+# not really run the tdigest tests here there is no need to compile them.
+CMAKE_FLAGS =-DBUILD_SHARED=OFF -DBUILD_STATIC=ON -DENABLE_CODECOVERAGE=OFF -DBUILD_TESTS=OFF -DBUILD_BENCHMARK=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_C_FLAGS=-DTD_MALLOC_INCLUDE=\\\"../../../src/td_redismodule_malloc.h\\\"
 
 #----------------------------------------------------------------------------------------------
 
