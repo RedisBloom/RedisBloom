@@ -1,2 +1,5 @@
+# MacOS setup on github actions needs setuptools (required by RLTest).
+# Normally, it would be better RLTest have this package as dependency.
+setuptools
 RLTest == 0.7.5
 numpy
