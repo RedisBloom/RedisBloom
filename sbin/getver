@@ -7,7 +7,10 @@ READIES=$ROOT/deps/readies
 . $READIES/shibumi/defs
 
 cd $ROOT
-getver_c=$(mktemp "${TMPDIR:-/tmp}/getver-XXXXXXX.c")
+file_name=$(mktemp "${TMPDIR:-/tmp}/getver-XXXXXX")
+mv $file_name "$file_name.c"
+getver_c="$file_name.c"
+
 if [[ $NUMERIC != 1 ]]; then
 	cat <<- EOF > $getver_c
 		#include <stdio.h>
@@ -31,7 +34,7 @@ else
 		}
 		EOF
 fi
-prog=$(mktemp "${TMPDIR:-/tmp}/getver.XXXXXXX")
+prog=$(mktemp "${TMPDIR:-/tmp}/getver.XXXXXX")
 gcc -I$ROOT -o $prog $getver_c
 ver=`$prog`
 rm -f $prog $getver_c
