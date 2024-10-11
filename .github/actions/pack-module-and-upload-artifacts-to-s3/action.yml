@@ -1,0 +1,19 @@
+name: Pack the module and upload it to S3
+description: Pack the module and upload it to S3
+
+inputs:
+  is_tag:
+    description: "Is this a tag?"
+    required: true
+    default: false
+  tag_or_branch:
+    description: 'Tag or branch name.'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Pack module
+      shell: bash
+      run: |
+        echo "pack and upload should not run from public repo"
