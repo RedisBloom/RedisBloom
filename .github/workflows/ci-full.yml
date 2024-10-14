@@ -11,19 +11,6 @@ name: CI Full suite
 # More info: jobs.steps.uses: docker://alpine:3.8 for docker images,
 
 on:
-  # TODO REMOVE FROM HERE
-  pull_request:
-    paths-ignore:
-      - '.circleci/**'
-      - 'docs/**'
-      - '*.md'
-    branches:
-      - main
-      - master
-      - '[0-9]+.[0-9]+.[0-9]+'
-      - '[0-9]+.[0-9]+'
-      - 'feature-*'
-  # TODO REMOVE TILL HERE
   push:
     paths-ignore:
       - '.circleci/**'
