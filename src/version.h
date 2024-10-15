@@ -9,7 +9,7 @@
 // If declared with -D in compile time, this file is ignored
 
 #ifndef REBLOOM_VERSION_MAJOR
-#define REBLOOM_VERSION_MAJOR 99
+#define REBLOOM_VERSION_MAJOR 7
 #endif
 
 #ifndef REBLOOM_VERSION_MINOR
@@ -17,7 +17,7 @@
 #endif
 
 #ifndef REBLOOM_VERSION_PATCH
-#define REBLOOM_VERSION_PATCH 99
+#define REBLOOM_VERSION_PATCH 1
 
 #endif
 
