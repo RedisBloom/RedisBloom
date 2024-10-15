@@ -93,11 +93,3 @@ jobs:
         uses: ./.github/actions/build-and-test-macos
         with:
           redis-version: ${{ matrix.redis-version }}
-      - name: Pack and upload module to s3
-        uses: ./.github/actions/pack-module-and-upload-artifacts-to-s3
-        if: ${{ inputs.tag_or_branch_name != '' }}
-        with:
-          is_tag: ${{ inputs.is_tag }}
-          tag_or_branch: ${{ inputs.tag_or_branch_name }}
-          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
