@@ -1,0 +1,95 @@
+name: CI Full suite - MACOS
+# This is a full workflow for the production branches and tags, which
+# includes building and testing on all supported platforms, and
+# uploading the artifacts to S3.
+
+# TODO:
+#
+# 1. Remove the use of "readies" completely.
+# 2. Remove the use of all the scripts for anything and do everything
+#    right here in the workflow.
+# 3. Use the corresponding actions for the end goal: aws s3 upload
+#    action. This also will remove the need for the installation of aws-cli.
+#
+# More info: jobs.steps.uses: docker://alpine:3.8 for docker images,
+# To use the AWS CLI: https://hub.docker.com/r/amazon/aws-cli
+
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      os:
+        description: "OS version to run the tests on. MacOS 12 and 13 - x86-64, MacOS 14 - ARM (Apple Chips)."
+        required: true
+        type: string
+        default: "macos-12"
+      is_tag:
+        description: "Is this a tag?"
+        required: true
+        default: false
+        type: boolean
+      tag_or_branch_name:
+        description: 'Tag or branch name.'
+        required: true
+        type: string
+      version:
+        description: 'Version for artifacts'
+        required: true
+        type: string
+      branch:
+        description: 'Branch name'
+        required: true
+        type: string
+  workflow_call:
+  # the defaults and options here are the same likes in "workflow_dispatch"
+    inputs:
+      os:
+        description: "OS version to run the tests on. MacOS 12 and 13 - x86-64, MacOS 14 - ARM (Apple Chips)."
+        required: true
+        type: string
+        default: "macos-12"
+      is_tag:
+        description: "Is this a tag?"
+        required: true
+        default: false
+        type: boolean
+      tag_or_branch_name:
+        description: 'Tag or branch name.'
+        required: true
+        type: string
+      version:
+        description: 'Version for artifacts'
+        required: true
+        type: string
+      branch:
+        description: 'Branch name'
+        required: true
+        type: string
+
+
+jobs:
+  macos:
+    env:
+      VERSION: ${{ inputs.version }}
+      BRANCH: ${{ inputs.branch }}
+    runs-on: ${{ inputs.os || 'macos-14' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # 6.0.20 can't be built due to Redis bug.
+        redis-version: ["6.2.14", "7.2.4", "unstable"]
+    defaults:
+      run:
+        shell: bash -l -eo pipefail {0}
+    steps:
+      - name: Install prerequisites
+        run: |
+          brew install make coreutils
+      - name: Checkout sources
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Build and test
+        uses: ./.github/actions/build-and-test-macos
+        with:
+          redis-version: ${{ matrix.redis-version }}
