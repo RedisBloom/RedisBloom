@@ -1,0 +1,66 @@
+#!/bin/bash
+
+PROGNAME="${BASH_SOURCE[0]}"
+HERE="$(cd "$(dirname "$PROGNAME")" &>/dev/null && pwd)"
+ROOT=$(cd $HERE/.. && pwd)
+export READIES=$ROOT/deps/readies
+. $READIES/shibumi/defs
+
+cd $HERE
+
+#----------------------------------------------------------------------------------------------
+
+valgrind_check() {
+	local logdir="$ROOT/tests/$DIR/logs"
+
+	for file in "$logdir"/*.valgrind.log; do
+		if grep -q -e "definitely lost" -e "0x" -e "Invalid" -e "Mismatched" \
+		            -e "uninitialized" -e "has a fishy" -e "overlap" "$file"; then
+			echo
+			echo "### Valgrind error in $file:"
+			cat "$file"
+			E=1
+		fi
+	done
+}
+
+#----------------------------------------------------------------------------------------------
+
+sanitizer_check() {
+	local logdir="$ROOT/tests/$DIR/logs"
+
+	for file in "$logdir"/*.asan.log*; do
+		if grep -q -e "runtime error" -e "Sanitizer" -v "failed to allocate" "$file"; then
+			echo
+			echo "### Sanitizer error in $file:"
+			cat "$file"
+			E=1
+		fi
+	done
+}
+
+
+
+#----------------------------------------------------------------------------------------------
+
+E=0
+
+DIRS=
+if [[ $UNIT == 1 ]]; then
+	DIRS+=" unit"
+fi
+if [[ $FLOW == 1 ]]; then
+	DIRS+=" flow"
+fi
+
+if [[ $VG == 1 ]]; then
+	for dir in $DIRS; do
+		DIR="$dir" valgrind_check
+	done
+elif [[ -n $SAN ]]; then
+	for dir in $DIRS; do
+		DIR="$dir" sanitizer_check
+	done
+fi
+
+exit $E

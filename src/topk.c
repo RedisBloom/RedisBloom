@@ -70,13 +70,27 @@ TopK *TopK_Create(uint32_t k, uint32_t width, uint32_t depth, double decay) {
     assert(depth > 0);
     assert(decay > 0 && decay <= 1);
 
+    if (depth > SIZE_MAX / width || (size_t)depth * width > SIZE_MAX / sizeof(Bucket)) {
+        return NULL;
+    }
+
     TopK *topk = (TopK *)TOPK_CALLOC(1, sizeof(TopK));
     topk->k = k;
     topk->width = width;
     topk->depth = depth;
     topk->decay = decay;
     topk->data = TOPK_CALLOC(((size_t)width) * depth, sizeof(Bucket));
+    if (!topk->data) {
+        TOPK_FREE(topk);
+        return NULL;
+    }
+
     topk->heap = TOPK_CALLOC(k, sizeof(HeapBucket));
+    if (!topk->heap) {
+        TOPK_FREE(topk->data);
+        TOPK_FREE(topk);
+        return NULL;
+    }
 
     for (uint32_t i = 0; i < TOPK_DECAY_LOOKUP_TABLE; ++i) {
         topk->lookupTable[i] = pow(decay, i);

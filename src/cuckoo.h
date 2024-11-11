@@ -12,6 +12,7 @@
 
 #define CUCKOO_BKTSIZE 2
 #define CUCKOO_NULLFP 0
+#define CF_MAX_NUM_BUCKETS (0x00FFFFFFFFFFFFFFULL) // 56 bits, see struct SubCF
 // extern int globalCuckooHash64Bit;
 
 typedef uint8_t CuckooFingerprint;
@@ -56,6 +57,12 @@ typedef enum {
     CuckooInsert_NoSpace = -1,
     CuckooInsert_MemAllocFailed = -2
 } CuckooInsertStatus;
+
+enum CuckooRc {
+    CUCKOO_OK = 0,
+    CUCKOO_ERR = -1,
+    CUCKOO_OOM = -2,
+};
 
 int CuckooFilter_Init(CuckooFilter *filter, uint64_t capacity, uint16_t bucketSize,
                       uint16_t maxIterations, uint16_t expansion);

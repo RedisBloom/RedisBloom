@@ -498,3 +498,11 @@ class testRedisBloomNoCodec():
         # check loaded filter
         for x in range(6):
             env.assertEqual(1, env.cmd('bf.exists', 'bf', 'foo'))
+
+    def test_insufficient_memory(self):
+        self.env.skipOnVersionSmaller('7.4')
+        env = self.env
+        env.cmd('FLUSHALL')
+
+        env.expect('bf.reserve', 'bf', 0.01, 1000000000000000000).error().contains('Insufficient memory to create filter')
+        env.expect('bf.insert', 'bf', 'capacity', 1000000000000000000, 'error', 0.01, 'ITEMS', 1).error().contains('Insufficient memory to create filter')

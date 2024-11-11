@@ -3,7 +3,6 @@
 
 #include "redismodule.h"
 
-#define BLOOM_CALLOC RedisModule_Calloc
 #define BLOOM_FREE RedisModule_Free
 
 #include "bloom/bloom.h"
@@ -29,12 +28,23 @@ static int SBChain_AddLink(SBChain *chain, uint64_t size, double error_rate) {
     }
 
     SBLink *newlink = chain->filters + chain->nfilters;
-    newlink->size = 0;
+    *newlink = (SBLink){
+        .size = 0,
+    };
     chain->nfilters++;
-    return bloom_init(&newlink->inner, size, error_rate, chain->options);
+    int rc = bloom_init(&newlink->inner, size, error_rate, chain->options);
+    if (rc != 0) {
+        return rc == 1 ? SB_INVALID : SB_OOM;
+    }
+
+    return SB_SUCCESS;
 }
 
 void SBChain_Free(SBChain *sb) {
+    if (!sb) {
+        return;
+    }
+
     for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         bloom_free(&sb->filters[ii].inner);
     }
@@ -99,17 +109,20 @@ int SBChain_Check(const SBChain *sb, const void *data, size_t len) {
     return 0;
 }
 
-SBChain *SB_NewChain(uint64_t initsize, double error_rate, unsigned options, unsigned growth) {
+SBChain *SB_NewChain(uint64_t initsize, double error_rate, unsigned options, unsigned growth,
+                     int *err) {
     if (initsize == 0 || error_rate == 0 || error_rate >= 1) {
+        *err = SB_INVALID;
         return NULL;
     }
     SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
     sb->growth = growth;
     sb->options = options;
     double tightening = (options & BLOOM_OPT_NO_SCALING) ? 1 : ERROR_TIGHTENING_RATIO;
-    if (SBChain_AddLink(sb, initsize, error_rate * tightening) != 0) {
+    *err = SBChain_AddLink(sb, initsize, error_rate * tightening);
+    if (*err != SB_SUCCESS) {
         SBChain_Free(sb);
-        sb = NULL;
+        return NULL;
     }
     return sb;
 }
@@ -213,19 +226,38 @@ char *SBChain_GetEncodedHeader(const SBChain *sb, size_t *hdrlen) {
 
 void SB_FreeEncodedHeader(char *s) { RedisModule_Free(s); }
 
+// Returns 0 on success
+int SB_ValidateIntegrity(const SBChain *sb) {
+    if (sb->options &
+        ~(BLOOM_OPT_NOROUND | BLOOM_OPT_ENTS_IS_BITS | BLOOM_OPT_FORCE64 | BLOOM_OPT_NO_SCALING)) {
+        return 1;
+    }
+    size_t total = 0;
+    for (size_t i = 0; i < sb->nfilters; i++) {
+        if (sb->filters[i].size > SIZE_MAX - total) {
+            return 1;
+        }
+        total += sb->filters[i].size;
+    }
+    if (sb->size != total) {
+        return 1;
+    }
+    return 0;
+}
+
 SBChain *SB_NewChainFromHeader(const char *buf, size_t bufLen, const char **errmsg) {
+    SBChain *sb = NULL;
+
     const dumpedChainHeader *header = (const void *)buf;
     if (bufLen < sizeof(dumpedChainHeader)) {
-        *errmsg = "ERR received bad data"; // LCOV_EXCL_LINE
-        return NULL;                       // LCOV_EXCL_LINE
+        goto err;
     }
 
     if (bufLen != sizeof(*header) + (sizeof(header->links[0]) * header->nfilters)) {
-        *errmsg = "ERR received bad data"; // LCOV_EXCL_LINE
-        return NULL;                       // LCOV_EXCL_LINE
+        goto err;
     }
 
-    SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
+    sb = RedisModule_Calloc(1, sizeof(*sb));
     sb->filters = RedisModule_Calloc(header->nfilters, sizeof(*sb->filters));
     sb->nfilters = header->nfilters;
     sb->options = header->options;
@@ -238,13 +270,31 @@ SBChain *SB_NewChainFromHeader(const char *buf, size_t bufLen, const char **errm
 #define X(encfld, dstfld) dstfld = encfld;
         X_ENCODED_LINK(X, srclink, dstlink)
 #undef X
-        dstlink->inner.bf = RedisModule_Alloc(dstlink->inner.bytes);
+
+        if (bloom_validate_integrity(&dstlink->inner) != 0) {
+            goto err;
+        }
+
+        dstlink->inner.bf = RedisModule_Calloc(1, dstlink->inner.bytes);
+        if (!dstlink->inner.bf) {
+            goto err;
+        }
+
         if (sb->options & BLOOM_OPT_FORCE64) {
             dstlink->inner.force64 = 1;
         }
     }
 
+    if (SB_ValidateIntegrity(sb) != 0) {
+        goto err;
+    }
+
     return sb;
+
+err:
+    SBChain_Free(sb);
+    *errmsg = "ERR received bad data";
+    return NULL;
 }
 
 int SBChain_LoadEncodedChunk(SBChain *sb, long long iter, const char *buf, size_t bufLen,

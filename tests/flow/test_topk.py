@@ -187,3 +187,11 @@ class testTopK():
         self.cmd('topk.add', 'topk', 'j', 'h', 'd', 'j', 'h', 'h', 'j', 'g', 'e', 'g', 'i', 'f', 'g', 'f', 'a', 'j', 'c', 'i', 'a', 'd')
         heapList = self.cmd('topk.list', 'topk')
         self.assertEqual(len(set(heapList)), len(heapList))
+
+    def test_insufficient_memory(self):
+        self.env.skipOnVersionSmaller('7.4')
+        self.cmd('FLUSHALL')
+
+        self.env.expect('topk.reserve', 'x', '3', '2000000000', '200000000', '1').error().contains('Insufficient memory to create topk data structure')
+        self.env.expect('topk.reserve', 'x', '3', '900000000000', '1', '1').error().contains('TopK: invalid width')
+        self.env.expect('topk.reserve', 'x', '3', '1', '900000000000', '1').error().contains('TopK: invalid depth')

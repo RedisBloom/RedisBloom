@@ -114,12 +114,26 @@ CuckooFilter *CFHeader_Load(const CFHeader *header) {
     filter->filters = RedisModule_Alloc(sizeof(*filter->filters) * header->numFilters);
     for (size_t ii = 0; ii < filter->numFilters; ++ii) {
         SubCF *cur = filter->filters + ii;
+        cur->data = NULL;
         cur->bucketSize = header->bucketSize;
         cur->numBuckets = filter->numBuckets * pow(filter->expansion, ii);
+
+        if (filter->bucketSize > SIZE_MAX / cur->numBuckets) {
+            goto error;
+        }
+
         cur->data =
-            RedisModule_Calloc((size_t)cur->numBuckets * filter->bucketSize, sizeof(CuckooBucket));
+            CUCKOO_CALLOC((size_t)cur->numBuckets * filter->bucketSize, sizeof(CuckooBucket));
+        if (!cur->data) {
+            goto error;
+        }
     }
     return filter;
+
+error:
+    CuckooFilter_Free(filter);
+    RedisModule_Free(filter);
+    return NULL;
 }
 
 void fillCFHeader(CFHeader *header, const CuckooFilter *cf) {

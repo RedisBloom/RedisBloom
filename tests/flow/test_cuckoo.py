@@ -454,3 +454,12 @@ class testCuckooNoCodec():
         # check loaded filter
         for x in range(6):
             self.assertEqual(1, self.cmd('cf.exists', 'cf', 'foo'))
+
+    def test_insufficient_memory(self):
+        self.cmd('FLUSHALL')
+        self.env.skipOnVersionSmaller('7.4')
+
+        self.env.expect('cf.reserve', 'cf', '100000000000000').error().contains('Insufficient memory to create filter')
+        self.env.expect('cf.reserve', 'cf', '1844674407370955165', 'EXPANSION', '32').error().contains('Insufficient memory to create filter')
+        self.env.expect('cf.reserve', 'cf', '100000000000000', 'BUCKETSIZE', '255', 'EXPANSION', '32768').error().contains('Insufficient memory to create filter')
+        self.env.expect('cf.insert', 'cf', 'capacity', '100000000000000', 'ITEMS', 1).error().contains('Insufficient memory to create filter')

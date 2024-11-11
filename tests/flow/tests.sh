@@ -51,7 +51,7 @@ setup_redis_server() {
 					--suffix asan --clang-asan --clang-san-blacklist /build/redis.blacklist
 			fi
 
-			export ASAN_OPTIONS=detect_odr_violation=0
+			export ASAN_OPTIONS="detect_odr_violation=0:allocator_may_return_null=1"
 			# :detect_leaks=0
 			# for RLTest
 			export SANITIZER="$SAN"
