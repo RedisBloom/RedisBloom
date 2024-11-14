@@ -9,7 +9,6 @@
 #include <stdarg.h>
 #include <string.h>
 #include "redismodule.h"
-#include "rmutil/util.h"
 #if defined(DEBUG) || !defined(NDEBUG)
 #include "readies/cetara/diag/gdb.h"
 #endif
@@ -42,40 +41,35 @@ static int rm_asprintf(char **restrict str, const char *restrict fmt, ...) {
     return res;
 }
 
-#define RegisterAclCategory(ctx)                                                                   \
-    do {                                                                                           \
-        if (RedisModule_AddACLCategory(ctx, MODULE_ACL_CATEGORY_NAME) != REDISMODULE_OK) {         \
-            RedisModule_Log(ctx, "error", "Failed to add ACL category %s",                         \
-                            MODULE_ACL_CATEGORY_NAME);                                             \
-            return REDISMODULE_ERR;                                                                \
-        }                                                                                          \
-    } while (0)
+static inline int SetCommandAcls(RedisModuleCtx *ctx, char const *cmd, char const *acls,
+                                 char const *module) {
+    RedisModuleCommand *command = RedisModule_GetCommand(ctx, cmd);
+    if (command == NULL) {
+        RedisModule_Log(ctx, "error", "Failed to get command %s", cmd);
+        return REDISMODULE_ERR;
+    }
+    char *categories = NULL;
+    strcmp(acls, "") == 0 ? rm_asprintf(&categories, "%s", module)
+                          : rm_asprintf(&categories, "%s %s", acls, module);
 
-#define SetCommandAcls(ctx, cmd, acls)                                                             \
-    do {                                                                                           \
-        RedisModuleCommand *command = RedisModule_GetCommand(ctx, cmd);                            \
-        if (command == NULL) {                                                                     \
-            RedisModule_Log(ctx, "error", "Failed to get command %s", cmd);                        \
-            return REDISMODULE_ERR;                                                                \
-        }                                                                                          \
-        char *categories = NULL;                                                                   \
-        if (!strcmp(acls, "")) {                                                                   \
-            categories = MODULE_ACL_CATEGORY_NAME;                                                 \
-        } else {                                                                                   \
-            rm_asprintf(&categories, "%s %s", acls, MODULE_ACL_CATEGORY_NAME);                     \
-        }                                                                                          \
-        if (RedisModule_SetCommandACLCategories(command, categories) != REDISMODULE_OK) {          \
-            RedisModule_Log(ctx, "error", "Failed to set ACL categories %s for command %s",        \
-                            categories, cmd);                                                      \
-            return REDISMODULE_ERR;                                                                \
-        }                                                                                          \
-        if (strcmp(acls, "")) {                                                                    \
-            rm_free(categories);                                                                   \
-        }                                                                                          \
-    } while (0)
+    if (RedisModule_SetCommandACLCategories(command, categories) != REDISMODULE_OK) {
+        RedisModule_Log(ctx, "error", "Failed to set ACL categories %s for command %s", categories,
+                        cmd);
+        return REDISMODULE_ERR;
+    }
+    rm_free(categories);
+    return REDISMODULE_OK;
+}
 
 #define RegisterCommandWithModesAndAcls(ctx, cmd, f, mode, acls)                                   \
-    do {                                                                                           \
-        __rmutil_register_cmd(ctx, cmd, f, mode);                                                  \
-        SetCommandAcls(ctx, cmd, acls);                                                            \
-    } while (0)
+    if (RedisModule_CreateCommand(ctx, cmd, f, mode, 1, 1, 1) != REDISMODULE_OK ||                 \
+        SetCommandAcls(ctx, cmd, acls, MODULE_ACL_CATEGORY_NAME) != REDISMODULE_OK) {              \
+        RedisModule_Log(ctx, "error", "Failed to create command %s", cmd);                         \
+        return REDISMODULE_ERR;                                                                    \
+    }
+
+#define RegisterAclCategory(ctx)                                                                   \
+    if (RedisModule_AddACLCategory(ctx, MODULE_ACL_CATEGORY_NAME) != REDISMODULE_OK) {             \
+        RedisModule_Log(ctx, "error", "Failed to add ACL category %s", MODULE_ACL_CATEGORY_NAME);  \
+        return REDISMODULE_ERR;                                                                    \
+    }
