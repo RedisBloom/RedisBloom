@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: redis/redis
-          ref: '7.2.1'  # todo: use this is a parameter when we have flows for multiple platforms
+          ref: '7.4'  # todo: use this is a parameter when we have flows for multiple platforms
           path: redis
       - name: Build Redis
         working-directory: redis

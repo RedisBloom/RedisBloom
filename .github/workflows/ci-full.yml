@@ -177,7 +177,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["7.2.4", "unstable"]
+        redis-version: ["7.4", "unstable"]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
@@ -371,7 +371,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.2.14", "7.2.4", "unstable"]
+        redis-version: ["7.4", "unstable"]
         builder: [
           {
             image: 'centos:7',
