@@ -317,24 +317,30 @@ size_t CMSMemUsage(const void *value) {
 
 int CMSModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     // TODO: add option to set defaults from command line and in program
-    RedisModuleTypeMethods tm = {.version = REDISMODULE_TYPE_METHOD_VERSION,
-                                 .rdb_load = CMSRdbLoad,
-                                 .rdb_save = CMSRdbSave,
-                                 .aof_rewrite = RMUtil_DefaultAofRewrite,
-                                 .mem_usage = CMSMemUsage,
-                                 .free = CMSFree,
-                                 .defrag = CMSDefrag};
+    RedisModuleTypeMethods tm = {
+        .version = REDISMODULE_TYPE_METHOD_VERSION,
+        .rdb_load = CMSRdbLoad,
+        .rdb_save = CMSRdbSave,
+        .aof_rewrite = RMUtil_DefaultAofRewrite,
+        .mem_usage = CMSMemUsage,
+        .free = CMSFree,
+        .defrag = CMSDefrag,
+    };
 
     CMSketchType = RedisModule_CreateDataType(ctx, "CMSk-TYPE", CMS_ENC_VER, &tm);
-    if (CMSketchType == NULL)
+    if (CMSketchType == NULL) {
         return REDISMODULE_ERR;
+    }
 
-    RMUtil_RegisterWriteDenyOOMCmd(ctx, "cms.initbydim", CMSketch_Create);
-    RMUtil_RegisterWriteDenyOOMCmd(ctx, "cms.initbyprob", CMSketch_Create);
-    RMUtil_RegisterWriteDenyOOMCmd(ctx, "cms.incrby", CMSketch_IncrBy);
-    RMUtil_RegisterReadCmd(ctx, "cms.query", CMSketch_Query);
-    RMUtil_RegisterWriteDenyOOMCmd(ctx, "cms.merge", CMSketch_Merge);
-    RMUtil_RegisterReadCmd(ctx, "cms.info", CMSKetch_Info);
+#define MODULE_ACL_CATEGORY_NAME "cms"
+    RegisterAclCategory(ctx);
+    RegisterCommandWithModesAndAcls(ctx, "cms.initbydim", CMSketch_Create, "write deny-oom", "write fast");
+    RegisterCommandWithModesAndAcls(ctx, "cms.initbyprob", CMSketch_Create, "write deny-oom", "write fast");
+    RegisterCommandWithModesAndAcls(ctx, "cms.incrby", CMSketch_IncrBy, "write deny-oom", "write");
+    RegisterCommandWithModesAndAcls(ctx, "cms.query", CMSketch_Query, "readonly", "read");
+    RegisterCommandWithModesAndAcls(ctx, "cms.merge", CMSketch_Merge, "write deny-oom", "write");
+    RegisterCommandWithModesAndAcls(ctx, "cms.info", CMSKetch_Info, "readonly", "read fast");
+#undef MODULE_ACL_CATEGORY_NAME
 
     return REDISMODULE_OK;
 }

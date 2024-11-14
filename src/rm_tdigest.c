@@ -915,31 +915,38 @@ size_t TDigestMemUsage(const void *value) {
 
 int TDigestModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     // TODO: add option to set defaults from command line and in program
-    RedisModuleTypeMethods tm = {.version = REDISMODULE_TYPE_METHOD_VERSION,
-                                 .rdb_load = TDigestRdbLoad,
-                                 .rdb_save = TDigestRdbSave,
-                                 .aof_rewrite = RMUtil_DefaultAofRewrite,
-                                 .mem_usage = TDigestMemUsage,
-                                 .free = TDigestFree,
-                                 .defrag = TDigestDefrag};
+    RedisModuleTypeMethods tm = {
+        .version = REDISMODULE_TYPE_METHOD_VERSION,
+        .rdb_load = TDigestRdbLoad,
+        .rdb_save = TDigestRdbSave,
+        .aof_rewrite = RMUtil_DefaultAofRewrite,
+        .mem_usage = TDigestMemUsage,
+        .free = TDigestFree,
+        .defrag = TDigestDefrag,
+    };
 
     TDigestSketchType = RedisModule_CreateDataType(ctx, "TDIS-TYPE", TDIGEST_ENC_VER, &tm);
-    if (TDigestSketchType == NULL)
+    if (TDigestSketchType == NULL) {
         return REDISMODULE_ERR;
+    }
 
-    RMUtil_RegisterWriteDenyOOMCmd(ctx, "tdigest.create", TDigestSketch_Create);
-    RMUtil_RegisterWriteDenyOOMCmd(ctx, "tdigest.add", TDigestSketch_Add);
-    RMUtil_RegisterWriteDenyOOMCmd(ctx, "tdigest.reset", TDigestSketch_Reset);
-    RMUtil_RegisterWriteDenyOOMCmd(ctx, "tdigest.merge", TDigestSketch_Merge);
-    RMUtil_RegisterReadCmd(ctx, "tdigest.min", TDigestSketch_Min);
-    RMUtil_RegisterReadCmd(ctx, "tdigest.max", TDigestSketch_Max);
-    RMUtil_RegisterReadCmd(ctx, "tdigest.quantile", TDigestSketch_Quantile);
-    RMUtil_RegisterReadCmd(ctx, "tdigest.byrank", TDigestSketch_ByRank);
-    RMUtil_RegisterReadCmd(ctx, "tdigest.byrevrank", TDigestSketch_ByRevRank);
-    RMUtil_RegisterReadCmd(ctx, "tdigest.rank", TDigestSketch_Rank);
-    RMUtil_RegisterReadCmd(ctx, "tdigest.revrank", TDigestSketch_RevRank);
-    RMUtil_RegisterReadCmd(ctx, "tdigest.cdf", TDigestSketch_Cdf);
-    RMUtil_RegisterReadCmd(ctx, "tdigest.trimmed_mean", TDigestSketch_TrimmedMean);
-    RMUtil_RegisterReadCmd(ctx, "tdigest.info", TDigestSketch_Info);
+#define MODULE_ACL_CATEGORY_NAME "tdigest"
+    RegisterAclCategory(ctx);
+    RegisterCommandWithModesAndAcls(ctx, "tdigest.create", TDigestSketch_Create, "write deny-oom", "write fast");
+    RegisterCommandWithModesAndAcls(ctx, "tdigest.add", TDigestSketch_Add, "write deny-oom", "write");
+    RegisterCommandWithModesAndAcls(ctx, "tdigest.reset", TDigestSketch_Reset, "write deny-oom", "write fast");
+    RegisterCommandWithModesAndAcls(ctx, "tdigest.merge", TDigestSketch_Merge, "write deny-oom", "write");
+    RegisterCommandWithModesAndAcls(ctx, "tdigest.min", TDigestSketch_Min, "readonly", "read fast");
+    RegisterCommandWithModesAndAcls(ctx, "tdigest.max", TDigestSketch_Max, "readonly", "read fast");
+    RegisterCommandWithModesAndAcls(ctx, "tdigest.quantile", TDigestSketch_Quantile, "readonly", "read fast");
+    RegisterCommandWithModesAndAcls(ctx, "tdigest.byrank", TDigestSketch_ByRank, "readonly", "read fast");
+    RegisterCommandWithModesAndAcls(ctx, "tdigest.byrevrank", TDigestSketch_ByRevRank, "readonly", "read fast");
+    RegisterCommandWithModesAndAcls(ctx, "tdigest.rank", TDigestSketch_Rank, "readonly", "read fast");
+    RegisterCommandWithModesAndAcls(ctx, "tdigest.revrank", TDigestSketch_RevRank, "readonly", "read fast");
+    RegisterCommandWithModesAndAcls(ctx, "tdigest.cdf", TDigestSketch_Cdf, "readonly", "read fast");
+    RegisterCommandWithModesAndAcls(ctx, "tdigest.trimmed_mean", TDigestSketch_TrimmedMean, "readonly", "read");
+    RegisterCommandWithModesAndAcls(ctx, "tdigest.info", TDigestSketch_Info, "readonly", "read fast");
+#undef MODULE_ACL_CATGORY_NAME
+
     return REDISMODULE_OK;
 }
