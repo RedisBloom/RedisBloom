@@ -334,8 +334,10 @@ int CMSModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 
 #define MODULE_ACL_CATEGORY_NAME "cms"
     RegisterAclCategory(ctx);
-    RegisterCommandWithModesAndAcls(ctx, "cms.initbydim", CMSketch_Create, "write deny-oom", "write fast");
-    RegisterCommandWithModesAndAcls(ctx, "cms.initbyprob", CMSketch_Create, "write deny-oom", "write fast");
+    RegisterCommandWithModesAndAcls(ctx, "cms.initbydim", CMSketch_Create, "write deny-oom",
+                                    "write fast");
+    RegisterCommandWithModesAndAcls(ctx, "cms.initbyprob", CMSketch_Create, "write deny-oom",
+                                    "write fast");
     RegisterCommandWithModesAndAcls(ctx, "cms.incrby", CMSketch_IncrBy, "write deny-oom", "write");
     RegisterCommandWithModesAndAcls(ctx, "cms.query", CMSketch_Query, "readonly", "read");
     RegisterCommandWithModesAndAcls(ctx, "cms.merge", CMSketch_Merge, "write deny-oom", "write");
