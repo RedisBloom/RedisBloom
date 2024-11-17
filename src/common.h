@@ -14,15 +14,15 @@
 #endif
 
 #ifdef REDISMODULE_TARGET
- #define rm_malloc RedisModule_Alloc
- #define rm_calloc RedisModule_Calloc
- #define rm_realloc RedisModule_Realloc
- #define rm_free RedisModule_Free
+#define rm_malloc RedisModule_Alloc
+#define rm_calloc RedisModule_Calloc
+#define rm_realloc RedisModule_Realloc
+#define rm_free RedisModule_Free
 #else
- #define rm_malloc malloc
- #define rm_calloc calloc
- #define rm_realloc realloc
- #define rm_free free
+#define rm_malloc malloc
+#define rm_calloc calloc
+#define rm_realloc realloc
+#define rm_free free
 #endif
 
 static inline void *defragPtr(RedisModuleDefragCtx *ctx, void *ptr) {
@@ -40,7 +40,7 @@ static inline int rm_vasprintf(char **restrict str, char const *restrict fmt, va
     return res;
 }
 
-static int rm_asprintf(char **restrict str, char const *restrict fmt, ...) {
+static inline int rm_asprintf(char **restrict str, char const *restrict fmt, ...) {
     va_list args;
     va_start(args, fmt);
     int res = rm_vasprintf(str, fmt, args);
