@@ -62,7 +62,7 @@ static inline int SetCommandAcls(RedisModuleCtx *ctx, char const *cmd, char cons
         return REDISMODULE_ERR;
     }
     if (!acls_empty) {
-        rm_free((void*)categories);
+        rm_free((void *)categories);
     }
     return REDISMODULE_OK;
 }
