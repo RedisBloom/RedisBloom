@@ -23,7 +23,7 @@ static inline void *defragPtr(RedisModuleDefragCtx *ctx, void *ptr) {
     return tmp ? tmp : ptr;
 }
 
-static inline int rm_vasprintf(char **restrict str, const char *restrict fmt, va_list args) {
+static inline int rm_vasprintf(char **restrict str, char const *restrict fmt, va_list args) {
     va_list args_copy;
     va_copy(args_copy, args);
     int needed = vsnprintf(NULL, 0, fmt, args) + 1;
@@ -33,7 +33,7 @@ static inline int rm_vasprintf(char **restrict str, const char *restrict fmt, va
     return res;
 }
 
-static int rm_asprintf(char **restrict str, const char *restrict fmt, ...) {
+static int rm_asprintf(char **restrict str, char const *restrict fmt, ...) {
     va_list args;
     va_start(args, fmt);
     int res = rm_vasprintf(str, fmt, args);
@@ -48,16 +48,22 @@ static inline int SetCommandAcls(RedisModuleCtx *ctx, char const *cmd, char cons
         RedisModule_Log(ctx, "error", "Failed to get command %s", cmd);
         return REDISMODULE_ERR;
     }
-    char *categories = NULL;
-    strcmp(acls, "") == 0 ? rm_asprintf(&categories, "%s", module)
-                          : rm_asprintf(&categories, "%s %s", acls, module);
+
+    bool acls_empty = strcmp(acls, "") == 0;
+    char const *categories = acls_empty ? module : ({
+        char *c = NULL;
+        rm_asprintf(&c, "%s %s", acls, module);
+        c;
+    });
 
     if (RedisModule_SetCommandACLCategories(command, categories) != REDISMODULE_OK) {
         RedisModule_Log(ctx, "error", "Failed to set ACL categories %s for command %s", categories,
                         cmd);
         return REDISMODULE_ERR;
     }
-    rm_free(categories);
+    if (!acls_empty) {
+        rm_free((void*)categories);
+    }
     return REDISMODULE_OK;
 }
 
