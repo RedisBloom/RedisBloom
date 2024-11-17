@@ -36,8 +36,9 @@ class testACL():
         "topk.reserve", "topk.add", "topk.incrby", "topk.query", "topk.count", "topk.list", "topk.info",
       ])
       TDIGEST_COMMANDS = set([
-        "td.create", "td.add", "td.reset", "td.merge", "td.min", "td.max", "td.quantile",
-        "td.byrank", "td.byrevrank", "td.rank", "td.revrank", "td.cdf", "td.trimmed_mean", "td.info",
+        "tdigest.create", "tdigest.add", "tdigest.reset", "tdigest.merge", "tdigest.min", "tdigest.max",
+        "tdigest.quantile", "tdigest.byrank", "tdigest.byrevrank", "tdigest.rank", "tdigest.revrank",
+        "tdigest.cdf", "tdigest.trimmed_mean", "tdigest.info",
       ])
 
       res = env.cmd('ACL', 'CAT', 'bloom')
