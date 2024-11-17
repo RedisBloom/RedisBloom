@@ -13,10 +13,17 @@
 #include "readies/cetara/diag/gdb.h"
 #endif
 
-#define rm_malloc RedisModule_Alloc
-#define rm_calloc RedisModule_Calloc
-#define rm_realloc RedisModule_Realloc
-#define rm_free RedisModule_Free
+#ifdef REDISMODULE_TARGET
+ #define rm_malloc RedisModule_Alloc
+ #define rm_calloc RedisModule_Calloc
+ #define rm_realloc RedisModule_Realloc
+ #define rm_free RedisModule_Free
+#else
+ #define rm_malloc malloc
+ #define rm_calloc calloc
+ #define rm_realloc realloc
+ #define rm_free free
+#endif
 
 static inline void *defragPtr(RedisModuleDefragCtx *ctx, void *ptr) {
     void *tmp = RedisModule_DefragAlloc(ctx, ptr);
