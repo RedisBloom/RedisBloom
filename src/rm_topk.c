@@ -354,7 +354,7 @@ int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RegisterCommandWithModesAndAcls(ctx, "topk.add", TopK_Add_Cmd, "write deny-oom", "write");
     RegisterCommandWithModesAndAcls(ctx, "topk.incrby", TopK_Incrby_Cmd, "write deny-oom", "write");
     RegisterCommandWithModesAndAcls(ctx, "topk.query", TopK_Query_Cmd, "readonly", "read");
-    RegisterCommandWithModesAndAcls(ctx, "topk.count", TopK_Count_Cmd, "write", "write");
+    RegisterCommandWithModesAndAcls(ctx, "topk.count", TopK_Count_Cmd, "readonly", "read");
     RegisterCommandWithModesAndAcls(ctx, "topk.list", TopK_List_Cmd, "readonly", "read");
     RegisterCommandWithModesAndAcls(ctx, "topk.info", TopK_Info_Cmd, "readonly", "read fast");
 #undef MODULE_ACL_CATEGORY_NAME

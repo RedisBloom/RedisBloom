@@ -13,7 +13,7 @@
 #include "readies/cetara/diag/gdb.h"
 #endif
 
-#ifdef REDISMODULE_TARGET
+#ifdef REDISMODULE_TARGET /* Set when compiling as a module */
 #define rm_malloc RedisModule_Alloc
 #define rm_calloc RedisModule_Calloc
 #define rm_realloc RedisModule_Realloc
