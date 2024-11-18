@@ -106,7 +106,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        redis-version: ["7.4.0", "unstable"]
         builder: [
           { os: 'ubuntu-22.04', nick: 'jammy' },
           { os: 'ubuntu-20.04', nick: 'focal' }
@@ -171,7 +171,7 @@ jobs:
           du -ah --apparent-size *
 
   arm64-recent-ubuntu:
-    runs-on: [self-hosted,ubuntu-2204-arm64]
+    runs-on: [self-hosted,ubuntu-2204-arm64-pin]
     env:
       TAGGED: ${{ needs.setup-environment.outputs.TAGGED }}
       VERSION: ${{ needs.setup-environment.outputs.TAG }}
@@ -180,7 +180,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        redis-version: ["7.4.0", "unstable"]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
@@ -242,7 +242,7 @@ jobs:
           du -ah --apparent-size *
 
   arm64-old-ubuntu:
-    runs-on: [self-hosted,ubuntu-2204-arm64]
+    runs-on: [self-hosted,ubuntu-2204-arm64-pin]
     container: ${{ matrix.builder.image }}
     env:
       ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
@@ -253,7 +253,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        redis-version: ["7.4.0", "unstable"]
         builder: [
           {
             image: 'ubuntu:focal',
@@ -351,7 +351,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        redis-version: ["7.4.0", "unstable"]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
@@ -392,7 +392,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["7.2.4", "unstable"]
+        redis-version: ["7.4.0", "unstable"]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
@@ -440,7 +440,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        redis-version: ["7.4", "unstable"]
         builder: [
           {
             image: 'ubuntu:focal',
@@ -449,10 +449,6 @@ jobs:
           {
             image: 'ubuntu:bionic',
             nick: 'bionic'
-          },
-          {
-            image: 'ubuntu:xenial',
-            nick: 'xenial'
           }
         ]
     defaults:
@@ -550,7 +546,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        redis-version: ["7.4.0", "unstable"]
         builder: [
           {
             image: 'debian:bullseye',
@@ -635,7 +631,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.2.14", "7.2.4", "unstable"]
+        redis-version: ["7.4.0", "unstable"]
         builder: [
           {
             image: 'centos:7',
@@ -752,7 +748,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        redis-version: ["7.4.0", "unstable"]
         builder: [
           {
             image: 'amazonlinux:2',
@@ -855,7 +851,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.0.20", "7.2.4", "unstable"]
+        redis-version: ["7.4.0", "unstable"]
         builder: [{
             image: 'rockylinux:8',
             nick: 'rocky8'
@@ -967,10 +963,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["6.0.20", "7.2.5", "unstable"]
+        redis-version: ["7.4.0", "unstable"]
         builder: [
           { os: [ubuntu-latest], nick: 'ubuntu-latest-x86' },
-          { os: [self-hosted, ubuntu-2204-arm64], nick: 'ubuntu-22.04-arm64' }
+          { os: [self-hosted, ubuntu-2204-arm64-pin], nick: 'ubuntu-22.04-arm64' }
         ]
     defaults:
       run:
