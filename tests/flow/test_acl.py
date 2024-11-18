@@ -7,10 +7,7 @@ class testACL():
   def test_acl_category(self):
       """Test that the various `bloom` categories was added appropriately in module load"""
       env = self.env
-      if not server_version_at_least(self.env, '7.4.1'):
-         env.skip()
       res = env.cmd('ACL', 'CAT')
-      # print(res)
       [env.assertTrue(cat in res) for cat in ['bloom', 'cuckoo', 'topk', 'cms', 'tdigest']]
 
   def test_acl_json_commands(self):
@@ -60,8 +57,6 @@ class testACL():
       """Tests that a user with a non-default ACL can't access the `bloom` category"""
 
       env = self.env
-      if not server_version_at_least(self.env, '7.4.1'):
-         env.skip()
       env.cmd('FLUSHALL')
 
       # Create a user with no command permissions (full keyspace and pubsub access)
