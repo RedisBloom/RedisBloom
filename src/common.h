@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <string.h>
 #include "redismodule.h"
 #if defined(DEBUG) || !defined(NDEBUG)
 #include "readies/cetara/diag/gdb.h"
