@@ -6,23 +6,9 @@
 
 #pragma once
 
-#include <stdarg.h>
-#include <string.h>
 #include "redismodule.h"
 #if defined(DEBUG) || !defined(NDEBUG)
 #include "readies/cetara/diag/gdb.h"
-#endif
-
-#ifdef REDISMODULE_TARGET /* Set when compiling as a module */
-#define rm_malloc RedisModule_Alloc
-#define rm_calloc RedisModule_Calloc
-#define rm_realloc RedisModule_Realloc
-#define rm_free RedisModule_Free
-#else
-#define rm_malloc malloc
-#define rm_calloc calloc
-#define rm_realloc realloc
-#define rm_free free
 #endif
 
 static inline void *defragPtr(RedisModuleDefragCtx *ctx, void *ptr) {
@@ -30,56 +16,28 @@ static inline void *defragPtr(RedisModuleDefragCtx *ctx, void *ptr) {
     return tmp ? tmp : ptr;
 }
 
-static inline int rm_vasprintf(char **restrict str, char const *restrict fmt, va_list args) {
-    va_list args_copy;
-    va_copy(args_copy, args);
-    int needed = vsnprintf(NULL, 0, fmt, args) + 1;
-    *str = rm_malloc(needed);
-    int res = vsprintf(*str, fmt, args_copy);
-    va_end(args_copy);
-    return res;
-}
+#define SetCommandAcls(ctx, cmd, acls)                                                             \
+    do {                                                                                           \
+        RedisModuleCommand *command = RedisModule_GetCommand(ctx, cmd);                            \
+        if (command == NULL) {                                                                     \
+            RedisModule_Log(ctx, "error", "Failed to get command %s", cmd);                        \
+            return REDISMODULE_ERR;                                                                \
+        }                                                                                          \
+        if (RedisModule_SetCommandACLCategories(command, acls) != REDISMODULE_OK) {                \
+            RedisModule_Log(ctx, "error", "Failed to set ACL categories %s for command %s", acls,  \
+                            cmd);                                                                  \
+            return REDISMODULE_ERR;                                                                \
+        }                                                                                          \
+    } while (0)
 
-static inline int rm_asprintf(char **restrict str, char const *restrict fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-    int res = rm_vasprintf(str, fmt, args);
-    va_end(args);
-    return res;
-}
-
-static inline int SetCommandAcls(RedisModuleCtx *ctx, char const *cmd, char const *acls,
-                                 char const *module) {
-    RedisModuleCommand *command = RedisModule_GetCommand(ctx, cmd);
-    if (command == NULL) {
-        RedisModule_Log(ctx, "error", "Failed to get command %s", cmd);
-        return REDISMODULE_ERR;
-    }
-
-    bool acls_empty = strcmp(acls, "") == 0;
-    char const *categories = acls_empty ? module : ({
-        char *c = NULL;
-        rm_asprintf(&c, "%s %s", acls, module);
-        c;
-    });
-
-    if (RedisModule_SetCommandACLCategories(command, categories) != REDISMODULE_OK) {
-        RedisModule_Log(ctx, "error", "Failed to set ACL categories %s for command %s", categories,
-                        cmd);
-        return REDISMODULE_ERR;
-    }
-    if (!acls_empty) {
-        rm_free((void *)categories);
-    }
-    return REDISMODULE_OK;
-}
-
-#define RegisterCommandWithModesAndAcls(ctx, cmd, f, mode, acls, module)                           \
-    if (RedisModule_CreateCommand(ctx, cmd, f, mode, 1, 1, 1) != REDISMODULE_OK ||                 \
-        SetCommandAcls(ctx, cmd, acls, module) != REDISMODULE_OK) {                                \
-        RedisModule_Log(ctx, "error", "Failed to create command %s", cmd);                         \
-        return REDISMODULE_ERR;                                                                    \
-    }
+#define RegisterCommandWithModesAndAcls(ctx, cmd, f, mode, acls)                                   \
+    do {                                                                                           \
+        if (RedisModule_CreateCommand(ctx, cmd, f, mode, 1, 1, 1) != REDISMODULE_OK) {             \
+            RedisModule_Log(ctx, "error", "Failed to create command %s", cmd);                     \
+            return REDISMODULE_ERR;                                                                \
+        }                                                                                          \
+        SetCommandAcls(ctx, cmd, acls);                                                            \
+    } while (0)
 
 #define RegisterAclCategory(ctx, module)                                                           \
     if (RedisModule_AddACLCategory(ctx, module) != REDISMODULE_OK) {                               \
