@@ -317,24 +317,33 @@ size_t CMSMemUsage(const void *value) {
 
 int CMSModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     // TODO: add option to set defaults from command line and in program
-    RedisModuleTypeMethods tm = {.version = REDISMODULE_TYPE_METHOD_VERSION,
-                                 .rdb_load = CMSRdbLoad,
-                                 .rdb_save = CMSRdbSave,
-                                 .aof_rewrite = RMUtil_DefaultAofRewrite,
-                                 .mem_usage = CMSMemUsage,
-                                 .free = CMSFree,
-                                 .defrag = CMSDefrag};
+    RedisModuleTypeMethods tm = {
+        .version = REDISMODULE_TYPE_METHOD_VERSION,
+        .rdb_load = CMSRdbLoad,
+        .rdb_save = CMSRdbSave,
+        .aof_rewrite = RMUtil_DefaultAofRewrite,
+        .mem_usage = CMSMemUsage,
+        .free = CMSFree,
+        .defrag = CMSDefrag,
+    };
 
     CMSketchType = RedisModule_CreateDataType(ctx, "CMSk-TYPE", CMS_ENC_VER, &tm);
-    if (CMSketchType == NULL)
+    if (CMSketchType == NULL) {
         return REDISMODULE_ERR;
+    }
 
-    RMUtil_RegisterWriteDenyOOMCmd(ctx, "cms.initbydim", CMSketch_Create);
-    RMUtil_RegisterWriteDenyOOMCmd(ctx, "cms.initbyprob", CMSketch_Create);
-    RMUtil_RegisterWriteDenyOOMCmd(ctx, "cms.incrby", CMSketch_IncrBy);
-    RMUtil_RegisterReadCmd(ctx, "cms.query", CMSketch_Query);
-    RMUtil_RegisterWriteDenyOOMCmd(ctx, "cms.merge", CMSketch_Merge);
-    RMUtil_RegisterReadCmd(ctx, "cms.info", CMSKetch_Info);
+#define RegisterCommand(ctx, name, cmd, mode, acl)                                                 \
+    RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl " cms")
+
+    RegisterAclCategory(ctx, "cms");
+    RegisterCommand(ctx, "cms.initbydim", CMSketch_Create, "write deny-oom", "write fast");
+    RegisterCommand(ctx, "cms.initbyprob", CMSketch_Create, "write deny-oom", "write fast");
+    RegisterCommand(ctx, "cms.incrby", CMSketch_IncrBy, "write deny-oom", "write");
+    RegisterCommand(ctx, "cms.query", CMSketch_Query, "readonly", "read");
+    RegisterCommand(ctx, "cms.merge", CMSketch_Merge, "write deny-oom", "write");
+    RegisterCommand(ctx, "cms.info", CMSKetch_Info, "readonly", "read fast");
+
+#undef RegisterCommand
 
     return REDISMODULE_OK;
 }
