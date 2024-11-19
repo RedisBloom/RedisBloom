@@ -332,25 +332,34 @@ static size_t TopKMemUsage(const void *value) {
 
 int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     // TODO: add option to set defaults from command line and in program
-    RedisModuleTypeMethods tm = {.version = REDISMODULE_TYPE_METHOD_VERSION,
-                                 .rdb_load = TopKRdbLoad,
-                                 .rdb_save = TopKRdbSave,
-                                 .aof_rewrite = RMUtil_DefaultAofRewrite,
-                                 .mem_usage = TopKMemUsage,
-                                 .free = TopKFree,
-                                 .defrag = TopKDefrag};
+    RedisModuleTypeMethods tm = {
+        .version = REDISMODULE_TYPE_METHOD_VERSION,
+        .rdb_load = TopKRdbLoad,
+        .rdb_save = TopKRdbSave,
+        .aof_rewrite = RMUtil_DefaultAofRewrite,
+        .mem_usage = TopKMemUsage,
+        .free = TopKFree,
+        .defrag = TopKDefrag,
+    };
 
     TopKType = RedisModule_CreateDataType(ctx, "TopK-TYPE", TOPK_ENC_VER, &tm);
-    if (TopKType == NULL)
+    if (TopKType == NULL) {
         return REDISMODULE_ERR;
+    }
 
-    RMUtil_RegisterWriteDenyOOMCmd(ctx, "topk.reserve", TopK_Create_Cmd);
-    RMUtil_RegisterWriteDenyOOMCmd(ctx, "topk.add", TopK_Add_Cmd);
-    RMUtil_RegisterWriteDenyOOMCmd(ctx, "topk.incrby", TopK_Incrby_Cmd);
-    RMUtil_RegisterReadCmd(ctx, "topk.query", TopK_Query_Cmd);
-    RMUtil_RegisterWriteCmd(ctx, "topk.count", TopK_Count_Cmd);
-    RMUtil_RegisterReadCmd(ctx, "topk.list", TopK_List_Cmd);
-    RMUtil_RegisterReadCmd(ctx, "topk.info", TopK_Info_Cmd);
+#define RegisterCommand(ctx, name, cmd, mode, acl)                                                 \
+    RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl " topk")
+
+    RegisterAclCategory(ctx, "topk");
+    RegisterCommand(ctx, "topk.reserve", TopK_Create_Cmd, "write deny-oom", "write fast");
+    RegisterCommand(ctx, "topk.add", TopK_Add_Cmd, "write deny-oom", "write");
+    RegisterCommand(ctx, "topk.incrby", TopK_Incrby_Cmd, "write deny-oom", "write");
+    RegisterCommand(ctx, "topk.query", TopK_Query_Cmd, "readonly", "read");
+    RegisterCommand(ctx, "topk.count", TopK_Count_Cmd, "readonly", "read");
+    RegisterCommand(ctx, "topk.list", TopK_List_Cmd, "readonly", "read");
+    RegisterCommand(ctx, "topk.info", TopK_Info_Cmd, "readonly", "read fast");
+
+#undef RegisterCommand
 
     return REDISMODULE_OK;
 }
