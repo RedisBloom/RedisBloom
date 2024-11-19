@@ -1406,11 +1406,9 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         }
     }
 
-#define RegisterAcl(ctx) RegisterAclCategory(ctx, "bloom")
+    RegisterAclCategory(ctx, "bloom");
 #define RegisterCommand(ctx, name, cmd, mode, acl)                                                 \
-    RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl, "bloom")
-
-    RegisterAcl(ctx);
+    RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl " bloom")
     RegisterCommand(ctx, "bf.reserve", BFReserve_RedisCommand, "write deny-oom", "write fast");
     RegisterCommand(ctx, "bf.add", BFAdd_RedisCommand, "write deny-oom", "write");
     RegisterCommand(ctx, "bf.madd", BFAdd_RedisCommand, "write deny-oom", "write");
@@ -1426,15 +1424,11 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     // Bloom - AOF
     RegisterCommand(ctx, "bf.scandump", BFScanDump_RedisCommand, "readonly fast", "read");
     RegisterCommand(ctx, "bf.loadchunk", BFLoadChunk_RedisCommand, "write deny-oom", "write");
-
 #undef RegisterCommand
-#undef RegisterAcl
 
-#define RegisterAcl(ctx) RegisterAclCategory(ctx, "cuckoo")
+    RegisterAclCategory(ctx, "cuckoo");
 #define RegisterCommand(ctx, name, cmd, mode, acl)                                                 \
-    RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl, "cuckoo")
-
-    RegisterAcl(ctx);
+    RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl " cuckoo")
     // Cuckoo Filter commands
     RegisterCommand(ctx, "cf.reserve", CFReserve_RedisCommand, "write deny-oom", "write fast");
     RegisterCommand(ctx, "cf.add", CFAdd_RedisCommand, "write deny-oom", "write");
@@ -1455,9 +1449,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 
     RegisterCommand(ctx, "cf.info", CFInfo_RedisCommand, "readonly fast", "read fast");
     RegisterCommand(ctx, "cf.debug", CFDebug_RedisCommand, "readonly fast", "read");
-
 #undef RegisterCommand
-#undef RegisterAcl
 
     CMSModule_onLoad(ctx, argv, argc);
     TopKModule_onLoad(ctx, argv, argc);

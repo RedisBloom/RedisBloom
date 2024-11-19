@@ -332,20 +332,16 @@ int CMSModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_ERR;
     }
 
-#define RegisterAcl(ctx) RegisterAclCategory(ctx, "cms")
+    RegisterAclCategory(ctx, "cms");
 #define RegisterCommand(ctx, name, cmd, mode, acl)                                                 \
-    RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl, "cms")
-
-    RegisterAcl(ctx);
+    RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl " cms")
     RegisterCommand(ctx, "cms.initbydim", CMSketch_Create, "write deny-oom", "write fast");
     RegisterCommand(ctx, "cms.initbyprob", CMSketch_Create, "write deny-oom", "write fast");
     RegisterCommand(ctx, "cms.incrby", CMSketch_IncrBy, "write deny-oom", "write");
     RegisterCommand(ctx, "cms.query", CMSketch_Query, "readonly", "read");
     RegisterCommand(ctx, "cms.merge", CMSketch_Merge, "write deny-oom", "write");
     RegisterCommand(ctx, "cms.info", CMSKetch_Info, "readonly", "read fast");
-
 #undef RegisterCommand
-#undef RegisterAcl
 
     return REDISMODULE_OK;
 }
