@@ -930,9 +930,11 @@ int TDigestModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
         return REDISMODULE_ERR;
     }
 
-    RegisterAclCategory(ctx, "tdigest");
+#define RegisterAcl(ctx) RegisterAclCategory(ctx, "tdigest")
 #define RegisterCommand(ctx, name, cmd, mode, acl)                                                 \
-    RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl " tdigest")
+    RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl, "tdigest")
+
+    RegisterAcl(ctx);
     RegisterCommand(ctx, "tdigest.create", TDigestSketch_Create, "write deny-oom", "write fast");
     RegisterCommand(ctx, "tdigest.add", TDigestSketch_Add, "write deny-oom", "write");
     RegisterCommand(ctx, "tdigest.reset", TDigestSketch_Reset, "write deny-oom", "write fast");
@@ -947,7 +949,9 @@ int TDigestModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     RegisterCommand(ctx, "tdigest.cdf", TDigestSketch_Cdf, "readonly", "read fast");
     RegisterCommand(ctx, "tdigest.trimmed_mean", TDigestSketch_TrimmedMean, "readonly", "read");
     RegisterCommand(ctx, "tdigest.info", TDigestSketch_Info, "readonly", "read fast");
+
 #undef RegisterCommand
+#undef RegisterAcl
 
     return REDISMODULE_OK;
 }
