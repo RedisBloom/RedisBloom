@@ -347,17 +347,21 @@ int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_ERR;
     }
 
-#define MODULE_ACL_CATEGORY_NAME "topk"
-    RegisterAclCategory(ctx);
-    RegisterCommandWithModesAndAcls(ctx, "topk.reserve", TopK_Create_Cmd, "write deny-oom",
-                                    "write fast");
-    RegisterCommandWithModesAndAcls(ctx, "topk.add", TopK_Add_Cmd, "write deny-oom", "write");
-    RegisterCommandWithModesAndAcls(ctx, "topk.incrby", TopK_Incrby_Cmd, "write deny-oom", "write");
-    RegisterCommandWithModesAndAcls(ctx, "topk.query", TopK_Query_Cmd, "readonly", "read");
-    RegisterCommandWithModesAndAcls(ctx, "topk.count", TopK_Count_Cmd, "readonly", "read");
-    RegisterCommandWithModesAndAcls(ctx, "topk.list", TopK_List_Cmd, "readonly", "read");
-    RegisterCommandWithModesAndAcls(ctx, "topk.info", TopK_Info_Cmd, "readonly", "read fast");
-#undef MODULE_ACL_CATEGORY_NAME
+#define RegisterAcl(ctx) RegisterAclCategory(ctx, "topk")
+#define RegisterCommand(ctx, name, cmd, mode, acl)                                                 \
+    RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl, "topk")
+
+    RegisterAcl(ctx);
+    RegisterCommand(ctx, "topk.reserve", TopK_Create_Cmd, "write deny-oom", "write fast");
+    RegisterCommand(ctx, "topk.add", TopK_Add_Cmd, "write deny-oom", "write");
+    RegisterCommand(ctx, "topk.incrby", TopK_Incrby_Cmd, "write deny-oom", "write");
+    RegisterCommand(ctx, "topk.query", TopK_Query_Cmd, "readonly", "read");
+    RegisterCommand(ctx, "topk.count", TopK_Count_Cmd, "readonly", "read");
+    RegisterCommand(ctx, "topk.list", TopK_List_Cmd, "readonly", "read");
+    RegisterCommand(ctx, "topk.info", TopK_Info_Cmd, "readonly", "read fast");
+
+#undef RegisterCommand
+#undef RegisterAcl
 
     return REDISMODULE_OK;
 }

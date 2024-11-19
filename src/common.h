@@ -74,15 +74,15 @@ static inline int SetCommandAcls(RedisModuleCtx *ctx, char const *cmd, char cons
     return REDISMODULE_OK;
 }
 
-#define RegisterCommandWithModesAndAcls(ctx, cmd, f, mode, acls)                                   \
+#define RegisterCommandWithModesAndAcls(ctx, cmd, f, mode, acls, module)                           \
     if (RedisModule_CreateCommand(ctx, cmd, f, mode, 1, 1, 1) != REDISMODULE_OK ||                 \
-        SetCommandAcls(ctx, cmd, acls, MODULE_ACL_CATEGORY_NAME) != REDISMODULE_OK) {              \
+        SetCommandAcls(ctx, cmd, acls, module) != REDISMODULE_OK) {                                \
         RedisModule_Log(ctx, "error", "Failed to create command %s", cmd);                         \
         return REDISMODULE_ERR;                                                                    \
     }
 
-#define RegisterAclCategory(ctx)                                                                   \
-    if (RedisModule_AddACLCategory(ctx, MODULE_ACL_CATEGORY_NAME) != REDISMODULE_OK) {             \
-        RedisModule_Log(ctx, "error", "Failed to add ACL category %s", MODULE_ACL_CATEGORY_NAME);  \
+#define RegisterAclCategory(ctx, module)                                                           \
+    if (RedisModule_AddACLCategory(ctx, module) != REDISMODULE_OK) {                               \
+        RedisModule_Log(ctx, "error", "Failed to add ACL category %s", module);                    \
         return REDISMODULE_ERR;                                                                    \
     }

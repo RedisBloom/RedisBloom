@@ -930,34 +930,28 @@ int TDigestModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
         return REDISMODULE_ERR;
     }
 
-#define MODULE_ACL_CATEGORY_NAME "tdigest"
-    RegisterAclCategory(ctx);
-    RegisterCommandWithModesAndAcls(ctx, "tdigest.create", TDigestSketch_Create, "write deny-oom",
-                                    "write fast");
-    RegisterCommandWithModesAndAcls(ctx, "tdigest.add", TDigestSketch_Add, "write deny-oom",
-                                    "write");
-    RegisterCommandWithModesAndAcls(ctx, "tdigest.reset", TDigestSketch_Reset, "write deny-oom",
-                                    "write fast");
-    RegisterCommandWithModesAndAcls(ctx, "tdigest.merge", TDigestSketch_Merge, "write deny-oom",
-                                    "write");
-    RegisterCommandWithModesAndAcls(ctx, "tdigest.min", TDigestSketch_Min, "readonly", "read fast");
-    RegisterCommandWithModesAndAcls(ctx, "tdigest.max", TDigestSketch_Max, "readonly", "read fast");
-    RegisterCommandWithModesAndAcls(ctx, "tdigest.quantile", TDigestSketch_Quantile, "readonly",
-                                    "read fast");
-    RegisterCommandWithModesAndAcls(ctx, "tdigest.byrank", TDigestSketch_ByRank, "readonly",
-                                    "read fast");
-    RegisterCommandWithModesAndAcls(ctx, "tdigest.byrevrank", TDigestSketch_ByRevRank, "readonly",
-                                    "read fast");
-    RegisterCommandWithModesAndAcls(ctx, "tdigest.rank", TDigestSketch_Rank, "readonly",
-                                    "read fast");
-    RegisterCommandWithModesAndAcls(ctx, "tdigest.revrank", TDigestSketch_RevRank, "readonly",
-                                    "read fast");
-    RegisterCommandWithModesAndAcls(ctx, "tdigest.cdf", TDigestSketch_Cdf, "readonly", "read fast");
-    RegisterCommandWithModesAndAcls(ctx, "tdigest.trimmed_mean", TDigestSketch_TrimmedMean,
-                                    "readonly", "read");
-    RegisterCommandWithModesAndAcls(ctx, "tdigest.info", TDigestSketch_Info, "readonly",
-                                    "read fast");
-#undef MODULE_ACL_CATGORY_NAME
+#define RegisterAcl(ctx) RegisterAclCategory(ctx, "tdigest")
+#define RegisterCommand(ctx, name, cmd, mode, acl)                                                 \
+    RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl, "tdigest")
+
+    RegisterAcl(ctx);
+    RegisterCommand(ctx, "tdigest.create", TDigestSketch_Create, "write deny-oom", "write fast");
+    RegisterCommand(ctx, "tdigest.add", TDigestSketch_Add, "write deny-oom", "write");
+    RegisterCommand(ctx, "tdigest.reset", TDigestSketch_Reset, "write deny-oom", "write fast");
+    RegisterCommand(ctx, "tdigest.merge", TDigestSketch_Merge, "write deny-oom", "write");
+    RegisterCommand(ctx, "tdigest.min", TDigestSketch_Min, "readonly", "read fast");
+    RegisterCommand(ctx, "tdigest.max", TDigestSketch_Max, "readonly", "read fast");
+    RegisterCommand(ctx, "tdigest.quantile", TDigestSketch_Quantile, "readonly", "read fast");
+    RegisterCommand(ctx, "tdigest.byrank", TDigestSketch_ByRank, "readonly", "read fast");
+    RegisterCommand(ctx, "tdigest.byrevrank", TDigestSketch_ByRevRank, "readonly", "read fast");
+    RegisterCommand(ctx, "tdigest.rank", TDigestSketch_Rank, "readonly", "read fast");
+    RegisterCommand(ctx, "tdigest.revrank", TDigestSketch_RevRank, "readonly", "read fast");
+    RegisterCommand(ctx, "tdigest.cdf", TDigestSketch_Cdf, "readonly", "read fast");
+    RegisterCommand(ctx, "tdigest.trimmed_mean", TDigestSketch_TrimmedMean, "readonly", "read");
+    RegisterCommand(ctx, "tdigest.info", TDigestSketch_Info, "readonly", "read fast");
+
+#undef RegisterCommand
+#undef RegisterAcl
 
     return REDISMODULE_OK;
 }

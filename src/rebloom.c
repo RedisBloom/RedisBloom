@@ -1406,65 +1406,58 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         }
     }
 
-#define MODULE_ACL_CATEGORY_NAME "bloom"
-    RegisterAclCategory(ctx);
-    RegisterCommandWithModesAndAcls(ctx, "bf.reserve", BFReserve_RedisCommand, "write deny-oom",
-                                    "write fast");
-    RegisterCommandWithModesAndAcls(ctx, "bf.add", BFAdd_RedisCommand, "write deny-oom", "write");
-    RegisterCommandWithModesAndAcls(ctx, "bf.madd", BFAdd_RedisCommand, "write deny-oom", "write");
-    RegisterCommandWithModesAndAcls(ctx, "bf.insert", BFInsert_RedisCommand, "write deny-oom",
-                                    "write");
-    RegisterCommandWithModesAndAcls(ctx, "bf.exists", BFCheck_RedisCommand, "readonly fast",
-                                    "read");
-    RegisterCommandWithModesAndAcls(ctx, "bf.mexists", BFCheck_RedisCommand, "readonly fast",
-                                    "read");
-    RegisterCommandWithModesAndAcls(ctx, "bf.info", BFInfo_RedisCommand, "readonly fast",
-                                    "read fast");
-    RegisterCommandWithModesAndAcls(ctx, "bf.card", BFCard_RedisCommand, "readonly fast",
-                                    "read fast");
+#define RegisterAcl(ctx) RegisterAclCategory(ctx, "bloom")
+#define RegisterCommand(ctx, name, cmd, mode, acl)                                                 \
+    RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl, "bloom")
+
+    RegisterAcl(ctx);
+    RegisterCommand(ctx, "bf.reserve", BFReserve_RedisCommand, "write deny-oom", "write fast");
+    RegisterCommand(ctx, "bf.add", BFAdd_RedisCommand, "write deny-oom", "write");
+    RegisterCommand(ctx, "bf.madd", BFAdd_RedisCommand, "write deny-oom", "write");
+    RegisterCommand(ctx, "bf.insert", BFInsert_RedisCommand, "write deny-oom", "write");
+    RegisterCommand(ctx, "bf.exists", BFCheck_RedisCommand, "readonly fast", "read");
+    RegisterCommand(ctx, "bf.mexists", BFCheck_RedisCommand, "readonly fast", "read");
+    RegisterCommand(ctx, "bf.info", BFInfo_RedisCommand, "readonly fast", "read fast");
+    RegisterCommand(ctx, "bf.card", BFCard_RedisCommand, "readonly fast", "read fast");
 
     // Bloom - Debug
-    RegisterCommandWithModesAndAcls(ctx, "bf.debug", BFDebug_RedisCommand, "readonly fast", "read");
+    RegisterCommand(ctx, "bf.debug", BFDebug_RedisCommand, "readonly fast", "read");
 
     // Bloom - AOF
-    RegisterCommandWithModesAndAcls(ctx, "bf.scandump", BFScanDump_RedisCommand, "readonly fast",
-                                    "read");
-    RegisterCommandWithModesAndAcls(ctx, "bf.loadchunk", BFLoadChunk_RedisCommand, "write deny-oom",
-                                    "write");
-#undef MODULE_ACL_CATEGORY_NAME
+    RegisterCommand(ctx, "bf.scandump", BFScanDump_RedisCommand, "readonly fast", "read");
+    RegisterCommand(ctx, "bf.loadchunk", BFLoadChunk_RedisCommand, "write deny-oom", "write");
 
-#define MODULE_ACL_CATEGORY_NAME "cuckoo"
-    RegisterAclCategory(ctx);
+#undef RegisterCommand
+#undef RegisterAcl
+
+#define RegisterAcl(ctx) RegisterAclCategory(ctx, "cuckoo")
+#define RegisterCommand(ctx, name, cmd, mode, acl)                                                 \
+    RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl, "cuckoo")
+
+    RegisterAcl(ctx);
     // Cuckoo Filter commands
-    RegisterCommandWithModesAndAcls(ctx, "cf.reserve", CFReserve_RedisCommand, "write deny-oom",
-                                    "write fast");
-    RegisterCommandWithModesAndAcls(ctx, "cf.add", CFAdd_RedisCommand, "write deny-oom", "write");
-    RegisterCommandWithModesAndAcls(ctx, "cf.addnx", CFAdd_RedisCommand, "write deny-oom", "write");
-    RegisterCommandWithModesAndAcls(ctx, "cf.insert", CFInsert_RedisCommand, "write deny-oom",
-                                    "write");
-    RegisterCommandWithModesAndAcls(ctx, "cf.insertnx", CFInsert_RedisCommand, "write deny-oom",
-                                    "write");
-    RegisterCommandWithModesAndAcls(ctx, "cf.exists", CFCheck_RedisCommand, "readonly fast",
-                                    "read");
-    RegisterCommandWithModesAndAcls(ctx, "cf.mexists", CFCheck_RedisCommand, "readonly fast",
-                                    "read");
-    RegisterCommandWithModesAndAcls(ctx, "cf.count", CFCheck_RedisCommand, "readonly fast", "read");
+    RegisterCommand(ctx, "cf.reserve", CFReserve_RedisCommand, "write deny-oom", "write fast");
+    RegisterCommand(ctx, "cf.add", CFAdd_RedisCommand, "write deny-oom", "write");
+    RegisterCommand(ctx, "cf.addnx", CFAdd_RedisCommand, "write deny-oom", "write");
+    RegisterCommand(ctx, "cf.insert", CFInsert_RedisCommand, "write deny-oom", "write");
+    RegisterCommand(ctx, "cf.insertnx", CFInsert_RedisCommand, "write deny-oom", "write");
+    RegisterCommand(ctx, "cf.exists", CFCheck_RedisCommand, "readonly fast", "read");
+    RegisterCommand(ctx, "cf.mexists", CFCheck_RedisCommand, "readonly fast", "read");
+    RegisterCommand(ctx, "cf.count", CFCheck_RedisCommand, "readonly fast", "read");
 
     // Technically a write command, but doesn't change memory profile
-    RegisterCommandWithModesAndAcls(ctx, "cf.del", CFDel_RedisCommand, "write fast", "write");
+    RegisterCommand(ctx, "cf.del", CFDel_RedisCommand, "write fast", "write");
 
-    RegisterCommandWithModesAndAcls(ctx, "cf.compact", CFCompact_RedisCommand, "readonly fast",
-                                    "read");
+    RegisterCommand(ctx, "cf.compact", CFCompact_RedisCommand, "readonly fast", "read");
     // AOF:
-    RegisterCommandWithModesAndAcls(ctx, "cf.scandump", CFScanDump_RedisCommand, "readonly fast",
-                                    "read");
-    RegisterCommandWithModesAndAcls(ctx, "cf.loadchunk", CFLoadChunk_RedisCommand, "write deny-oom",
-                                    "write");
+    RegisterCommand(ctx, "cf.scandump", CFScanDump_RedisCommand, "readonly fast", "read");
+    RegisterCommand(ctx, "cf.loadchunk", CFLoadChunk_RedisCommand, "write deny-oom", "write");
 
-    RegisterCommandWithModesAndAcls(ctx, "cf.info", CFInfo_RedisCommand, "readonly fast",
-                                    "read fast");
-    RegisterCommandWithModesAndAcls(ctx, "cf.debug", CFDebug_RedisCommand, "readonly fast", "read");
-#undef MODULE_ACL_CATEGORY_NAME
+    RegisterCommand(ctx, "cf.info", CFInfo_RedisCommand, "readonly fast", "read fast");
+    RegisterCommand(ctx, "cf.debug", CFDebug_RedisCommand, "readonly fast", "read");
+
+#undef RegisterCommand
+#undef RegisterAcl
 
     CMSModule_onLoad(ctx, argv, argc);
     TopKModule_onLoad(ctx, argv, argc);

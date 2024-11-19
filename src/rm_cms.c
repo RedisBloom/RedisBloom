@@ -332,17 +332,20 @@ int CMSModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_ERR;
     }
 
-#define MODULE_ACL_CATEGORY_NAME "cms"
-    RegisterAclCategory(ctx);
-    RegisterCommandWithModesAndAcls(ctx, "cms.initbydim", CMSketch_Create, "write deny-oom",
-                                    "write fast");
-    RegisterCommandWithModesAndAcls(ctx, "cms.initbyprob", CMSketch_Create, "write deny-oom",
-                                    "write fast");
-    RegisterCommandWithModesAndAcls(ctx, "cms.incrby", CMSketch_IncrBy, "write deny-oom", "write");
-    RegisterCommandWithModesAndAcls(ctx, "cms.query", CMSketch_Query, "readonly", "read");
-    RegisterCommandWithModesAndAcls(ctx, "cms.merge", CMSketch_Merge, "write deny-oom", "write");
-    RegisterCommandWithModesAndAcls(ctx, "cms.info", CMSKetch_Info, "readonly", "read fast");
-#undef MODULE_ACL_CATEGORY_NAME
+#define RegisterAcl(ctx) RegisterAclCategory(ctx, "cms")
+#define RegisterCommand(ctx, name, cmd, mode, acl)                                                 \
+    RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl, "cms")
+
+    RegisterAcl(ctx);
+    RegisterCommand(ctx, "cms.initbydim", CMSketch_Create, "write deny-oom", "write fast");
+    RegisterCommand(ctx, "cms.initbyprob", CMSketch_Create, "write deny-oom", "write fast");
+    RegisterCommand(ctx, "cms.incrby", CMSketch_IncrBy, "write deny-oom", "write");
+    RegisterCommand(ctx, "cms.query", CMSketch_Query, "readonly", "read");
+    RegisterCommand(ctx, "cms.merge", CMSketch_Merge, "write deny-oom", "write");
+    RegisterCommand(ctx, "cms.info", CMSKetch_Info, "readonly", "read fast");
+
+#undef RegisterCommand
+#undef RegisterAcl
 
     return REDISMODULE_OK;
 }
