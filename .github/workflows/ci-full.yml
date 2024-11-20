@@ -234,10 +234,6 @@ jobs:
           {
             image: 'ubuntu:bionic',
             nick: 'bionic'
-          },
-          {
-            image: 'ubuntu:xenial',
-            nick: 'xenial'
           }
         ]
     defaults:
