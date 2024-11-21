@@ -102,11 +102,13 @@ s3_upload_file() {
 	local s3_dir="$2"
 	[[ $s3_dir != */ ]] && s3_dir="${s3_dir}/"
 
+	# s3://redismodules/redisbloom/...
+	# 1- 23-           4-...
 	local key=$(echo $file | cut -d'/' -f4-)
 	key+=$file
 	
 	$OP aws s3api head-object --bucket redismodules --key $key > /dev/null 2>&1 || not_exists=true
-	if [[ $not_exists == true ]]; then
+	if [[ $not_exists == true || $FORCE == 1 ]]; then
 		[[ $VERBOSE == 1 ]] && echo "Uploading $file to $s3_dir"
 		$OP aws s3 cp $file $s3_dir --acl public-read --no-progress
 		return 0
