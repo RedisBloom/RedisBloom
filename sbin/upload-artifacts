@@ -101,8 +101,19 @@ s3_upload_file() {
 	local file="$1"
 	local s3_dir="$2"
 	[[ $s3_dir != */ ]] && s3_dir="${s3_dir}/"
+
+	local key=$(echo $file | cut -d'/' -f4-)
+	key+=$file
 	
-	$OP aws s3 cp $file $s3_dir --acl public-read --no-progress
+	$OP aws s3api head-object --bucket redismodules --key $key > /dev/null 2>&1 || not_exists=true
+	if [[ $not_exists == true ]]; then
+		[[ $VERBOSE == 1 ]] && echo "Uploading $file to $s3_dir"
+		$OP aws s3 cp $file $s3_dir --acl public-read --no-progress
+		return 0
+	else
+		[[ $VERBOSE == 1 ]] && echo "$file already exists in $s3_dir"
+		return 1
+	fi
 }
 
 s3_ls() {
@@ -120,12 +131,14 @@ s3_upload() {
 	if [[ $SNAPSHOT == 1 ]]; then
 		files=$(ls ${prefix}.*${PLATFORM}*.zip)
 		for file in $files; do
-			s3_upload_file $file $upload_dir
+			exists=$(s3_upload_file $file $upload_dir)
+			[[ $exists == 1 ]] && return 1
 		done
 	else
 		files=$(ls ${prefix}.*.zip)
 		for file in $files; do
-			s3_upload_file $file $upload_dir
+			exists=$(s3_upload_file $file $upload_dir)
+			[[ $exists == 1 ]] && return 1
 		done
 	fi
 	[[ $VERBOSE == 1 ]] && s3_ls $upload_dir
