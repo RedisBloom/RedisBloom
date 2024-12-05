@@ -71,7 +71,7 @@ jobs:
       run:
         shell: bash -l -eo pipefail {0}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - name: Install build dependencies
@@ -106,7 +106,7 @@ jobs:
         with:
           python-version: '3.9'
           architecture: 'x64'
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - name: Install Python dependencies
@@ -114,7 +114,7 @@ jobs:
           python3 -m pip install -r tests/flow/requirements.txt
           python3 -m pip install -r .install/build_package_requirements.txt
       - name: Checkout Redis
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: 'redis/redis'
           ref: ${{ matrix.redis-version }}
@@ -141,7 +141,7 @@ jobs:
       run:
         shell: bash -l -eo pipefail {0}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - name: Install build dependencies
@@ -155,7 +155,7 @@ jobs:
         run:
           python -m pip install -r tests/flow/requirements.txt
       - name: Checkout Redis
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: 'redis/redis'
           ref: ${{ matrix.redis-version }}
@@ -182,7 +182,7 @@ jobs:
       run:
         shell: bash -l -eo pipefail {0}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - name: Install build dependencies
@@ -196,7 +196,7 @@ jobs:
         run:
           python -m pip install -r tests/flow/requirements.txt
       - name: Checkout Redis
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: 'redis/redis'
           ref: ${{ matrix.redis-version }}
@@ -269,19 +269,36 @@ jobs:
           cmake --version
           python3 -m pip install --upgrade pip
       - name: Checkout RedisBloom
-        uses: actions/checkout@v3
+        if: ${{ matrix.builder.nick == 'focal' }}
+        uses: actions/checkout@v4
         with:
           submodules: true
+      - name: Checkout RedisBloom
+        if: ${{ matrix.builder.nick == 'bionic' }}
+        run: |
+          # Perform checkout
+          REPO_URL="https://github.com/${{ github.repository }}.git"
+          # Clone the repository to the current directory
+          git clone --recurse-submodules --depth=1 -b ${{ github.sha }} $REPO_URL .
       - name: Install Python dependencies
         run: |
           python3 -m pip install -r tests/flow/requirements.txt
           python3 -m pip install -r .install/build_package_requirements.txt
       - name: Checkout Redis
-        uses: actions/checkout@v3
+        if: ${{ matrix.builder.nick == 'focal' }}
+        uses: actions/checkout@v4
         with:
           repository: 'redis/redis'
           ref: ${{ matrix.redis-version }}
           path: 'redis'
+      - name: Checkout Redis
+        if: ${{ matrix.builder.nick == 'bionic' }}
+        run: |
+          # Perform checkout
+          REPO_URL="https://github.com/redis/redis.git"
+          # Clone the repository to the current directory
+          git clone --recurse-submodules --depth=1 -b ${{ matrix.redis-version }} $REPO_URL redis
+      
       - name: Build Redis
         run: |
           cd redis && make -j `nproc`
@@ -330,7 +347,7 @@ jobs:
           cmake --version
           python3 -m pip install --upgrade pip
       - name: Checkout RedisBloom
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Install Python dependencies
@@ -338,7 +355,7 @@ jobs:
           python3 -m pip install -r tests/flow/requirements.txt
           python3 -m pip install -r .install/build_package_requirements.txt
       - name: Checkout Redis
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: 'redis/redis'
           ref: ${{ matrix.redis-version }}
@@ -412,7 +429,7 @@ jobs:
           ln -s `which cmake3` /usr/bin/cmake
           python3 --version
       - name: Checkout sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Install Python dependencies
@@ -421,7 +438,7 @@ jobs:
           python3 -m pip install -r tests/flow/requirements.txt
           python3 -m pip install -r .install/build_package_requirements.txt
       - name: Checkout Redis
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: 'redis/redis'
           ref: ${{ matrix.redis-version }}
@@ -488,20 +505,18 @@ jobs:
           ln -s `which cmake3` /usr/bin/cmake
           python3 --version
       - name: Checkout sources
-        uses: actions/checkout@v3
-        with:
-          submodules: true
+        run: |
+          REPO_URL="https://github.com/${{ github.repository }}.git"
+          git clone --recurse-submodules --depth=1 -b ${{github.sha}} $REPO_URL .
       - name: Install Python dependencies
         run: |
           scl enable devtoolset-11 bash
           python3 -m pip install -r tests/flow/requirements.txt
           python3 -m pip install -r .install/build_package_requirements.txt
       - name: Checkout Redis
-        uses: actions/checkout@v3
-        with:
-          repository: 'redis/redis'
-          ref: ${{ matrix.redis-version }}
-          path: 'redis'
+        run: |
+          REPO_URL="https://github.com/redis/redis.git"
+          git clone --recurse-submodules --depth=1 -b ${{matrix.redis-version}} $REPO_URL redis
       - name: Build Redis
         run: |
           . scl_source enable devtoolset-11 || true
@@ -566,7 +581,7 @@ jobs:
           cmake --version
           python3 --version
       - name: Checkout sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Install Python dependencies
@@ -575,7 +590,7 @@ jobs:
           python3 -m pip install -r tests/flow/requirements.txt
           python3 -m pip install -r .install/build_package_requirements.txt
       - name: Checkout Redis
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: 'redis/redis'
           ref: ${{ matrix.redis-version }}
@@ -605,13 +620,6 @@ jobs:
       VERSION: ${{ needs.setup-environment.outputs.TAG }}
       BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
       TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
-      # https://github.com/actions/checkout/issues/1487
-      # A workaround for the old runtime is to use these environment
-      # variables, install the latest version of git within the container,
-      # and use the actions/checkout@v3 instead of @v4, until it is fixed.
-      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
-      ACTIONS_RUNNER_FORCED_INTERNAL_NODE_VERSION: node16
-      ACTIONS_RUNNER_FORCE_ACTIONS_NODE_VERSION: node16
     strategy:
       fail-fast: false
       matrix:
@@ -633,9 +641,9 @@ jobs:
         run: |
           apk add bash make libtool tar cmake python3 python3-dev py3-pip gcc git curl build-base autoconf automake py3-cryptography linux-headers musl-dev libffi-dev openssl-dev openssh py-virtualenv clang18-libclang gcompat libstdc++ libgcc g++ openblas-dev xsimd git xz bsd-compat-headers clang18
       - name: Checkout the module
-        uses: actions/checkout@v3
-        with:
-          submodules: 'recursive'
+        run: |
+          REPO_URL="https://github.com/${{ github.repository }}.git"
+          git clone --recurse-submodules --depth=1 -b ${{github.sha}} $REPO_URL .
       - name: Install python dependencies
         run: |
           pip install -q --upgrade pip setuptools wheel
@@ -644,11 +652,11 @@ jobs:
         env:
           PIP_BREAK_SYSTEM_PACKAGES: 1
       - name: Checkout Redis
-        uses: actions/checkout@v3
+        run: |
+                uses: actions/checkout@v3
         with:
-          repository: 'redis/redis'
-          ref: ${{ matrix.redis-version }}
-          path: 'redis'
+          REPO_URL="https://github.com/redis/redis.git"
+          git clone --recurse-submodules --depth=1 -b ${{ matrix.redis-version }} $REPO_URL redis
       - name: Build Redis
         working-directory: redis
         run: |
