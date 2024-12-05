@@ -81,7 +81,7 @@ RM_Config rm_config = {
     .cf_initial_size =
         {
             .value = 1024,
-            .min = 2,
+            .min = 4,
             .max = 1LL << 30,
         },
     .cf_max_iterations =
