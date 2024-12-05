@@ -15,6 +15,7 @@
 #include "version.h"
 #include "common.h"
 #include "rmutil/util.h"
+#include "config.h"
 
 #include <assert.h>
 #include <strings.h> // strncasecmp
@@ -26,8 +27,6 @@
 #define REDISBLOOM_GIT_SHA "unknown"
 #endif
 
-#define BF_DEFAULT_EXPANSION 2
-
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 /// Redis Commands                                                           ///
@@ -35,10 +34,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 static RedisModuleType *BFType;
 static RedisModuleType *CFType;
-static double BFDefaultErrorRate = 0.01;
-static size_t BFDefaultInitCapacity = 100;
-static size_t CFDefaultInitCapacity = 1024;
-static size_t CFMaxExpansions = 32;
 static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2);
 
 typedef enum { SB_OK = 0, SB_MISSING, SB_EMPTY, SB_MISMATCH } lookupStatus;
@@ -145,26 +140,28 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         return RedisModule_ReplyWithError(ctx, "ERR (capacity should be larger than 0)");
     }
 
-    unsigned nonScaling = 0;
+    unsigned nonScaling = rm_config.bf_expansion_factor.value == 0 ? BLOOM_OPT_NO_SCALING : 0;
     int ex_loc = RMUtil_ArgIndex("NONSCALING", argv, argc);
     if (ex_loc != -1) {
         nonScaling = BLOOM_OPT_NO_SCALING;
     }
 
-    long long expansion = BF_DEFAULT_EXPANSION;
+    long long expansion = rm_config.bf_expansion_factor.value;
     ex_loc = RMUtil_ArgIndex("EXPANSION", argv, argc);
     if (ex_loc + 1 == argc) {
         return RedisModule_ReplyWithError(ctx, "ERR no expansion");
     }
     if (ex_loc != -1) {
-        if (nonScaling == BLOOM_OPT_NO_SCALING) {
-            return RedisModule_ReplyWithError(ctx, "Nonscaling filters cannot expand");
-        }
         if (RedisModule_StringToLongLong(argv[ex_loc + 1], &expansion) != REDISMODULE_OK) {
             return RedisModule_ReplyWithError(ctx, "ERR bad expansion");
         }
-        if (expansion < 1) {
-            return RedisModule_ReplyWithError(ctx, "ERR expansion should be greater or equal to 1");
+        if (expansion == 0) {
+            nonScaling = BLOOM_OPT_NO_SCALING;
+        } else if (nonScaling == BLOOM_OPT_NO_SCALING) {
+            return RedisModule_ReplyWithError(ctx, "Nonscaling filters cannot expand");
+        }
+        if (rm_config.bf_expansion_factor.max < expansion || expansion < rm_config.bf_expansion_factor.min) {
+            return RedisModule_ReplyWithError(ctx, "ERR expansion should be in the range [0, 32768]");
         }
     }
 
@@ -292,11 +289,13 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
  */
 static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    BFInsertOptions options = {.capacity = BFDefaultInitCapacity,
-                               .error_rate = BFDefaultErrorRate,
-                               .autocreate = 1,
-                               .expansion = BF_DEFAULT_EXPANSION,
-                               .nonScaling = 0};
+    BFInsertOptions options = {
+        .capacity = rm_config.bf_initial_size.value,
+        .error_rate = rm_config.bf_error_rate.value,
+        .autocreate = 1,
+        .expansion = rm_config.bf_expansion_factor.value,
+        .nonScaling = rm_config.bf_expansion_factor.value == 0 ? BLOOM_OPT_NO_SCALING : 0,
+    };
     options.is_multi = isMulti(argv[0]);
 
     if ((options.is_multi && argc < 3) || (!options.is_multi && argc != 3)) {
@@ -313,12 +312,14 @@ static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
  */
 static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    BFInsertOptions options = {.capacity = BFDefaultInitCapacity,
-                               .error_rate = BFDefaultErrorRate,
-                               .autocreate = 1,
-                               .is_multi = 1,
-                               .expansion = BF_DEFAULT_EXPANSION,
-                               .nonScaling = 0};
+    BFInsertOptions options = {
+        .capacity = rm_config.bf_initial_size.value,
+        .error_rate = rm_config.bf_error_rate.value,
+        .autocreate = 1,
+        .is_multi = 1,
+        .expansion = rm_config.bf_expansion_factor.value,
+        .nonScaling = rm_config.bf_expansion_factor.value == 0 ? BLOOM_OPT_NO_SCALING : 0,
+    };
     int items_index = -1;
 
     // Scan the arguments
@@ -605,7 +606,7 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
 
-    if (cf->numFilters >= CFMaxExpansions) {
+    if (cf->numFilters >= rm_config.cf_max_expansions.value) {
         // Ensure that adding new elements does not cause heavy expansion.
         // We might want to find a way to better distinguish legitimate from malicious
         // additions.
@@ -678,7 +679,11 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
  */
 static int CFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    CFInsertOptions options = {.autocreate = 1, .capacity = CFDefaultInitCapacity, .is_multi = 0};
+    CFInsertOptions options = {
+        .autocreate = 1,
+        .capacity = rm_config.cf_initial_size.value,
+        .is_multi = 0,
+    };
     size_t cmdlen;
     const char *cmdstr = RedisModule_StringPtrLen(argv[0], &cmdlen);
     options.is_nx = tolower(cmdstr[cmdlen - 1]) == 'x';
@@ -693,7 +698,11 @@ static int CFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
  */
 static int CFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    CFInsertOptions options = {.autocreate = 1, .capacity = CFDefaultInitCapacity, .is_multi = 1};
+    CFInsertOptions options = {
+        .autocreate = 1,
+        .capacity = rm_config.cf_initial_size.value,
+        .is_multi = 1,
+    };
     size_t cmdlen;
     const char *cmdstr = RedisModule_StringPtrLen(argv[0], &cmdlen);
     options.is_nx = tolower(cmdstr[cmdlen - 1]) == 'x';
@@ -1372,35 +1381,38 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     }
 
     for (int ii = 0; ii < argc; ii += 2) {
-        if (!rsStrcasecmp(argv[ii], "initial_size")) {
+        if (!rsStrcasecmp(argv[ii], "initial_size") || !rsStrcasecmp(argv[ii], "bf-initial-size")) {
             long long v;
             if (RedisModule_StringToLongLong(argv[ii + 1], &v) == REDISMODULE_ERR) {
-                BAIL("Invalid argument for 'INITIAL_SIZE'");
+                BAIL("Invalid argument for 'bf-initial-size'");
             }
-            if (v > 0) {
-                BFDefaultInitCapacity = v;
+            if (rm_config.bf_initial_size.min <= v && v <= rm_config.bf_initial_size.max) {
+                rm_config.bf_initial_size.value = v;
             } else {
-                BAIL("INITIAL_SIZE must be > 0");
+                BAIL("'bf-initial-size' must be in the range [1, 1e9]");
             }
-        } else if (!rsStrcasecmp(argv[ii], "error_rate")) {
+        } else if (!rsStrcasecmp(argv[ii], "error_rate") || !rsStrcasecmp(argv[ii], "bf-error-rate")) {
             double d;
             if (RedisModule_StringToDouble(argv[ii + 1], &d) == REDISMODULE_ERR) {
-                BAIL("Invalid argument for 'ERROR_RATE'");
-            } else if (d <= 0) {
-                BAIL("ERROR_RATE must be > 0");
-            } else if (d >= 1) {
-                BAIL("ERROR_RATE must be < 1");
-            } else {
-                BFDefaultErrorRate = d;
+                BAIL("Invalid argument for 'bf-error-rate'");
             }
-        } else if (!rsStrcasecmp(argv[ii], "cf_max_expansions")) {
+            if (rm_config.bf_error_rate.min <= d && d <= rm_config.bf_error_rate.max) {
+                rm_config.bf_error_rate.value = d;
+            } else {
+                BAIL("'bf-error-rate' must be in the range [0, 1]");
+            }
+        } else if (!rsStrcasecmp(argv[ii], "cf_max_expansions") ||
+                   !rsStrcasecmp(argv[ii], "cf-max-expansions")) {
             long long l;
             if (RedisModule_StringToLongLong(argv[ii + 1], &l) == REDISMODULE_ERR) {
-                BAIL("Invalid argument for 'CF_MAX_EXPANSIONS'");
-            } else if (l < 1) {
-                BAIL("CF_MAX_EXPANSIONS must be an integer >= 1");
+                BAIL("Invalid argument for 'cf-max-expansions'");
             }
-            CFMaxExpansions = l;
+            if (rm_config.cf_max_expansions.min <= l && l <= rm_config.cf_max_expansions.max) {
+                rm_config.cf_max_expansions.value = l;
+            }
+            else {
+                BAIL("'cf-max-expansions' must be in the range [1, 65536]");
+            }
         } else {
             BAIL("Unrecognized option");
         }
@@ -1486,5 +1498,11 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     if (CFType == NULL) {
         return REDISMODULE_ERR;
     }
+
+
+    if (RM_RegisterConfigs(ctx) != REDISMODULE_OK) {
+        return REDISMODULE_ERR;
+    }
+
     return REDISMODULE_OK;
 }
