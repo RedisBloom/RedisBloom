@@ -45,9 +45,9 @@ static int setNumericValue(const char *name, RedisModuleString *value, void *pri
     }
     *val = new_val;
 
-    if (strcasecmp(name, "cf_bucket_size") == 0) {
+    if (strcasecmp(name, "cf-bucket-size") == 0) {
         rm_config.cf_initial_size.min = new_val * 2;
-    } else if (strcasecmp(name, "cf_initial_size") == 0) {
+    } else if (strcasecmp(name, "cf-initial-size") == 0) {
         rm_config.cf_bucket_size.max = min(255, new_val / 2);
     }
 
