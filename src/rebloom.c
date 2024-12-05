@@ -160,8 +160,10 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         } else if (nonScaling == BLOOM_OPT_NO_SCALING) {
             return RedisModule_ReplyWithError(ctx, "Nonscaling filters cannot expand");
         }
-        if (rm_config.bf_expansion_factor.max < expansion || expansion < rm_config.bf_expansion_factor.min) {
-            return RedisModule_ReplyWithError(ctx, "ERR expansion should be in the range [0, 32768]");
+        if (rm_config.bf_expansion_factor.max < expansion ||
+            expansion < rm_config.bf_expansion_factor.min) {
+            return RedisModule_ReplyWithError(ctx,
+                                              "ERR expansion should be in the range [0, 32768]");
         }
     }
 
@@ -1391,7 +1393,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
             } else {
                 BAIL("'bf-initial-size' must be in the range [1, 1e9]");
             }
-        } else if (!rsStrcasecmp(argv[ii], "error_rate") || !rsStrcasecmp(argv[ii], "bf-error-rate")) {
+        } else if (!rsStrcasecmp(argv[ii], "error_rate") ||
+                   !rsStrcasecmp(argv[ii], "bf-error-rate")) {
             double d;
             if (RedisModule_StringToDouble(argv[ii + 1], &d) == REDISMODULE_ERR) {
                 BAIL("Invalid argument for 'bf-error-rate'");
@@ -1409,8 +1412,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
             }
             if (rm_config.cf_max_expansions.min <= l && l <= rm_config.cf_max_expansions.max) {
                 rm_config.cf_max_expansions.value = l;
-            }
-            else {
+            } else {
                 BAIL("'cf-max-expansions' must be in the range [1, 65536]");
             }
         } else {
@@ -1498,7 +1500,6 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     if (CFType == NULL) {
         return REDISMODULE_ERR;
     }
-
 
     if (RM_RegisterConfigs(ctx) != REDISMODULE_OK) {
         return REDISMODULE_ERR;

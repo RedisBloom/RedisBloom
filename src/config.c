@@ -7,7 +7,8 @@
 #include <strings.h>
 #include "config.h"
 
-static int setFloatValue(const char *name, RedisModuleString *value, void *privdata, RedisModuleString **err) {
+static int setFloatValue(const char *name, RedisModuleString *value, void *privdata,
+                         RedisModuleString **err) {
     RM_ConfigFloat *config = privdata;
     double *val = &config->value;
     double new_val;
@@ -16,8 +17,8 @@ static int setFloatValue(const char *name, RedisModuleString *value, void *privd
         return REDISMODULE_ERR;
     }
     if (new_val < config->min || new_val > config->max) {
-        *err = RedisModule_CreateStringPrintf(
-          NULL, "Value for `%s` must be in the range [%f, %f]", name, config->min, config->max);
+        *err = RedisModule_CreateStringPrintf(NULL, "Value for `%s` must be in the range [%f, %f]",
+                                              name, config->min, config->max);
         return REDISMODULE_ERR;
     }
     *val = new_val;
@@ -27,7 +28,8 @@ static RedisModuleString *getFloatValue(const char *name, void *privdata) {
     return RedisModule_CreateStringPrintf(NULL, "%f", ((RM_ConfigFloat *)privdata)->value);
 }
 
-static int setNumericValue(const char *name, RedisModuleString *value, void *privdata, RedisModuleString **err) {
+static int setNumericValue(const char *name, RedisModuleString *value, void *privdata,
+                           RedisModuleString **err) {
     RM_ConfigFloat *config = privdata;
     long long *val = &config->value;
     long long new_val;
@@ -36,8 +38,9 @@ static int setNumericValue(const char *name, RedisModuleString *value, void *pri
         return REDISMODULE_ERR;
     }
     if (new_val < config->min || new_val > config->max) {
-        *err = RedisModule_CreateStringPrintf(
-            NULL, "Value for `%s` must be in the range [%lld, %lld]", name, config->min, config->max);
+        *err =
+            RedisModule_CreateStringPrintf(NULL, "Value for `%s` must be in the range [%lld, %lld]",
+                                           name, config->min, config->max);
         return REDISMODULE_ERR;
     }
     *val = new_val;
@@ -144,11 +147,9 @@ int RM_RegisterConfigs(RedisModuleCtx *ctx) {
 
     for (int i = 0; i < sizeof rm_config_vars / sizeof *rm_config_vars; ++i) {
         RM_ConfigVar var = rm_config_vars[i];
-        if (RedisModule_RegisterStringConfig(
-                ctx, var.name, var.defaultValue, var.flags, var.getValue,
-                var.setValue, var.applyValue, var.privdata
-            ) != REDISMODULE_OK
-        ) {
+        if (RedisModule_RegisterStringConfig(ctx, var.name, var.defaultValue, var.flags,
+                                             var.getValue, var.setValue, var.applyValue,
+                                             var.privdata) != REDISMODULE_OK) {
             RedisModule_Log(ctx, "warning", "Failed to register config option `%s`", var.name);
             return REDISMODULE_ERR;
         }

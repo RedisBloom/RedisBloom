@@ -54,46 +54,54 @@ typedef struct {
 } RM_Config;
 
 RM_Config rm_config = {
-    .bf_error_rate = {
-      .value = 0.01,
-      .min = 0.0,
-      .max = 1.0,
-    },
-    .bf_initial_size = {
-      .value = 100,
-      .min = 1,
-      .max = 1LL << 30,
-    },
-    .bf_expansion_factor = {
-      .value = 2,
-      .min = 0,
-      .max = 32768,
-    },
-    .cf_bucket_size = {
-      .value = 2,
-      .min = 1,
-      .max = 255,
-    },
-    .cf_initial_size = {
-      .value = 1024,
-      .min = 2,
-      .max = 1LL << 30,
-    },
-    .cf_max_iterations = {
-      .value = 20,
-      .min = 1,
-      .max = 65535,
-    },
-    .cf_expansion_factor = {
-      .value = 1,
-      .min = 0,
-      .max = 32768,
-    },
-    .cf_max_expansions = {
-      .value = 32,
-      .min = 1,
-      .max = 65535,
-    },
+    .bf_error_rate =
+        {
+            .value = 0.01,
+            .min = 0.0,
+            .max = 1.0,
+        },
+    .bf_initial_size =
+        {
+            .value = 100,
+            .min = 1,
+            .max = 1LL << 30,
+        },
+    .bf_expansion_factor =
+        {
+            .value = 2,
+            .min = 0,
+            .max = 32768,
+        },
+    .cf_bucket_size =
+        {
+            .value = 2,
+            .min = 1,
+            .max = 255,
+        },
+    .cf_initial_size =
+        {
+            .value = 1024,
+            .min = 2,
+            .max = 1LL << 30,
+        },
+    .cf_max_iterations =
+        {
+            .value = 20,
+            .min = 1,
+            .max = 65535,
+        },
+    .cf_expansion_factor =
+        {
+            .value = 1,
+            .min = 0,
+            .max = 32768,
+        },
+    .cf_max_expansions =
+        {
+            .value = 32,
+            .min = 1,
+            .max = 65535,
+        },
 };
 
 int RM_RegisterConfigs(RedisModuleCtx *ctx);
