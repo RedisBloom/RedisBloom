@@ -1,9 +1,9 @@
 #!/bin/bash
 yum -y install epel-release
 yum -y install http://opensource.wandisco.com/centos/7/git/x86_64/wandisco-git-release-7-2.noarch.rpm
-yum -y install gcc make cmake3 git openssl-devel bzip2-devel libffi-devel zlib-devel wget scl-utils which gcc-toolset-11-gcc gcc-toolset-11-gcc-c++ gcc-toolset-11-libatomic-devel
+yum -y install gcc make cmake3 git openssl-devel bzip2-devel libffi-devel zlib-devel wget scl-utils which gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ gcc-toolset-13-libatomic-devel
 yum groupinstall "Development Tools" -y
-cp /opt/rh/gcc-toolset-11/enable /etc/profile.d/gcc-toolset-11.sh
+cp /opt/rh/gcc-toolset-13/enable /etc/profile.d/gcc-toolset-13.sh
 
 make --version
 gcc --version

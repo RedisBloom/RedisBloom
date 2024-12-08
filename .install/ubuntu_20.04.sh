@@ -28,5 +28,3 @@ python3 --version
 make --version
 cmake --version
 python3 -m pip install --upgrade pip
-
-
