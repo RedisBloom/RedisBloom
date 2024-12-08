@@ -143,7 +143,7 @@ jobs:
         run: |
           source venv/bin/activate
           MODULE=$(realpath ./target/release/rejson.so) RLTEST_ARGS='--no-progress' ./tests/pytest/tests.sh
-       - name: Pack module
+      - name: Pack module
         run: |
           export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
           git config --global --add safe.directory $GITHUB_WORKSPACE

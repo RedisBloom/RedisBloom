@@ -1,7 +1,6 @@
 name: Build all supported linux platforms
 
 on:
-  push:
   workflow_call: # Allows to run this workflow from another workflow
     inputs:
       redis-ref:
@@ -38,7 +37,6 @@ jobs:
           OS="${{ inputs.os }}"
           if [ -z "${OS}" ]; then
             OS="bionic focal jammy rocky8 rocky9 bullseye amazonlinux2 mariner2"
-            OS="focal amazonlinux2"
           fi
           MATRIX="["
           for os in $OS; do
