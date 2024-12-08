@@ -25,7 +25,7 @@ jobs:
       image: alpine:3
     strategy:
       matrix:
-        runs_on: [ubuntu24-arm64-4-8, ubuntu-latest]
+        runs_on: [ubuntu24-arm64-4-16, ubuntu-latest]
     steps:
       - name: Install prerequisites
         shell: sh
