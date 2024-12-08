@@ -115,7 +115,7 @@ jobs:
             ./install_script.sh 
           echo ::endgroup::
       - name: Setup Python for testing
-        if: contains(fromJSON('["ubuntu:jammy"]'), matrix.docker_image.image)
+        if: contains(fromJSON('["ubuntu:jammy", "ubuntu:focal"]'), matrix.docker_image.image)
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
