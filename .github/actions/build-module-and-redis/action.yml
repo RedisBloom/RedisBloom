@@ -14,7 +14,7 @@ runs:
       working-directory: redis
       run: |
         echo "::group::Build Redis"
-        make -j `nproc`
+        make install -j `nproc`
         echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
         echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
         export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
@@ -24,5 +24,5 @@ runs:
       shell: bash
       run: |
         echo ::group::Build module
-          make -j `nproc`
+        make -j `nproc`
         echo ::endgroup::
