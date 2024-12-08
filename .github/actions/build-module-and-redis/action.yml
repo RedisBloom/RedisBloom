@@ -24,5 +24,6 @@ runs:
       shell: bash
       run: |
         echo ::group::Build module
+        . scl_source enable devtoolset-11 || true
         make -j `nproc`
         echo ::endgroup::
