@@ -114,9 +114,6 @@ jobs:
           echo ::group::Install dependencies
             ./install_script.sh 
           echo ::endgroup::
-          echo ::group::Install rust
-            ./getrust.sh
-          echo ::endgroup::
       - name: Get Redis
         if: matrix.docker_image.image != 'amazonlinux:2' && matrix.docker_image.image != 'ubuntu:bionic'
         uses: actions/checkout@v4
