@@ -114,6 +114,12 @@ jobs:
           echo ::group::Install dependencies
             ./install_script.sh 
           echo ::endgroup::
+      - name: Setup Python for testing
+        if: matrix.docker_image.image == 'amazonlinux:2' || matrix.docker_image.image == 'ubuntu:bionic'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          architecture: 'x64'
       - name: Get Redis
         if: matrix.docker_image.image != 'amazonlinux:2' && matrix.docker_image.image != 'ubuntu:bionic'
         uses: actions/checkout@v4
@@ -122,12 +128,6 @@ jobs:
           ref: ${{needs.prepare-values.outputs.redis-ref}}
           path: redis
           submodules: 'recursive'
-      - name: Setup Python for testing
-        if: matrix.docker_image.image == 'amazonlinux:2' || matrix.docker_image.image == 'ubuntu:bionic'
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-          architecture: 'x64'
       - name: Get Redis
         if: matrix.docker_image.image == 'amazonlinux:2' || matrix.docker_image.image == 'ubuntu:bionic'
         run: |
