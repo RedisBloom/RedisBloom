@@ -17,7 +17,7 @@ on:
 
 jobs:
   alpine:
-    runs-on: matrix.runs_on
+    runs-on: ${{matrix.runs_on}}
     defaults:
       run:
         shell: bash
