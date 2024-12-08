@@ -2,7 +2,7 @@
 MODE=$1 # whether to install using sudo or not
 set -e
 export DEBIAN_FRONTEND=noninteractive
-
+echo "::group::Install dependencies"
 $MODE yum update -y
 # Install the RPM package that provides the Software Collections (SCL) required for devtoolset-11
 $MODE yum install -y https://vault.centos.org/centos/7/extras/x86_64/Packages/centos-release-scl-rh-2-3.el7.centos.noarch.rpm
@@ -25,9 +25,12 @@ $MODE ln -s `which openssl11` /usr/bin/openssl
 
 # Install clang
 $MODE yum install -y clang
+echo "::endgroup::"
 
 make --version
 git --version
+
+echo "::group::install Python 3.9.6"
 wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz
 tar -xvf Python-3.9.6.tgz
 cd Python-3.9.6
@@ -36,8 +39,20 @@ make -j `nproc`
 make altinstall
 cd ..
 rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
-ln -s `which cmake3` /usr/bin/cmake
 python3 --version
+echo "::endgroup::"
+
+echo "::group::install awscli"
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
 ./aws/install
+echo "::endgroup::"
+
+echo "::group::install cmake"
+version=3.25.1
+filename=cmake-${version}-linux-x86_64.sh
+wget https://github.com/Kitware/CMake/releases/download/v${version}/${filename}
+chmod u+x ./${filename}
+$MODE ./${filename} --skip-license --prefix=/usr/local --exclude-subdir
+cmake --version
+echo "::endgroup::"
