@@ -1,3 +1,2 @@
 RLTest == 0.7.5
-redis~=5.0.8
 numpy

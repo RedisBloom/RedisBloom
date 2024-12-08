@@ -169,8 +169,9 @@ jobs:
           if-no-files-found: ignore
       - name: Pack module
         run: |
-          git config --global --add safe.directory /__w/RedisJSON/RedisJSON # to avoid git error
-          MODULE=$(realpath ./target/release/rejson.so) ./sbin/pack.sh
+          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          make pack BRANCH=$TAG_OR_BRANCH SHOW=1
       - name: Upload artifacts to S3
         uses: ./.github/actions/upload-artifacts-to-s3-without-make
         with:
