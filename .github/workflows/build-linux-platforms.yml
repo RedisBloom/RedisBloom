@@ -139,7 +139,7 @@ jobs:
           git fetch origin ${{needs.prepare-values.outputs.redis-ref}}
           git checkout ${{needs.prepare-values.outputs.redis-ref}}
       - name: build
-        uses: ./.github/actions/build-module-and-redis-with-cargo
+        uses: ./.github/actions/build-module-and-redis
       - name: Set Artifact Names
         # Artifact names have to be unique, so we base them on the environment.
         # We also remove invalid characters from the name.
