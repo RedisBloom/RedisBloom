@@ -3,7 +3,7 @@ MODE=$1 # whether to install using sudo or not
 set -e
 export DEBIAN_FRONTEND=noninteractive
 
- yum -y install  --nobest openssl-devel --allowerasing
+yum -y install openssl-devel --allowerasing
 amazon-linux-extras install epel -y
 yum -y install epel-release yum-utils 
 yum-config-manager --add-repo http://vault.centos.org/centos/7/sclo/x86_64/rh/
