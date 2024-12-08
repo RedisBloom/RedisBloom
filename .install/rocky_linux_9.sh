@@ -2,14 +2,21 @@
 MODE=$1 # whether to install using sudo or not
 set -e
 export DEBIAN_FRONTEND=noninteractive
-$MODE dnf update -y
-
-$MODE dnf install -y gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ make wget git openssl openssl-devel python3 which \
-    rsync unzip cargo clang
-
-# install pip
-$MODE dnf install python3-pip -y
-
-cp /opt/rh/gcc-toolset-13/enable /etc/profile.d/gcc-toolset-13.sh
-
-source install_cmake.sh $MODE
+yum -y install epel-release
+yum -y install http://opensource.wandisco.com/centos/7/git/x86_64/wandisco-git-release-7-2.noarch.rpm
+yum -y install gcc make cmake3 git openssl-devel bzip2-devel libffi-devel zlib-devel wget scl-utils gcc-toolset-13 which
+yum groupinstall "Development Tools" -y
+. scl_source enable gcc-toolset-13 || true
+make --version
+gcc --version
+git --version
+wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz
+tar -xvf Python-3.9.6.tgz
+cd Python-3.9.6
+./configure
+make -j `nproc`
+make altinstall
+cd ..
+rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
+cmake --version
+python3 --version
