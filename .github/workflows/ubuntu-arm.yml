@@ -21,29 +21,8 @@ permissions:
 
 
 jobs:
-  setup-environment:
-    runs-on: ubuntu-latest
-    outputs:
-      TAGGED: ${{ steps.set-env.outputs.TAGGED }}
-      TAG: ${{ steps.set-env.outputs.TAG }}
-      BRANCH: ${{ steps.set-env.outputs.BRANCH }}
-      TAG_OR_BRANCH: ${{ steps.set-env.outputs.TAG }}${{ steps.set-env.outputs.BRANCH }}
-      redis-ref: ${{ steps.set-env.outputs.redis-ref }}
-    steps:
-      - name: checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: set env
-        id: set-env
-        uses: ./.github/actions/setup-env
-        with:
-          github-ref: ${{ github.ref }}
-          redis-ref: ${{ inputs.redis-ref }}
-
   ubuntu-arm64:
     runs-on: ubuntu24-arm64-4-16 # ubuntu24-arm64-2-8
-    needs: setup-environment
     strategy:
       matrix:
         docker:
@@ -110,11 +89,6 @@ jobs:
     defaults:
       run:
         shell: bash
-    env:
-      TAGGED: ${{ needs.setup-environment.outputs.TAGGED }}
-      VERSION: ${{ needs.setup-environment.outputs.TAG }}
-      BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
-      TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
     container:
       image: ${{ matrix.docker.image }}
     steps:
