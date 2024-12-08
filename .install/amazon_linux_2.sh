@@ -21,3 +21,12 @@ cd ..
 rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
 ln -s `which cmake3` /usr/bin/cmake
 python3 --version
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+./aws/install
+
+cp /opt/rh/devtoolset-11/enable /etc/profile.d/scl-devtoolset-11.sh
+
+yum install -y openssl11 openssl11-devel
+ln -s `which openssl11` /usr/bin/openssl
+yum install -y clang
