@@ -7,6 +7,60 @@
 #include <strings.h>
 #include "config.h"
 
+// Default configuration values.
+// All values provided by CONFIG PRD
+// (https://redislabs.atlassian.net/wiki/spaces/DX/pages/3980198010/PRD+CONFIG+for+modules+arguments)
+RM_Config rm_config = {
+    .bf_error_rate =
+        {
+            .value = 0.01,
+            .min = 0.0,
+            .max = 1.0,
+        },
+    .bf_initial_size =
+        {
+            .value = 100,
+            .min = 1,
+            .max = 1LL << 30,
+        },
+    .bf_expansion_factor =
+        {
+            .value = 2,
+            .min = 0,
+            .max = 32768,
+        },
+    .cf_bucket_size =
+        {
+            .value = 2,
+            .min = 1,
+            .max = 255,
+        },
+    .cf_initial_size =
+        {
+            .value = 1024,
+            .min = 4,
+            .max = 1LL << 30,
+        },
+    .cf_max_iterations =
+        {
+            .value = 20,
+            .min = 1,
+            .max = 65535,
+        },
+    .cf_expansion_factor =
+        {
+            .value = 1,
+            .min = 0,
+            .max = 32768,
+        },
+    .cf_max_expansions =
+        {
+            .value = 32,
+            .min = 1,
+            .max = 65535,
+        },
+};
+
 static int setFloatValue(const char *name, RedisModuleString *value, void *privdata,
                          RedisModuleString **err) {
     RM_ConfigFloat *config = privdata;
@@ -30,7 +84,7 @@ static RedisModuleString *getFloatValue(const char *name, void *privdata) {
 
 static int setNumericValue(const char *name, RedisModuleString *value, void *privdata,
                            RedisModuleString **err) {
-    RM_ConfigFloat *config = privdata;
+    RM_ConfigNumeric *config = privdata;
     long long *val = &config->value;
     long long new_val;
     if (RedisModule_StringToLongLong(value, &new_val) != REDISMODULE_OK) {
@@ -48,7 +102,7 @@ static int setNumericValue(const char *name, RedisModuleString *value, void *pri
     if (strcasecmp(name, "cf-bucket-size") == 0) {
         rm_config.cf_initial_size.min = new_val * 2;
     } else if (strcasecmp(name, "cf-initial-size") == 0) {
-        rm_config.cf_bucket_size.max = min(255, new_val / 2);
+        rm_config.cf_bucket_size.max = new_val / 2 < 255 ? new_val / 2 : 255;
     }
 
     return REDISMODULE_OK;
@@ -59,101 +113,86 @@ static RedisModuleString *getNumericValue(const char *name, void *privdata) {
 
 typedef struct {
     const char *name;
-    const char *defaultValue;
-    unsigned int flags;
+    const char *defVal;
     RedisModuleConfigSetStringFunc setValue;
     RedisModuleConfigGetStringFunc getValue;
-    RedisModuleConfigApplyFunc applyValue;
     void *privdata;
 } RM_ConfigVar;
 
 RM_ConfigVar rm_config_vars[] = {
     {
         .name = "bf-error-rate",
-        .defaultValue = NULL,
-        .flags = REDISMODULE_CONFIG_DEFAULT,
+        .defVal = "0.01",
         .setValue = setFloatValue,
         .getValue = getFloatValue,
-        .applyValue = NULL,
         .privdata = &rm_config.bf_error_rate,
     },
     {
         .name = "bf-initial-size",
-        .defaultValue = NULL,
-        .flags = REDISMODULE_CONFIG_DEFAULT,
+        .defVal = "100",
         .setValue = setNumericValue,
-        .getValue = setNumericValue,
-        .applyValue = NULL,
+        .getValue = getNumericValue,
         .privdata = &rm_config.bf_initial_size,
     },
     {
         .name = "bf-expansion-factor",
-        .defaultValue = NULL,
-        .flags = REDISMODULE_CONFIG_DEFAULT,
+        .defVal = "2",
         .setValue = setNumericValue,
-        .getValue = setNumericValue,
-        .applyValue = NULL,
+        .getValue = getNumericValue,
         .privdata = &rm_config.bf_expansion_factor,
     },
     {
         .name = "cf-bucket-size",
-        .defaultValue = NULL,
-        .flags = REDISMODULE_CONFIG_DEFAULT,
+        .defVal = "2",
         .setValue = setNumericValue,
-        .getValue = setNumericValue,
-        .applyValue = NULL,
+        .getValue = getNumericValue,
         .privdata = &rm_config.cf_bucket_size,
     },
     {
         .name = "cf-initial-size",
-        .defaultValue = NULL,
-        .flags = REDISMODULE_CONFIG_DEFAULT,
+        .defVal = "1024",
         .setValue = setNumericValue,
-        .getValue = setNumericValue,
-        .applyValue = NULL,
+        .getValue = getNumericValue,
         .privdata = &rm_config.cf_initial_size,
     },
     {
         .name = "cf-max-iterations",
-        .defaultValue = NULL,
-        .flags = REDISMODULE_CONFIG_DEFAULT,
+        .defVal = "20",
         .setValue = setNumericValue,
-        .getValue = setNumericValue,
-        .applyValue = NULL,
+        .getValue = getNumericValue,
         .privdata = &rm_config.cf_max_iterations,
     },
     {
         .name = "cf-expansion-factor",
-        .defaultValue = NULL,
-        .flags = REDISMODULE_CONFIG_DEFAULT,
+        .defVal = "1",
         .setValue = setNumericValue,
-        .getValue = setNumericValue,
-        .applyValue = NULL,
+        .getValue = getNumericValue,
         .privdata = &rm_config.cf_expansion_factor,
     },
     {
         .name = "cf-max-expansions",
-        .defaultValue = NULL,
-        .flags = REDISMODULE_CONFIG_DEFAULT,
+        .defVal = "32",
         .setValue = setNumericValue,
-        .getValue = setNumericValue,
-        .applyValue = NULL,
+        .getValue = getNumericValue,
         .privdata = &rm_config.cf_max_expansions,
     },
 };
+
+int RegisterStringConfig(RedisModuleCtx *ctx, RM_ConfigVar var) {
+    return RedisModule_RegisterStringConfig(ctx, var.name, var.defVal, REDISMODULE_CONFIG_UNPREFIXED,
+                                            var.getValue, var.setValue, NULL, var.privdata);
+}
 
 int RM_RegisterConfigs(RedisModuleCtx *ctx) {
     RedisModule_Log(ctx, "notice", "Registering configuration options");
 
     for (int i = 0; i < sizeof rm_config_vars / sizeof *rm_config_vars; ++i) {
         RM_ConfigVar var = rm_config_vars[i];
-        if (RedisModule_RegisterStringConfig(ctx, var.name, var.defaultValue, var.flags,
-                                             var.getValue, var.setValue, var.applyValue,
-                                             var.privdata) != REDISMODULE_OK) {
+        if (RegisterStringConfig(ctx, var) != REDISMODULE_OK) {
             RedisModule_Log(ctx, "warning", "Failed to register config option `%s`", var.name);
             return REDISMODULE_ERR;
         }
     }
 
-    return REDISMODULE_OK;
+    return RedisModule_LoadConfigs(ctx);
 }

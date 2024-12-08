@@ -28,7 +28,6 @@ typedef struct {
      *********************************/
     // Error ratio. valid range is [0.0, 1.0]. (default: 0.01)
     // TODO: consider limiting the range to [0.0, 0.25] as per CONFIG PRD
-    // (https://redislabs.atlassian.net/wiki/spaces/DX/pages/3980198010/PRD+CONFIG+for+modules+arguments)
     RM_ConfigFloat bf_error_rate;
     // Initial capacity. valid range is [1, 1e9] (default: 100)
     RM_ConfigNumeric bf_initial_size;
@@ -53,55 +52,7 @@ typedef struct {
     RM_ConfigNumeric cf_max_expansions;
 } RM_Config;
 
-RM_Config rm_config = {
-    .bf_error_rate =
-        {
-            .value = 0.01,
-            .min = 0.0,
-            .max = 1.0,
-        },
-    .bf_initial_size =
-        {
-            .value = 100,
-            .min = 1,
-            .max = 1LL << 30,
-        },
-    .bf_expansion_factor =
-        {
-            .value = 2,
-            .min = 0,
-            .max = 32768,
-        },
-    .cf_bucket_size =
-        {
-            .value = 2,
-            .min = 1,
-            .max = 255,
-        },
-    .cf_initial_size =
-        {
-            .value = 1024,
-            .min = 4,
-            .max = 1LL << 30,
-        },
-    .cf_max_iterations =
-        {
-            .value = 20,
-            .min = 1,
-            .max = 65535,
-        },
-    .cf_expansion_factor =
-        {
-            .value = 1,
-            .min = 0,
-            .max = 32768,
-        },
-    .cf_max_expansions =
-        {
-            .value = 32,
-            .min = 1,
-            .max = 65535,
-        },
-};
+extern RM_Config rm_config;
 
+// Register the module configuration options
 int RM_RegisterConfigs(RedisModuleCtx *ctx);
