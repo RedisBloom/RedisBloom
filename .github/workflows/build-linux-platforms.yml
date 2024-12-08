@@ -115,7 +115,7 @@ jobs:
             ./install_script.sh 
           echo ::endgroup::
       - name: Setup Python for testing
-        if: matrix.docker_image.image == 'amazonlinux:2' || matrix.docker_image.image == 'ubuntu:bionic'
+        if: matrix.docker_image.image != 'amazonlinux:2' && matrix.docker_image.image != 'ubuntu:bionic'
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'

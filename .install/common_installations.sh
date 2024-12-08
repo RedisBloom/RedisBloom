@@ -8,7 +8,7 @@ pip3 install -q --upgrade setuptools
 echo "pip version: $(pip3 --version)"
 echo "pip path: $(which pip3)"
 
-pip3 install -q -r tests/pytest/requirements.txt
+pip3 install -q -r tests/flow/requirements.txt
 # These packages are needed to build the package
 pip3 install -q -r .install/build_package_requirements.txt
 

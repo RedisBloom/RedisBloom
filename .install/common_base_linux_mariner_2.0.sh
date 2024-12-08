@@ -5,7 +5,7 @@ tdnf install -q -y build-essential git wget ca-certificates tar openssl-devel \
 
 pip install -q --upgrade setuptools
 pip install -q --upgrade pip
-pip install -q -r tests/pytest/requirements.txt
+pip install -q -r tests/flow/requirements.txt
 
 # These packages are needed to build the package
 pip install -q -r .install/build_package_requirements.txt
