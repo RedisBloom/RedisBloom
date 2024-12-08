@@ -106,7 +106,7 @@ jobs:
           git fetch origin ${REF}
           git checkout ${REF}
       - name: Setup Python for testing
-        if: matrix.docker.image != 'ubuntu:bionic'
+        if: matrix.docker.image == 'ubuntu:jammy'
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
