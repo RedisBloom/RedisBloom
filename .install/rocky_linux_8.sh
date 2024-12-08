@@ -1,0 +1,23 @@
+#!/bin/bash
+yum -y install epel-release
+yum -y install gcc make cmake3 git openssl-devel bzip2-devel libffi-devel zlib-devel wget scl-utils which gcc-toolset-11-gcc gcc-toolset-11-gcc-c++ gcc-toolset-11-libatomic-devel
+yum groupinstall "Development Tools" -y
+cp /opt/rh/gcc-toolset-11/enable /etc/profile.d/gcc-toolset-11.sh
+
+make --version
+gcc --version
+git --version
+
+wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz
+tar -xvf Python-3.9.6.tgz
+cd Python-3.9.6
+./configure
+make -j `nproc`
+make altinstall
+cd ..
+rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
+cmake --version
+python3 --version
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+./aws/install
