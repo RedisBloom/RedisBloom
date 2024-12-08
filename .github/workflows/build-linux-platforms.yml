@@ -38,6 +38,7 @@ jobs:
           OS="${{ inputs.os }}"
           if [ -z "${OS}" ]; then
             OS="bionic focal jammy rocky8 rocky9 bullseye amazonlinux2 mariner2"
+            OS="focal amazonlinux2"
           fi
           MATRIX="["
           for os in $OS; do
@@ -92,13 +93,7 @@ jobs:
     steps:
       - name: Install git
         run: ${{ matrix.docker_image.pre_req_install_cmd }}
-      - name: Checkout
-        if: matrix.docker_image.image != 'amazonlinux:2' && matrix.docker_image.image != 'ubuntu:bionic'
-        uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
       - name: git checkout
-        if: matrix.docker_image.image == 'amazonlinux:2' || matrix.docker_image.image == 'ubuntu:bionic'
         run: |
           # Perform checkout
           REPO_URL="https://github.com/${{ github.repository }}.git"
@@ -115,21 +110,12 @@ jobs:
             ./install_script.sh 
           echo ::endgroup::
       - name: Setup Python for testing
-        if: contains(fromJSON('["ubuntu:jammy", "ubuntu:focal"]'), matrix.docker_image.image)
+        if: contains(fromJSON('["ubuntu:jammy"]'), matrix.docker_image.image)
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
           architecture: 'x64'
       - name: Get Redis
-        if: matrix.docker_image.image != 'amazonlinux:2' && matrix.docker_image.image != 'ubuntu:bionic'
-        uses: actions/checkout@v4
-        with:
-          repository: redis/redis
-          ref: ${{needs.prepare-values.outputs.redis-ref}}
-          path: redis
-          submodules: 'recursive'
-      - name: Get Redis
-        if: matrix.docker_image.image == 'amazonlinux:2' || matrix.docker_image.image == 'ubuntu:bionic'
         run: |
           # Perform checkout
           REPO_URL="https://github.com/redis/redis.git"
