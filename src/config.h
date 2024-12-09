@@ -4,6 +4,8 @@
  * the Server Side Public License v1 (SSPLv1).
  */
 
+#pragma once
+
 #include "redismodule.h"
 
 typedef struct {

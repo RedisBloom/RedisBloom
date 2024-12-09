@@ -196,7 +196,7 @@ class testRedisBloom():
         with env.assertResponseError():
             env.cmd('bf.insert', 'missingFilter', 'ERROR', 'big')
         with env.assertResponseError():
-            env.cmd('bf.insert', 'missingFilter', 'EXPANSION', '0', 'ITEMS', 'foo')
+            env.cmd('bf.insert', 'missingFilter', 'EXPANSION', '-1', 'ITEMS', 'foo')
         with env.assertResponseError():
             env.cmd('bf.insert', 'missingFilter', 'EXPANSION', 'big')
 
