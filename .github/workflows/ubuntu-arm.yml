@@ -141,7 +141,15 @@ jobs:
         uses: ./.github/actions/build-module-and-redis
       - name: Test
         run: |
-          make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+          echo ::group::Activate virtual environment
+          python3 -m venv venv
+          echo "source $PWD/venv/bin/activate" >> ~/.bash_profile
+          source venv/bin/activate
+          echo ::endgroup::
+          echo ::group::Install python dependencies
+            ./.install/common_installations.sh
+          echo ::endgroup::
+          make test VG=${{inputs.run_valgrind}} SAN=${{inputs.run_sanitizer && 'addr' || ''}} REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
       - name: Pack module
         run: |
           export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
