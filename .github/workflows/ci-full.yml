@@ -89,7 +89,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["7.4", "unstable"]
+        redis-version: ["unstable"]
         builder: [
           { os: 'ubuntu-22.04', nick: 'jammy' },
           { os: 'ubuntu-20.04', nick: 'focal' }
@@ -136,7 +136,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["7.4", "unstable"]
+        redis-version: ["unstable"]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
@@ -177,7 +177,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["7.4", "unstable"]
+        redis-version: ["unstable"]
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
@@ -225,7 +225,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["7.4", "unstable"]
+        redis-version: ["unstable"]
         builder: [
           {
             image: 'ubuntu:focal',
@@ -309,7 +309,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["7.4", "unstable"]
+        redis-version: ["unstable"]
         builder: [
           {
             image: 'debian:bullseye',
@@ -367,7 +367,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["7.4", "unstable"]
+        redis-version: ["unstable"]
         builder: [
           {
             image: 'centos:7',
@@ -455,7 +455,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["7.4", "unstable"]
+        redis-version: ["unstable"]
         builder: [
           {
             image: 'amazonlinux:2',
@@ -530,7 +530,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["7.4", "unstable"]
+        redis-version: ["unstable"]
         builder: [{
             image: 'rockylinux:8',
             nick: 'rocky8'
@@ -615,7 +615,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        redis-version: ["7.4", "unstable"]
+        redis-version: ["unstable"]
         builder: [
           { os: [ubuntu-latest], nick: 'ubuntu-latest-x86' },
         ]

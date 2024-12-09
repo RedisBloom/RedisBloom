@@ -114,7 +114,7 @@ int CF_LoadEncodedChunk(const CuckooFilter *cf, long long pos, const char *data,
 }
 
 CuckooFilter *CFHeader_Load(const CFHeader *header) {
-    CuckooFilter *filter = RedisModule_Calloc(1, sizeof(*filter));
+    CuckooFilter *filter = RedisModule_Calloc(1, sizeof *filter);
     filter->numBuckets = header->numBuckets;
     filter->numFilters = header->numFilters;
     filter->numItems = header->numItems;
@@ -122,7 +122,7 @@ CuckooFilter *CFHeader_Load(const CFHeader *header) {
     filter->bucketSize = header->bucketSize;
     filter->maxIterations = header->maxIterations;
     filter->expansion = header->expansion;
-    filter->filters = RedisModule_Calloc(sizeof(*filter->filters), filter->numFilters);
+    filter->filters = RedisModule_Calloc(filter->numFilters, sizeof *filter->filters);
 
     if (CuckooFilter_ValidateIntegrity(filter) != 0) {
         goto error;
@@ -143,12 +143,14 @@ error:
     return NULL;
 }
 
-void fillCFHeader(CFHeader *header, const CuckooFilter *cf) {
-    *header = (CFHeader){.numItems = cf->numItems,
-                         .numBuckets = cf->numBuckets,
-                         .numDeletes = cf->numDeletes,
-                         .numFilters = cf->numFilters,
-                         .bucketSize = cf->bucketSize,
-                         .maxIterations = cf->maxIterations,
-                         .expansion = cf->expansion};
+CFHeader fillCFHeader(const CuckooFilter *cf) {
+    return (CFHeader){
+        .numItems = cf->numItems,
+        .numBuckets = cf->numBuckets,
+        .numDeletes = cf->numDeletes,
+        .numFilters = cf->numFilters,
+        .bucketSize = cf->bucketSize,
+        .maxIterations = cf->maxIterations,
+        .expansion = cf->expansion,
+    };
 }

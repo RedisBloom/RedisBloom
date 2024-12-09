@@ -400,12 +400,11 @@ void CuckooFilter_GetInfo(const CuckooFilter *cf, CuckooHash hash, CuckooKey *ou
 
 // Returns 0 on success
 int CuckooFilter_ValidateIntegrity(const CuckooFilter *cf) {
-    if (cf->bucketSize == 0 || cf->bucketSize > CF_MAX_BUCKET_SIZE ||
-        cf->numBuckets == 0 || cf->numBuckets > CF_MAX_NUM_BUCKETS ||
-        cf->numFilters == 0 || cf->numFilters > CF_MAX_NUM_FILTERS ||
-        cf->maxIterations == 0 || !isPower2(cf->numBuckets) ) {
-        return 1;
-    }
-
-    return 0;
+    return cf->bucketSize < rm_config.cf_bucket_size.min ||
+           cf->bucketSize > rm_config.cf_bucket_size.max ||
+           cf->numFilters < rm_config.cf_max_expansions.min ||
+           cf->numFilters > rm_config.cf_max_expansions.max ||
+           cf->maxIterations < rm_config.cf_max_iterations.min ||
+           cf->maxIterations > rm_config.cf_max_iterations.max || cf->numBuckets == 0 ||
+           cf->numBuckets > CF_MAX_NUM_BUCKETS || !isPower2(cf->numBuckets);
 }

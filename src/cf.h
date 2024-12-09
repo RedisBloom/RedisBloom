@@ -23,6 +23,6 @@ typedef struct __attribute__((packed)) {
 } CFHeader;
 
 CuckooFilter *CFHeader_Load(const CFHeader *header);
-void fillCFHeader(CFHeader *header, const CuckooFilter *cf);
+CFHeader fillCFHeader(const CuckooFilter *cf);
 
 #endif
