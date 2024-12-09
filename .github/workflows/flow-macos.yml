@@ -23,23 +23,18 @@ on:
         required: true
         type: string
         default: "macos-12"
-      is_tag:
-        description: "Is this a tag?"
-        required: true
-        default: false
+      run_valgrind:
+        description: 'Run valgrind on the tests'
         type: boolean
-      tag_or_branch_name:
-        description: 'Tag or branch name.'
-        required: true
+        default: false
+      run_sanitizer:
+        description: 'Run sanitizer on the tests'
+        type: boolean
+        default: false
+      redis-ref:
+        description: 'Redis ref to checkout'  # todo change per version/tag
         type: string
-      version:
-        description: 'Version for artifacts'
         required: true
-        type: string
-      branch:
-        description: 'Branch name'
-        required: true
-        type: string
   workflow_call:
   # the defaults and options here are the same likes in "workflow_dispatch"
     inputs:
@@ -48,36 +43,54 @@ on:
         required: true
         type: string
         default: "macos-12"
-      is_tag:
-        description: "Is this a tag?"
-        required: true
-        default: false
+      run_valgrind:
+        description: 'Run valgrind on the tests'
         type: boolean
-      tag_or_branch_name:
-        description: 'Tag or branch name.'
-        required: true
+        default: false
+      run_sanitizer:
+        description: 'Run sanitizer on the tests'
+        type: boolean
+        default: false
+      redis-ref:
+        description: 'Redis ref to checkout'  # todo change per version/tag
         type: string
-      version:
-        description: 'Version for artifacts'
         required: true
-        type: string
-      branch:
-        description: 'Branch name'
-        required: true
-        type: string
 
 
 jobs:
+  prepare-values:
+    runs-on: ubuntu-latest
+    outputs:
+      os: ${{ steps.set-matrix.outputs.os }}
+      redis-ref: ${{ steps.set-env.outputs.redis-ref }}
+    steps:
+      - name: set env
+        id: set-env
+        run: |
+          echo "redis-ref=${{ inputs.redis-ref || 'unstable' }}" >> $GITHUB_OUTPUT  # todo change per version/tag
+      - name: Set matrix
+        id: set-matrix
+        run: |
+          OS="${{ inputs.os }}"
+          if [ -z "${OS}" ]; then
+            OS='["macos-12", "macos-13", "macos-14"]'
+          else
+            OS='["${OS}""]''
+          fi
+          echo "${OS}"
+          echo "os=${OS}" >> $GITHUB_OUTPUT
   macos:
     env:
       VERSION: ${{ inputs.version }}
       BRANCH: ${{ inputs.branch }}
-    runs-on: ${{ inputs.os || 'macos-14' }}
+    runs-on: matrix.os
+    needs: prepare-values
     strategy:
       fail-fast: false
       matrix:
         # 6.0.20 can't be built due to Redis bug.
-        redis-version: ["7.2.4", "unstable"]
+        redis-version: [needs.prepare-values.outputs.redis-ref]
+        os: ${{fromJson(needs.prepare-values.outputs.os)}}
     defaults:
       run:
         shell: bash -l -eo pipefail {0}
@@ -93,11 +106,14 @@ jobs:
         uses: ./.github/actions/build-and-test-macos
         with:
           redis-version: ${{ matrix.redis-version }}
-      - name: Pack and upload module to s3
-        uses: ./.github/actions/pack-module-and-upload-artifacts-to-s3
-        if: ${{ inputs.tag_or_branch_name != '' }}
+      - name: Pack module
+        run: |
+          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          make pack BRANCH=$TAG_OR_BRANCH SHOW=1
+      - name: Upload artifacts to S3
+        uses: ./.github/actions/upload-artifacts-to-s3-without-make
         with:
-          is_tag: ${{ inputs.is_tag }}
-          tag_or_branch: ${{ inputs.tag_or_branch_name }}
-          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          github-ref: ${{ github.ref }}

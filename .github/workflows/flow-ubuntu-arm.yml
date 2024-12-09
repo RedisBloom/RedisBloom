@@ -39,7 +39,7 @@ jobs:
               add-apt-repository ppa:ubuntu-toolchain-r/test -y
               apt update
               apt install -yqq build-essential wget curl make gcc-10 g++-10 openssl libssl-dev cargo binfmt-support \
-                lsb-core awscli libclang-dev clang curl
+                lsb-core awscli libclang-dev clang curl zlib1g-dev
               update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 60 --slave /usr/bin/g++ g++ /usr/bin/g++-10
               
               wget https://cmake.org/files/v3.28/cmake-3.28.0.tar.gz

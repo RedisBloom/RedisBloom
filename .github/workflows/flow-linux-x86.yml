@@ -1,4 +1,4 @@
-name: Build all supported linux platforms
+name: Flow Linux x86
 
 on:
   workflow_call: # Allows to run this workflow from another workflow
