@@ -1,0 +1,26 @@
+name: Event CI
+
+on:
+  pull_request:
+
+jobs:
+  linux:
+    uses: ./.github/workflows/flow-linux-x86.yml
+    with:
+      os: jammy focal bionic
+      redis-ref: unstable
+    secrets: inherit
+  linux-valgrind:
+    uses: ./.github/workflows/flow-linux-x86.yml
+    with:
+      os: jammy
+      redis-ref: unstable
+      run_valgrind: true
+    secrets: inherit
+  linux-sanitizer:
+    uses: ./.github/workflows/flow-linux-x86.yml
+    with:
+      os: jammy
+      redis-ref: unstable
+      run_sanitizer: true
+    secrets: inherit
