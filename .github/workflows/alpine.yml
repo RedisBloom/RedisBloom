@@ -1,7 +1,6 @@
 name: alpine
 
 on:
-  push:
   workflow_dispatch: # Allows you to run this workflow manually from the Actions tab
     inputs:
       redis-ref:
