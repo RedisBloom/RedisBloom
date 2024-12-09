@@ -153,7 +153,6 @@ jobs:
           if-no-files-found: ignore
       - name: Pack module
         run: |
-          . .venv/bin/activate
           export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
           git config --global --add safe.directory $GITHUB_WORKSPACE
           make pack BRANCH=$TAG_OR_BRANCH SHOW=1
