@@ -141,8 +141,7 @@ jobs:
         uses: ./.github/actions/build-module-and-redis
       - name: Test
         run: |
-          source venv/bin/activate
-          MODULE=$(realpath ./target/release/rejson.so) RLTEST_ARGS='--no-progress' ./tests/pytest/tests.sh
+          make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
       - name: Pack module
         run: |
           export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
