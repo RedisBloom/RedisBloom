@@ -179,8 +179,9 @@ RM_ConfigVar rm_config_vars[] = {
 };
 
 int RegisterStringConfig(RedisModuleCtx *ctx, RM_ConfigVar var) {
-    return RedisModule_RegisterStringConfig(ctx, var.name, var.defVal, REDISMODULE_CONFIG_UNPREFIXED,
-                                            var.getValue, var.setValue, NULL, var.privdata);
+    return RedisModule_RegisterStringConfig(ctx, var.name, var.defVal,
+                                            REDISMODULE_CONFIG_UNPREFIXED, var.getValue,
+                                            var.setValue, NULL, var.privdata);
 }
 
 int RM_RegisterConfigs(RedisModuleCtx *ctx) {
