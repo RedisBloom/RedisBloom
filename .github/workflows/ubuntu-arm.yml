@@ -152,7 +152,7 @@ jobs:
           make test VG=${{inputs.run_valgrind}} SAN=${{inputs.run_sanitizer && 'addr' || ''}} REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
       - name: Pack module
         run: |
-          . .venv/bin/activate
+          . venv/bin/activate
           export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
           git config --global --add safe.directory $GITHUB_WORKSPACE
           make pack BRANCH=$TAG_OR_BRANCH SHOW=1
