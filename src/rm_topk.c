@@ -13,6 +13,7 @@
 #include "rm_topk.h"
 #include "rm_cms.h"
 #include "common.h"
+#include <math.h>
 
 // clang-format off
 #define INNER_ERROR(x) \
