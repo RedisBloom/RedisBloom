@@ -308,6 +308,11 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
         }
     }
 
+    /* Initialize lookupTable */
+    for (uint32_t i = 0; i < TOPK_DECAY_LOOKUP_TABLE; ++i) {
+        topk->lookupTable[i] = pow(topk->decay, i);
+    }
+
     return topk;
 }
 
