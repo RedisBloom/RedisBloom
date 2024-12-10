@@ -28,7 +28,7 @@ jobs:
       redis-ref: ${{inputs.redis-ref || unstable}}
     secrets: inherit
   alpine:
-    uses: ./.github/workflows/alpine.yml
+    uses: ./.github/workflows/flow-alpine.yml
     with:
       redis-ref: ${{inputs.redis-ref || unstable}}
     secrets: inherit
