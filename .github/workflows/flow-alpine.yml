@@ -1,5 +1,9 @@
 name: alpine
 
+permissions:
+  id-token: write
+  contents: read
+  
 on:
   workflow_dispatch: # Allows you to run this workflow manually from the Actions tab
     inputs:

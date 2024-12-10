@@ -1,5 +1,9 @@
 name: Build and Test ubuntu ARM instances
 
+permissions:
+  id-token: write
+  contents: read
+
 on:
   workflow_dispatch: # Allows you to run this workflow manually from the Actions tab
     inputs:

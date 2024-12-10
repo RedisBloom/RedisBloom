@@ -1,5 +1,9 @@
 name: Event Nightly
 
+permissions:
+  id-token: write
+  contents: read
+  
 on:
   push:
   pull_request:

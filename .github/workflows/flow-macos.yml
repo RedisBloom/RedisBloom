@@ -13,7 +13,10 @@ name: CI Full suite - MACOS
 #
 # More info: jobs.steps.uses: docker://alpine:3.8 for docker images,
 # To use the AWS CLI: https://hub.docker.com/r/amazon/aws-cli
-
+permissions:
+  id-token: write
+  contents: read
+  
 on:
   push:
   workflow_dispatch:
