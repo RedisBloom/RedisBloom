@@ -149,7 +149,7 @@ jobs:
         with: 
           image: ${{ matrix.docker_image.image }}
       - name: Pack module
-        uses: ./.github/actions/upload-artifacts
+        uses: ./.github/actions/pack-module
         with: 
           image: ${{ matrix.docker_image.image }}
       - name: Upload artifacts to S3
