@@ -16,7 +16,7 @@ runs:
   steps:
     - name: Build Redis SANITIZER
       shell: bash
-      if: inputs.run_sanitizer
+      if: ${{inputs.run_sanitizer == true}}
       working-directory: redis
       run: |
         echo "::group::Build Redis"
@@ -27,7 +27,7 @@ runs:
         echo "::endgroup::"
     - name: Build Redis
       shell: bash
-      if: inputs.run_sanitizer == false
+      if: ${{inputs.run_sanitizer == false}}
       working-directory: redis
       run: |
         echo "::group::Build Redis"
@@ -38,14 +38,14 @@ runs:
         echo "::endgroup::"
     - name: Build module
       shell: bash
-      if: inputs.run_sanitizer == false
+      if: ${{inputs.run_sanitizer == false}}
       run: |
         echo ::group::Build module
         . scl_source enable devtoolset-11 || true
         make -j `nproc`
         echo ::endgroup::
     - name: Build module SANITIZER
-      if: inputs.run_sanitizer
+      if: ${{inputs.run_sanitizer}}
       shell: bash
       run: |
         echo ::group::Build module
