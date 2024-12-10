@@ -19,7 +19,7 @@ runs:
       working-directory: redis
       run: |
         echo "::group::Build Redis"
-        make SANITIZER=${{inputs.run_sanitizer && 'address' || ''}} install -j `nproc`
+        make SANITIZER=${{inputs.run_sanitizer == true && 'address' || ''}} install -j `nproc`
         echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
         echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
         export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
@@ -30,5 +30,5 @@ runs:
       run: |
         echo ::group::Build module
         . scl_source enable devtoolset-11 || true
-        make SAN=${{inputs.run_sanitizer && 'addr' || ''}} -j `nproc`
+        make SAN=${{inputs.run_sanitizer == true && 'addr' || ''}} -j `nproc`
         echo ::endgroup::
