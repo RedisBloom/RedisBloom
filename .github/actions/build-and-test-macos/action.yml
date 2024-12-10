@@ -23,7 +23,7 @@ runs:
         python3 -m pip install -r tests/flow/requirements.txt
         python3 -m pip install -r .install/build_package_requirements.txt
     - name: Checkout Redis
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: 'redis/redis'
         ref: ${{ inputs.redis-version }}

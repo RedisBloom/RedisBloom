@@ -91,7 +91,6 @@ jobs:
       fail-fast: false
       matrix:
         # 6.0.20 can't be built due to Redis bug.
-        redis-version: [needs.prepare-values.outputs.redis-ref]
         os: ${{fromJson(needs.prepare-values.outputs.os)}}
     defaults:
       run:
@@ -101,13 +100,13 @@ jobs:
         run: |
           brew install make coreutils
       - name: Checkout sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Build and test
         uses: ./.github/actions/build-and-test-macos
         with:
-          redis-version: ${{ matrix.redis-version }}
+          redis-version: needs.prepare-values.outputs.redis-ref
       - name: Pack module
         run: |
           export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
