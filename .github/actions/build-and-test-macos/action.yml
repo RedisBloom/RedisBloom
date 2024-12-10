@@ -1,12 +1,6 @@
 name: Build and test RedisBloom
 description: Build and test RedisBloom
 
-inputs:
-  redis-version:
-    description: 'Redis version to build'
-    required: true
-    default: '7.4'
-
 runs:
   using: composite
   steps:
@@ -22,12 +16,6 @@ runs:
         python3 -m pip install --upgrade pip setuptools wheel
         python3 -m pip install -r tests/flow/requirements.txt
         python3 -m pip install -r .install/build_package_requirements.txt
-    - name: Checkout Redis
-      uses: actions/checkout@v4
-      with:
-        repository: 'redis/redis'
-        ref: ${{ inputs.redis-version }}
-        path: 'redis'
     - name: Build Redis
       shell: bash
       run: |
@@ -43,5 +31,5 @@ runs:
     - name: Run tests
       shell: bash
       run: |
-        source .venv/bin/activate
+        . .venv/bin/activate
         gmake test

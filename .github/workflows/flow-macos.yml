@@ -103,10 +103,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
+      - name: Checkout Redis
+        uses: actions/checkout@v4
+        with:
+          repository: 'redis/redis'
+          ref: ${{ needs.prepare-values.outputs.redis-ref }}
+          path: 'redis'
       - name: Build and test
         uses: ./.github/actions/build-and-test-macos
-        with:
-          redis-version: needs.prepare-values.outputs.redis-ref
       - name: Pack module
         run: |
           export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
