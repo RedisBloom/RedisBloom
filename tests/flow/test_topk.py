@@ -225,7 +225,7 @@ class testTopK():
         results = []
         for with_reload in [True, False]:
             self.cmd('FLUSHALL')
-            self.env.cmd('TOPK.RESERVE', 'topkmyk1', '1', '1', '1', '0.99')
+            self.env.cmd('TOPK.RESERVE', 'topkmyk1', '1', '1', '1', '0.99999')
             for i in range(2):
                 if with_reload:
                     self.env.dumpAndReload()
