@@ -1,0 +1,23 @@
+name: Install dependencies
+
+inputs:
+  image: # The Docker image to use for the build
+    description: 'The Docker image to use for the build'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Setup
+      working-directory: .install
+      shell: bash
+      run: |
+        echo ::group::Install dependencies
+          ./install_script.sh 
+        echo ::endgroup::
+    - name: Setup Python for testing
+      if: contains(fromJSON('["ubuntu:jammy"]'), inputs.image)
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+        architecture: 'x64'
