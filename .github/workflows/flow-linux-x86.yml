@@ -131,7 +131,7 @@ jobs:
       - name: build
         uses: ./.github/actions/build-module-and-redis
         with:
-          run_sanitizer: ${{inputs.run_sanitizer}}
+          run_sanitizer: ${{inputs.run_sanitizer && 'addr' || ''}}
       - name: Run tests
         uses: ./.github/actions/run-tests
         with: 
