@@ -77,7 +77,7 @@ jobs:
           if [ -z "${OS}" ]; then
             OS='["macos-12", "macos-13", "macos-14"]'
           else
-            OS='["${OS}""]''
+            OS='["${OS}""]'
           fi
           echo "${OS}"
           echo "os=${OS}" >> $GITHUB_OUTPUT
