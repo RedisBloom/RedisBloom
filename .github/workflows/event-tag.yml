@@ -2,7 +2,6 @@ name: Event TAG
 
 on:
   push:
-  push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
   workflow_dispatch:

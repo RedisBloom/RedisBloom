@@ -124,6 +124,8 @@ jobs:
           git checkout ${{needs.prepare-values.outputs.redis-ref}}
       - name: build
         uses: ./.github/actions/build-module-and-redis
+        with:
+          run_sanitizer: ${{inputs.run_sanitizer}}
       - name: Set Artifact Names
         # Artifact names have to be unique, so we base them on the environment.
         # We also remove invalid characters from the name.

@@ -3,7 +3,7 @@ description: |
   Build JSON module and Redis Server
 
 inputs:
-  sanitizer:
+  run_sanitizer:
     type: string
 
 runs:
@@ -14,7 +14,7 @@ runs:
       working-directory: redis
       run: |
         echo "::group::Build Redis"
-        make install -j `nproc`
+        make SANITIZER=${{inputs.run_sanitizer && 'addr' || ''}} install -j `nproc`
         echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
         echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
         export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
@@ -25,5 +25,5 @@ runs:
       run: |
         echo ::group::Build module
         . scl_source enable devtoolset-11 || true
-        make -j `nproc`
+        make SAN=${{inputs.run_sanitizer && 'addr' || ''}} -j `nproc`
         echo ::endgroup::
