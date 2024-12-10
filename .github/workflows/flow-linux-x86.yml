@@ -101,38 +101,14 @@ jobs:
           REF=${{github.sha}}
           git fetch origin ${REF}
           git checkout ${REF}
-      - name: Setup
-        working-directory: .install
-        run: |
-          echo ::group::Install dependencies
-            ./install_script.sh 
-          echo ::endgroup::
-      - name: Setup Python for testing
-        if: contains(fromJSON('["ubuntu:jammy"]'), matrix.docker_image.image)
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-          architecture: 'x64'
-      - name: Get Redis
-        run: |
-          # Perform checkout
-          REPO_URL="https://github.com/redis/redis.git"
-          # Clone the repository to the current directory
-          git clone --recurse-submodules --depth=1 $REPO_URL redis
-          cd redis
-          git fetch origin ${{needs.prepare-values.outputs.redis-ref}}
-          git checkout ${{needs.prepare-values.outputs.redis-ref}}
+      - name: Install deps
+        uses: ./.github/actions/install-deps
+        with: 
+          image: ${{ matrix.docker_image.image }}
       - name: build
         uses: ./.github/actions/build-module-and-redis
         with:
           run_sanitizer: ${{inputs.run_sanitizer}}
-      - name: Set Artifact Names
-        # Artifact names have to be unique, so we base them on the environment.
-        # We also remove invalid characters from the name.
-        id: artifact-names
-        run: | # Invalid characters include: Double quote ", Colon :, Less than <, Greater than >, Vertical bar |, Asterisk *, Question mark ?
-          echo "name=$(echo "${{ matrix.docker_image.image }} x86-64, Redis unstable" | \
-            sed -e 's/[":\/\\<>\|*?]/_/g' -e 's/__*/_/g' -e 's/^_//' -e 's/_$//')" >> $GITHUB_OUTPUT
       - name: Run tests
         run: |
           echo ::group::Activate virtual environment
@@ -147,17 +123,14 @@ jobs:
         env:
           PIP_BREAK_SYSTEM_PACKAGES: 1
       - name: Upload test artifacts
-        if: failure() && matrix.docker_image.image != 'amazonlinux:2' && matrix.docker_image.image != 'ubuntu:bionic'
-        uses: actions/upload-artifact@v4
-        with:
-          name: Test logs ${{ steps.artifact-names.outputs.name }}
-          path: tests/**/logs/*.log*
-          if-no-files-found: ignore
+        if: failure()
+        uses: ./.github/actions/upload-artifacts
+        with: 
+          image: ${{ matrix.docker_image.image }}
       - name: Pack module
-        run: |
-          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
-          git config --global --add safe.directory $GITHUB_WORKSPACE
-          make pack BRANCH=$TAG_OR_BRANCH SHOW=1
+        uses: ./.github/actions/upload-artifacts
+        with: 
+          image: ${{ matrix.docker_image.image }}
       - name: Upload artifacts to S3
         uses: ./.github/actions/upload-artifacts-to-s3-without-make
         with:
