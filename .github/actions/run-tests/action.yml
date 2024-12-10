@@ -4,6 +4,7 @@ runs:
   using: composite
   steps:
     - name: Run tests
+      shell: bash
       run: |
         echo ::group::Activate virtual environment
         python3 -m venv venv
