@@ -85,7 +85,7 @@ jobs:
     env:
       VERSION: ${{ inputs.version }}
       BRANCH: ${{ inputs.branch }}
-    runs-on: matrix.os
+    runs-on: ${{matrix.os}}
     needs: prepare-values
     strategy:
       fail-fast: false
