@@ -14,21 +14,42 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Build Redis
+    - name: Build Redis SANITIZER
       shell: bash
+      if: inputs.run_sanitizer
       working-directory: redis
       run: |
         echo "::group::Build Redis"
-        make SANITIZER=${{inputs.run_sanitizer == true && 'address' || ''}} install -j `nproc`
+        make SANITIZER=address install -j `nproc`
         echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
         echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
         export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
-        redis-server --version
+        echo "::endgroup::"
+    - name: Build Redis
+      shell: bash
+      if: inputs.run_sanitizer == false
+      working-directory: redis
+      run: |
+        echo "::group::Build Redis"
+        make install -j `nproc`
+        echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
+        echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
+        export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
         echo "::endgroup::"
     - name: Build module
+      shell: bash
+      if: inputs.run_sanitizer == false
+      run: |
+        echo ::group::Build module
+        . scl_source enable devtoolset-11 || true
+        make -j `nproc`
+        echo ::endgroup::
+    - name: Build module SANITIZER
+      if: inputs.run_sanitizer
       shell: bash
       run: |
         echo ::group::Build module
         . scl_source enable devtoolset-11 || true
-        make SAN=${{inputs.run_sanitizer == true && 'addr' || ''}} -j `nproc`
+        make SAN=addr -j `nproc`
         echo ::endgroup::
+
