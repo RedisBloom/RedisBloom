@@ -8,7 +8,8 @@ inputs:
     type: string
     required: true
   run_sanitizer:
-    type: string
+    type: boolean
+    default: false
 
 runs:
   using: composite
