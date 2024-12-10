@@ -105,6 +105,14 @@ jobs:
           REF=${{github.sha}}
           git fetch origin ${REF}
           git checkout ${REF}
+
+          # Perform checkout
+          REPO_URL="https://github.com/redis/redis.git"
+          # Clone the repository to the current directory
+          git clone --recurse-submodules --depth=1 $REPO_URL redis
+          cd redis
+          git fetch origin ${{inputs.redis-ref}}
+          git checkout ${{inputs.redis-ref}}
       - name: Setup
         working-directory: .install
         shell: bash

@@ -13,16 +13,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Get Redis
-      shell: bash
-      run: |
-      # Perform checkout
-      REPO_URL="https://github.com/redis/redis.git"
-      # Clone the repository to the current directory
-      git clone --recurse-submodules --depth=1 $REPO_URL redis
-      cd redis
-      git fetch origin ${{inputs.redis-ref}}
-      git checkout ${{inputs.redis-ref}}
     - name: Build Redis
       shell: bash
       working-directory: redis
