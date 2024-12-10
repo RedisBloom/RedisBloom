@@ -135,7 +135,8 @@ jobs:
       - name: Run tests
         uses: ./.github/actions/run-tests
         with: 
-          image: ${{ matrix.docker_image.image }}
+          run_valgrind: ${{inputs.run_valgrind && '1' || '0'}}
+          run_sanitizer: ${{inputs.run_sanitizer && 'addr' || ''}}
       - name: Upload test artifacts
         if: failure()
         uses: ./.github/actions/upload-artifacts

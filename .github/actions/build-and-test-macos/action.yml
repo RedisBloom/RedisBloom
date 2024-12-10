@@ -17,9 +17,10 @@ runs:
         python3 -m pip install -r tests/flow/requirements.txt
         python3 -m pip install -r .install/build_package_requirements.txt
     - name: Build Redis
+      working-directory: redis
       shell: bash
       run: |
-        cd redis && gmake -j `sysctl -n hw.logicalcpu`
+        gmake -j `sysctl -n hw.logicalcpu`
         echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
         echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
         export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
