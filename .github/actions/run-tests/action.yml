@@ -1,0 +1,16 @@
+name: Run module tests
+
+runs:
+  using: composite
+  steps:
+    - name: Run tests
+      run: |
+        echo ::group::Activate virtual environment
+        python3 -m venv venv
+        echo "source $PWD/venv/bin/activate" >> ~/.bash_profile
+        source venv/bin/activate
+        echo ::endgroup::
+        echo ::group::Install python dependencies
+          ./.install/common_installations.sh
+        echo ::endgroup::
+        make test VG=${{inputs.run_valgrind}} SAN=${{inputs.run_sanitizer && 'addr' || ''}} REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server

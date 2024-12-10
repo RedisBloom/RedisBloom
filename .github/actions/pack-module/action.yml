@@ -6,6 +6,7 @@ runs:
     - name: Pack module
       shell: bash
       run: |
+        . venv/bin/activate
         export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
         git config --global --add safe.directory $GITHUB_WORKSPACE
         make pack BRANCH=$TAG_OR_BRANCH SHOW=1
