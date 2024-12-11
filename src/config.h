@@ -56,5 +56,15 @@ typedef struct {
 
 extern RM_Config rm_config;
 
+static inline int isNumericConfigValid(long long config, RM_ConfigNumeric params) {
+    return config >= params.min && config <= params.max;
+}
+static inline int isFloatConfigValid(double config, RM_ConfigFloat params) {
+    return config >= params.min && config <= params.max;
+}
+
+#define isConfigValid(config, params)                                                              \
+    _Generic((config), long long: isNumericConfigValid, double: isFloatConfigValid)(config, params)
+
 // Register the module configuration options
 int RM_RegisterConfigs(RedisModuleCtx *ctx);

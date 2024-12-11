@@ -129,17 +129,19 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     double error_rate = rm_config.bf_error_rate.value;
     if (RedisModule_StringToDouble(argv[2], &error_rate) != REDISMODULE_OK) {
         return RedisModule_ReplyWithError(ctx, "ERR bad error rate");
-    } else if (error_rate < rm_config.bf_error_rate.min ||
-               error_rate > rm_config.bf_error_rate.max) {
-        return RedisModule_ReplyWithError(ctx, "ERR error rate should be in the range [0.0, 1.0]");
+    } else if (!isConfigValid(error_rate, rm_config.bf_error_rate)) {
+        return RedisModule_ReplyWithErrorFormat(ctx, "ERR error rate must be in the range [%f, %f]",
+                                                rm_config.bf_error_rate.min,
+                                                rm_config.bf_error_rate.max);
     }
 
     long long capacity = rm_config.bf_initial_size.value;
     if (RedisModule_StringToLongLong(argv[3], &capacity) != REDISMODULE_OK) {
         return RedisModule_ReplyWithError(ctx, "ERR bad capacity");
-    } else if (capacity < rm_config.bf_initial_size.min ||
-               capacity > rm_config.bf_initial_size.max) {
-        return RedisModule_ReplyWithError(ctx, "ERR capacity should be in the range [1, 1GB]");
+    } else if (!isConfigValid(capacity, rm_config.bf_initial_size)) {
+        return RedisModule_ReplyWithErrorFormat(
+            ctx, "ERR capacity must be in the range [%lld, %lld]", rm_config.bf_initial_size.min,
+            rm_config.bf_initial_size.max);
     }
 
     unsigned nonScaling = rm_config.bf_expansion_factor.value == 0 ? BLOOM_OPT_NO_SCALING : 0;
@@ -162,10 +164,10 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         } else if (nonScaling == BLOOM_OPT_NO_SCALING) {
             return RedisModule_ReplyWithError(ctx, "Nonscaling filters cannot expand");
         }
-        if (expansion < rm_config.bf_expansion_factor.min ||
-            expansion > rm_config.bf_expansion_factor.max) {
-            return RedisModule_ReplyWithError(ctx,
-                                              "ERR expansion should be in the range [0, 32768]");
+        if (!isConfigValid(expansion, rm_config.bf_expansion_factor)) {
+            return RedisModule_ReplyWithErrorFormat(
+                ctx, "ERR expansion must be in the range [%lld, %lld]",
+                rm_config.bf_expansion_factor.min, rm_config.bf_expansion_factor.max);
         }
     }
 
@@ -740,10 +742,10 @@ static int CFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
                 REDISMODULE_OK) {
                 return RedisModule_ReplyWithError(ctx, "Bad capacity");
             }
-            if (options.capacity < rm_config.cf_initial_size.min ||
-                options.capacity > rm_config.cf_initial_size.max) {
-                return RedisModule_ReplyWithError(
-                    ctx, "Capacity must be in the range [cf-bucket-size * 2, 1GB]");
+            if (!isConfigValid(options.capacity, rm_config.cf_initial_size)) {
+                return RedisModule_ReplyWithErrorFormat(
+                    ctx, "Capacity must be in the range [cf-bucket-size * 2, %lld]",
+                    rm_config.cf_initial_size.max);
             }
             break;
         case 'i':
@@ -1356,18 +1358,34 @@ static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2) {
     }
     return strncasecmp(s1, s2, n1);
 }
-/*
-#define BAIL(s, ...)                                                                               \
+
+#define BAIL(...)                                                                                  \
     do {                                                                                           \
-        RedisModule_Log(ctx, "warning", s, ##__VA_ARGS__);                                         \
+        RedisModule_Log(ctx, "warning", __VA_ARGS__);                                              \
         return REDISMODULE_ERR;                                                                    \
     } while (0)
-*/
 
-#define BAIL(s)                                                                                    \
+#define badConfig(config)                                                                          \
+    _Generic(rm_config.config.value,                                                               \
+        long long: "'" #config "' must be in the range [%lld, %lld]",                              \
+        double: "'" #config "' must be in the range [%f, %f]")
+
+#define RM_StrToNum(name, rm_str, num)                                                             \
+    if (_Generic(num,                                                                              \
+        long long: RedisModule_StringToLongLong,                                                   \
+        double: RedisModule_StringToDouble)(rm_str, &num) != REDISMODULE_OK) {                     \
+        BAIL("Invalid argument for '" name "'");                                                   \
+    }
+
+#define getConfigFromArgs(rm_str, config)                                                          \
     do {                                                                                           \
-        RedisModule_Log(ctx, "warning", s);                                                        \
-        return REDISMODULE_ERR;                                                                    \
+        typeof(rm_config.config.value) num;                                                        \
+        RM_StrToNum(#config, rm_str, num);                                                         \
+        if (isConfigValid(num, rm_config.config)) {                                                \
+            rm_config.config.value = num;                                                          \
+        } else {                                                                                   \
+            BAIL(badConfig(config), rm_config.config.min, rm_config.config.max);                   \
+        }                                                                                          \
     } while (0)
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
@@ -1390,43 +1408,23 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         }
     }
 
+    if (RM_RegisterConfigs(ctx) != REDISMODULE_OK) {
+        return REDISMODULE_ERR;
+    }
+
     if (argc % 2) {
         BAIL("Invalid number of arguments passed");
     }
 
     for (int ii = 0; ii < argc; ii += 2) {
         if (!rsStrcasecmp(argv[ii], "initial_size") || !rsStrcasecmp(argv[ii], "bf-initial-size")) {
-            long long v;
-            if (RedisModule_StringToLongLong(argv[ii + 1], &v) == REDISMODULE_ERR) {
-                BAIL("Invalid argument for 'bf-initial-size'");
-            }
-            if (rm_config.bf_initial_size.min <= v && v <= rm_config.bf_initial_size.max) {
-                rm_config.bf_initial_size.value = v;
-            } else {
-                BAIL("'bf-initial-size' must be in the range [1, 1e9]");
-            }
+            getConfigFromArgs(argv[ii + 1], bf_initial_size);
         } else if (!rsStrcasecmp(argv[ii], "error_rate") ||
                    !rsStrcasecmp(argv[ii], "bf-error-rate")) {
-            double d;
-            if (RedisModule_StringToDouble(argv[ii + 1], &d) == REDISMODULE_ERR) {
-                BAIL("Invalid argument for 'bf-error-rate'");
-            }
-            if (rm_config.bf_error_rate.min <= d && d <= rm_config.bf_error_rate.max) {
-                rm_config.bf_error_rate.value = d;
-            } else {
-                BAIL("'bf-error-rate' must be in the range [0, 1]");
-            }
+            getConfigFromArgs(argv[ii + 1], bf_error_rate);
         } else if (!rsStrcasecmp(argv[ii], "cf_max_expansions") ||
                    !rsStrcasecmp(argv[ii], "cf-max-expansions")) {
-            long long l;
-            if (RedisModule_StringToLongLong(argv[ii + 1], &l) == REDISMODULE_ERR) {
-                BAIL("Invalid argument for 'cf-max-expansions'");
-            }
-            if (rm_config.cf_max_expansions.min <= l && l <= rm_config.cf_max_expansions.max) {
-                rm_config.cf_max_expansions.value = l;
-            } else {
-                BAIL("'cf-max-expansions' must be in the range [1, 65536]");
-            }
+            getConfigFromArgs(argv[ii + 1], cf_max_expansions);
         } else {
             BAIL("Unrecognized option");
         }
@@ -1510,10 +1508,6 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     };
     CFType = RedisModule_CreateDataType(ctx, "MBbloomCF", CF_MIN_EXPANSION_VERSION, &cfTypeProcs);
     if (CFType == NULL) {
-        return REDISMODULE_ERR;
-    }
-
-    if (RM_RegisterConfigs(ctx) != REDISMODULE_OK) {
         return REDISMODULE_ERR;
     }
 

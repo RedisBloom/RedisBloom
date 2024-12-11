@@ -64,7 +64,6 @@ RM_Config rm_config = {
 static int setFloatValue(const char *name, RedisModuleString *value, void *privdata,
                          RedisModuleString **err) {
     RM_ConfigFloat *config = privdata;
-    double *val = &config->value;
     double new_val;
     if (RedisModule_StringToDouble(value, &new_val) != REDISMODULE_OK) {
         *err = RedisModule_CreateStringPrintf(NULL, "Invalid value for `%s`", name);
@@ -75,7 +74,7 @@ static int setFloatValue(const char *name, RedisModuleString *value, void *privd
                                               name, config->min, config->max);
         return REDISMODULE_ERR;
     }
-    *val = new_val;
+    config->value = new_val;
     return REDISMODULE_OK;
 }
 static RedisModuleString *getFloatValue(const char *name, void *privdata) {
@@ -85,7 +84,6 @@ static RedisModuleString *getFloatValue(const char *name, void *privdata) {
 static int setNumericValue(const char *name, RedisModuleString *value, void *privdata,
                            RedisModuleString **err) {
     RM_ConfigNumeric *config = privdata;
-    long long *val = &config->value;
     long long new_val;
     if (RedisModule_StringToLongLong(value, &new_val) != REDISMODULE_OK) {
         *err = RedisModule_CreateStringPrintf(NULL, "Invalid value for `%s`", name);
@@ -97,7 +95,7 @@ static int setNumericValue(const char *name, RedisModuleString *value, void *pri
                                            name, config->min, config->max);
         return REDISMODULE_ERR;
     }
-    *val = new_val;
+    config->value = new_val;
 
     if (strcasecmp(name, "cf-bucket-size") == 0) {
         rm_config.cf_initial_size.min = new_val * 2;
