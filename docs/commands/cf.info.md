@@ -22,7 +22,7 @@ redis> CF.INFO cf
  2) (integer) 1080
  3) Number of buckets
  4) (integer) 512
- 5) Number of filter
+ 5) Number of filters
  6) (integer) 1
  7) Number of items inserted
  8) (integer) 0
