@@ -32,3 +32,6 @@ jobs:
       redis-ref: unstable
       run_sanitizer: true
     secrets: inherit
+  spellcheck:
+    uses: ./.github/workflows/flow-spellcheck.yml
+    secrets: inherit
