@@ -12,6 +12,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "config.h"
+
 // Defines whether 32bit or 64bit hash function will be used.
 // It will be deprecated in RedisBloom 3.0.
 
@@ -24,14 +26,7 @@ typedef uint64_t CuckooHash;
 typedef uint8_t CuckooBucket[1];
 typedef uint8_t MyCuckooBucket;
 
-#define CF_DEFAULT_MAX_ITERATIONS 20
-#define CF_DEFAULT_BUCKETSIZE 2
-#define CF_DEFAULT_EXPANSION 1
-#define CF_MAX_EXPANSION 32768
-#define CF_MAX_ITERATIONS 65535
-#define CF_MAX_BUCKET_SIZE 255                     // 8 bits, see struct SubCF
 #define CF_MAX_NUM_BUCKETS (0x00FFFFFFFFFFFFFFULL) // 56 bits, see struct SubCF
-#define CF_MAX_NUM_FILTERS (UINT16_MAX)            // 16 bits, see struct CuckooFilter
 
 typedef struct {
     uint64_t numBuckets : 56;
