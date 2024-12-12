@@ -22,6 +22,8 @@ def enableDefrag(env):
         env.skip()
 
 def testDefrag(env):
+    if not VALGRIND:
+        env.skip()
     enableDefrag(env)
 
     # Disable defrag so we can actually create fragmentation
