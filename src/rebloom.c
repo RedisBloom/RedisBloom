@@ -552,12 +552,12 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         }
     }
 
-    long long expansion = CF_DEFAULT_EXPANSION;
+    long long expansion = CF_DEFAULT_EXPANSION_FACTOR;
     int ex_loc = RMUtil_ArgIndex("EXPANSION", argv, argc);
     if (ex_loc != -1) {
         if (RedisModule_StringToLongLong(argv[ex_loc + 1], &expansion) != REDISMODULE_OK) {
             return RedisModule_ReplyWithError(ctx, "Couldn't parse EXPANSION");
-        } else if (expansion < 0 || expansion > CF_MAX_EXPANSION) {
+        } else if (expansion < 0 || expansion > CF_MAX_EXPANSION_FACTOR) {
             return RedisModule_ReplyWithError(
                 ctx, "EXPANSION: value must be an integer between 0 and 32768, inclusive.");
         }
@@ -598,7 +598,7 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
 
     if (status == SB_EMPTY && options->autocreate) {
         if ((cf = cfCreate(key, options->capacity, CF_DEFAULT_BUCKETSIZE, CF_DEFAULT_MAX_ITERATIONS,
-                           CF_DEFAULT_EXPANSION)) == NULL) {
+                           CF_DEFAULT_EXPANSION_FACTOR)) == NULL) {
             return RedisModule_ReplyWithError(ctx, "Could not create filter"); // LCOV_EXCL_LINE
         }
     } else if (status != SB_OK) {
@@ -1261,7 +1261,7 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
         cf->numDeletes = 0;                  // Didn't exist earlier. bug fix
         cf->bucketSize = CF_DEFAULT_BUCKETSIZE;
         cf->maxIterations = CF_DEFAULT_MAX_ITERATIONS;
-        cf->expansion = CF_DEFAULT_EXPANSION;
+        cf->expansion = CF_DEFAULT_EXPANSION_FACTOR;
     } else {
         cf->numDeletes = RedisModule_LoadUnsigned(io);
         cf->bucketSize = RedisModule_LoadUnsigned(io);
