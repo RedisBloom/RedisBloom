@@ -7,12 +7,61 @@
 #pragma once
 
 #include "redismodule.h"
+#include <string.h>
+#include <strings.h>
+
+typedef enum {
+    bf_error_rate,
+    bf_initial_size,
+    bf_expansion_factor,
+    cf_bucket_size,
+    cf_initial_size,
+    cf_max_iterations,
+    cf_expansion_factor,
+    cf_max_expansions,
+
+    RM_CONFIG_COUNT,
+} RM_ConfigOption;
+
+#define BF_ERROR_RATE_LEGACY "ERROR_RATE"
+#define BF_INITIAL_SIZE_LEGACY "INITIAL_SIZE"
+#define CF_MAX_EXPANSIONS_LEGACY "CF_MAX_EXPANSIONS"
+
+static const char *RM_ConfigOptionToString(RM_ConfigOption option) {
+    static const char *RM_ConfigOptionStrings[] = {
+        [bf_error_rate] = "bf-error-rate",
+        [bf_initial_size] = "bf-initial-size",
+        [bf_expansion_factor] = "bf-expansion-factor",
+        [cf_bucket_size] = "cf-bucket-size",
+        [cf_initial_size] = "cf-initial-size",
+        [cf_max_iterations] = "cf-max-iterations",
+        [cf_expansion_factor] = "cf-expansion-factor",
+        [cf_max_expansions] = "cf-max-expansions",
+    };
+    if (0 <= option && option < RM_CONFIG_COUNT) {
+        return RM_ConfigOptionStrings[option];
+    }
+    return NULL;
+}
+
+static inline int RM_ConfigStrCaseCmp(const char *s, RM_ConfigOption config) {
+    return strcasecmp(s, RM_ConfigOptionToString(config));
+}
+static inline int RM_ConfigRMStrCaseCmp(const RedisModuleString *s, RM_ConfigOption config) {
+    size_t len;
+    const char *str = RedisModule_StringPtrLen(s, &len);
+    const char *name = RM_ConfigOptionToString(config);
+    if (len != strlen(name)) {
+        return 1;
+    }
+    return strncasecmp(str, name, len);
+}
 
 typedef struct {
     long long value;
     long long min;
     long long max;
-} RM_ConfigNumeric;
+} RM_ConfigInteger;
 
 typedef struct {
     double value;
@@ -28,35 +77,31 @@ typedef struct {
     /*********************************
      * BLOOM FILTER CONFIG OPTIONS:  *
      *********************************/
-    // Error ratio. valid range is [0.0, 1.0]. (default: 0.01)
-    // TODO: consider limiting the range to [0.0, 0.25] as per CONFIG PRD
+    // Error ratio.
     RM_ConfigFloat bf_error_rate;
-    // Initial capacity. valid range is [1, 1e9] (default: 100)
-    RM_ConfigNumeric bf_initial_size;
-    // Expansion factor. valid range is [0, 32768] (default: 2)
-    // 0 is equivalent to NONSCALING
-    RM_ConfigNumeric bf_expansion_factor;
+    // Initial capacity.
+    RM_ConfigInteger bf_initial_size;
+    // Expansion factor. 0 is equivalent to NONSCALING
+    RM_ConfigInteger bf_expansion_factor;
 
     /*********************************
      * CUCKOO FILTER CONFIG OPTIONS: *
      *********************************/
-    // Number of items in each bucket. valid range is [1, 255] (default: 2)
-    RM_ConfigNumeric cf_bucket_size;
-    // Initial capacity. valid range is [2*bucket_size, 1e9] (default: 1024)
-    // TODO: add similar max range validation also to CF.RESERVE's capacity argument.
-    RM_ConfigNumeric cf_initial_size;
-    // Maximum iterations. valid range is [1, 65535] (default: 20)
-    RM_ConfigNumeric cf_max_iterations;
-    // expansion factor. valid range is [0, 32768] (default: 1)
-    // 0 is equivalent to NONSCALING
-    RM_ConfigNumeric cf_expansion_factor;
-    // Maximum expansions. valid range is [1, 65535] (default: 32)
-    RM_ConfigNumeric cf_max_expansions;
+    // Number of items in each bucket.
+    RM_ConfigInteger cf_bucket_size;
+    // Initial capacity.
+    RM_ConfigInteger cf_initial_size;
+    // Maximum iterations.
+    RM_ConfigInteger cf_max_iterations;
+    // expansion factor. 0 is equivalent to NONSCALING
+    RM_ConfigInteger cf_expansion_factor;
+    // Maximum expansions.
+    RM_ConfigInteger cf_max_expansions;
 } RM_Config;
 
 extern RM_Config rm_config;
 
-static inline int isNumericConfigValid(long long config, RM_ConfigNumeric params) {
+static inline int isIntegerConfigValid(long long config, RM_ConfigInteger params) {
     return config >= params.min && config <= params.max;
 }
 static inline int isFloatConfigValid(double config, RM_ConfigFloat params) {
@@ -64,7 +109,7 @@ static inline int isFloatConfigValid(double config, RM_ConfigFloat params) {
 }
 
 #define isConfigValid(config, params)                                                              \
-    _Generic((config), long long: isNumericConfigValid, double: isFloatConfigValid)(config, params)
+    _Generic((config), long long: isIntegerConfigValid, double: isFloatConfigValid)(config, params)
 
 // Register the module configuration options
 int RM_RegisterConfigs(RedisModuleCtx *ctx);

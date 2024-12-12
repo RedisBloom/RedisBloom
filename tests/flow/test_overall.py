@@ -410,11 +410,7 @@ class testRedisBloom():
     def test_invalid_expansion(self):
         env = self.env
         env.cmd('FLUSHALL')
-        try:
-            env.cmd('BF.RESERVE b 0.1 1 EXPANSION -1')
-            env.assertTrue(False)
-        except Exception as e:
-            env.assertEqual(str(e), 'expansion must be in the range [0, 32768]')
+        env.expect('BF.RESERVE b 0.1 1 EXPANSION -1').error().contains('expansion must be in the range')
 
     def test_issue178(self):
         env = self.env
