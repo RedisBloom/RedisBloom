@@ -1,0 +1,37 @@
+name: Build JSON module and Redis Server
+description: |
+  Build JSON module and Redis Server
+
+inputs:
+  redis-ref:
+    description: 'Redis ref to checkout'
+    type: string
+    required: true
+  run_sanitizer:
+    type: string
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Build Redis SANITIZER
+      shell: bash
+      working-directory: redis
+      run: |
+        echo "::group::Build Redis"
+        make SANITIZER=${{inputs.run_sanitizer == 'addr' && 'address' || ''}} install -j `nproc`
+        echo "REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server" >> $GITHUB_ENV
+        echo "$GITHUB_WORKSPACE/redis/src" >> $GITHUB_PATH
+        export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
+        echo "::endgroup::"
+    - name: Build module SANITIZER
+      shell: bash
+      run: |
+        echo ::group::Build module
+        if command -v scl_source &> /dev/null
+        then
+            . scl_source enable devtoolset-11 || true
+        fi
+        make SAN=${{inputs.run_sanitizer}} -j `nproc`
+        echo ::endgroup::
+

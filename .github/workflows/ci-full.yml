@@ -10,22 +10,22 @@ name: CI Full suite
 #
 # More info: jobs.steps.uses: docker://alpine:3.8 for docker images,
 
-on:
-  push:
-    paths-ignore:
-      - '.circleci/**'
-      - 'docs/**'
-      - '*.md'
-    branches:
-      - main
-      - master
-      - '[0-9]+.[0-9]+.[0-9]+'
-      - '[0-9]+.[0-9]+'
-      - 'feature-*'
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+'
-      - 'v[0-9]+.[0-9]+.[0-9]+-m[0-9]+'
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+# on:
+#   push:
+#     paths-ignore:
+#       - '.circleci/**'
+#       - 'docs/**'
+#       - '*.md'
+#     branches:
+#       - main
+#       - master
+#       - '[0-9]+.[0-9]+.[0-9]+'
+#       - '[0-9]+.[0-9]+'
+#       - 'feature-*'
+#     tags:
+#       - 'v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+'
+#       - 'v[0-9]+.[0-9]+.[0-9]+-m[0-9]+'
+#       - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
   setup-environment:
