@@ -350,15 +350,13 @@ static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
             if (tolower(*(argstr + 1)) == 'r') { // error rate
                 if (RedisModule_StringToDouble(argv[cur_pos++], &options.error_rate) !=
                         REDISMODULE_OK ||
-                    options.error_rate < rm_config.bf_error_rate.min ||
-                    options.error_rate > rm_config.bf_error_rate.max) {
+                    !isConfigValid(options.error_rate, rm_config.bf_error_rate)) {
                     return RedisModule_ReplyWithError(ctx, "Bad error rate");
                 }
             } else { // expansion
                 if (RedisModule_StringToLongLong(argv[cur_pos++], &options.expansion) !=
                         REDISMODULE_OK ||
-                    options.expansion < rm_config.bf_expansion_factor.min ||
-                    options.expansion > rm_config.bf_expansion_factor.max) {
+                    !isConfigValid(options.expansion, rm_config.bf_expansion_factor)) {
                     return RedisModule_ReplyWithError(ctx, "Bad expansion");
                 }
             }
@@ -370,8 +368,7 @@ static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
             }
             if (RedisModule_StringToLongLong(argv[cur_pos++], &options.capacity) !=
                     REDISMODULE_OK ||
-                options.capacity < rm_config.bf_initial_size.min ||
-                options.capacity > rm_config.bf_initial_size.max) {
+                !isConfigValid(options.capacity, rm_config.bf_initial_size)) {
                 return RedisModule_ReplyWithError(ctx, "Bad capacity");
             }
             break;
@@ -538,8 +535,7 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     }
 
     long long capacity = rm_config.cf_initial_size.value;
-    if (RedisModule_StringToLongLong(argv[2], &capacity) != REDISMODULE_OK ||
-        capacity < rm_config.cf_initial_size.min || capacity > rm_config.cf_initial_size.max) {
+    if (RedisModule_StringToLongLong(argv[2], &capacity) != REDISMODULE_OK) {
         return RedisModule_ReplyWithError(ctx, "Bad capacity");
     }
 
@@ -549,10 +545,10 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         if (RedisModule_StringToLongLong(argv[mi_loc + 1], &maxIterations) != REDISMODULE_OK) {
             return RedisModule_ReplyWithError(ctx, "Couldn't parse MAXITERATIONS");
         }
-        if (maxIterations < rm_config.cf_max_iterations.min ||
-            maxIterations > rm_config.cf_max_iterations.max) {
-            return RedisModule_ReplyWithError(
-                ctx, "MAXITERATIONS: value must be an integer between 1 and 65535, inclusive.");
+        if (!isConfigValid(maxIterations, rm_config.cf_max_iterations)) {
+            return RedisModule_ReplyWithErrorFormat(
+                ctx, "MAXITERATIONS: value must be in the range [%lld, %lld]",
+                rm_config.cf_max_iterations.min, rm_config.cf_max_iterations.max);
         }
     }
 
@@ -561,10 +557,10 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     if (bs_loc != -1) {
         if (RedisModule_StringToLongLong(argv[bs_loc + 1], &bucketSize) != REDISMODULE_OK) {
             return RedisModule_ReplyWithError(ctx, "Couldn't parse BUCKETSIZE");
-        } else if (bucketSize < rm_config.cf_bucket_size.min ||
-                   bucketSize > rm_config.cf_bucket_size.max) {
-            return RedisModule_ReplyWithError(
-                ctx, "BUCKETSIZE: value must be an integer between 1 and 255, inclusive.");
+        } else if (!isConfigValid(bucketSize, rm_config.cf_bucket_size)) {
+            return RedisModule_ReplyWithErrorFormat(
+                ctx, "BUCKETSIZE: value must be in the range [%lld, %lld]",
+                rm_config.cf_bucket_size.min, rm_config.cf_bucket_size.max);
         }
     }
 
@@ -573,15 +569,17 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     if (ex_loc != -1) {
         if (RedisModule_StringToLongLong(argv[ex_loc + 1], &expansion) != REDISMODULE_OK) {
             return RedisModule_ReplyWithError(ctx, "Couldn't parse EXPANSION");
-        } else if (expansion < rm_config.cf_expansion_factor.min ||
-                   expansion > rm_config.cf_expansion_factor.max) {
-            return RedisModule_ReplyWithError(
-                ctx, "EXPANSION: value must be an integer between 0 and 32768, inclusive.");
+        } else if (!isConfigValid(expansion, rm_config.cf_expansion_factor)) {
+            return RedisModule_ReplyWithErrorFormat(
+                ctx, "EXPANSION: value must be in the range [%lld, %lld]",
+                rm_config.cf_expansion_factor.min, rm_config.cf_expansion_factor.max);
         }
     }
 
-    if (bucketSize * 2 > capacity) {
-        return RedisModule_ReplyWithError(ctx, "Capacity must be at least (BucketSize * 2)");
+    if (bucketSize * 2 > capacity || capacity > rm_config.cf_initial_size.max) {
+        return RedisModule_ReplyWithErrorFormat(
+            ctx, "Capacity must be in the range [2 * BUCKETSIZE, %lld]",
+            rm_config.cf_initial_size.max);
     }
 
     CuckooFilter *cf;
@@ -1382,7 +1380,7 @@ static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2) {
         BAIL("Invalid argument for '%s'", RM_ConfigOptionToString(config));                        \
     }
 
-#define getConfigFromArgs(rm_str, config)                                                          \
+#define getConfigFromString(rm_str, config)                                                        \
     do {                                                                                           \
         typeof(rm_config.config.value) num;                                                        \
         RM_StrToNum(config, rm_str, num);                                                          \
@@ -1396,13 +1394,21 @@ static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2) {
         }                                                                                          \
     } while (0)
 
-#define logDeprecated(legacy, ctx, deprecatedConfig, newConfig)                                 \
-    if (legacy) {                                                                                  \
-        RedisModule_Log(ctx, "warning",                                                            \
-                        "The '" deprecatedConfig                                                   \
-                        "' configuration is deprecated. Please use '%s' instead",                  \
-                        RM_ConfigOptionToString(newConfig));                                       \
-    }
+#define tryGetConfigFromArgs(ctx, argv, idx, configNameLegacy, configName)                         \
+    ({                                                                                             \
+        bool legacy = false;                                                                       \
+        if ((!rsStrcasecmp(argv[idx], configNameLegacy) && (legacy = true)) ||                     \
+            !RM_ConfigRMStrCaseCmp(argv[idx], configName)) {                                       \
+            getConfigFromString(argv[idx + 1], configName);                                        \
+            if (legacy) {                                                                          \
+                RedisModule_Log(ctx, "warning",                                                    \
+                                "The '" configNameLegacy                                           \
+                                "' configuration is deprecated. Please use '%s' instead",          \
+                                RM_ConfigOptionToString(configName));                              \
+            }                                                                                      \
+            continue;                                                                              \
+        };                                                                                         \
+    })
 
 int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (RedisModule_Init(ctx, "bf", REBLOOM_MODULE_VERSION, REDISMODULE_APIVER_1) !=
@@ -1428,22 +1434,10 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     }
 
     for (int ii = 0; ii < argc; ii += 2) {
-        bool legacy = false;
-        if ((!rsStrcasecmp(argv[ii], BF_INITIAL_SIZE_LEGACY) && (legacy = true)) ||
-            !RM_ConfigRMStrCaseCmp(argv[ii], bf_initial_size)) {
-            getConfigFromArgs(argv[ii + 1], bf_initial_size);
-            logDeprecated(legacy, ctx, BF_INITIAL_SIZE_LEGACY, bf_initial_size);
-        } else if ((!rsStrcasecmp(argv[ii], BF_ERROR_RATE_LEGACY) && (legacy = true)) ||
-                   !RM_ConfigRMStrCaseCmp(argv[ii], bf_error_rate)) {
-            getConfigFromArgs(argv[ii + 1], bf_error_rate);
-            logDeprecated(legacy, ctx, BF_ERROR_RATE_LEGACY, bf_error_rate);
-        } else if ((!rsStrcasecmp(argv[ii], CF_MAX_EXPANSIONS_LEGACY) && (legacy = true)) ||
-                   !RM_ConfigRMStrCaseCmp(argv[ii], cf_max_expansions)) {
-            getConfigFromArgs(argv[ii + 1], cf_max_expansions);
-            logDeprecated(legacy, ctx, CF_MAX_EXPANSIONS_LEGACY, cf_max_expansions);
-        } else {
-            BAIL("Unrecognized option");
-        }
+        tryGetConfigFromArgs(ctx, argv, ii, BF_INITIAL_SIZE_LEGACY, bf_initial_size);
+        tryGetConfigFromArgs(ctx, argv, ii, BF_ERROR_RATE_LEGACY, bf_error_rate);
+        tryGetConfigFromArgs(ctx, argv, ii, CF_MAX_EXPANSIONS_LEGACY, cf_max_expansions);
+        BAIL("Unrecognized option");
     }
 
     if (RM_RegisterConfigs(ctx) != REDISMODULE_OK ||
