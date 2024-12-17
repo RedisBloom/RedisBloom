@@ -357,7 +357,8 @@ static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
                     return RedisModule_ReplyWithError(ctx, "Bad error rate");
                 } else if (options.error_rate > BF_ERROR_RATE_CAP) {
                     options.error_rate = BF_ERROR_RATE_CAP;
-                    RedisModule_Log(ctx, "warning", "Error rate is capped at %f", BF_ERROR_RATE_CAP);
+                    RedisModule_Log(ctx, "warning", "Error rate is capped at %f",
+                                    BF_ERROR_RATE_CAP);
                 }
             } else { // expansion
                 if (RedisModule_StringToLongLong(argv[cur_pos++], &options.expansion) !=
@@ -1402,9 +1403,8 @@ static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2) {
 
 #define tryGetConfigFromArgs(ctx, argv, idx, configNameLegacy, configName)                         \
     ({                                                                                             \
-        bool legacy = false;                                                                       \
-        if ((!rsStrcasecmp(argv[idx], configNameLegacy) && (legacy = true)) ||                     \
-            !RM_ConfigRMStrCaseCmp(argv[idx], configName)) {                                       \
+        const bool legacy = !rsStrcasecmp(argv[idx], configNameLegacy);                            \
+        if (legacy || !RM_ConfigRMStrCaseCmp(argv[idx], configName)) {                             \
             getConfigFromString(argv[idx + 1], configName);                                        \
             if (legacy) {                                                                          \
                 RedisModule_Log(ctx, "warning",                                                    \

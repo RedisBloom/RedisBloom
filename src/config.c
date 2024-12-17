@@ -109,7 +109,7 @@ static int setIntegerValue(const char *name, RedisModuleString *value, void *pri
     if (!RM_ConfigStrCaseCmp(name, cf_bucket_size)) {
         rm_config.cf_initial_size.min = new_val * 2;
     } else if (!RM_ConfigStrCaseCmp(name, cf_initial_size)) {
-        rm_config.cf_bucket_size.max = new_val / 2 < 255 ? new_val / 2 : 255;
+        rm_config.cf_bucket_size.max = (new_val / 2 < 255) ? new_val / 2 : 255;
     }
 
     return REDISMODULE_OK;
