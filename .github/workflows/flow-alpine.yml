@@ -44,19 +44,19 @@ jobs:
           REF=${{github.sha}}
           git fetch origin ${REF}
           git checkout ${REF}
-      - name: Install python dependencies
-        run: |
-          echo ::group::Activate virtual environment
-          python3 -m venv venv
-          echo "source $PWD/venv/bin/activate" >> ~/.bash_profile
-          . venv/bin/activate
-          echo ::endgroup::
-          pip install -q --upgrade setuptools wheel
-          pip install -q --upgrade pip
-          pip install -q -r tests/flow/requirements.txt
-          pip install -q -r .install/build_package_requirements.txt
-        env:
-          PIP_BREAK_SYSTEM_PACKAGES: 1
+      # - name: Install python dependencies
+      #   run: |
+      #     echo ::group::Activate virtual environment
+      #     python3 -m venv venv
+      #     echo "source $PWD/venv/bin/activate" >> ~/.bash_profile
+      #     . venv/bin/activate
+      #     echo ::endgroup::
+      #     pip install -q --upgrade setuptools wheel
+      #     pip install -q --upgrade pip
+      #     pip install -q -r tests/flow/requirements.txt
+      #     pip install -q -r .install/build_package_requirements.txt
+      #   env:
+      #     PIP_BREAK_SYSTEM_PACKAGES: 1
       - name: checkout redis
         run: |
           # Perform checkout
@@ -66,26 +66,44 @@ jobs:
           cd redis
           git fetch origin ${{inputs.redis-ref}}
           git checkout ${{inputs.redis-ref}}
-      - name: Build Redis
-        working-directory: redis
-        run: |
-          . venv/bin/activate
-          make install
-      - name: Build module
-        run: |
-          . venv/bin/activate
-          make build -j `nproc`
-      - name: Test
-        run: |
-          . venv/bin/activate
-          make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Build
+        uses: ./.github/actions/build-module-and-redis
+      - name: Run Tests
+        uses: ./.github/actions/run-tests
+      - name: Upload test artifacts
+        if: failure()
+        uses: ./.github/actions/upload-artifacts
+        with: 
+          image: ${{ matrix.docker_image.image }}
       - name: Pack module
-        run: |
-          . venv/bin/activate
-          make pack BRANCH=${{ github.ref_name }}
+        uses: ./.github/actions/pack-module
       - name: Upload artifacts to S3
         uses: ./.github/actions/upload-artifacts-to-s3
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           github-ref: ${{ github.ref }}
+  
+      # - name: Build Redis
+      #   working-directory: redis
+      #   run: |
+      #     . venv/bin/activate
+      #     make install
+      # - name: Build module
+      #   run: |
+      #     . venv/bin/activate
+      #     make build -j `nproc`
+      # - name: Test
+      #   run: |
+      #     . venv/bin/activate
+      #     make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      # - name: Pack module
+      #   run: |
+      #     . venv/bin/activate
+      #     make pack BRANCH=${{ github.ref_name }}
+      # - name: Upload artifacts to S3
+      #   uses: ./.github/actions/upload-artifacts-to-s3
+      #   with:
+      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     github-ref: ${{ github.ref }}
