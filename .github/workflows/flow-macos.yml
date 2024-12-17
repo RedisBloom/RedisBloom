@@ -64,12 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       os: ${{ steps.set-matrix.outputs.os }}
-      redis-ref: ${{ steps.set-env.outputs.redis-ref }}
     steps:
-      - name: set env
-        id: set-env
-        run: |
-          echo "redis-ref=${{ inputs.redis-ref || 'unstable' }}" >> $GITHUB_OUTPUT  # todo change per version/tag
       - name: Set matrix
         id: set-matrix
         run: |
@@ -107,19 +102,21 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 'redis/redis'
-          ref: ${{ needs.prepare-values.outputs.redis-ref }}
+          ref: ${{ inputs.redis-ref }}
           path: 'redis'
           submodules: recursive
       - name: Setup specific
         working-directory: .install
         run: ./install_script.sh
-      - name: Build and test
-        uses: ./.github/actions/build-and-test-macos
+      - name: Build
+        uses: ./.github/actions/build-module-and-redis
+      - name: Run Tests
+        uses: ./.github/actions/run-tests
       - name: Upload test artifacts
         if: failure()
         uses: ./.github/actions/upload-artifacts
         with: 
-          image: ${{ matrix.os }}
+          image: ${{ matrix.docker_image.image }}
       - name: Pack module
         uses: ./.github/actions/pack-module
       - name: Upload artifacts to S3

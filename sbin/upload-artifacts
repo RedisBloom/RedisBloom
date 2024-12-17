@@ -93,11 +93,11 @@ else
 fi
 
 cd artifacts${MAYBE_SNAP}
+
 if du --help | grep -q -- --apparent-size; then
-	[[ $VERBOSE == 1 ]] && du -ah --apparent-size *
-else
-	[[ $VERBOSE == 1 ]] && du -ah *
+	DU_ARGS='--apparent-size'
 fi
+[[ $VERBOSE == 1 ]] && du -ah ${DU_ARGS} *
 
 #----------------------------------------------------------------------------------------------
 

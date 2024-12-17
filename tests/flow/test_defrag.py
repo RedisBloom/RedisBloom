@@ -22,7 +22,7 @@ def enableDefrag(env):
         env.skip()
 
 def testDefrag(env):
-    if not VALGRIND:
+    if VALGRIND:
         env.skip()
     enableDefrag(env)
 
