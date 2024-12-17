@@ -52,6 +52,29 @@ class testConfigs():
     res = env.cmd('CONFIG', 'GET', 'cf-max-expansions')
     env.assertEqual(res[1], '64')
 
+  def test_config_module_load(self):
+    env = self.env
+    configured_env = Env(decodeResponses=True, moduleArgs='bf-error-rate 0.02 bf-initial-size 200 cf-max-expansions 3')
+    env.cmd('CONFIG', 'SET', 'bf-error-rate', '0.02')
+    env.cmd('CONFIG', 'SET', 'bf-initial-size', '200')
+    env.cmd('CONFIG', 'SET', 'cf-max-expansions', '3')
+    env.assertEqual(env.cmd('CONFIG', 'GET', 'bf-error-rate'), configured_env.cmd('CONFIG', 'GET', 'bf-error-rate'))
+    env.assertEqual(env.cmd('CONFIG', 'GET', 'bf-initial-size'), configured_env.cmd('CONFIG', 'GET', 'bf-initial-size'))
+    env.assertEqual(env.cmd('CONFIG', 'GET', 'cf-max-expansions'), configured_env.cmd('CONFIG', 'GET', 'cf-max-expansions'))
+
+    configured_env = Env(decodeResponses=True, moduleArgs='ERROR_RATE 0.02 INITIAL_SIZE 200 CF_MAX_EXPANSIONS 3')
+    env.assertEqual(env.cmd('CONFIG', 'GET', 'bf-error-rate'), configured_env.cmd('CONFIG', 'GET', 'bf-error-rate'))
+    env.assertEqual(env.cmd('CONFIG', 'GET', 'bf-initial-size'), configured_env.cmd('CONFIG', 'GET', 'bf-initial-size'))
+    env.assertEqual(env.cmd('CONFIG', 'GET', 'cf-max-expansions'), configured_env.cmd('CONFIG', 'GET', 'cf-max-expansions'))
+
+    configured_env = Env(decodeResponses=True)
+    env.cmd('CONFIG', 'SET', 'bf-error-rate', '0.01')
+    env.cmd('CONFIG', 'SET', 'bf-initial-size', '100')
+    env.cmd('CONFIG', 'SET', 'cf-max-expansions', '32')
+    env.assertEqual(env.cmd('CONFIG', 'GET', 'bf-error-rate'), configured_env.cmd('CONFIG', 'GET', 'bf-error-rate'))
+    env.assertEqual(env.cmd('CONFIG', 'GET', 'bf-initial-size'), configured_env.cmd('CONFIG', 'GET', 'bf-initial-size'))
+    env.assertEqual(env.cmd('CONFIG', 'GET', 'cf-max-expansions'), configured_env.cmd('CONFIG', 'GET', 'cf-max-expansions'))
+
   def test_config_set_invalid(self):
     """Test that the various `bloom` config parameters may not be set to invalid values"""
     env = self.env
@@ -80,7 +103,7 @@ class testConfigs():
     env.expect('CONFIG', 'SET', 'cf-max-expansions', 65537).error().contains('must be in the range')
     env.expect('CONFIG', 'SET', 'cf-max-expansions', 32).ok()
 
-  def test_config_debug_stats(self):
+  def test_config_bf_debug_stats(self):
     """Test that `bf.debug` and `cf.debug` config values reflect the current config values"""
     env = self.env
 
