@@ -1,4 +1,4 @@
-name: alpine
+name: Flow alpine
 
 permissions:
   id-token: write

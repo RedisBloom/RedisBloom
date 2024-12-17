@@ -5,6 +5,7 @@ permissions:
   contents: read
 
 on:
+  push:
   schedule:
     - cron: '20 20 * * *' # 20:20 UTC every day
   workflow_dispatch:
