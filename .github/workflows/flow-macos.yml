@@ -1,4 +1,4 @@
-name: CI Full suite - MACOS
+name: Flow MACOS
 # This is a full workflow for the production branches and tags, which
 # includes building and testing on all supported platforms, and
 # uploading the artifacts to S3.
@@ -120,7 +120,7 @@ jobs:
       - name: Pack module
         uses: ./.github/actions/pack-module
       - name: Upload artifacts to S3
-        uses: ./.github/actions/upload-artifacts-to-s3-without-make
+        uses: ./.github/actions/upload-artifacts-to-s3
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

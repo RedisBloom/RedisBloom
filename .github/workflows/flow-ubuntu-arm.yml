@@ -156,7 +156,7 @@ jobs:
           git config --global --add safe.directory $GITHUB_WORKSPACE
           make pack BRANCH=$TAG_OR_BRANCH SHOW=1
       - name: Upload artifacts to S3
-        uses: ./.github/actions/upload-artifacts-to-s3-without-make
+        uses: ./.github/actions/upload-artifacts-to-s3
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
