@@ -10,6 +10,12 @@
 #include <string.h>
 #include <strings.h>
 
+#define BF_ERROR_RATE_LEGACY "ERROR_RATE"
+#define BF_INITIAL_SIZE_LEGACY "INITIAL_SIZE"
+#define CF_MAX_EXPANSIONS_LEGACY "CF_MAX_EXPANSIONS"
+
+#define BF_ERROR_RATE_CAP 0.25
+
 typedef enum {
     bf_error_rate,
     bf_initial_size,
@@ -23,9 +29,6 @@ typedef enum {
     RM_CONFIG_COUNT,
 } RM_ConfigOption;
 
-#define BF_ERROR_RATE_LEGACY "ERROR_RATE"
-#define BF_INITIAL_SIZE_LEGACY "INITIAL_SIZE"
-#define CF_MAX_EXPANSIONS_LEGACY "CF_MAX_EXPANSIONS"
 
 static const char *RM_ConfigOptionToString(RM_ConfigOption option) {
     static const char *RM_ConfigOptionStrings[] = {

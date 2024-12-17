@@ -9,7 +9,7 @@
 
 // Default configuration values.
 RM_Config rm_config = {
-    // A value greater than 0.25 is treated as 0.25
+    // A value greater than BF_ERROR_RATE_CAP is treated as BF_ERROR_RATE_CAP
     .bf_error_rate =
         {
             .value = 0.01,
@@ -73,6 +73,12 @@ static int setFloatValue(const char *name, RedisModuleString *value, void *privd
                                               name, config->min, config->max);
         return REDISMODULE_ERR;
     }
+
+    if (!RM_ConfigStrCaseCmp(name, bf_error_rate) && new_val > BF_ERROR_RATE_CAP) {
+        new_val = BF_ERROR_RATE_CAP;
+        value = RedisModule_CreateStringFromDouble(NULL, new_val);
+    }
+
     config->value = new_val;
     RedisModule_FreeString(NULL, config->str_value);
     config->str_value = RedisModule_HoldString(NULL, value);
@@ -112,22 +118,25 @@ static RedisModuleString *getIntegerValue(const char *name, void *privdata) {
     return ((RM_ConfigInteger *)privdata)->str_value;
 }
 
+#define getValue(config)                                                                           \
+    _Generic(rm_config.config.value, long long: getIntegerValue, double: getFloatValue)
+
+#define setValue(config)                                                                           \
+    _Generic(rm_config.config.value, long long: setIntegerValue, double: setFloatValue)
+
+#define RM_createStringFromNumber(num)                                                             \
+    _Generic(num,                                                                                  \
+        long long: RedisModule_CreateStringFromLongLong,                                           \
+        double: RedisModule_CreateStringFromDouble)(NULL, num)
+
 #define registerConfigVar(config)                                                                  \
     do {                                                                                           \
         const char *name = RM_ConfigOptionToString(config);                                        \
-        rm_config.config.str_value = RedisModule_CreateStringPrintf(                               \
-            NULL, _Generic(rm_config.config.value, long long: "%lld", double: "%f"),               \
-            rm_config.config.value);                                                               \
+        rm_config.config.str_value = RM_createStringFromNumber(rm_config.config.value);            \
         const char *default_val = RedisModule_StringPtrLen(rm_config.config.str_value, NULL);      \
-        if (RedisModule_RegisterStringConfig(ctx, name, default_val,                               \
-                                             REDISMODULE_CONFIG_UNPREFIXED,                        \
-                                             _Generic(rm_config.config.value,                      \
-                                             long long: getIntegerValue,                           \
-                                             double: getFloatValue),                               \
-                                             _Generic(rm_config.config.value,                      \
-                                             long long: setIntegerValue,                           \
-                                             double: setFloatValue),                               \
-                                             NULL, &rm_config.config) != REDISMODULE_OK) {         \
+        if (RedisModule_RegisterStringConfig(                                                      \
+                ctx, name, default_val, REDISMODULE_CONFIG_UNPREFIXED, getValue(config),           \
+                setValue(config), NULL, &rm_config.config) != REDISMODULE_OK) {                    \
             RedisModule_Log(ctx, "warning", "Failed to register config option `%s`", name);        \
             return REDISMODULE_ERR;                                                                \
         }                                                                                          \

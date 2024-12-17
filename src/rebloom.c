@@ -133,6 +133,9 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         return RedisModule_ReplyWithErrorFormat(ctx, "ERR error rate must be in the range (%f, %f)",
                                                 rm_config.bf_error_rate.min,
                                                 rm_config.bf_error_rate.max);
+    } else if (error_rate > BF_ERROR_RATE_CAP) {
+        error_rate = BF_ERROR_RATE_CAP;
+        RedisModule_Log(ctx, "warning", "Error rate is capped at %f", BF_ERROR_RATE_CAP);
     }
 
     long long capacity = rm_config.bf_initial_size.value;
@@ -352,6 +355,9 @@ static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
                         REDISMODULE_OK ||
                     !isConfigValid(options.error_rate, rm_config.bf_error_rate)) {
                     return RedisModule_ReplyWithError(ctx, "Bad error rate");
+                } else if (options.error_rate > BF_ERROR_RATE_CAP) {
+                    options.error_rate = BF_ERROR_RATE_CAP;
+                    RedisModule_Log(ctx, "warning", "Error rate is capped at %f", BF_ERROR_RATE_CAP);
                 }
             } else { // expansion
                 if (RedisModule_StringToLongLong(argv[cur_pos++], &options.expansion) !=
@@ -1438,6 +1444,10 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         tryGetConfigFromArgs(ctx, argv, ii, BF_ERROR_RATE_LEGACY, bf_error_rate);
         tryGetConfigFromArgs(ctx, argv, ii, CF_MAX_EXPANSIONS_LEGACY, cf_max_expansions);
         BAIL("Unrecognized option");
+    }
+    if (rm_config.bf_error_rate.value > BF_ERROR_RATE_CAP) {
+        rm_config.bf_error_rate.value = BF_ERROR_RATE_CAP;
+        RedisModule_Log(ctx, "warning", "Error rate is capped at %f", BF_ERROR_RATE_CAP);
     }
 
     if (RM_RegisterConfigs(ctx) != REDISMODULE_OK ||
