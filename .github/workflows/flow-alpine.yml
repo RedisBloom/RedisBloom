@@ -46,6 +46,11 @@ jobs:
           git checkout ${REF}
       - name: Install python dependencies
         run: |
+          echo ::group::Activate virtual environment
+          python3 -m venv venv
+          echo "source $PWD/venv/bin/activate" >> ~/.bash_profile
+          . venv/bin/activate
+          echo ::endgroup::
           pip install -q --upgrade setuptools wheel
           pip install -q --upgrade pip
           pip install -q -r tests/flow/requirements.txt
@@ -63,15 +68,20 @@ jobs:
           git checkout ${{inputs.redis-ref}}
       - name: Build Redis
         working-directory: redis
-        run: make install
+        run: |
+          . venv/bin/activate
+          make install
       - name: Build module
         run: |
+          . venv/bin/activate
           make build -j `nproc`
       - name: Test
         run: |
+          . venv/bin/activate
           make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
       - name: Pack module
         run: |
+          . venv/bin/activate
           make pack BRANCH=${{ github.ref_name }}
       - name: Upload artifacts to S3
         uses: ./.github/actions/upload-artifacts-to-s3
