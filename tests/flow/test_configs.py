@@ -8,7 +8,7 @@ class testConfigs():
       """Test that the various `bloom` config parameters were added appropriately in module load"""
       env = self.env
       res = env.cmd('CONFIG', 'GET', 'bf-error-rate')
-      env.assertEqual(res[1], '0.010000')
+      env.assertEqual(res[1], '0.01')
       res = env.cmd('CONFIG', 'GET', 'bf-initial-size')
       env.assertEqual(res[1], '100')
       res = env.cmd('CONFIG', 'GET', 'bf-expansion-factor')
@@ -29,7 +29,7 @@ class testConfigs():
     env = self.env
     env.cmd('CONFIG', 'SET', 'bf-error-rate', '0.02')
     res = env.cmd('CONFIG', 'GET', 'bf-error-rate')
-    env.assertEqual(res[1], '0.020000')
+    env.assertEqual(res[1], '0.02')
     env.cmd('CONFIG', 'SET', 'bf-initial-size', '200')
     res = env.cmd('CONFIG', 'GET', 'bf-initial-size')
     env.assertEqual(res[1], '200')
@@ -55,8 +55,8 @@ class testConfigs():
   def test_config_set_invalid(self):
     """Test that the various `bloom` config parameters may not be set to invalid values"""
     env = self.env
-    # env.expect('CONFIG', 'SET', 'bf-error-rate', 0.0).error().contains('must be in the range') # TODO: 0.0 should not be allowed
-    # env.expect('CONFIG', 'SET', 'bf-error-rate', 1.0).error().contains('must be in the range') # TODO: 1.0 should not be allowed
+    env.expect('CONFIG', 'SET', 'bf-error-rate', 0.0).error().contains('must be in the range')
+    env.expect('CONFIG', 'SET', 'bf-error-rate', 1.0).error().contains('must be in the range')
     env.expect('CONFIG', 'SET', 'bf-error-rate', 0.01).ok()
     env.expect('CONFIG', 'SET', 'bf-initial-size', 0).error().contains('must be in the range')
     env.expect('CONFIG', 'SET', 'bf-initial-size', 2**32).error().contains('must be in the range')

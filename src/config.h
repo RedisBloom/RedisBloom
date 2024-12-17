@@ -58,12 +58,14 @@ static inline int RM_ConfigRMStrCaseCmp(const RedisModuleString *s, RM_ConfigOpt
 }
 
 typedef struct {
+    RedisModuleString *str_value;
     long long value;
     long long min;
     long long max;
 } RM_ConfigInteger;
 
 typedef struct {
+    RedisModuleString *str_value;
     double value;
     double min;
     double max;

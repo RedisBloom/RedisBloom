@@ -7,15 +7,14 @@
 #include <strings.h>
 #include "config.h"
 
-
 // Default configuration values.
 RM_Config rm_config = {
     // A value greater than 0.25 is treated as 0.25
     .bf_error_rate =
         {
             .value = 0.01,
-            .min = 0.0,
-            .max = 1.0,
+            .min = 0x1p-1074, // Smallest positive subnormal double, 2^-1074
+            .max = 0x1.fffffffffffffp-1, // Largest double less than 1, 1-2^-53
         },
     .bf_initial_size =
         {
@@ -75,10 +74,12 @@ static int setFloatValue(const char *name, RedisModuleString *value, void *privd
         return REDISMODULE_ERR;
     }
     config->value = new_val;
+    RedisModule_FreeString(NULL, config->str_value);
+    config->str_value = RedisModule_HoldString(NULL, value);
     return REDISMODULE_OK;
 }
 static RedisModuleString *getFloatValue(const char *name, void *privdata) {
-    return RedisModule_CreateStringPrintf(NULL, "%f", ((RM_ConfigFloat *)privdata)->value);
+    return ((RM_ConfigFloat *)privdata)->str_value;
 }
 
 static int setIntegerValue(const char *name, RedisModuleString *value, void *privdata,
@@ -96,6 +97,8 @@ static int setIntegerValue(const char *name, RedisModuleString *value, void *pri
         return REDISMODULE_ERR;
     }
     config->value = new_val;
+    RedisModule_FreeString(NULL, config->str_value);
+    config->str_value = RedisModule_HoldString(NULL, value);
 
     if (!RM_ConfigStrCaseCmp(name, cf_bucket_size)) {
         rm_config.cf_initial_size.min = new_val * 2;
@@ -106,18 +109,18 @@ static int setIntegerValue(const char *name, RedisModuleString *value, void *pri
     return REDISMODULE_OK;
 }
 static RedisModuleString *getIntegerValue(const char *name, void *privdata) {
-    return RedisModule_CreateStringPrintf(NULL, "%zu", *((size_t *)privdata));
+    return ((RM_ConfigInteger *)privdata)->str_value;
 }
 
-#define DEF_VAL_LEN 64
 #define registerConfigVar(config)                                                                  \
     do {                                                                                           \
         const char *name = RM_ConfigOptionToString(config);                                        \
-        char defVal[DEF_VAL_LEN];                                                                  \
-        snprintf(defVal, DEF_VAL_LEN,                                                              \
-                 _Generic(rm_config.config.value, long long: "%lld", double: "%f"),                \
-                 rm_config.config.value);                                                          \
-        if (RedisModule_RegisterStringConfig(ctx, name, defVal, REDISMODULE_CONFIG_UNPREFIXED,     \
+        rm_config.config.str_value = RedisModule_CreateStringPrintf(                               \
+            NULL, _Generic(rm_config.config.value, long long: "%lld", double: "%f"),               \
+            rm_config.config.value);                                                               \
+        const char *default_val = RedisModule_StringPtrLen(rm_config.config.str_value, NULL);      \
+        if (RedisModule_RegisterStringConfig(ctx, name, default_val,                               \
+                                             REDISMODULE_CONFIG_UNPREFIXED,                        \
                                              _Generic(rm_config.config.value,                      \
                                              long long: getIntegerValue,                           \
                                              double: getFloatValue),                               \
