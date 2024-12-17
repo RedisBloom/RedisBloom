@@ -13,8 +13,8 @@ RM_Config rm_config = {
     .bf_error_rate =
         {
             .value = 0.01,
-            .min = 0x1p-1074, // Smallest positive subnormal double, 2^-1074
-            .max = 0x1.fffffffffffffp-1, // Largest double less than 1, 1-2^-53
+            .min = 0.0,
+            .max = 1.0,
         },
     .bf_initial_size =
         {
@@ -68,8 +68,8 @@ static int setFloatValue(const char *name, RedisModuleString *value, void *privd
         *err = RedisModule_CreateStringPrintf(NULL, "Invalid value for `%s`", name);
         return REDISMODULE_ERR;
     }
-    if (new_val < config->min || new_val > config->max) {
-        *err = RedisModule_CreateStringPrintf(NULL, "Value for `%s` must be in the range [%f, %f]",
+    if (!isFloatConfigValid(new_val, *config)) {
+        *err = RedisModule_CreateStringPrintf(NULL, "Value for `%s` must be in the range (%f, %f)",
                                               name, config->min, config->max);
         return REDISMODULE_ERR;
     }
@@ -90,7 +90,7 @@ static int setIntegerValue(const char *name, RedisModuleString *value, void *pri
         *err = RedisModule_CreateStringPrintf(NULL, "Invalid value for `%s`", name);
         return REDISMODULE_ERR;
     }
-    if (new_val < config->min || new_val > config->max) {
+    if (!isIntegerConfigValid(new_val, *config)) {
         *err =
             RedisModule_CreateStringPrintf(NULL, "Value for `%s` must be in the range [%lld, %lld]",
                                            name, config->min, config->max);

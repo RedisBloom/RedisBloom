@@ -130,7 +130,7 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     if (RedisModule_StringToDouble(argv[2], &error_rate) != REDISMODULE_OK) {
         return RedisModule_ReplyWithError(ctx, "ERR bad error rate");
     } else if (!isConfigValid(error_rate, rm_config.bf_error_rate)) {
-        return RedisModule_ReplyWithErrorFormat(ctx, "ERR error rate must be in the range [%f, %f]",
+        return RedisModule_ReplyWithErrorFormat(ctx, "ERR error rate must be in the range (%f, %f)",
                                                 rm_config.bf_error_rate.min,
                                                 rm_config.bf_error_rate.max);
     }
@@ -1371,7 +1371,7 @@ static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2) {
 #define configRangeFormat(config)                                                                  \
     _Generic(rm_config.config.value,                                                               \
         long long: "'%s' must be in the range [%lld, %lld]",                                       \
-        double: "'%s' must be in the range [%f, %f]")
+        double: "'%s' must be in the range (%f, %f)")
 
 #define RM_StrToNum(config, rm_str, num)                                                           \
     if (_Generic(num,                                                                              \

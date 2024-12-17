@@ -107,7 +107,7 @@ static inline int isIntegerConfigValid(long long config, RM_ConfigInteger params
     return config >= params.min && config <= params.max;
 }
 static inline int isFloatConfigValid(double config, RM_ConfigFloat params) {
-    return config >= params.min && config <= params.max;
+    return config > params.min && config < params.max;
 }
 
 #define isConfigValid(config, params)                                                              \
