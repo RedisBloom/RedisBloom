@@ -12,8 +12,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "config.h"
-
 // Defines whether 32bit or 64bit hash function will be used.
 // It will be deprecated in RedisBloom 3.0.
 
