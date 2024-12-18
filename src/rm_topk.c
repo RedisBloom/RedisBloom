@@ -13,6 +13,7 @@
 #include "rm_topk.h"
 #include "rm_cms.h"
 #include "common.h"
+#include <math.h>
 
 // clang-format off
 #define INNER_ERROR(x) \
@@ -306,6 +307,11 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
             RedisModule_Free(topk->heap[i].item);
             topk->heap[i].item = NULL;
         }
+    }
+
+    /* Initialize lookupTable */
+    for (uint32_t i = 0; i < TOPK_DECAY_LOOKUP_TABLE; ++i) {
+        topk->lookupTable[i] = pow(topk->decay, i);
     }
 
     return topk;
