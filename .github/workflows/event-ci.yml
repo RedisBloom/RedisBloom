@@ -50,3 +50,6 @@ jobs:
   linter:
     uses: ./.github/workflows/flow-linter.yml
     secrets: inherit
+  codeql:
+    uses: ./.github/workflows/flow-codeql-analysis.yml
+    secrets: inherit
