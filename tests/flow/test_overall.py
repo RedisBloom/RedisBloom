@@ -196,7 +196,7 @@ class testRedisBloom():
         with env.assertResponseError():
             env.cmd('bf.insert', 'missingFilter', 'ERROR', 'big')
         with env.assertResponseError():
-            env.cmd('bf.insert', 'missingFilter', 'EXPANSION', '0', 'ITEMS', 'foo')
+            env.cmd('bf.insert', 'missingFilter', 'EXPANSION', '-1', 'ITEMS', 'foo')
         with env.assertResponseError():
             env.cmd('bf.insert', 'missingFilter', 'EXPANSION', 'big')
 
@@ -410,11 +410,7 @@ class testRedisBloom():
     def test_invalid_expansion(self):
         env = self.env
         env.cmd('FLUSHALL')
-        try:
-            env.cmd('BF.RESERVE b 0.1 1 EXPANSION 0')
-            env.assertTrue(False)
-        except Exception as e:
-            env.assertEqual(str(e), 'expansion should be greater or equal to 1')
+        env.expect('BF.RESERVE b 0.1 1 EXPANSION -1').error().contains('expansion must be in the range')
 
     def test_issue178(self):
         env = self.env

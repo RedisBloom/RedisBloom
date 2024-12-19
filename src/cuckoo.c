@@ -5,6 +5,7 @@
  */
 
 #include "cuckoo.h"
+#include "config.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -400,12 +401,8 @@ void CuckooFilter_GetInfo(const CuckooFilter *cf, CuckooHash hash, CuckooKey *ou
 
 // Returns 0 on success
 int CuckooFilter_ValidateIntegrity(const CuckooFilter *cf) {
-    if (cf->bucketSize == 0 || cf->bucketSize > CF_MAX_BUCKET_SIZE ||
-        cf->numBuckets == 0 || cf->numBuckets > CF_MAX_NUM_BUCKETS ||
-        cf->numFilters == 0 || cf->numFilters > CF_MAX_NUM_FILTERS ||
-        cf->maxIterations == 0 || !isPower2(cf->numBuckets) ) {
-        return 1;
-    }
-
-    return 0;
+    return !isConfigValid(cf->bucketSize, rm_config.cf_bucket_size) ||
+           !isConfigValid(cf->numFilters, rm_config.cf_max_expansions) ||
+           !isConfigValid(cf->maxIterations, rm_config.cf_max_iterations) || cf->numBuckets == 0 ||
+           cf->numBuckets > CF_MAX_NUM_BUCKETS || !isPower2(cf->numBuckets);
 }
