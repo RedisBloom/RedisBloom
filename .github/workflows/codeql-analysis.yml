@@ -12,7 +12,13 @@
 name: "CodeQL"
 
 on:
-  workflow_call: # Allows to run this workflow from another workflow
+  push:
+    branches: [ master ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ master ]
+  schedule:
+    - cron: '17 10 * * 0'
 
 jobs:
   analyze:
@@ -35,7 +41,7 @@ jobs:
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v1
+      uses: github/codeql-action/init@v2
       with:
         languages: ${{ matrix.c }}
         # If you wish to specify custom queries, you can do so here or in a config file.
