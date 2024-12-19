@@ -24,6 +24,7 @@ runs:
         python3 -m venv venv
         echo "source $PWD/venv/bin/activate" >> ~/.bash_profile
         . venv/bin/activate
+        echo ". venv/bin/activate" >> $HOME/.bash_profile
         echo ::endgroup::
         echo ::group::Install python dependencies
           ./.install/common_installations.sh

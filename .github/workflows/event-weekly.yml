@@ -14,7 +14,7 @@ jobs:
     secrets: inherit
     with:
       extended: true
- prepare-values:
+  prepare-values:
     runs-on: ubuntu-latest
     outputs:
       redis-ref: ${{ steps.set-env.outputs.redis-ref }}

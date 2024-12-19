@@ -77,9 +77,6 @@ jobs:
           echo "${OS}"
           echo "os=${OS}" >> $GITHUB_OUTPUT
   macos:
-    env:
-      VERSION: ${{ inputs.version }}
-      BRANCH: ${{ inputs.branch }}
     runs-on: ${{matrix.os}}
     needs: prepare-values
     strategy:
@@ -116,7 +113,7 @@ jobs:
         if: failure()
         uses: ./.github/actions/upload-artifacts
         with: 
-          image: ${{ matrix.docker_image.image }}
+          image: ${{ matrix.os }}
       - name: Pack module
         uses: ./.github/actions/pack-module
       - name: Upload artifacts to S3
