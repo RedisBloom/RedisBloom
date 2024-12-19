@@ -5,7 +5,7 @@ inputs:
   redis-version:
     description: 'Redis version to build'
     required: true
-    default: '7.4'
+    default: 'unstable'
 
 runs:
   using: composite
