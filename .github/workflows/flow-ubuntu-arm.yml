@@ -30,6 +30,8 @@ jobs:
       BRANCH: ${{ steps.set-env.outputs.BRANCH }}
       TAG_OR_BRANCH: ${{ steps.set-env.outputs.TAG }}${{ steps.set-env.outputs.BRANCH }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: set env
         id: set-env
         uses: ./.github/actions/setup-env
