@@ -22,7 +22,6 @@ jobs:
   prepare-values:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
       redis-ref: ${{ steps.set-env.outputs.redis-ref }}
       TAGGED: ${{ steps.set-env.outputs.TAGGED }}
       TAG: ${{ steps.set-env.outputs.TAG }}
