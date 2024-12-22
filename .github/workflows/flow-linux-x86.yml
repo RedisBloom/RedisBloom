@@ -30,11 +30,17 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       redis-ref: ${{ steps.set-env.outputs.redis-ref }}
+      TAGGED: ${{ steps.set-env.outputs.TAGGED }}
+      TAG: ${{ steps.set-env.outputs.TAG }}
+      BRANCH: ${{ steps.set-env.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ steps.set-env.outputs.TAG }}${{ steps.set-env.outputs.BRANCH }}
     steps:
       - name: set env
         id: set-env
-        run: |
-          echo "redis-ref=${{ inputs.redis-ref || 'unstable' }}" >> $GITHUB_OUTPUT  # todo change per version/tag
+        uses: ./.github/actions/setup-env
+        with:
+          github-ref: ${{ github.ref }}
+          redis-ref: ${{ inputs.redis-ref }}
       - name: Set matrix
         id: set-matrix
         run: |
@@ -93,6 +99,10 @@ jobs:
       run:
         shell: bash -l -eo pipefail {0}
     env:
+      TAGGED: ${{ needs.setup-environment.outputs.TAGGED }}
+      VERSION: ${{ needs.setup-environment.outputs.TAG }}
+      BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
       PIP_BREAK_SYSTEM_PACKAGES: 1
     steps:
       - name: Install git
