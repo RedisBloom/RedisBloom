@@ -76,19 +76,6 @@ jobs:
           cd redis
           git fetch origin ${{needs.prepare-values.outputs.redis-ref}}
           git checkout ${{needs.prepare-values.outputs.redis-ref}}
-      # - name: Install python dependencies
-      #   run: |
-      #     echo ::group::Activate virtual environment
-      #     python3 -m venv venv
-      #     echo "source $PWD/venv/bin/activate" >> ~/.bash_profile
-      #     . venv/bin/activate
-      #     echo ::endgroup::
-      #     pip install -q --upgrade setuptools wheel
-      #     pip install -q --upgrade pip
-      #     pip install -q -r tests/flow/requirements.txt
-      #     pip install -q -r .install/build_package_requirements.txt
-      #   env:
-      #     PIP_BREAK_SYSTEM_PACKAGES: 1
       - name: Build
         uses: ./.github/actions/build-module-and-redis
       - name: Run Tests
@@ -106,27 +93,3 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           github-ref: ${{ github.ref }}
-  
-      # - name: Build Redis
-      #   working-directory: redis
-      #   run: |
-      #     . venv/bin/activate
-      #     make install
-      # - name: Build module
-      #   run: |
-      #     . venv/bin/activate
-      #     make build -j `nproc`
-      # - name: Test
-      #   run: |
-      #     . venv/bin/activate
-      #     make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
-      # - name: Pack module
-      #   run: |
-      #     . venv/bin/activate
-      #     make pack BRANCH=${{ github.ref_name }}
-      # - name: Upload artifacts to S3
-      #   uses: ./.github/actions/upload-artifacts-to-s3
-      #   with:
-      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      #     github-ref: ${{ github.ref }}
