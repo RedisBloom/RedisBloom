@@ -1,0 +1,32 @@
+name: Run module tests
+
+inputs:
+  run_valgrind:
+    description: 'Run valgrind on the tests'
+    type: string
+    default: ''
+  run_sanitizer:
+    description: 'Run sanitizer on the tests'
+    type: string
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Run tests
+      shell: bash
+      run: |
+        if command -v scl_source &> /dev/null
+        then
+            . scl_source enable devtoolset-11 || true
+        fi
+        echo ::group::Activate virtual environment
+        python3 -m venv venv
+        echo "source $PWD/venv/bin/activate" >> ~/.bash_profile
+        . venv/bin/activate
+        echo ". venv/bin/activate" >> $HOME/.bash_profile
+        echo ::endgroup::
+        echo ::group::Install python dependencies
+          ./.install/common_installations.sh
+        echo ::endgroup::
+        make test VG=${{inputs.run_valgrind}} SAN=${{inputs.run_sanitizer}} REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
