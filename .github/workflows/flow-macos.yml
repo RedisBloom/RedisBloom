@@ -1,0 +1,143 @@
+name: Flow MACOS
+# This is a full workflow for the production branches and tags, which
+# includes building and testing on all supported platforms, and
+# uploading the artifacts to S3.
+
+# TODO:
+#
+# 1. Remove the use of "readies" completely.
+# 2. Remove the use of all the scripts for anything and do everything
+#    right here in the workflow.
+# 3. Use the corresponding actions for the end goal: aws s3 upload
+#    action. This also will remove the need for the installation of aws-cli.
+#
+# More info: jobs.steps.uses: docker://alpine:3.8 for docker images,
+# To use the AWS CLI: https://hub.docker.com/r/amazon/aws-cli
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      os:
+        description: "OS version to run the tests on. MacOS 12 and 13 - x86-64, MacOS 14 - ARM (Apple Chips)."
+        required: true
+        type: string
+        default: "macos-12"
+      run_valgrind:
+        description: 'Run valgrind on the tests'
+        type: boolean
+        default: false
+      run_sanitizer:
+        description: 'Run sanitizer on the tests'
+        type: boolean
+        default: false
+      redis-ref:
+        description: 'Redis ref to checkout'  # todo change per version/tag
+        type: string
+        required: true
+  workflow_call:
+  # the defaults and options here are the same likes in "workflow_dispatch"
+    inputs:
+      os:
+        description: "OS version to run the tests on. MacOS 13 - x86-64, MacOS 14 - ARM (Apple Chips)."
+        required: false
+        type: string
+      run_valgrind:
+        description: 'Run valgrind on the tests'
+        type: boolean
+        default: false
+      run_sanitizer:
+        description: 'Run sanitizer on the tests'
+        type: boolean
+        default: false
+      redis-ref:
+        description: 'Redis ref to checkout'  # todo change per version/tag
+        type: string
+        required: true
+
+
+jobs:
+  prepare-values:
+    runs-on: ubuntu-latest
+    outputs:
+      os: ${{ steps.set-matrix.outputs.os }}
+      redis-ref: ${{ steps.set-env.outputs.redis-ref }}
+      TAGGED: ${{ steps.set-env.outputs.TAGGED }}
+      TAG: ${{ steps.set-env.outputs.TAG }}
+      BRANCH: ${{ steps.set-env.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ steps.set-env.outputs.TAG }}${{ steps.set-env.outputs.BRANCH }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set matrix
+        id: set-matrix
+        run: |
+          OS="${{ inputs.os }}"
+          if [ -z "${OS}" ]; then
+            OS='["macos-13", "macos-14"]'
+          else
+            OS='["${OS}"]'
+          fi
+          echo "${OS}"
+          echo "os=${OS}" >> $GITHUB_OUTPUT
+      - name: set env
+        id: set-env
+        uses: ./.github/actions/setup-env
+        with:
+          github-ref: ${{ github.ref }}
+          redis-ref: ${{inputs.redis-ref}}
+      
+  macos:
+    runs-on: ${{matrix.os}}
+    needs: prepare-values
+    strategy:
+      fail-fast: false
+      matrix:
+        # 6.0.20 can't be built due to Redis bug.
+        os: ${{fromJson(needs.prepare-values.outputs.os)}}
+    defaults:
+      run:
+        shell: bash -l -eo pipefail {0}
+    env:
+      TAGGED: ${{ needs.setup-environment.outputs.TAGGED }}
+      VERSION: ${{ needs.setup-environment.outputs.TAG }}
+      BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
+      PIP_BREAK_SYSTEM_PACKAGES: 1
+    steps:
+      - name: Install prerequisites
+        run: |
+          brew install make coreutils
+      - name: Full checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Checkout Redis
+        uses: actions/checkout@v4
+        with:
+          repository: 'redis/redis'
+          ref: ${{needs.prepare-values.outputs.redis-ref}}
+          path: 'redis'
+          submodules: recursive
+      - name: Setup specific
+        working-directory: .install
+        run: ./install_script.sh
+      - name: Build
+        uses: ./.github/actions/build-module-and-redis
+      - name: Run Tests
+        uses: ./.github/actions/run-tests
+      - name: Upload test artifacts
+        if: failure()
+        uses: ./.github/actions/upload-artifacts
+        with: 
+          image: ${{ matrix.os }}
+      - name: Pack module
+        uses: ./.github/actions/pack-module
+      - name: Upload artifacts to S3
+        uses: ./.github/actions/upload-artifacts-to-s3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          github-ref: ${{ github.ref }}

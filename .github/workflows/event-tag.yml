@@ -1,19 +1,21 @@
-name: Event Weekly
-
-on:
-  schedule:
-    - cron: "0 0 * * 0"
+name: Event TAG
 
 permissions:
   id-token: write
   contents: read
+  
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      redis-ref:
+        description: 'Redis ref to checkout'
+        required: true
+        default: 'unstable'
 
 jobs:
-  run-benchmarks:
-    uses: ./.github/workflows/benchmark-runner.yml
-    secrets: inherit
-    with:
-      extended: true
   prepare-values:
     runs-on: ubuntu-latest
     outputs:
@@ -22,7 +24,7 @@ jobs:
       - name: set env
         id: set-env
         run: |
-          echo "redis-ref=unstable" >> $GITHUB_OUTPUT  # todo change per version/tag
+          echo "redis-ref=${{ inputs.redis-ref || 'unstable' }}" >> $GITHUB_OUTPUT  # todo change per version/tag
   build-linux-x86:
     uses: ./.github/workflows/flow-linux-x86.yml
     needs: [prepare-values]
@@ -47,14 +49,6 @@ jobs:
     needs: [prepare-values]
     with:
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
-    secrets: inherit
-  linux-valgrind:
-    uses: ./.github/workflows/flow-linux-x86.yml
-    needs: [prepare-values]
-    with:
-      os: jammy
-      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
-      run_valgrind: true
     secrets: inherit
   linux-sanitizer:
     uses: ./.github/workflows/flow-linux-x86.yml
