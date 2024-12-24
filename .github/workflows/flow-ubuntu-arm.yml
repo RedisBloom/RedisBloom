@@ -128,6 +128,7 @@ jobs:
           REF=${{github.sha}}
           git fetch origin ${REF}
           git checkout ${REF}
+          git submodule update
 
           # Perform checkout
           REPO_URL="https://github.com/redis/redis.git"
@@ -136,6 +137,7 @@ jobs:
           cd redis
           git fetch origin ${{needs.prepare-values.outputs.redis-ref}}
           git checkout ${{needs.prepare-values.outputs.redis-ref}}
+          git submodule update
       - name: Setup Python for testing
         if: matrix.docker.image == 'ubuntu:jammy'
         uses: actions/setup-python@v5
