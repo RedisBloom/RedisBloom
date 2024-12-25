@@ -1,7 +1,7 @@
 ---
 title: Bloom filter
 linkTitle: Bloom filter
-description: Bloom filters are a probabilistic data structure that checks for presence of an element in a set
+description: Bloom filter is a probabilistic data structure that checks for presence of an element in a set
 type: docs
 weight: 10
 stack: true
