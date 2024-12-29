@@ -1,0 +1,97 @@
+name: Flow alpine
+
+permissions:
+  id-token: write
+  contents: read
+  
+on:
+  workflow_dispatch: # Allows you to run this workflow manually from the Actions tab
+    inputs:
+      redis-ref:
+        description: 'Redis ref to checkout'
+        required: true
+        default: 'unstable'
+  workflow_call: # Allows to run this workflow from another workflow
+    inputs:
+      redis-ref:
+        description: 'Redis ref to checkout'
+        type: string
+        required: true
+
+jobs:
+  prepare-values:
+    runs-on: ubuntu-latest
+    outputs:
+      redis-ref: ${{ steps.set-env.outputs.redis-ref }}
+      TAGGED: ${{ steps.set-env.outputs.TAGGED }}
+      TAG: ${{ steps.set-env.outputs.TAG }}
+      BRANCH: ${{ steps.set-env.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ steps.set-env.outputs.TAG }}${{ steps.set-env.outputs.BRANCH }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: set env
+        id: set-env
+        uses: ./.github/actions/setup-env
+        with:
+          github-ref: ${{ github.ref }}
+          redis-ref: ${{ inputs.redis-ref }}
+  alpine:
+    runs-on: ${{matrix.runs_on}}
+    defaults:
+      run:
+        shell: bash
+    container:
+      image: alpine:3
+    strategy:
+      matrix:
+        runs_on: [ubuntu24-arm64-4-16, ubuntu-latest]
+    needs: prepare-values
+    env:
+      TAGGED: ${{ needs.setup-environment.outputs.TAGGED }}
+      VERSION: ${{ needs.setup-environment.outputs.TAG }}
+      BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
+      PIP_BREAK_SYSTEM_PACKAGES: 1
+    steps:
+      - name: Install prerequisites
+        shell: sh
+        run: |
+          apk add bash make libtool tar cmake python3 python3-dev py3-pip gcc git curl build-base autoconf automake py3-cryptography linux-headers musl-dev libffi-dev openssl-dev openssh py-virtualenv clang18-libclang gcompat libstdc++ libgcc g++ openblas-dev xsimd git xz bsd-compat-headers clang18
+      - name: git checkout
+        run: |
+          # Perform checkout
+          REPO_URL="https://github.com/${{ github.repository }}.git"
+          # Clone the repository to the current directory
+          git config --global --add safe.directory /__w/${{ github.repository }}
+          git clone --recurse-submodules --depth=1 $REPO_URL .
+          REF=${{github.sha}}
+          git fetch origin ${REF}
+          git checkout ${REF}
+          git submodule update
+
+          # Perform checkout
+          REPO_URL="https://github.com/redis/redis.git"
+          # Clone the repository to the current directory
+          git clone --recurse-submodules $REPO_URL redis
+          cd redis
+          git fetch origin ${{needs.prepare-values.outputs.redis-ref}}
+          git checkout ${{needs.prepare-values.outputs.redis-ref}}
+          git submodule update
+      - name: Build
+        uses: ./.github/actions/build-module-and-redis
+      - name: Run Tests
+        uses: ./.github/actions/run-tests
+      - name: Upload test artifacts
+        if: failure()
+        uses: ./.github/actions/upload-artifacts
+        with: 
+          image: ${{ matrix.docker_image.image }}
+      - name: Pack module
+        uses: ./.github/actions/pack-module
+      - name: Upload artifacts to S3
+        uses: ./.github/actions/upload-artifacts-to-s3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          github-ref: ${{ github.ref }}
