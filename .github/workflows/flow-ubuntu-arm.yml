@@ -1,0 +1,191 @@
+name: Build and Test ubuntu ARM instances
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  workflow_dispatch: # Allows you to run this workflow manually from the Actions tab
+    inputs:
+      redis-ref:
+        description: 'Redis ref to checkout'
+        required: true
+        default: 'unstable'
+  workflow_call: # Allows to run this workflow from another workflow
+    inputs:
+      redis-ref:
+        description: 'Redis ref to checkout'
+        type: string
+        required: true
+
+
+jobs:
+  prepare-values:
+    runs-on: ubuntu-latest
+    outputs:
+      redis-ref: ${{ steps.set-env.outputs.redis-ref }}
+      TAGGED: ${{ steps.set-env.outputs.TAGGED }}
+      TAG: ${{ steps.set-env.outputs.TAG }}
+      BRANCH: ${{ steps.set-env.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ steps.set-env.outputs.TAG }}${{ steps.set-env.outputs.BRANCH }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: set env
+        id: set-env
+        uses: ./.github/actions/setup-env
+        with:
+          github-ref: ${{ github.ref }}
+          redis-ref: ${{ inputs.redis-ref }}
+  ubuntu-arm64:
+    runs-on: ubuntu24-arm64-4-16 # ubuntu24-arm64-2-8
+    strategy:
+      matrix:
+        docker:
+          - image: "ubuntu:bionic"
+            nick: "bionic"
+            install_git: |
+              apt-get update && apt-get install -y software-properties-common
+              add-apt-repository ppa:git-core/ppa && apt-get update && apt-get install -y git
+            install_deps: |
+              apt update -qq
+              apt upgrade -yqq
+              apt dist-upgrade -yqq
+              apt install -yqq software-properties-common unzip rsync
+              add-apt-repository ppa:ubuntu-toolchain-r/test -y
+              apt update
+              apt install -yqq build-essential wget curl make gcc-10 g++-10 openssl libssl-dev cargo binfmt-support \
+                lsb-core awscli libclang-dev clang curl zlib1g-dev
+              update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 60 --slave /usr/bin/g++ g++ /usr/bin/g++-10
+              
+              wget https://cmake.org/files/v3.28/cmake-3.28.0.tar.gz
+              tar -xzvf cmake-3.28.0.tar.gz
+              cd cmake-3.28.0
+              ./configure
+              make -j `nproc`
+              make install
+              cd ..
+              ln -s /usr/local/bin/cmake /usr/bin/cmake
+              wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz
+              tar -xvf Python-3.9.6.tgz
+              cd Python-3.9.6
+              ./configure
+              make -j `nproc`
+              make altinstall
+              cd ..
+              rm /usr/bin/python3 && ln -s `which python3.9` /usr/bin/python3
+              rm /usr/bin/lsb_release
+              python3 --version
+              make --version
+              cmake --version
+              python3 -m pip install --upgrade pip
+              curl "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "awscliv2.zip"
+              unzip awscliv2.zip
+              ./aws/install
+          - image: "ubuntu:focal"
+            nick: focal
+            install_git: | 
+              apt-get update && apt-get install -y software-properties-common
+              add-apt-repository ppa:git-core/ppa && apt-get update && apt-get install -y git
+            install_deps: |
+              apt update -qq
+              apt upgrade -yqq
+              apt install -yqq wget make clang-format gcc python3 python3-venv python3-pip lcov git openssl libssl-dev \
+                  unzip rsync build-essential gcc-10 g++-10 cargo libclang-dev clang curl cmake
+              update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 60 --slave /usr/bin/g++ g++ /usr/bin/g++-10
+          - image: "ubuntu:jammy"
+            nick: "jammy"
+            install_git: |
+              apt-get update && apt-get install -y git
+            install_deps: |
+              apt update -qq
+              apt upgrade -yqq
+              apt install -yqq git wget build-essential lcov openssl libssl-dev \
+                python3 python3-pip python3-venv python3-dev unzip rsync libclang-dev clang curl cmake
+    defaults:
+      run:
+        shell: bash
+    container:
+      image: ${{ matrix.docker.image }}
+    needs: prepare-values
+    env:
+      TAGGED: ${{ needs.prepare-values.outputs.TAGGED }}
+      VERSION: ${{ needs.prepare-values.outputs.TAG }}
+      BRANCH: ${{ needs.prepare-values.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ needs.prepare-values.outputs.TAG_OR_BRANCH}}
+      PIP_BREAK_SYSTEM_PACKAGES: 1
+    steps:
+      - name: Install git
+        run: |
+          ${{ matrix.docker.install_git }}
+      - name: git checkout
+        run: |
+          # Perform checkout
+          REPO_URL="https://github.com/${{ github.repository }}.git"
+          # Clone the repository to the current directory
+          git config --global --add safe.directory /__w/${{ github.repository }}
+          git clone --recurse-submodules --depth=1 $REPO_URL .
+          REF=${{github.sha}}
+          git fetch origin ${REF}
+          git checkout ${REF}
+          git submodule update
+
+          # Perform checkout
+          REPO_URL="https://github.com/redis/redis.git"
+          # Clone the repository to the current directory
+          git clone --recurse-submodules $REPO_URL redis
+          cd redis
+          git fetch origin ${{needs.prepare-values.outputs.redis-ref}}
+          git checkout ${{needs.prepare-values.outputs.redis-ref}}
+          git submodule update
+      - name: Setup Python for testing
+        if: matrix.docker.image == 'ubuntu:jammy'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          architecture: 'arm64'
+      - name: Install dependencies
+        run: |
+          ${{ matrix.docker.install_deps }}
+        env:
+          DEBIAN_FRONTEND: noninteractive
+      - name: Install python dependencies
+        run: |
+          echo ::group::activate venv
+            python3 -m venv venv
+            echo "source $PWD/venv/bin/activate" >> ~/.bash_profile
+            source venv/bin/activate
+          echo ::endgroup::
+          echo ::group::install requirements
+            pip install -q --upgrade setuptools
+            pip install -q --upgrade pip
+            pip install -q -r tests/flow/requirements.txt
+            pip install -q -r .install/build_package_requirements.txt
+          echo ::endgroup::
+        env:
+          PIP_BREAK_SYSTEM_PACKAGES: 1
+      - name: build
+        uses: ./.github/actions/build-module-and-redis
+      - name: Test
+        run: |
+          echo ::group::Activate virtual environment
+          python3 -m venv venv
+          echo "source $PWD/venv/bin/activate" >> ~/.bash_profile
+          source venv/bin/activate
+          echo ::endgroup::
+          echo ::group::Install python dependencies
+            ./.install/common_installations.sh
+          echo ::endgroup::
+          make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+      - name: Pack module
+        run: |
+          . venv/bin/activate
+          export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          make pack BRANCH=$TAG_OR_BRANCH SHOW=1
+      - name: Upload artifacts to S3
+        uses: ./.github/actions/upload-artifacts-to-s3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          github-ref: ${{ github.ref }}
