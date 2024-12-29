@@ -1,2 +1,3 @@
 jinja2
-ramp-packer==2.5.10
+ramp-packer==2.5.12
+jwt
