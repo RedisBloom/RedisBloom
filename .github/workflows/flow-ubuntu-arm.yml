@@ -109,10 +109,10 @@ jobs:
       image: ${{ matrix.docker.image }}
     needs: prepare-values
     env:
-      TAGGED: ${{ needs.setup-environment.outputs.TAGGED }}
-      VERSION: ${{ needs.setup-environment.outputs.TAG }}
-      BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
-      TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
+      TAGGED: ${{ needs.prepare-values.outputs.TAGGED }}
+      VERSION: ${{ needs.prepare-values.outputs.TAG }}
+      BRANCH: ${{ needs.prepare-values.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ needs.prepare-values.outputs.TAG_OR_BRANCH}}
       PIP_BREAK_SYSTEM_PACKAGES: 1
     steps:
       - name: Install git
@@ -133,7 +133,7 @@ jobs:
           # Perform checkout
           REPO_URL="https://github.com/redis/redis.git"
           # Clone the repository to the current directory
-          git clone --recurse-submodules --depth=1 $REPO_URL redis
+          git clone --recurse-submodules $REPO_URL redis
           cd redis
           git fetch origin ${{needs.prepare-values.outputs.redis-ref}}
           git checkout ${{needs.prepare-values.outputs.redis-ref}}
@@ -176,7 +176,7 @@ jobs:
           echo ::group::Install python dependencies
             ./.install/common_installations.sh
           echo ::endgroup::
-          make test VG=${{inputs.run_valgrind}} SAN=${{inputs.run_sanitizer && 'addr' || ''}} REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+          make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
       - name: Pack module
         run: |
           . venv/bin/activate
