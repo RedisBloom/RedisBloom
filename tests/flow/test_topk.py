@@ -220,3 +220,14 @@ class testTopK():
         heapList = self.cmd('topk.list', 'topk', 'WITHCOUNT')
         self.assertEqual(['foo', 504, 'bar', 503, 'baz', 502], heapList)
 
+    def test_results_after_rdb_reload(self):
+        results = []
+        for with_reload in [True, False]:
+            self.cmd('FLUSHALL')
+            self.env.cmd('TOPK.RESERVE', 'topkmyk1', '1', '1', '1', '0.99999')
+            for i in range(2):
+                if with_reload:
+                    self.env.dumpAndReload()
+                self.env.cmd('TOPK.ADD', 'topkmyk1', '%d' % i)
+            results.append(self.env.cmd('TOPK.LIST', 'topkmyk1'))
+        self.env.assertEqual(results[0], results[1])

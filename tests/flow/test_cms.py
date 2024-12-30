@@ -1,6 +1,7 @@
 
 from common import *
 from random import randint
+import redis
 
 
 class testCMS():
@@ -383,3 +384,18 @@ class testCMS():
         self.assertEqual(['width', 2, 'depth', 2, 'count', 8], self.cmd('cms.info', 'cms1{t}'))
         self.assertEqual([8], self.cmd('cms.query', 'cms1{t}', 'foo'))
 
+    def test_watch(self):
+        conn1 = self.env.getConnection()
+        conn2 = self.env.getConnection()
+        self.env.cmd('flushall')
+        self.env.cmd('CMS.INITBYDIM', 'basecms1', '1000', '5')
+        with conn1.pipeline() as pipe:
+            pipe.watch('basecms1')
+            conn2.execute_command('CMS.INCRBY', 'basecms1', 'smur', '5', 'rr', '9', 'ff', '99')
+            pipe.multi()
+            pipe.set('x', '1')
+            try:
+                pipe.execute()
+                self.env.assertTrue(False, message='Multi transaction was not failed when it should have')
+            except redis.exceptions.WatchError as e:
+                self.env.assertContains('Watched variable changed', str(e))
