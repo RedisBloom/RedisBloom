@@ -101,10 +101,10 @@ jobs:
       run:
         shell: bash -l -eo pipefail {0}
     env:
-      TAGGED: ${{ needs.setup-environment.outputs.TAGGED }}
-      VERSION: ${{ needs.setup-environment.outputs.TAG }}
-      BRANCH: ${{ needs.setup-environment.outputs.BRANCH }}
-      TAG_OR_BRANCH: ${{ needs.setup-environment.outputs.TAG_OR_BRANCH}}
+      TAGGED: ${{ needs.prepare-values.outputs.TAGGED }}
+      VERSION: ${{ needs.prepare-values.outputs.TAG }}
+      BRANCH: ${{ needs.prepare-values.outputs.BRANCH }}
+      TAG_OR_BRANCH: ${{ needs.prepare-values.outputs.TAG_OR_BRANCH}}
       PIP_BREAK_SYSTEM_PACKAGES: 1
     steps:
       - name: Install prerequisites
