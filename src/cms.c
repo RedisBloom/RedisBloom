@@ -21,12 +21,20 @@ CMSketch *NewCMSketch(size_t width, size_t depth) {
     assert(width > 0);
     assert(depth > 0);
 
+    if (width > SIZE_MAX / depth || width * depth > SIZE_MAX / sizeof(uint32_t)) {
+        return NULL;
+    }
+
     CMSketch *cms = CMS_CALLOC(1, sizeof(CMSketch));
 
     cms->width = width;
     cms->depth = depth;
     cms->counter = 0;
-    cms->array = CMS_CALLOC(width * depth, sizeof(uint32_t));
+    cms->array = CMS_TRYCALLOC(width * depth, sizeof(uint32_t));
+    if (!cms->array) {
+        CMS_FREE(cms);
+        return NULL;
+    }
 
     return cms;
 }
