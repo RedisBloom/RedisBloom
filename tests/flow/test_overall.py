@@ -782,6 +782,8 @@ class testRedisBloomNoCodec():
 
 
     def test_insufficient_memory(self):
+        # skip because capacity must be in the range [1, 1073741824]
+        self.env.skip()
         self.env.skipOnVersionSmaller('7.4')
         env = self.env
         env.cmd('FLUSHALL')

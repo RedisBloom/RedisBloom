@@ -659,6 +659,8 @@ class testCuckooNoCodec():
                     raise e
 
     def test_insufficient_memory(self):
+        # skip because Capacity must be in the range [2 * BUCKETSIZE, 1073741824]
+        self.env.skip()
         self.cmd('FLUSHALL')
         self.env.skipOnVersionSmaller('7.4')
 
