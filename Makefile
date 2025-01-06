@@ -308,7 +308,7 @@ benchmark: $(TARGET)
 
 pack: $(TARGET)
 	@echo Creating packages...
-	$(SHOW)MODULE=$(realpath $(TARGET)) BINDIR=$(BINDIR) $(ROOT)/sbin/pack.sh
+	$(SHOW)BINDIR=$(BINDIR) $(ROOT)/sbin/pack.sh $(realpath $(TARGET))
 
 upload-release:
 	$(SHOW)RELEASE=1 ./sbin/upload-artifacts
