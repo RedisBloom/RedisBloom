@@ -50,6 +50,7 @@ class testCMS():
                 ('foo', '0', '0'),
                 ('foo', '0', '100'),
                 ('foo', '100', '0'),
+                ('foo', '8589934592', '8589934592'),
         ):
             self.assertRaises(ResponseError, self.cmd, 'cms.initbydim', *args)
 
@@ -67,6 +68,8 @@ class testCMS():
                 ('foo', '0', '0'),
                 ('foo', '1000', '0',),
                 ('foo', '0', '100'),
+                ('foo', '0.9', '0.9999999999999999'),
+                ('foo', '0.0000000000000000001', '0.9'),
         ):
             self.assertRaises(ResponseError, self.cmd, 'cms.initbyprob', *args)
 
@@ -164,6 +167,11 @@ class testCMS():
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 'A', 'foo', 'weights', 1)
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 3, 'bar', 'baz' 'weights', 1, 'a')
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', 3, 'bar', 'baz' 'weights', 1)
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', '0')
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', '0', 'weights')
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', '-1')
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', '-1', 'foo', 'bar')
+        self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'foo', '-1', 'foo', 'bar', 'weights', 1, 1)
 
     def test_merge_extensive(self):
         self.cmd('FLUSHALL')
@@ -399,3 +407,10 @@ class testCMS():
                 self.env.assertTrue(False, message='Multi transaction was not failed when it should have')
             except redis.exceptions.WatchError as e:
                 self.env.assertContains('Watched variable changed', str(e))
+    def test_insufficient_memory(self):
+        self.env.skipOnVersionSmaller('7.4')
+        self.cmd('FLUSHALL')
+        self.env.expect('CMS.INITBYPROB', 'x', '0.0000000000000001', '0.0000000000000001').error().contains('CMS: Insufficient memory to create the key')
+        self.env.expect('CMS.INITBYDIM',  'x', '1000000000', '1000000000').error().contains('CMS: Insufficient memory to create the key')
+        self.env.expect('CMS.INITBYDIM',  'x', '2294967296', '2294967296').error().contains('CMS: Insufficient memory to create the key')
+        self.env.expect('CMS.INITBYDIM',  'x', '100000000000000', '100000000000000').error().contains('CMS: invalid init arguments')

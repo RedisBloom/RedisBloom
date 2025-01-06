@@ -8,6 +8,8 @@
 
 #define CUCKOO_MALLOC RedisModule_Alloc
 #define CUCKOO_CALLOC RedisModule_Calloc
+#define CUCKOO_TRYCALLOC(...)                                                                      \
+    RedisModule_TryCalloc ? RedisModule_TryCalloc(__VA_ARGS__) : RedisModule_Calloc(__VA_ARGS__)
 #define CUCKOO_REALLOC RedisModule_Realloc
 #define CUCKOO_FREE RedisModule_Free
 #include "cuckoo.c"
@@ -130,10 +132,19 @@ CuckooFilter *CFHeader_Load(const CFHeader *header) {
 
     for (size_t ii = 0; ii < filter->numFilters; ++ii) {
         SubCF *cur = filter->filters + ii;
+        cur->data = NULL;
         cur->bucketSize = header->bucketSize;
         cur->numBuckets = filter->numBuckets * pow(filter->expansion, ii);
+
+        if (filter->bucketSize > SIZE_MAX / cur->numBuckets) {
+            goto error;
+        }
+
         cur->data =
-            RedisModule_Calloc((size_t)cur->numBuckets * filter->bucketSize, sizeof(CuckooBucket));
+            CUCKOO_TRYCALLOC((size_t)cur->numBuckets * filter->bucketSize, sizeof(CuckooBucket));
+        if (!cur->data) {
+            goto error;
+        }
     }
     return filter;
 

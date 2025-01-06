@@ -646,6 +646,30 @@ class testRedisBloomNoCodec():
         if thrown is None or str(thrown) != "received bad data":
             raise thrown
 
+    def test_scandump_invalid_header_alloc(self):
+        self.env.skipOnVersionSmaller('7.4')
+
+        # Calls bf.loadchunk with a corrupt header that tries to do a huge
+        # memory allocation
+        env = self.env
+        env.cmd('FLUSHALL')
+
+        env.cmd('bf.reserve', 'bf', 0.01, 5)
+        for x in range(50):
+            env.cmd('bf.add', 'bf', 'foo' + str(x))
+
+        chunk = env.cmd('bf.scandump', 'bf', 0)
+
+        env.cmd('del', 'bf')
+
+        # It corrupts 'bytes' and 'bits' fields in the first link.
+        arr = bytearray(chunk[1])
+        for i in range(1):
+            arr[27 + i] = 0x03
+            arr[35 + i] = 0x18
+
+        self.env.expect('bf.loadchunk', 'bf', 1, bytes(arr)).error().contains("received bad data")
+
 
     def test_scandump_scan_small(self):
         env = self.env
@@ -755,3 +779,14 @@ class testRedisBloomNoCodec():
                         str(e) != "invalid chunk - Too big for current filter" and
                         str(e) != "received bad data"):
                     raise e
+
+
+    def test_insufficient_memory(self):
+        # skip because capacity must be in the range [1, 1073741824]
+        self.env.skip()
+        self.env.skipOnVersionSmaller('7.4')
+        env = self.env
+        env.cmd('FLUSHALL')
+
+        env.expect('bf.reserve', 'bf', 0.01, 1000000000000000000).error().contains('Insufficient memory to create filter')
+        env.expect('bf.insert', 'bf', 'capacity', 1000000000000000000, 'error', 0.01, 'ITEMS', 1).error().contains('Insufficient memory to create filter')
