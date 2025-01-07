@@ -132,6 +132,11 @@ CuckooFilter *CFHeader_Load(const CFHeader *header) {
         SubCF *cur = filter->filters + ii;
         cur->bucketSize = header->bucketSize;
         cur->numBuckets = filter->numBuckets * pow(filter->expansion, ii);
+
+        if (cur->numBuckets != 0 && filter->bucketSize > SIZE_MAX / cur->numBuckets) {
+            goto error;
+        }
+
         cur->data =
             RedisModule_Calloc((size_t)cur->numBuckets * filter->bucketSize, sizeof(CuckooBucket));
     }

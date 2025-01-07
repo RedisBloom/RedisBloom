@@ -21,6 +21,10 @@ CMSketch *NewCMSketch(size_t width, size_t depth) {
     assert(width > 0);
     assert(depth > 0);
 
+    if (width > SIZE_MAX / depth || width * depth > SIZE_MAX / sizeof(uint32_t)) {
+        return NULL;
+    }
+
     CMSketch *cms = CMS_CALLOC(1, sizeof(CMSketch));
 
     cms->width = width;
