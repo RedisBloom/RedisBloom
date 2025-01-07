@@ -10,6 +10,7 @@
 #include "rmutil/util.h"
 #include "version.h"
 
+#include <limits.h>
 #include <math.h>
 #include <stdlib.h>
 #include <strings.h>
@@ -67,6 +68,10 @@ static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         CMS_DimFromProb(overEst, prob, (size_t *)width, (size_t *)depth);
     }
 
+    if (*width < 1 || *depth < 1 || *width > LLONG_MAX / *depth) {
+        INNER_ERROR("CMS: invalid init arguments");
+    }
+
     return REDISMODULE_OK;
 }
 
@@ -90,6 +95,12 @@ int CMSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_OK;
 
     cms = NewCMSketch(width, depth);
+    if (!cms) {
+        RedisModule_CloseKey(key);
+        RedisModule_ReplyWithError(ctx, "CMS: Insufficient memory to create the key");
+        return REDISMODULE_OK;
+    }
+
     RedisModule_ModuleTypeSetValue(key, CMSketchType, cms);
 
     RedisModule_CloseKey(key);
@@ -183,6 +194,10 @@ int CMSketch_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 static int parseMergeArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
                           mergeParams *params) {
     long long numKeys = params->numKeys;
+    if (numKeys <= 0) {
+        INNER_ERROR("CMS: Number of keys must be positive");
+    }
+
     int pos = RMUtil_ArgIndex("WEIGHTS", argv, argc);
     if (pos < 0) {
         if (numKeys != argc) {
@@ -193,6 +208,9 @@ static int parseMergeArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
             INNER_ERROR("CMS: wrong number of keys/weights");
         }
     }
+
+    params->cmsArray = CMS_CALLOC(params->numKeys, sizeof(CMSketch *));
+    params->weights = CMS_CALLOC(params->numKeys, sizeof(long long));
 
     size_t width = params->dest->width;
     size_t depth = params->dest->depth;
@@ -231,9 +249,6 @@ int CMSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (RedisModule_StringToLongLong(argv[2], &(params.numKeys)) != REDISMODULE_OK) {
         return RedisModule_ReplyWithError(ctx, "CMS: invalid numkeys");
     }
-
-    params.cmsArray = CMS_CALLOC(params.numKeys, sizeof(CMSketch *));
-    params.weights = CMS_CALLOC(params.numKeys, sizeof(long long));
 
     if (parseMergeArgs(ctx, argv + 3, argc - 3, &params) != REDISMODULE_OK) {
         CMS_FREE(params.cmsArray);
