@@ -159,12 +159,12 @@ jobs:
       - name: build
         uses: ./.github/actions/build-module-and-redis
         with:
-          build_sanitizer: ${{inputs.run_sanitizer && 'addr' || ''}}
+          build_sanitizer: ${{ inputs.run_sanitizer && 'addr' || '' }}
       - name: Run tests
         uses: ./.github/actions/run-tests
         with: 
-          run_valgrind: ${{ inputs.run_valgrind && '1' || '0'}}
-          run_sanitizer: ${{ inputs.run_sanitizer && 'addr' || ''}}
+          run_valgrind: ${{ inputs.run_valgrind && '1' || '0' }}
+          run_sanitizer: ${{ inputs.run_sanitizer && 'addr' || '' }}
       - name: Upload test artifacts
         if: failure()
         uses: ./.github/actions/upload-artifacts
