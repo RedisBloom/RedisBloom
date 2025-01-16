@@ -8,7 +8,6 @@ $MODE apt upgrade -yqq
 
 apt-get install -y build-essential make autoconf automake libtool lcov git wget \
   zlib1g-dev lsb-release libssl-dev openssl ca-certificates curl unzip libffi-dev
-
 wget https://cmake.org/files/v3.28/cmake-3.28.0.tar.gz
 tar -xzvf cmake-3.28.0.tar.gz
 cd cmake-3.28.0
@@ -17,7 +16,6 @@ make -j `nproc`
 make install
 cd ..
 ln -s /usr/local/bin/cmake /usr/bin/cmake
-
 wget https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz
 tar -xvf Python-3.9.6.tgz
 cd Python-3.9.6
