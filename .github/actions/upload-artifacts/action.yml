@@ -4,7 +4,11 @@ description: Pack the module and upload it to S3
 inputs:
   image: # The Docker image to use for the build
     description: 'The Docker image to use for the build'
+    type: string
     required: true
+  redis-ref: # The Redis ref to checkout
+    description: 'The Redis ref to checkout'
+    type: string
 
 runs:
   using: composite
@@ -15,7 +19,7 @@ runs:
       id: artifact-names
       shell: bash
       run: | # Invalid characters include: Double quote ", Colon :, Less than <, Greater than >, Vertical bar |, Asterisk *, Question mark ?
-        echo "name=$(echo "${{ inputs.image }} x86-64, Redis unstable" | \
+        echo "name=$(echo "${{ inputs.image }} ${{ runner.arch }}, Redis ${{ inputs.redis-ref || 'unstable' }}" | \
           sed -e 's/[":\/\\<>\|*?]/_/g' -e 's/__*/_/g' -e 's/^_//' -e 's/_$//')" >> $GITHUB_OUTPUT
     - name: Upload test artifacts
       if: inputs.image != 'amazonlinux:2' && inputs.image != 'ubuntu:bionic'
