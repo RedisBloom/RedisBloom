@@ -20,28 +20,40 @@ jobs:
       - name: set env
         id: set-env
         run: |
-          echo "redis-ref=8.0" >> $GITHUB_OUTPUT  # todo change per version/tag
+          echo "redis-ref=[\"unstable\", \"8.0\"]" >> $GITHUB_OUTPUT  # todo change per version/tag
   linux:
     uses: ./.github/workflows/flow-linux-x86.yml
     needs: [prepare-values]
+    strategy:
+      fail-fast: false
+      matrix: 
+        redis-ref: ${{ fromJson(needs.prepare-values.outputs.redis-ref) }}
     with:
       os: jammy rocky9 amazonlinux2
-      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+      redis-ref: ${{ matrix.redis-ref }}
     secrets: inherit
   linux-valgrind:
     uses: ./.github/workflows/flow-linux-x86.yml
     needs: [prepare-values]
+    strategy:
+      fail-fast: false
+      matrix: 
+        redis-ref: ${{ fromJson(needs.prepare-values.outputs.redis-ref) }}
     with:
       os: jammy
-      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+      redis-ref: ${{ matrix.redis-ref }}
       run_valgrind: true
     secrets: inherit
   linux-sanitizer:
     uses: ./.github/workflows/flow-linux-x86.yml
     needs: [prepare-values]
+    strategy:
+      fail-fast: false
+      matrix: 
+        redis-ref: ${{ fromJson(needs.prepare-values.outputs.redis-ref) }}
     with:
       os: jammy
-      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+      redis-ref: ${{ matrix.redis-ref }}
       run_sanitizer: true
     secrets: inherit
   spellcheck:
