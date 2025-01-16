@@ -24,24 +24,36 @@ jobs:
   linux:
     uses: ./.github/workflows/flow-linux-x86.yml
     needs: [prepare-values]
+    strategy:
+      fail-fast: false
+      matrix: 
+        redis-ref: ${{ fromJson(needs.prepare-values.outputs.redis-ref) }}
     with:
       os: jammy rocky9 amazonlinux2
-      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+      redis-ref: ${{ matrix.redis-ref }}
     secrets: inherit
   linux-valgrind:
     uses: ./.github/workflows/flow-linux-x86.yml
     needs: [prepare-values]
+    strategy:
+      fail-fast: false
+      matrix: 
+        redis-ref: ${{ fromJson(needs.prepare-values.outputs.redis-ref) }}
     with:
       os: jammy
-      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+      redis-ref: ${{ matrix.redis-ref }}
       run_valgrind: true
     secrets: inherit
   linux-sanitizer:
     uses: ./.github/workflows/flow-linux-x86.yml
     needs: [prepare-values]
+    strategy:
+      fail-fast: false
+      matrix: 
+        redis-ref: ${{ fromJson(needs.prepare-values.outputs.redis-ref) }}
     with:
       os: jammy
-      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+      redis-ref: ${{ matrix.redis-ref }}
       run_sanitizer: true
     secrets: inherit
   spellcheck:
