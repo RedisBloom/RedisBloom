@@ -88,13 +88,13 @@ jobs:
           echo "matrix=${MATRIX}" >> $GITHUB_OUTPUT
   
   build-linux-matrix:
-    name: ${{matrix.docker_image.image}}, ${{needs.prepare-values.outputs.redis-ref}}
+    name: ${{ matrix.docker_image.image }}, ${{ needs.prepare-values.outputs.redis-ref }}
     runs-on: ubuntu-latest
     needs: prepare-values
     strategy:
       fail-fast: false
       matrix: 
-        docker_image: ${{fromJson(needs.prepare-values.outputs.matrix)}}
+        docker_image: ${{ fromJson(needs.prepare-values.outputs.matrix) }}
     container:
       image: ${{ matrix.docker_image.image }}
     defaults:
@@ -104,7 +104,7 @@ jobs:
       TAGGED: ${{ needs.prepare-values.outputs.TAGGED }}
       VERSION: ${{ needs.prepare-values.outputs.TAG }}
       BRANCH: ${{ needs.prepare-values.outputs.BRANCH }}
-      TAG_OR_BRANCH: ${{ needs.prepare-values.outputs.TAG_OR_BRANCH}}
+      TAG_OR_BRANCH: ${{ needs.prepare-values.outputs.TAG_OR_BRANCH }}
       PIP_BREAK_SYSTEM_PACKAGES: 1
     steps:
       - name: Install git
@@ -119,7 +119,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: redis/redis
-          ref: ${{needs.prepare-values.outputs.redis-ref}}
+          ref: ${{ needs.prepare-values.outputs.redis-ref }}
           path: redis
           submodules: 'recursive'
       - name: git checkout
@@ -130,7 +130,7 @@ jobs:
           # Clone the repository to the current directory
           git config --global --add safe.directory /__w/${{ github.repository }}
           git clone --recurse-submodules --depth=1 $REPO_URL .
-          REF=${{github.sha}}
+          REF=${{ github.sha }}
           git fetch origin ${REF}
           git checkout ${REF}
           git submodule update
@@ -140,8 +140,8 @@ jobs:
           # Clone the repository to the current directory
           git clone --recurse-submodules $REPO_URL redis
           cd redis
-          git fetch origin ${{needs.prepare-values.outputs.redis-ref}}
-          git checkout ${{needs.prepare-values.outputs.redis-ref}}
+          git fetch origin ${{ needs.prepare-values.outputs.redis-ref }}
+          git checkout ${{ needs.prepare-values.outputs.redis-ref }}
           git submodule update
       - name: Setup
         working-directory: .install
@@ -150,26 +150,21 @@ jobs:
           echo ::group::Install dependencies
             ./install_script.sh 
           echo ::endgroup::
-      - name: Setup Python for testing
-        if: contains(fromJSON('["ubuntu:jammy"]'), matrix.docker_image.image)
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-          architecture: 'x64'
       - name: build
         uses: ./.github/actions/build-module-and-redis
         with:
-          build_sanitizer: ${{inputs.run_sanitizer && 'addr' || ''}}
+          build_sanitizer: ${{ inputs.run_sanitizer && 'addr' || '' }}
       - name: Run tests
         uses: ./.github/actions/run-tests
         with: 
-          run_valgrind: ${{inputs.run_valgrind && '1' || '0'}}
-          run_sanitizer: ${{inputs.run_sanitizer && 'addr' || ''}}
+          run_valgrind: ${{ inputs.run_valgrind && '1' || '0' }}
+          run_sanitizer: ${{ inputs.run_sanitizer && 'addr' || '' }}
       - name: Upload test artifacts
         if: failure()
         uses: ./.github/actions/upload-artifacts
         with: 
           image: ${{ matrix.docker_image.image }}
+          redis-ref: ${{ needs.prepare-values.outputs.redis-ref }}
       - name: Pack module
         if: ${{ !inputs.run_valgrind && !inputs.run_sanitizer }}
         uses: ./.github/actions/pack-module
