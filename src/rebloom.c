@@ -646,8 +646,8 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
     if (status == SB_EMPTY && options->autocreate) {
         int err = CUCKOO_OK;
         if ((cf = cfCreate(key, options->capacity, rm_config.cf_bucket_size.value,
-                      rm_config.cf_max_iterations.value, 
-                      rm_config.cf_expansion_factor.value, &err)) == NULL) {
+                           rm_config.cf_max_iterations.value, rm_config.cf_expansion_factor.value,
+                           &err)) == NULL) {
             if (err == CUCKOO_OOM) {
                 RedisModule_ReplyWithError(ctx, "ERR Insufficient memory to create filter");
             } else {
@@ -1491,8 +1491,10 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         RedisModule_Log(ctx, "warning", "Error rate is capped at %f", BF_ERROR_RATE_CAP);
     }
 
-    if (RM_RegisterConfigs(ctx) != REDISMODULE_OK ||
-        RedisModule_LoadConfigs(ctx) != REDISMODULE_OK) {
+    if (!RedisModule_RegisterStringConfig || !RedisModule_LoadConfigs) {
+        // nothing to do
+    } else if (RM_RegisterConfigs(ctx) != REDISMODULE_OK ||
+               RedisModule_LoadConfigs(ctx) != REDISMODULE_OK) {
         return REDISMODULE_ERR;
     }
 

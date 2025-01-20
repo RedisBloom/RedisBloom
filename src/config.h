@@ -29,7 +29,6 @@ typedef enum {
     RM_CONFIG_COUNT,
 } RM_ConfigOption;
 
-
 static const char *RM_ConfigOptionToString(RM_ConfigOption option) {
     static const char *RM_ConfigOptionStrings[] = {
         [bf_error_rate] = "bf-error-rate",
