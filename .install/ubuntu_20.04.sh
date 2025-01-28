@@ -6,7 +6,8 @@ MODE=$1 # whether to install using sudo or not
 $MODE apt update -qq
 $MODE apt upgrade -yqq
 
-apt-get install -y build-essential make autoconf automake libtool lcov git wget zlib1g-dev lsb-release libssl-dev openssl ca-certificates curl unzip libffi-dev
+apt-get install -yqq --fix-missing build-essential make autoconf automake libtool lcov git \
+  wget zlib1g-dev lsb-release libssl-dev openssl ca-certificates curl unzip libffi-dev
 wget https://cmake.org/files/v3.28/cmake-3.28.0.tar.gz
 tar -xzvf cmake-3.28.0.tar.gz
 cd cmake-3.28.0
