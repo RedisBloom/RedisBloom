@@ -1,7 +1,7 @@
 ---
 title: Cuckoo filter
 linkTitle: Cuckoo filter
-description: Cuckoo filters are a probabilistic data structure that checks for presence of an element in a set
+description: Cuckoo filter is a probabilistic data structure that checks for presence of an element in a set
 type: docs
 weight: 20
 stack: true
