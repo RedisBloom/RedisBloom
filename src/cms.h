@@ -12,9 +12,6 @@
 #include "redismodule.h"
 #define CMS_CALLOC(count, size) RedisModule_Calloc(count, size)
 #define CMS_FREE(ptr) RedisModule_Free(ptr)
-#else
-// #define CMS_CALLOC(count, size) calloc(count, size)
-// #define CMS_FREE(ptr) free(ptr)
 #endif
 
 typedef struct CMS {
