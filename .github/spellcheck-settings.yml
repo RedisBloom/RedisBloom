@@ -25,4 +25,3 @@ matrix:
       - img
   sources:
   - '*.md'
-  - 'docs/*.md'
