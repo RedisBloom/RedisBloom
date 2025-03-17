@@ -140,11 +140,11 @@ static RedisModuleString *getIntegerValue(const char *name, void *privdata) {
             RedisModule_Log(ctx, "warning", "Failed to register config option `%s`", name);        \
             return REDISMODULE_ERR;                                                                \
         }                                                                                          \
+        RedisModule_Log(ctx, "notice", "\t{ %-*s:%*s }", 20, name, 10, default_val);               \
     } while (0)
 
 int RM_RegisterConfigs(RedisModuleCtx *ctx) {
-    RedisModule_Log(ctx, "notice", "Registering configuration options");
-
+    RedisModule_Log(ctx, "notice", "Registering configuration options: [");
     registerConfigVar(bf_error_rate);
     registerConfigVar(bf_initial_size);
     registerConfigVar(bf_expansion_factor);
@@ -153,6 +153,7 @@ int RM_RegisterConfigs(RedisModuleCtx *ctx) {
     registerConfigVar(cf_max_iterations);
     registerConfigVar(cf_expansion_factor);
     registerConfigVar(cf_max_expansions);
+    RedisModule_Log(ctx, "notice", "]");
 
     return REDISMODULE_OK;
 }

@@ -1446,13 +1446,13 @@ static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2) {
     ({                                                                                             \
         const bool legacy = !rsStrcasecmp(argv[idx], configNameLegacy);                            \
         if (legacy || !RM_ConfigRMStrCaseCmp(argv[idx], configName)) {                             \
-            getConfigFromString(argv[idx + 1], configName);                                        \
             if (legacy) {                                                                          \
                 RedisModule_Log(ctx, "warning",                                                    \
                                 "The '" configNameLegacy                                           \
                                 "' configuration is deprecated. Please use '%s' instead",          \
                                 RM_ConfigOptionToString(configName));                              \
             }                                                                                      \
+            getConfigFromString(argv[idx + 1], configName);                                        \
             continue;                                                                              \
         };                                                                                         \
     })
@@ -1488,7 +1488,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     }
     if (rm_config.bf_error_rate.value > BF_ERROR_RATE_CAP) {
         rm_config.bf_error_rate.value = BF_ERROR_RATE_CAP;
-        RedisModule_Log(ctx, "warning", "Error rate is capped at %f", BF_ERROR_RATE_CAP);
+        RedisModule_Log(ctx, "warning", "%s is capped at %f",
+                        RM_ConfigOptionToString(bf_error_rate), BF_ERROR_RATE_CAP);
     }
 
     if (!RedisModule_RegisterStringConfig || !RedisModule_LoadConfigs) {
