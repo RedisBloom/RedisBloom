@@ -7,6 +7,7 @@ license: Redis Source Available License 2.0 (RSALv2) or the Server Side Public L
 command_line_args: ""
 min_redis_version: "6.0"
 min_redis_pack_version: "6.2.8"
+compatible_redis_version: "6.2"
 capabilities:
     - types
     - no_multi_key
