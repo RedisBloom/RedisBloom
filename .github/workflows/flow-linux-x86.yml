@@ -77,7 +77,6 @@ jobs:
               mariner2)
                 MATRIX="${MATRIX}{\"image\": \"mcr.microsoft.com/cbl-mariner/base/core:2.0\", \"pre_req_install_cmd\": \"tdnf install --noplugins --skipsignature -y ca-certificates git\"},"
                 ;;
-              *)
               azurelinux3)
                 MATRIX="${MATRIX}{\"image\": \"mcr.microsoft.com/azurelinux/base/core:3.0\", \"pre_req_install_cmd\": \"tdnf install --noplugins --skipsignature -y ca-certificates git\"},"
                 ;;
