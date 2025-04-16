@@ -29,7 +29,7 @@ jobs:
       matrix: 
         redis-ref: ${{ fromJson(needs.prepare-values.outputs.redis-ref) }}
     with:
-      os: jammy rocky9 amazonlinux2
+      os: jammy rocky9 amazonlinux2 azurelinux3
       redis-ref: ${{ matrix.redis-ref }}
     secrets: inherit
   linux-valgrind:
