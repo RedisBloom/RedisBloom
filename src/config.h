@@ -1,4 +1,4 @@
- /*
+/*
  * Copyright (c) 2006-Present, Redis Ltd.
  * All rights reserved.
  *
@@ -115,10 +115,10 @@ static inline int isFloatConfigValid(double config, RM_ConfigFloat params) {
 }
 
 #define isConfigValid(config, params)                                                              \
-    _Generic((config),                                                                             \
-        uint16_t: isIntegerConfigValid,                                                            \
-        long long: isIntegerConfigValid,                                                           \
-        double: isFloatConfigValid)(config, params)
+    _Generic((config), uint16_t                                                                    \
+             : isIntegerConfigValid, long long                                                     \
+             : isIntegerConfigValid, double                                                        \
+             : isFloatConfigValid)(config, params)
 
 // Register the module configuration options
 int RM_RegisterConfigs(RedisModuleCtx *ctx);

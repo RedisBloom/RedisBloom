@@ -1,4 +1,4 @@
- /*
+/*
  * Copyright (c) 2006-Present, Redis Ltd.
  * All rights reserved.
  *
@@ -1415,19 +1415,19 @@ static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2) {
     } while (0)
 
 #define configSetFormat(config)                                                                    \
-    _Generic(rm_config.config.value,                                                               \
-        long long: "Setting '%s' to %lld",                                                         \
-        double: "Setting '%s' to %f")
+    _Generic(rm_config.config.value, long long                                                     \
+             : "Setting '%s' to %lld", double                                                      \
+             : "Setting '%s' to %f")
 
 #define configRangeFormat(config)                                                                  \
-    _Generic(rm_config.config.value,                                                               \
-        long long: "'%s' must be in the range [%lld, %lld]",                                       \
-        double: "'%s' must be in the range (%f, %f)")
+    _Generic(rm_config.config.value, long long                                                     \
+             : "'%s' must be in the range [%lld, %lld]", double                                    \
+             : "'%s' must be in the range (%f, %f)")
 
 #define RM_StrToNum(config, rm_str, num)                                                           \
-    if (_Generic(num,                                                                              \
-        long long: RedisModule_StringToLongLong,                                                   \
-        double: RedisModule_StringToDouble)(rm_str, &num) != REDISMODULE_OK) {                     \
+    if (_Generic(num, long long                                                                    \
+                 : RedisModule_StringToLongLong, double                                            \
+                 : RedisModule_StringToDouble)(rm_str, &num) != REDISMODULE_OK) {                  \
         BAIL("Invalid argument for '%s'", RM_ConfigOptionToString(config));                        \
     }
 
