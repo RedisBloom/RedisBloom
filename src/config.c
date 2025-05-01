@@ -122,15 +122,15 @@ static RedisModuleString *getIntegerValue(const char *name, void *privdata) {
 }
 
 #define getValue(config)                                                                           \
-    _Generic(rm_config.config.value, long long : getIntegerValue, double : getFloatValue)
+    _Generic(rm_config.config.value, long long: getIntegerValue, double: getFloatValue)
 
 #define setValue(config)                                                                           \
-    _Generic(rm_config.config.value, long long : setIntegerValue, double : setFloatValue)
+    _Generic(rm_config.config.value, long long: setIntegerValue, double: setFloatValue)
 
 #define RM_createStringFromNumber(num)                                                             \
-    _Generic(num, long long                                                                        \
-             : RedisModule_CreateStringFromLongLong, double                                        \
-             : RedisModule_CreateStringFromDouble)(NULL, num)
+    _Generic(num,                                                                                  \
+        long long: RedisModule_CreateStringFromLongLong,                                           \
+        double: RedisModule_CreateStringFromDouble)(NULL, num)
 
 #define registerConfigVar(config)                                                                  \
     do {                                                                                           \
