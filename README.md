@@ -7,9 +7,16 @@
 [![Forum](https://img.shields.io/badge/Forum-RedisBloom-blue)](https://forum.redis.com/c/modules/redisbloom)
 [![Discord](https://img.shields.io/discord/697882427875393627?style=flat-square)](https://discord.gg/wXhwjCQ)
 
+<picture>
 <img src="docs/docs/images/logo.svg" alt="logo" width="300"/>
+</picture>
 
-Starting with version 8.0, RedisXXX is an integral part of Redis. See https://github.com/redis/redis 
+> [!NOTE]
+> Starting with Redis 8, all RedisBloom data structures are an integral part of Redis. There is no need to install this module separately.
+>
+> Therefore, we no longer release standalone versions of RedisBloom.
+>
+> See https://github.com/redis/redis
 
 ## Overview
 
