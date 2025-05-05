@@ -4,7 +4,7 @@
 [![codecov](https://codecov.io/gh/RedisBloom/RedisBloom/branch/master/graph/badge.svg)](https://codecov.io/gh/RedisBloom/RedisBloom)
 
 # RedisBloom: Probabilistic Data Structures for Redis
-[![Forum](https://img.shields.io/badge/Forum-RedisBloom-blue)](https://forum.redis.com/c/modules/redisbloom)
+
 [![Discord](https://img.shields.io/discord/697882427875393627?style=flat-square)](https://discord.gg/wXhwjCQ)
 
 <img src="docs/docs/images/logo.svg" alt="logo" width="300"/>
