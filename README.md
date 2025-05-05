@@ -10,7 +10,7 @@
 <img src="docs/docs/images/logo.svg" alt="logo" width="300"/>
 
 > [!NOTE]
-> Starting with Redis 8, all RedisBloom data structures are an integral part of Redis. There is no need to install this module separately.
+> Starting with Redis 8, all RedisBloom data structures are integral to Redis. You don't need to install this module separately.
 >
 > Therefore, we no longer release standalone versions of RedisBloom.
 >
