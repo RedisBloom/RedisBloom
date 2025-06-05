@@ -12,15 +12,15 @@
 // If declared with -D in compile time, this file is ignored
 
 #ifndef REBLOOM_VERSION_MAJOR
-#define REBLOOM_VERSION_MAJOR 99
+#define REBLOOM_VERSION_MAJOR 8
 #endif
 
 #ifndef REBLOOM_VERSION_MINOR
-#define REBLOOM_VERSION_MINOR 99
+#define REBLOOM_VERSION_MINOR 2
 #endif
 
 #ifndef REBLOOM_VERSION_PATCH
-#define REBLOOM_VERSION_PATCH 99
+#define REBLOOM_VERSION_PATCH 0
 
 #endif
 

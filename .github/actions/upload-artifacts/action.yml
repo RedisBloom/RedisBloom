@@ -19,7 +19,7 @@ runs:
       id: artifact-names
       shell: bash
       run: | # Invalid characters include: Double quote ", Colon :, Less than <, Greater than >, Vertical bar |, Asterisk *, Question mark ?
-        echo "name=$(echo "${{ inputs.image }} ${{ runner.arch }}, Redis ${{ inputs.redis-ref || 'unstable' }}" | \
+        echo "name=$(echo "${{ inputs.image }} ${{ runner.arch }}, Redis ${{ inputs.redis-ref || '8.2' }}" | \
           sed -e 's/[":\/\\<>\|*?]/_/g' -e 's/__*/_/g' -e 's/^_//' -e 's/_$//')" >> $GITHUB_OUTPUT
     - name: Upload test artifacts
       if: inputs.image != 'amazonlinux:2' && inputs.image != 'ubuntu:bionic'
