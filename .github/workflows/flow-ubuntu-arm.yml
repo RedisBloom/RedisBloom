@@ -120,10 +120,18 @@ jobs:
           ${{ matrix.docker.install_git }}
       - name: git checkout
         run: |
+          # Configure git to use token authentication
+          git config --global url."https://x-access-token:${{ github.token }}@github.com/".insteadOf "https://github.com/"
+          
+          # Configure safe directories for Git
+          git config --global --add safe.directory /__w/${{ github.repository }}
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          git config --global --add safe.directory .
+          git config --global --add safe.directory '*'
+          
           # Perform checkout
           REPO_URL="https://github.com/${{ github.repository }}.git"
           # Clone the repository to the current directory
-          git config --global --add safe.directory /__w/${{ github.repository }}
           git clone --recurse-submodules --depth=1 $REPO_URL .
           REF=${{github.sha}}
           git fetch origin ${REF}
