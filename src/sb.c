@@ -27,7 +27,7 @@ bloom_hashval bloom_calc_hash64(const void *buffer, int len);
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 #define ERROR_TIGHTENING_RATIO 0.5
-#define CUR_FILTER(sb) ((sb)->filters + ((sb)->nfilters - 1))
+#define CUR_FILTER(sb) ((sb)->nfilters > 0 ? (sb)->filters + ((sb)->nfilters - 1) : NULL)
 
 static int SBChain_AddLink(SBChain *chain, uint64_t size, double error_rate) {
     chain->filters =
@@ -87,6 +87,9 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
 
     // Determine if we need to add more items?
     SBLink *cur = CUR_FILTER(sb);
+    if (!cur) {
+        return -1;
+    }
     if (cur->size >= cur->inner.entries) {
         if (sb->options & BLOOM_OPT_NO_SCALING) {
             return -2;
