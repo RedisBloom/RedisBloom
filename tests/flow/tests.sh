@@ -290,6 +290,7 @@ run_tests() {
 				$RLTEST_VG_ARGS
 				$RLTEST_SAN_ARGS
 				$RLTEST_COV_ARGS
+				--log-level debug
 
 				EOF
 		else
