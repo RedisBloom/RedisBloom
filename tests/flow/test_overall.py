@@ -790,3 +790,12 @@ class testRedisBloomNoCodec():
 
         env.expect('bf.reserve', 'bf', 0.01, 1000000000000000000).error().contains('Insufficient memory to create filter')
         env.expect('bf.insert', 'bf', 'capacity', 1000000000000000000, 'error', 0.01, 'ITEMS', 1).error().contains('Insufficient memory to create filter')
+
+
+    def test_arbitrary_offset(self):
+        env = self.env
+        env.cmd('FLUSHALL')
+
+        env.cmd('bf.loadchunk', 'k', 1, b'\x11\x18\xf3\xdd\x74\x48\x01\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x11\x18\xf3\xdd\x74\x48\x01\x00\x9a\x99\x99\x99\x99\x99\xb9\x3f\x9a\x99\x99\x99\x99\x99\xb9\x3f\x01\x00\x00\x00\x11\x18\xf3\xdd\x74\x48\x01\x00\x00')
+        env.expect('bf.add', 'k', 1).error().contains('problem inserting into filter')
+        env.expect('bf.loadchunk', 'k', 71752852194637, b'HELLO').error().contains('invalid offset')
