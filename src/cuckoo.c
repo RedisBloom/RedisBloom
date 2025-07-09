@@ -119,8 +119,7 @@ static CuckooHash getAltHash(CuckooFingerprint fp, CuckooHash index) {
 }
 
 static void getLookupParams(CuckooHash hash, LookupParams *params) {
-    params->fp = hash % 255 + 1;
-
+    params->fp = (CuckooFingerprint)(hash % 255 + 1);
     params->h1 = hash;
     params->h2 = getAltHash(params->fp, params->h1);
     // assert(getAltHash(params->fp, params->h2, numBuckets) == params->h1);
@@ -303,13 +302,13 @@ static void swapFPs(uint8_t *a, uint8_t *b) {
 static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter,
                                           const LookupParams *params) {
     uint16_t maxIterations = filter->maxIterations;
-    uint32_t numBuckets = curFilter->numBuckets;
+    uint64_t numBuckets = curFilter->numBuckets;
     uint16_t bucketSize = filter->bucketSize;
     CuckooFingerprint fp = params->fp;
 
     uint16_t counter = 0;
     uint32_t victimIx = 0;
-    uint32_t ii = params->h1 % numBuckets;
+    uint64_t ii = params->h1 % numBuckets;
 
     while (counter++ < maxIterations) {
         uint8_t *bucket = &curFilter->data[ii * bucketSize];
@@ -339,14 +338,16 @@ static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter
     return CuckooInsert_NoSpace;
 }
 
-#define RELOC_EMPTY 0
-#define RELOC_OK 1
-#define RELOC_FAIL -1
+typedef enum {
+    RELOC_FAIL = -1,
+    RELOC_EMPTY = 0,
+    RELOC_OK = 1,
+} RelocStatus;
 
 /**
  * Attempt to move a slot from one bucket to another filter
  */
-static int relocateSlot(CuckooFilter *cf, CuckooBucket bucket, uint16_t filterIx, uint64_t bucketIx,
+static RelocStatus relocateSlot(CuckooFilter *cf, CuckooBucket bucket, uint16_t filterIx, uint64_t bucketIx,
                         uint16_t slotIx) {
     LookupParams params = {0};
     if ((params.fp = bucket[slotIx]) == CUCKOO_NULLFP) {
@@ -374,14 +375,14 @@ static int relocateSlot(CuckooFilter *cf, CuckooBucket bucket, uint16_t filterIx
 /**
  * Attempt to strip a single filter moving it down a slot
  */
-static uint64_t CuckooFilter_CompactSingle(CuckooFilter *cf, uint16_t filterIx) {
+static RelocStatus CuckooFilter_CompactSingle(CuckooFilter *cf, uint16_t filterIx) {
     SubCF *currentFilter = &cf->filters[filterIx];
     MyCuckooBucket *filter = currentFilter->data;
-    int rv = RELOC_OK;
+    RelocStatus rv = RELOC_OK;
 
     for (uint64_t bucketIx = 0; bucketIx < currentFilter->numBuckets; ++bucketIx) {
         for (uint16_t slotIx = 0; slotIx < currentFilter->bucketSize; ++slotIx) {
-            int status = relocateSlot(cf, &filter[bucketIx * currentFilter->bucketSize], filterIx,
+            RelocStatus status = relocateSlot(cf, &filter[bucketIx * currentFilter->bucketSize], filterIx,
                                       bucketIx, slotIx);
             if (status == RELOC_FAIL) {
                 rv = RELOC_FAIL;
@@ -402,8 +403,8 @@ static uint64_t CuckooFilter_CompactSingle(CuckooFilter *cf, uint16_t filterIx) 
  * be freed and therefore following filter cannot be freed either.
  */
 void CuckooFilter_Compact(CuckooFilter *cf, bool cont) {
-    for (uint64_t ii = cf->numFilters; ii > 1; --ii) {
-        if (CuckooFilter_CompactSingle(cf, ii - 1) == RELOC_FAIL && !cont) {
+    for (uint16_t ii = cf->numFilters; 0 <-- ii; ) {
+        if (CuckooFilter_CompactSingle(cf, ii) == RELOC_FAIL && !cont) {
             // if compacting failed, stop as lower filters cannot be freed.
             break;
         }
