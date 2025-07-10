@@ -252,7 +252,7 @@ SBChain *SB_NewChainFromHeader(const char *buf, size_t bufLen, const char **errm
     }
 
     if (header->nfilters <= 0) {
-        goto err;
+        return NULL;
     }
 
     if (bufLen != sizeof(*header) + (sizeof(header->links[0]) * header->nfilters)) {
