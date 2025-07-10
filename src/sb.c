@@ -28,7 +28,6 @@ bloom_hashval bloom_calc_hash64(const void *buffer, int len);
 ////////////////////////////////////////////////////////////////////////////////
 #define ERROR_TIGHTENING_RATIO 0.5
 #define CUR_FILTER(sb) ((sb)->filters + ((sb)->nfilters - 1))
-
 static int SBChain_AddLink(SBChain *chain, uint64_t size, double error_rate) {
     chain->filters =
         RedisModule_Realloc(chain->filters, sizeof(*chain->filters) * (chain->nfilters + 1));
@@ -261,6 +260,10 @@ SBChain *SB_NewChainFromHeader(const char *buf, size_t bufLen, const char **errm
 
     const dumpedChainHeader *header = (const void *)buf;
     if (bufLen < sizeof(dumpedChainHeader)) {
+        goto err;
+    }
+
+    if (header->nfilters <= 0) {
         goto err;
     }
 
