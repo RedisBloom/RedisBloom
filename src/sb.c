@@ -37,7 +37,7 @@ static int SBChain_AddLink(SBChain *chain, uint64_t size, double error_rate) {
         return rc;
     }
     chain->nfilters++;
-    
+
     return rc;
 }
 
