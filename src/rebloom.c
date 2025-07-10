@@ -1221,6 +1221,10 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
     SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
     sb->size = RedisModule_LoadUnsigned(io);
     sb->nfilters = RedisModule_LoadUnsigned(io);
+    if (sb->nfilters <= 0) {
+        RedisModule_Free(sb);
+        return NULL;
+    }
     if (encver >= BF_MIN_OPTIONS_ENC) {
         sb->options = RedisModule_LoadUnsigned(io);
     }
