@@ -252,6 +252,7 @@ SBChain *SB_NewChainFromHeader(const char *buf, size_t bufLen, const char **errm
     }
 
     if (header->nfilters <= 0) {
+        *errmsg = "ERR received bad data";
         return NULL;
     }
 
