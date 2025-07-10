@@ -34,11 +34,11 @@ static int SBChain_AddLink(SBChain *chain, uint64_t size, double error_rate) {
     };
     int rc = bloom_init(&newlink->inner, size, error_rate, chain->options);
     if (rc != 0) {
-        return rc == 1 ? SB_INVALID : SB_OOM;
+        return rc;
     }
     chain->nfilters++;
     
-    return rc
+    return rc;
 }
 
 void SBChain_Free(SBChain *sb) {
