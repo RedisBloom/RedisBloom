@@ -19,6 +19,12 @@ class testCuckoo():
         self.assertNotEqual = self.env.assertNotEqual
         self.assertGreaterEqual = self.env.assertGreaterEqual
 
+    def test_number_of_buckets_does_not_overflow(self):
+        self.cmd('FLUSHALL')
+        self.cmd('CF.LOADCHUNK', 'cf',  '1',
+                 "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x01\x00\x01\x00")
+        self.cmd('CF.INSERT', 'cf', 'ITEMS', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1')
+
     def test_count(self):
         self.cmd('FLUSHALL')
 
