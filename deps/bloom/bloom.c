@@ -28,8 +28,10 @@
 
 extern void (*RedisModule_Free)(void *ptr);
 extern void * (*RedisModule_Calloc)(size_t nmemb, size_t size);
+extern void * (*RedisModule_TryAlloc)(size_t size);
 
-#define BLOOM_CALLOC RedisModule_Calloc
+#define BLOOM_TRYALLOC(nmemb, size) \
+    RedisModule_TryAlloc ? RedisModule_TryAlloc(nmemb * size) : RedisModule_Calloc(nmemb, size)
 #define BLOOM_FREE RedisModule_Free
 
 /*
@@ -185,11 +187,11 @@ int bloom_init(struct bloom *bloom, uint64_t entries, double error, unsigned opt
 
     bloom->force64 = (options & BLOOM_OPT_FORCE64);
     bloom->hashes = (int)ceil(LN2 * bloom->bpe); // ln(2)
-    bloom->bf = (unsigned char *)BLOOM_CALLOC(bloom->bytes, sizeof(unsigned char));
+    bloom->bf = (unsigned char *)BLOOM_TRYALLOC(bloom->bytes, sizeof(unsigned char));
     if (bloom->bf == NULL) {
-        return 1;
+        return -1;
     }
-
+    memset(bloom->bf, 0, bloom->bytes * sizeof(unsigned char));
     return 0;
 }
 
