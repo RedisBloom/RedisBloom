@@ -25,6 +25,11 @@ class testCuckoo():
                  "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x01\x00\x01\x00")
         self.cmd('CF.INSERT', 'cf', 'ITEMS', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1')
 
+    def test_counter_overflow_with_large_number_of_items(self):
+        self.cmd('FLUSHALL')
+        self.cmd('CF.RESERVE', 'cf', 2, 'BUCKETSIZE', 1, 'EXPANSION', 1)
+        self.cmd('CF.INSERT', 'cf', 'ITEMS', *["1 "]*140000)
+
     def test_count(self):
         self.cmd('FLUSHALL')
 
