@@ -70,6 +70,10 @@ void CuckooFilter_Free(CuckooFilter *filter) {
 }
 
 static int CuckooFilter_Grow(CuckooFilter *filter) {
+    if (filter->numFilters == UINT16_MAX) {
+        return -1;
+    }
+
     SubCF *filtersArray =
         CUCKOO_REALLOC(filter->filters, sizeof(*filtersArray) * (filter->numFilters + 1));
 
@@ -249,8 +253,8 @@ static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter
                                           const LookupParams *params);
 
 static CuckooInsertStatus CuckooFilter_InsertFP(CuckooFilter *filter, const LookupParams *params) {
-    for (uint16_t ii = filter->numFilters; ii > 0; --ii) {
-        uint8_t *slot = Filter_FindAvailable(&filter->filters[ii - 1], params);
+    for (uint16_t ii = filter->numFilters; ii --> 0; ) {
+        uint8_t *slot = Filter_FindAvailable(&filter->filters[ii], params);
         if (slot) {
             *slot = params->fp;
             filter->numItems++;
