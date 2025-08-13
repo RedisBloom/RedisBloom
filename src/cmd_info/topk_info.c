@@ -5,4 +5,3 @@ int RegisterTopKCommandInfos(RedisModuleCtx *ctx) {
     (void)ctx;
     return REDISMODULE_OK;
 }
-

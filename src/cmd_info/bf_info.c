@@ -5,4 +5,3 @@ int RegisterBFCommandInfos(RedisModuleCtx *ctx) {
     (void)ctx;
     return REDISMODULE_OK;
 }
-
