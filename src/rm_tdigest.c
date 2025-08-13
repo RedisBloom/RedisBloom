@@ -20,9 +20,9 @@
 // defining TD_ALLOC_H is used to change the t-digest allocator at compile time
 // The define should be placed before including "tdigest.h" for the first time
 #define TD_ALLOC_H
-#define __td_malloc RedisModule_Alloc
-#define __td_calloc RedisModule_Calloc
-#define __td_realloc RedisModule_Realloc
+#define __td_malloc RedisModule_TryAlloc
+#define __td_calloc RedisModule_TryCalloc
+#define __td_realloc RedisModule_TryRealloc
 #define __td_free RedisModule_Free
 #define TD_DEFAULT_COMPRESSION 100
 
