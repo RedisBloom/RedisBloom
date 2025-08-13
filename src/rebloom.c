@@ -1553,6 +1553,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     RegisterCommand(ctx, "cf.debug", CFDebug_RedisCommand, "readonly fast", "read");
     if (RegisterCFCommandInfos(ctx) != REDISMODULE_OK)
         return REDISMODULE_ERR;
+    if (RegisterBFCommandInfos(ctx) != REDISMODULE_OK)
+        return REDISMODULE_ERR;
 #undef RegisterCommand
 
     CMSModule_onLoad(ctx, argv, argc);
