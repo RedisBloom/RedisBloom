@@ -19,6 +19,7 @@
 #include "common.h"
 #include "rmutil/util.h"
 #include "config.h"
+#include "cmd_info/command_info.h"
 
 #include <assert.h>
 #include <strings.h> // strncasecmp
@@ -1290,6 +1291,7 @@ static int BFDefrag(RedisModuleDefragCtx *ctx, RedisModuleString *key, void **va
     *value = defragPtr(ctx, *value);
     SBChain *sb = *value;
     sb->filters = defragPtr(ctx, sb->filters);
+    return REDISMODULE_OK;
 }
 
 static void CFFree(void *value) {
@@ -1383,6 +1385,7 @@ static int CFDefrag(RedisModuleDefragCtx *ctx, RedisModuleString *key, void **va
     for (size_t ii = 0; ii < cf->numFilters; ++ii) {
         cf->filters[ii].data = defragPtr(ctx, cf->filters[ii].data);
     }
+    return REDISMODULE_OK;
 }
 
 static void CFAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *obj) {
@@ -1503,7 +1506,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     }
 
 #define RegisterCommand(ctx, name, cmd, mode, acl)                                                 \
-    RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl " bloom")
+    RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl " bloom");
 
     RegisterAclCategory(ctx, "bloom");
     RegisterCommand(ctx, "bf.reserve", BFReserve_RedisCommand, "write deny-oom", "write fast");
@@ -1548,6 +1551,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 
     RegisterCommand(ctx, "cf.info", CFInfo_RedisCommand, "readonly fast", "read fast");
     RegisterCommand(ctx, "cf.debug", CFDebug_RedisCommand, "readonly fast", "read");
+    if (RegisterCFCommandInfos(ctx) != REDISMODULE_OK) return REDISMODULE_ERR;
 #undef RegisterCommand
 
     CMSModule_onLoad(ctx, argv, argc);
