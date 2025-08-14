@@ -1,5 +1,8 @@
 #include "redismodule.h"
 
+// ===============================
+// BF.ADD
+// ===============================
 static const RedisModuleCommandKeySpec BF_ADD_KEYSPECS[] = {
     {
      .notes = "is key name for a Bloom filter to add the item to.",

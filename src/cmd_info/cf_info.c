@@ -1,6 +1,8 @@
 #include "redismodule.h"
 
-/* Static const metadata for cf.reserve */
+// ===============================
+// CF.RESERVE
+// ===============================
 static const RedisModuleCommandKeySpec CF_RESERVE_KEYSPECS[] = {
     {.notes = "Key must be a non-existing key",
      .flags = REDISMODULE_CMD_KEY_RW,
@@ -14,14 +16,29 @@ static const RedisModuleCommandArg CF_RESERVE_ARGS[] = {
     {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
     {.name = "capacity", .type = REDISMODULE_ARG_TYPE_INTEGER},
     {.name = "bucketsize",
-     .type = REDISMODULE_ARG_TYPE_INTEGER,
-     .flags = REDISMODULE_CMD_ARG_OPTIONAL},
+     .type = REDISMODULE_ARG_TYPE_BLOCK,
+     .flags = REDISMODULE_CMD_ARG_OPTIONAL,
+     .subargs = (RedisModuleCommandArg[]){
+        {.name = "CAPACITY", .type = REDISMODULE_ARG_TYPE_STRING},
+        {.name = "VALUE", .type = REDISMODULE_ARG_TYPE_STRING},
+        {0}
+     }},
     {.name = "maxiterations",
-     .type = REDISMODULE_ARG_TYPE_INTEGER,
-     .flags = REDISMODULE_CMD_ARG_OPTIONAL},
+     .type = REDISMODULE_ARG_TYPE_BLOCK,
+     .flags = REDISMODULE_CMD_ARG_OPTIONAL,
+     .subargs = (RedisModuleCommandArg[]){
+        {.name = "MAXITERATIONS", .type = REDISMODULE_ARG_TYPE_STRING},
+        {.name = "VALUE", .type = REDISMODULE_ARG_TYPE_STRING},
+        {0}
+     }},
     {.name = "expansion",
-     .type = REDISMODULE_ARG_TYPE_INTEGER,
-     .flags = REDISMODULE_CMD_ARG_OPTIONAL},
+     .type = REDISMODULE_ARG_TYPE_BLOCK,
+     .flags = REDISMODULE_CMD_ARG_OPTIONAL,
+     .subargs = (RedisModuleCommandArg[]){
+        {.name = "EXPANSION", .type = REDISMODULE_ARG_TYPE_STRING},
+        {.name = "VALUE", .type = REDISMODULE_ARG_TYPE_STRING},
+        {0}
+     }},
     {0}};
 
 static const RedisModuleCommandInfo CF_RESERVE_INFO = {

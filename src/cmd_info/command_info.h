@@ -7,4 +7,4 @@ int RegisterCFCommandInfos(RedisModuleCtx *ctx);
 int RegisterBFCommandInfos(RedisModuleCtx *ctx);
 int RegisterCMSCommandInfos(RedisModuleCtx *ctx);
 int RegisterTopKCommandInfos(RedisModuleCtx *ctx);
-
+int RegisterTDigestCommandInfos(RedisModuleCtx *ctx);

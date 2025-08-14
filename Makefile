@@ -130,6 +130,7 @@ _SOURCES=\
 	src/cmd_info/cf_info.c \
 	src/cmd_info/bf_info.c \
 	src/cmd_info/cms_info.c \
+	src/cmd_info/tdigest_info.c \
 	src/cmd_info/topk_info.c \
 	src/rebloom.c \
 	src/sb.c \
