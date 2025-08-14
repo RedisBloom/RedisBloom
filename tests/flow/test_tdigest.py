@@ -963,3 +963,7 @@ class testTDigest:
         self.assertEqual(mem_usage_prior_restart, mem_usage_after_restart)
         self.assertEqual(tdigest_min, self.cmd("tdigest.min", "tdigest"))
         self.assertEqual(tdigest_max, self.cmd("tdigest.max", "tdigest"))
+
+    def test_allocation_failure(self):
+        self.cmd("FLUSHALL")
+        self.env.expect('tdigest.create', 'k', 'compression', 100000000000000000).error().contains('allocation failed')

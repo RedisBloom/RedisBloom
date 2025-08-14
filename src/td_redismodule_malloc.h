@@ -15,8 +15,8 @@
 #ifndef TD_ALLOC_H
 #define TD_ALLOC_H
 #include "../deps/RedisModulesSDK/redismodule.h"
-#define __td_malloc RedisModule_Alloc
-#define __td_calloc RedisModule_Calloc
-#define __td_realloc RedisModule_Realloc
+#define __td_malloc RedisModule_TryAlloc
+#define __td_calloc RedisModule_TryCalloc
+#define __td_realloc RedisModule_TryRealloc
 #define __td_free RedisModule_Free
 #endif

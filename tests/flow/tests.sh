@@ -141,7 +141,7 @@ setup_rltest() {
 		fi
 	fi
 
-	RLTEST_ARGS+=" --enable-debug-command"
+	RLTEST_ARGS+=" --enable-debug-command --verbose-information-on-failure"
 
 	if [[ $RLTEST_VERBOSE == 1 ]]; then
 		RLTEST_ARGS+=" -v"
