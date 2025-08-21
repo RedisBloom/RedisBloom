@@ -261,7 +261,7 @@ export SLAVES ?= 1
 export AOF ?= 1
 export OSS_CLUSTER ?= 1
 endif
-RLTEST_ARGS="--verbose-information-on-failure"
+
 ifneq ($(RLEC),1)
 
 flow-tests: #$(TARGET)
