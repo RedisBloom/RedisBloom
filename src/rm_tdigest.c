@@ -23,9 +23,12 @@
 // defining TD_ALLOC_H is used to change the t-digest allocator at compile time
 // The define should be placed before including "tdigest.h" for the first time
 #define TD_ALLOC_H
-#define td_alloc(...) RedisModule_TryAlloc ? RedisModule_TryAlloc(__VA_ARGS__) : RedisModule_Alloc(__VA_ARGS__)
-#define td_calloc(...) RedisModule_TryCalloc ? RedisModule_TryCalloc(__VA_ARGS__) : RedisModule_Calloc(__VA_ARGS__)
-#define td_realloc(...) RedisModule_TryRealloc ? RedisModule_TryRealloc(__VA_ARGS__) : RedisModule_Realloc(__VA_ARGS__)
+#define td_alloc(...)                                                                              \
+    RedisModule_TryAlloc ? RedisModule_TryAlloc(__VA_ARGS__) : RedisModule_Alloc(__VA_ARGS__)
+#define td_calloc(...)                                                                             \
+    RedisModule_TryCalloc ? RedisModule_TryCalloc(__VA_ARGS__) : RedisModule_Calloc(__VA_ARGS__)
+#define td_realloc(...)                                                                            \
+    RedisModule_TryRealloc ? RedisModule_TryRealloc(__VA_ARGS__) : RedisModule_Realloc(__VA_ARGS__)
 #define __td_malloc td_alloc
 #define __td_calloc td_calloc
 #define __td_realloc td_realloc
