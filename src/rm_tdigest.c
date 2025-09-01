@@ -29,7 +29,7 @@
     RedisModule_TryCalloc ? RedisModule_TryCalloc(__VA_ARGS__) : RedisModule_Calloc(__VA_ARGS__)
 #define td_realloc_(...)                                                                           \
     RedisModule_TryRealloc ? RedisModule_TryRealloc(__VA_ARGS__) : RedisModule_Realloc(__VA_ARGS__)
-#define __td_free RedisModule_Free
+#define td_free_ RedisModule_Free
 #define TD_DEFAULT_COMPRESSION 100
 
 #include "tdigest.h"
@@ -192,12 +192,12 @@ int TDigestSketch_Add(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         if ((RedisModule_StringToDouble(argv[2 + i], &vals[i]) != REDISMODULE_OK) ||
             isnan(vals[i])) {
             RedisModule_CloseKey(key);
-            __td_free(vals);
+            td_free_(vals);
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing val parameter");
         }
         if (vals[i] < -__DBL_MAX__ || vals[i] > __DBL_MAX__) {
             RedisModule_CloseKey(key);
-            __td_free(vals);
+            td_free_(vals);
             return RedisModule_ReplyWithError(
                 ctx, "ERR T-Digest: val parameter needs to be a finite number");
         }
@@ -207,12 +207,12 @@ int TDigestSketch_Add(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     for (int i = 0; i < n_values; ++i) {
         if (td_add(tdigest, vals[i], 1) != 0) {
             RedisModule_CloseKey(key);
-            __td_free(vals);
+            td_free_(vals);
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: overflow detected");
         }
     }
     RedisModule_CloseKey(key);
-    __td_free(vals);
+    td_free_(vals);
     RedisModule_ReplicateVerbatim(ctx);
     RedisModule_ReplyWithSimpleString(ctx, "OK");
     return REDISMODULE_OK;
@@ -364,7 +364,7 @@ int TDigestSketch_Merge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     RedisModule_ReplyWithSimpleString(ctx, "OK");
 cleanup:
     if (from_tdigests)
-        __td_free(from_tdigests);
+        td_free_(from_tdigests);
     return res;
 }
 
@@ -455,7 +455,7 @@ static int _TDigest_Rank(RedisModuleCtx *ctx, RedisModuleString *const *argv, in
         if ((RedisModule_StringToDouble(argv[2 + i], &vals[i]) != REDISMODULE_OK) ||
             isnan(vals[i])) {
             RedisModule_CloseKey(key);
-            __td_free(vals);
+            td_free_(vals);
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing value");
         }
     }
@@ -494,8 +494,8 @@ static int _TDigest_Rank(RedisModuleCtx *ctx, RedisModuleString *const *argv, in
     for (int i = 0; i < n_values; ++i) {
         RedisModule_ReplyWithLongLong(ctx, (long long)ranks[i]);
     }
-    __td_free(vals);
-    __td_free(ranks);
+    td_free_(vals);
+    td_free_(ranks);
     return REDISMODULE_OK;
 }
 
@@ -558,12 +558,12 @@ static int _TDigest_ByRank(RedisModuleCtx *ctx, RedisModuleString *const *argv, 
     for (int i = 0; i < n_values; ++i) {
         if (RedisModule_StringToLongLong(argv[2 + i], &input_ranks[i]) != REDISMODULE_OK) {
             RedisModule_CloseKey(key);
-            __td_free(input_ranks);
+            td_free_(input_ranks);
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing rank");
         }
         if (input_ranks[i] < 0) {
             RedisModule_CloseKey(key);
-            __td_free(input_ranks);
+            td_free_(input_ranks);
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: rank needs to be non negative");
         }
     }
@@ -600,8 +600,8 @@ static int _TDigest_ByRank(RedisModuleCtx *ctx, RedisModuleString *const *argv, 
     for (int i = 0; i < n_values; ++i) {
         RedisModule_ReplyWithDouble(ctx, values[i]);
     }
-    __td_free(input_ranks);
-    __td_free(values);
+    td_free_(input_ranks);
+    td_free_(values);
     return REDISMODULE_OK;
 }
 
@@ -664,12 +664,12 @@ int TDigestSketch_Quantile(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     for (int i = 0; i < n_quantiles; ++i) {
         if (RedisModule_StringToDouble(argv[2 + i], &quantiles[i]) != REDISMODULE_OK) {
             RedisModule_CloseKey(key);
-            __td_free(quantiles);
+            td_free_(quantiles);
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing quantile");
         }
         if (quantiles[i] < 0 || quantiles[i] > 1.0) {
             RedisModule_CloseKey(key);
-            __td_free(quantiles);
+            td_free_(quantiles);
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: quantile should be in [0,1]");
         }
     }
@@ -687,8 +687,8 @@ int TDigestSketch_Quantile(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         RedisModule_ReplyWithDouble(ctx, values[i]);
     }
 
-    __td_free(values);
-    __td_free(quantiles);
+    td_free_(values);
+    td_free_(quantiles);
     return REDISMODULE_OK;
 }
 
@@ -722,7 +722,7 @@ int TDigestSketch_Cdf(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     for (int i = 0; i < n_cdfs; ++i) {
         if (RedisModule_StringToDouble(argv[2 + i], &cdfs[i]) != REDISMODULE_OK) {
             RedisModule_CloseKey(key);
-            __td_free(cdfs);
+            td_free_(cdfs);
             return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error parsing cdf");
         }
     }
@@ -736,8 +736,8 @@ int TDigestSketch_Cdf(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         RedisModule_ReplyWithDouble(ctx, values[i]);
     }
 
-    __td_free(cdfs);
-    __td_free(values);
+    td_free_(cdfs);
+    td_free_(values);
     return REDISMODULE_OK;
 }
 

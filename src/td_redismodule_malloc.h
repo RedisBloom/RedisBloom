@@ -21,5 +21,5 @@
     RedisModule_TryCalloc ? RedisModule_TryCalloc(__VA_ARGS__) : RedisModule_Calloc(__VA_ARGS__)
 #define td_realloc_(...)                                                                           \
     RedisModule_TryRealloc ? RedisModule_TryRealloc(__VA_ARGS__) : RedisModule_Realloc(__VA_ARGS__)
-#define __td_free RedisModule_Free
+#define td_free_ RedisModule_Free
 #endif
