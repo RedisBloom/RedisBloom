@@ -4,22 +4,18 @@
 // BF.ADD
 // ===============================
 static const RedisModuleCommandKeySpec BF_ADD_KEYSPECS[] = {
-    {
-     .notes = "is key name for a Bloom filter to add the item to.",
+    {.notes = "is key name for a Bloom filter to add the item to.",
      .flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
-     .fk.range = {.lastkey = 1, .keystep = 0, .limit = 0}
-    },
-    {0}
-};
+     .fk.range = {.lastkey = 1, .keystep = 0, .limit = 0}},
+    {0}};
 
 static const RedisModuleCommandArg BF_ADD_ARGS[] = {
     {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
     {.name = "item", .type = REDISMODULE_ARG_TYPE_STRING},
-    {0}
-};
+    {0}};
 
 static const RedisModuleCommandInfo BF_ADD_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
@@ -35,22 +31,18 @@ static const RedisModuleCommandInfo BF_ADD_INFO = {
 // BF.EXISTS
 // ===============================
 static const RedisModuleCommandKeySpec BF_EXISTS_KEYSPECS[] = {
-    {
-     .notes = "is key name for a Bloom filter to check the item in.",
+    {.notes = "is key name for a Bloom filter to check the item in.",
      .flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
-     .fk.range = {.lastkey = 1, .keystep = 0, .limit = 0}
-    },
-    {0}
-};
+     .fk.range = {.lastkey = 1, .keystep = 0, .limit = 0}},
+    {0}};
 
 static const RedisModuleCommandArg BF_EXISTS_ARGS[] = {
     {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
     {.name = "item", .type = REDISMODULE_ARG_TYPE_STRING},
-    {0}
-};
+    {0}};
 
 static const RedisModuleCommandInfo BF_EXISTS_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
@@ -61,7 +53,6 @@ static const RedisModuleCommandInfo BF_EXISTS_INFO = {
     .key_specs = (RedisModuleCommandKeySpec *)BF_EXISTS_KEYSPECS,
     .args = (RedisModuleCommandArg *)BF_EXISTS_ARGS,
 };
-
 
 int RegisterBFCommandInfos(RedisModuleCtx *ctx) {
     RedisModuleCommand *cmd_add = RedisModule_GetCommand(ctx, "bf.add");
