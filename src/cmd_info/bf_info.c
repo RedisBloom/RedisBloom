@@ -231,6 +231,32 @@ static const RedisModuleCommandInfo BF_MADD_INFO = {
     .args = (RedisModuleCommandArg *)BF_MADD_ARGS,
 };
 
+// ===============================
+// BF.MEXISTS
+// ===============================
+static const RedisModuleCommandKeySpec BF_MEXISTS_KEYSPECS[] = {
+    {.notes = "is key name for a Bloom filter.",
+     .flags = REDISMODULE_CMD_KEY_RO,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 1, .keystep = 0, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg BF_MEXISTS_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "item", .type = REDISMODULE_ARG_TYPE_STRING, .flags = REDISMODULE_CMD_ARG_MULTIPLE},
+    {0}};
+static const RedisModuleCommandInfo BF_MEXISTS_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Checks whether one or more items exist in a Bloom Filter",
+    .complexity = "O(k * n), where k is the number of hash functions and n is the number of items",
+    .since = "1.0.0",
+    .arity = -3,
+    .key_specs = (RedisModuleCommandKeySpec *)BF_MEXISTS_KEYSPECS,
+    .args = (RedisModuleCommandArg *)BF_MEXISTS_ARGS,
+};
+
 
 int RegisterBFCommandInfos(RedisModuleCtx *ctx) {
     RedisModuleCommand *cmd_add = RedisModule_GetCommand(ctx, "bf.add");
@@ -279,6 +305,13 @@ int RegisterBFCommandInfos(RedisModuleCtx *ctx) {
     if (!cmd_madd)
         return REDISMODULE_ERR;
     if (RedisModule_SetCommandInfo(cmd_madd, &BF_MADD_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *cmd_mexists = RedisModule_GetCommand(ctx, "bf.mexists");
+    if (!cmd_mexists)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(cmd_mexists, &BF_MEXISTS_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
