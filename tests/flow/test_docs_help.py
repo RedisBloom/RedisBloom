@@ -65,3 +65,17 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('single_value', 'oneof', [('capacity', 'pure-token', 'CAPACITY'), ('size', 'pure-token', 'SIZE'), ('filters', 'pure-token', 'FILTERS'), ('items', 'pure-token', 'ITEMS'), ('expansion', 'pure-token', 'EXPANSION')])],
             key_pos=1,
         )
+
+    def test_command_docs_bf_card(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'bf.card',
+            summary='Returns the cardinality of a Bloom filter',
+            complexity='O(1)',
+            arity=2,
+            since='2.4.4',
+            args=[('key', 'key')],
+            key_pos=1,
+        )
