@@ -223,7 +223,8 @@ static const RedisModuleCommandArg BF_MADD_ARGS[] = {
     {0}};
 static const RedisModuleCommandInfo BF_MADD_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Adds one or more items to a Bloom Filter. A filter will be created if it does not exist",
+    .summary =
+        "Adds one or more items to a Bloom Filter. A filter will be created if it does not exist",
     .complexity = "O(k * n), where k is the number of hash functions and n is the number of items",
     .since = "1.0.0",
     .arity = -3,
@@ -260,7 +261,7 @@ static const RedisModuleCommandInfo BF_MEXISTS_INFO = {
 // ===============================
 // BF.RESERVE
 // ===============================
-static const RedisModuleCommandKeySpec BF_RESERVE_KEYSPECS[] = {
+static const RedisModuleCommandKeySpec[] BF_RESERVE_KEYSPECS = {
     {.notes = "is key name for the the Bloom filter to be created.",
      .flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
@@ -274,13 +275,16 @@ static const RedisModuleCommandArg BF_RESERVE_ARGS[] = {
     {.name = "error_rate", .type = REDISMODULE_ARG_TYPE_DOUBLE},
     {.name = "capacity", .type = REDISMODULE_ARG_TYPE_INTEGER},
     {.name = "expansion",
-        .type = REDISMODULE_ARG_TYPE_BLOCK,
-        .flags = REDISMODULE_CMD_ARG_OPTIONAL,
-        .token = "EXPANSION",
-        .subargs =
-            (RedisModuleCommandArg[]){{.name = "expansion", .type = REDISMODULE_ARG_TYPE_INTEGER},
-                                      {0}}},
-    {.name = "nonscaling", .type = REDISMODULE_ARG_TYPE_PURE_TOKEN, .token = "NONSCALING"},
+     .type = REDISMODULE_ARG_TYPE_BLOCK,
+     .flags = REDISMODULE_CMD_ARG_OPTIONAL,
+     .token = "EXPANSION",
+     .subargs =
+         (RedisModuleCommandArg[]){{.name = "expansion", .type = REDISMODULE_ARG_TYPE_INTEGER},
+                                   {0}}},
+    {.name = "nonscaling",
+     .type = REDISMODULE_ARG_TYPE_PURE_TOKEN,
+     flags = REDISMODULE_CMD_ARG_OPTIONAL,
+     .token = "NONSCALING"},
     {0}};
 static const RedisModuleCommandInfo BF_RESERVE_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
@@ -318,7 +322,6 @@ static const RedisModuleCommandInfo BF_SCANDUMP_INFO = {
     .key_specs = (RedisModuleCommandKeySpec *)BF_SCANDUMP_KEYSPECS,
     .args = (RedisModuleCommandArg *)BF_SCANDUMP_ARGS,
 };
-
 
 int RegisterBFCommandInfos(RedisModuleCtx *ctx) {
     RedisModuleCommand *cmd_add = RedisModule_GetCommand(ctx, "bf.add");
