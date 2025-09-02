@@ -261,7 +261,7 @@ static const RedisModuleCommandInfo BF_MEXISTS_INFO = {
 // ===============================
 // BF.RESERVE
 // ===============================
-static const RedisModuleCommandKeySpec[] BF_RESERVE_KEYSPECS = {
+static const RedisModuleCommandKeySpec BF_RESERVE_KEYSPECS[] = {
     {.notes = "is key name for the the Bloom filter to be created.",
      .flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
@@ -283,7 +283,7 @@ static const RedisModuleCommandArg BF_RESERVE_ARGS[] = {
                                    {0}}},
     {.name = "nonscaling",
      .type = REDISMODULE_ARG_TYPE_PURE_TOKEN,
-     flags = REDISMODULE_CMD_ARG_OPTIONAL,
+     .flags = REDISMODULE_CMD_ARG_OPTIONAL,
      .token = "NONSCALING"},
     {0}};
 static const RedisModuleCommandInfo BF_RESERVE_INFO = {
