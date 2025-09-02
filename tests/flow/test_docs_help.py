@@ -51,3 +51,17 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('item', 'string')],
             key_pos=1,
         )
+
+    def test_command_docs_bf_info(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'bf.info',
+            summary='Returns information about a Bloom Filter',
+            complexity='O(1)',
+            arity=2,
+            since='1.0.0',
+            args=[('key', 'key'), ('single_value', 'oneof', [('capacity', 'pure-token', 'CAPACITY'), ('size', 'pure-token', 'SIZE'), ('filters', 'pure-token', 'FILTERS'), ('items', 'pure-token', 'ITEMS'), ('expansion', 'pure-token', 'EXPANSION')])],
+            key_pos=1,
+        )
