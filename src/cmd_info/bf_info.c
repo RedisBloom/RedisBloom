@@ -292,6 +292,33 @@ static const RedisModuleCommandInfo BF_RESERVE_INFO = {
     .args = (RedisModuleCommandArg *)BF_RESERVE_ARGS,
 };
 
+// ===============================
+// BF.SCANDUMP
+// ===============================
+static const RedisModuleCommandKeySpec BF_SCANDUMP_KEYSPECS[] = {
+    {.notes = "is key name for a Bloom filter to save.",
+     .flags = REDISMODULE_CMD_KEY_RW,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 1, .keystep = 0, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg BF_SCANDUMP_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "iterator", .type = REDISMODULE_ARG_TYPE_INTEGER},
+    {0}};
+
+static const RedisModuleCommandInfo BF_SCANDUMP_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Begins an incremental save of the bloom filter",
+    .complexity = "O(n), where n is the capacity",
+    .since = "1.0.0",
+    .arity = 3,
+    .key_specs = (RedisModuleCommandKeySpec *)BF_SCANDUMP_KEYSPECS,
+    .args = (RedisModuleCommandArg *)BF_SCANDUMP_ARGS,
+};
+
 
 int RegisterBFCommandInfos(RedisModuleCtx *ctx) {
     RedisModuleCommand *cmd_add = RedisModule_GetCommand(ctx, "bf.add");
@@ -354,6 +381,13 @@ int RegisterBFCommandInfos(RedisModuleCtx *ctx) {
     if (!cmd_reserve)
         return REDISMODULE_ERR;
     if (RedisModule_SetCommandInfo(cmd_reserve, &BF_RESERVE_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *cmd_scandump = RedisModule_GetCommand(ctx, "bf.scandump");
+    if (!cmd_scandump)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(cmd_scandump, &BF_SCANDUMP_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 

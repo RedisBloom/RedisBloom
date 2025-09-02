@@ -151,3 +151,17 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('error_rate', 'double'), ('capacity', 'integer'), ('expansion', 'block'), ('nonscaling', 'pure-token')],
             key_pos=1,
         )
+    
+    def test_command_docs_bf_scandump(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'bf.scandump',
+            summary='Begins an incremental save of the bloom filter',
+            complexity='O(n), where n is the capacity',
+            arity=3,
+            since='1.0.0',
+            args=[('key', 'key'), ('iterator', 'integer')],
+            key_pos=1,
+        )
