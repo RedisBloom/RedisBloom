@@ -87,7 +87,7 @@ static const RedisModuleCommandInfo BF_INFO_INFO = {
     .summary = "Returns information about a Bloom Filter",
     .complexity = "O(1)",
     .since = "1.0.0",
-    .arity = 2,
+    .arity = -2,
     .key_specs = (RedisModuleCommandKeySpec *)BF_INFO_KEYSPECS,
     .args = (RedisModuleCommandArg *)BF_INFO_ARGS,
 };
@@ -172,7 +172,7 @@ static const RedisModuleCommandInfo BF_INSERT_INFO = {
         "Adds one or more items to a Bloom Filter. A filter will be created if it does not exist",
     .complexity = "O(k * n), where k is the number of hash functions and n is the number of items",
     .since = "1.0.0",
-    .arity = 4,
+    .arity = -4,
     .key_specs = (RedisModuleCommandKeySpec *)BF_INSERT_KEYSPECS,
     .args = (RedisModuleCommandArg *)BF_INSERT_ARGS,
 };
@@ -204,6 +204,33 @@ static const RedisModuleCommandInfo BF_LOADCHUNK_INFO = {
     .key_specs = (RedisModuleCommandKeySpec *)BF_LOADCHUNK_KEYSPECS,
     .args = (RedisModuleCommandArg *)BF_LOADCHUNK_ARGS,
 };
+
+// ===============================
+// BF.MADD
+// ===============================
+static const RedisModuleCommandKeySpec BF_MADD_KEYSPECS[] = {
+    {.notes = "is key name for a Bloom filter to add the items to.",
+     .flags = REDISMODULE_CMD_KEY_RW,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 1, .keystep = 0, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg BF_MADD_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "item", .type = REDISMODULE_ARG_TYPE_STRING, .flags = REDISMODULE_CMD_ARG_MULTIPLE},
+    {0}};
+static const RedisModuleCommandInfo BF_MADD_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Adds one or more items to a Bloom Filter. A filter will be created if it does not exist",
+    .complexity = "O(k * n), where k is the number of hash functions and n is the number of items",
+    .since = "1.0.0",
+    .arity = -3,
+    .key_specs = (RedisModuleCommandKeySpec *)BF_MADD_KEYSPECS,
+    .args = (RedisModuleCommandArg *)BF_MADD_ARGS,
+};
+
 
 int RegisterBFCommandInfos(RedisModuleCtx *ctx) {
     RedisModuleCommand *cmd_add = RedisModule_GetCommand(ctx, "bf.add");
@@ -245,6 +272,13 @@ int RegisterBFCommandInfos(RedisModuleCtx *ctx) {
     if (!cmd_loadchunk)
         return REDISMODULE_ERR;
     if (RedisModule_SetCommandInfo(cmd_loadchunk, &BF_LOADCHUNK_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *cmd_madd = RedisModule_GetCommand(ctx, "bf.madd");
+    if (!cmd_madd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(cmd_madd, &BF_MADD_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
