@@ -37,3 +37,17 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('item', 'string')],
             key_pos=1,
         )
+
+    def test_command_docs_bf_exists(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'bf.exists',
+            summary='Checks whether an item exists in a Bloom Filter',
+            complexity='O(k), where k is the number of hash functions used by the last sub-filter',
+            arity=3,
+            since='1.0.0',
+            args=[('key', 'key'), ('item', 'string')],
+            key_pos=1,
+        )
