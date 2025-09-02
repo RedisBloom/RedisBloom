@@ -79,3 +79,19 @@ class testCommandDocsAndHelp():
             args=[('key', 'key')],
             key_pos=1,
         )
+
+    def test_command_docs_bf_insert(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        
+        assert_docs(
+            env,
+            "bf.insert",
+            summary="Adds one or more items to a Bloom Filter. A filter will be created if it does not exist",
+            complexity="O(k * n), where k is the number of hash functions and n is the number of items",
+            arity=4,
+            since="1.0.0",
+            args=[("key", "key"), ("capacity", "block"), ("error", "block"), ("expansion", "block"), ("nocreate", "pure-token"), ("nonscaling", "pure-token"), ("items", "pure-token"), ("item", "string")],
+            key_pos=1,
+        )

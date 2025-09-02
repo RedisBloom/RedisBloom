@@ -105,8 +105,7 @@ static const RedisModuleCommandKeySpec BF_CARD_KEYSPECS[] = {
     {0}};
 
 static const RedisModuleCommandArg BF_CARD_ARGS[] = {
-    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
-    {0}};
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0}, {0}};
 
 static const RedisModuleCommandInfo BF_CARD_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
@@ -118,6 +117,65 @@ static const RedisModuleCommandInfo BF_CARD_INFO = {
     .args = (RedisModuleCommandArg *)BF_CARD_ARGS,
 };
 
+// ===============================
+// BF.INSERT
+// ===============================
+static const RedisModuleCommandKeySpec BF_INSERT_KEYSPECS[] = {
+    {.notes = "is key name for a Bloom filter to insert the item to.",
+     .flags = REDISMODULE_CMD_KEY_RW,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 1, .keystep = 0, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg BF_INSERT_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "capacity",
+     .type = REDISMODULE_ARG_TYPE_BLOCK,
+     .flags = REDISMODULE_CMD_ARG_OPTIONAL,
+     .token = "CAPACITY",
+     .subargs =
+         (RedisModuleCommandArg[]){{.name = "capacity", .type = REDISMODULE_ARG_TYPE_INTEGER},
+                                   {0}}},
+    {.name = "error",
+     .type = REDISMODULE_ARG_TYPE_BLOCK,
+     .flags = REDISMODULE_CMD_ARG_OPTIONAL,
+     .token = "ERROR",
+     .subargs =
+         (RedisModuleCommandArg[]){{.name = "error", .type = REDISMODULE_ARG_TYPE_DOUBLE}, {0}}},
+    {.name = "expansion",
+     .type = REDISMODULE_ARG_TYPE_BLOCK,
+     .flags = REDISMODULE_CMD_ARG_OPTIONAL,
+     .token = "EXPANSION",
+     .subargs =
+         (RedisModuleCommandArg[]){{.name = "expansion", .type = REDISMODULE_ARG_TYPE_INTEGER},
+                                   {0}}},
+    {
+        .name = "nocreate",
+        .type = REDISMODULE_ARG_TYPE_PURE_TOKEN,
+        .flags = REDISMODULE_CMD_ARG_OPTIONAL,
+        .token = "NOCREATE",
+    },
+    {
+        .name = "nonscaling",
+        .type = REDISMODULE_ARG_TYPE_PURE_TOKEN,
+        .flags = REDISMODULE_CMD_ARG_OPTIONAL,
+        .token = "NONSCALING",
+    },
+    {.name = "items", .type = REDISMODULE_ARG_TYPE_PURE_TOKEN, .token = "ITEMS"},
+    {.name = "item", .type = REDISMODULE_ARG_TYPE_STRING, .flags = REDISMODULE_CMD_ARG_MULTIPLE},
+    {0}};
+static const RedisModuleCommandInfo BF_INSERT_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary =
+        "Adds one or more items to a Bloom Filter. A filter will be created if it does not exist",
+    .complexity = "O(k * n), where k is the number of hash functions and n is the number of items",
+    .since = "1.0.0",
+    .arity = 4,
+    .key_specs = (RedisModuleCommandKeySpec *)BF_INSERT_KEYSPECS,
+    .args = (RedisModuleCommandArg *)BF_INSERT_ARGS,
+};
 
 int RegisterBFCommandInfos(RedisModuleCtx *ctx) {
     RedisModuleCommand *cmd_add = RedisModule_GetCommand(ctx, "bf.add");
@@ -145,6 +203,13 @@ int RegisterBFCommandInfos(RedisModuleCtx *ctx) {
     if (!cmd_card)
         return REDISMODULE_ERR;
     if (RedisModule_SetCommandInfo(cmd_card, &BF_CARD_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *cmd_insert = RedisModule_GetCommand(ctx, "bf.insert");
+    if (!cmd_insert)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(cmd_insert, &BF_INSERT_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
