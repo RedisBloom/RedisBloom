@@ -177,6 +177,34 @@ static const RedisModuleCommandInfo BF_INSERT_INFO = {
     .args = (RedisModuleCommandArg *)BF_INSERT_ARGS,
 };
 
+// ===============================
+// BF.LOADCHUNK
+// ===============================
+static const RedisModuleCommandKeySpec BF_LOADCHUNK_KEYSPECS[] = {
+    {.notes = "is key name for a Bloom filter to load the chunk to.",
+     .flags = REDISMODULE_CMD_KEY_RW,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 1, .keystep = 0, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg BF_LOADCHUNK_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "iterator", .type = REDISMODULE_ARG_TYPE_INTEGER},
+    {.name = "data", .type = REDISMODULE_ARG_TYPE_STRING},
+    {0}};
+
+static const RedisModuleCommandInfo BF_LOADCHUNK_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Restores a filter previously saved using SCANDUMP",
+    .complexity = "O(n), where n is the capacity",
+    .since = "1.0.0",
+    .arity = 4,
+    .key_specs = (RedisModuleCommandKeySpec *)BF_LOADCHUNK_KEYSPECS,
+    .args = (RedisModuleCommandArg *)BF_LOADCHUNK_ARGS,
+};
+
 int RegisterBFCommandInfos(RedisModuleCtx *ctx) {
     RedisModuleCommand *cmd_add = RedisModule_GetCommand(ctx, "bf.add");
     if (!cmd_add)
@@ -210,6 +238,13 @@ int RegisterBFCommandInfos(RedisModuleCtx *ctx) {
     if (!cmd_insert)
         return REDISMODULE_ERR;
     if (RedisModule_SetCommandInfo(cmd_insert, &BF_INSERT_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *cmd_loadchunk = RedisModule_GetCommand(ctx, "bf.loadchunk");
+    if (!cmd_loadchunk)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(cmd_loadchunk, &BF_LOADCHUNK_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 

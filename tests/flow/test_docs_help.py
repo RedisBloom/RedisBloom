@@ -95,3 +95,17 @@ class testCommandDocsAndHelp():
             args=[("key", "key"), ("capacity", "block"), ("error", "block"), ("expansion", "block"), ("nocreate", "pure-token"), ("nonscaling", "pure-token"), ("items", "pure-token"), ("item", "string")],
             key_pos=1,
         )
+
+    def test_command_docs_bf_loadchunk(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'bf.loadchunk',
+            summary='Restores a filter previously saved using SCANDUMP',
+            complexity='O(n), where n is the capacity',
+            arity=4,
+            since='1.0.0',
+            args=[('key', 'key'), ('iterator', 'integer'), ('data', 'string')],
+            key_pos=1,
+        )
