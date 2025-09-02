@@ -137,3 +137,17 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('item', 'string')],
             key_pos=1,
         )
+    
+    def test_command_docs_bf_reserve(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'bf.reserve',
+            summary='Creates a new Bloom Filter',
+            complexity='O(1)',
+            arity=-4,
+            since='1.0.0',
+            args=[('key', 'key'), ('error_rate', 'double'), ('capacity', 'integer'), ('expansion', 'block'), ('nonscaling', 'pure-token')],
+            key_pos=1,
+        )

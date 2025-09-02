@@ -257,6 +257,41 @@ static const RedisModuleCommandInfo BF_MEXISTS_INFO = {
     .args = (RedisModuleCommandArg *)BF_MEXISTS_ARGS,
 };
 
+// ===============================
+// BF.RESERVE
+// ===============================
+static const RedisModuleCommandKeySpec BF_RESERVE_KEYSPECS[] = {
+    {.notes = "is key name for the the Bloom filter to be created.",
+     .flags = REDISMODULE_CMD_KEY_RW,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 1, .keystep = 0, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg BF_RESERVE_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "error_rate", .type = REDISMODULE_ARG_TYPE_DOUBLE},
+    {.name = "capacity", .type = REDISMODULE_ARG_TYPE_INTEGER},
+    {.name = "expansion",
+        .type = REDISMODULE_ARG_TYPE_BLOCK,
+        .flags = REDISMODULE_CMD_ARG_OPTIONAL,
+        .token = "EXPANSION",
+        .subargs =
+            (RedisModuleCommandArg[]){{.name = "expansion", .type = REDISMODULE_ARG_TYPE_INTEGER},
+                                      {0}}},
+    {.name = "nonscaling", .type = REDISMODULE_ARG_TYPE_PURE_TOKEN, .token = "NONSCALING"},
+    {0}};
+static const RedisModuleCommandInfo BF_RESERVE_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Creates a new Bloom Filter",
+    .complexity = "O(1)",
+    .since = "1.0.0",
+    .arity = -4,
+    .key_specs = (RedisModuleCommandKeySpec *)BF_RESERVE_KEYSPECS,
+    .args = (RedisModuleCommandArg *)BF_RESERVE_ARGS,
+};
+
 
 int RegisterBFCommandInfos(RedisModuleCtx *ctx) {
     RedisModuleCommand *cmd_add = RedisModule_GetCommand(ctx, "bf.add");
@@ -312,6 +347,13 @@ int RegisterBFCommandInfos(RedisModuleCtx *ctx) {
     if (!cmd_mexists)
         return REDISMODULE_ERR;
     if (RedisModule_SetCommandInfo(cmd_mexists, &BF_MEXISTS_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *cmd_reserve = RedisModule_GetCommand(ctx, "bf.reserve");
+    if (!cmd_reserve)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(cmd_reserve, &BF_RESERVE_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
