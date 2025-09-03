@@ -249,3 +249,17 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('item', 'string')],
             key_pos=1,
         )
+    
+    def test_command_docs_topk_reserve(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'topk.reserve',
+            summary='Initializes a Top-K sketch with specified parameters',
+            complexity='O(1)',
+            arity=-3,
+            since='2.0.0',
+            args=[('key', 'key'), ('topk', 'integer'), ('params', 'block')],
+            key_pos=1,
+        )

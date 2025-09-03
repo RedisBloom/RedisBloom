@@ -179,6 +179,40 @@ static const RedisModuleCommandInfo TOPK_QUERY_INFO = {
     .args = (RedisModuleCommandArg *)TOPK_QUERY_ARGS,
 };
 
+// ===============================
+// TOPK.RESERVE
+// ===============================
+static const RedisModuleCommandKeySpec TOPK_RESERVE_KEYSPECS[] = {
+    {.notes = "the name of the sketch",
+     .flags = REDISMODULE_CMD_KEY_RW,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg TOPK_RESERVE_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "topk", .type = REDISMODULE_ARG_TYPE_INTEGER},
+    {.name = "params",
+     .type = REDISMODULE_ARG_TYPE_BLOCK,
+     .flags = REDISMODULE_CMD_ARG_OPTIONAL,
+     .subargs = (RedisModuleCommandArg[]){{.name = "width", .type = REDISMODULE_ARG_TYPE_INTEGER},
+                                          {.name = "depth", .type = REDISMODULE_ARG_TYPE_INTEGER},
+                                          {.name = "decay", .type = REDISMODULE_ARG_TYPE_DOUBLE},
+                                          {0}}},
+    {0}};
+
+static const RedisModuleCommandInfo TOPK_RESERVE_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Initializes a Top-K sketch with specified parameters",
+    .complexity = "O(1)",
+    .since = "2.0.0",
+    .arity = -3,
+    .key_specs = (RedisModuleCommandKeySpec *)TOPK_RESERVE_KEYSPECS,
+    .args = (RedisModuleCommandArg *)TOPK_RESERVE_ARGS,
+};
+
 int RegisterTopKCommandInfos(RedisModuleCtx *ctx) {
     RedisModuleCommand *cmd_add = RedisModule_GetCommand(ctx, "TOPK.ADD");
     if (!cmd_add) {
@@ -226,6 +260,14 @@ int RegisterTopKCommandInfos(RedisModuleCtx *ctx) {
         return REDISMODULE_ERR;
     }
     if (RedisModule_SetCommandInfo(cmd_query, &TOPK_QUERY_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *cmd_reserve = RedisModule_GetCommand(ctx, "TOPK.RESERVE");
+    if (!cmd_reserve) {
+        return REDISMODULE_ERR;
+    }
+    if (RedisModule_SetCommandInfo(cmd_reserve, &TOPK_RESERVE_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
