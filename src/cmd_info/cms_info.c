@@ -88,6 +88,34 @@ static const RedisModuleCommandInfo CMS_INITBYDIM_INFO = {
     .args = (RedisModuleCommandArg *)CMS_INITBYDIM_ARGS,
 };
 
+// ===============================
+// CMS.INITBYPROB
+// ===============================
+static const RedisModuleCommandKeySpec CMS_INITBYPROB_KEYSPECS[] = {
+    {.notes = "the name of the sketch",
+     .flags = REDISMODULE_CMD_KEY_RW,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg CMS_INITBYPROB_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "error", .type = REDISMODULE_ARG_TYPE_DOUBLE},
+    {.name = "probability", .type = REDISMODULE_ARG_TYPE_DOUBLE},
+    {0}};
+
+static const RedisModuleCommandInfo CMS_INITBYPROB_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Initializes a Count-Min Sketch to accommodate requested tolerances.",
+    .complexity = "O(1)",
+    .since = "2.0.0",
+    .arity = 4,
+    .key_specs = (RedisModuleCommandKeySpec *)CMS_INITBYPROB_KEYSPECS,
+    .args = (RedisModuleCommandArg *)CMS_INITBYPROB_ARGS,
+};
+
 
 int RegisterCMSCommandInfos(RedisModuleCtx *ctx) {
     RedisModuleCommand *cmd_incrby = RedisModule_GetCommand(ctx, "CMS.INCRBY");
@@ -113,5 +141,14 @@ int RegisterCMSCommandInfos(RedisModuleCtx *ctx) {
     if (RedisModule_SetCommandInfo(cmd_initbydim, &CMS_INITBYDIM_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
+
+    RedisModuleCommand *cmd_initbyprob = RedisModule_GetCommand(ctx, "CMS.INITBYPROB");
+    if (!cmd_initbyprob) {
+        return REDISMODULE_ERR;
+    }
+    if (RedisModule_SetCommandInfo(cmd_initbyprob, &CMS_INITBYPROB_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
     return REDISMODULE_OK;
 }
