@@ -9,7 +9,7 @@ static const RedisModuleCommandKeySpec CF_RESERVE_KEYSPECS[] = {
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
-     .fk.range = {.lastkey = 1, .keystep = 0, .limit = 0}},
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
     {0}};
 
 static const RedisModuleCommandArg CF_RESERVE_ARGS[] = {
