@@ -291,3 +291,17 @@ class testCommandDocsAndHelp():
             args=[('key', 'key')],
             key_pos=1,
         )
+    
+    def test_command_docs_cms_initbydim(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cms.initbydim',
+            summary='Initializes a Count-Min Sketch to dimensions specified by user',
+            complexity='O(1)',
+            arity=4,
+            since='2.0.0',
+            args=[('key', 'key'), ('width', 'integer'), ('depth', 'integer')],
+            key_pos=1,
+        )
