@@ -71,7 +71,7 @@ def assert_docs(env, cmd, *, summary, complexity, arity=None, since=None, group=
     # Arguments
     if args is not None:
         norm_args = [_kv_list_to_dict(a) for a in (docs.get('arguments') or docs.get('args') or [])]
-        env.assertEqual([a.get('name') for a in norm_args], [n for n, _t in args])
+        env.assertEqual([a.get('name') for a in norm_args], [n[0] for n in args])
         # Key arg should reference first key spec (when provided)
         if norm_args:
             ks_idx = norm_args[0].get('key_spec_index')
