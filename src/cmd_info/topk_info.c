@@ -152,6 +152,33 @@ static const RedisModuleCommandInfo TOPK_LIST_INFO = {
     .args = (RedisModuleCommandArg *)TOPK_LIST_ARGS,
 };
 
+// ===============================
+// TOPK.QUERY
+// ===============================
+static const RedisModuleCommandKeySpec TOPK_QUERY_KEYSPECS[] = {
+    {.notes = "the name of the sketch",
+     .flags = REDISMODULE_CMD_KEY_RO,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg TOPK_QUERY_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "item", .type = REDISMODULE_ARG_TYPE_STRING, .flags = REDISMODULE_CMD_ARG_MULTIPLE},
+    {0}};
+
+static const RedisModuleCommandInfo TOPK_QUERY_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Checks whether one or more items are one of the Top-K items",
+    .complexity = "O(n) where n is the number of items",
+    .since = "2.0.0",
+    .arity = -3,
+    .key_specs = (RedisModuleCommandKeySpec *)TOPK_QUERY_KEYSPECS,
+    .args = (RedisModuleCommandArg *)TOPK_QUERY_ARGS,
+};
+
 int RegisterTopKCommandInfos(RedisModuleCtx *ctx) {
     RedisModuleCommand *cmd_add = RedisModule_GetCommand(ctx, "TOPK.ADD");
     if (!cmd_add) {
@@ -191,6 +218,14 @@ int RegisterTopKCommandInfos(RedisModuleCtx *ctx) {
     }
     if (RedisModule_SetCommandInfo(cmd_list, &TOPK_LIST_INFO) == REDISMODULE_ERR) {
         printf("TOPK.LIST command info set error\n");
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *cmd_query = RedisModule_GetCommand(ctx, "TOPK.QUERY");
+    if (!cmd_query) {
+        return REDISMODULE_ERR;
+    }
+    if (RedisModule_SetCommandInfo(cmd_query, &TOPK_QUERY_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 

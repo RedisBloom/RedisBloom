@@ -235,3 +235,17 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('withcount', 'pure-token')],
             key_pos=1,
         )
+
+    def test_command_docs_topk_query(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'topk.query',
+            summary='Checks whether one or more items are one of the Top-K items',
+            complexity='O(n) where n is the number of items',
+            arity=-3,
+            since='2.0.0',
+            args=[('key', 'key'), ('item', 'string')],
+            key_pos=1,
+        )
