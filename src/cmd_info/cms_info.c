@@ -116,6 +116,46 @@ static const RedisModuleCommandInfo CMS_INITBYPROB_INFO = {
     .args = (RedisModuleCommandArg *)CMS_INITBYPROB_ARGS,
 };
 
+// ===============================
+// CMS.MERGE
+// ===============================
+static const RedisModuleCommandKeySpec CMS_MERGE_KEYSPECS[] = {
+    {.notes = "the name of the sketch",
+     .flags = REDISMODULE_CMD_KEY_RW,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg CMS_MERGE_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "numKeys", .type = REDISMODULE_ARG_TYPE_INTEGER},
+    {.name = "source", .type = REDISMODULE_ARG_TYPE_KEY, .flags = REDISMODULE_CMD_ARG_MULTIPLE},
+    {
+        .name = "weights",
+        .type = REDISMODULE_ARG_TYPE_BLOCK,
+        .flags = REDISMODULE_CMD_ARG_OPTIONAL,
+        .subargs =
+            (RedisModuleCommandArg[]){
+                {.name = "weights", .type = REDISMODULE_ARG_TYPE_PURE_TOKEN, .token = "WEIGHTS"},
+                {.name = "weight",
+                 .type = REDISMODULE_ARG_TYPE_DOUBLE,
+                 .flags = REDISMODULE_CMD_ARG_MULTIPLE},
+                {0}},
+    },
+    {0}};
+
+static const RedisModuleCommandInfo CMS_MERGE_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Merges several sketches into one sketch. All sketches must have identical width "
+               "and depth. Weights can be used to multiply certain sketches. Default weight is 1.",
+    .complexity = "O(n) where n is the number of sketches",
+    .since = "2.0.0",
+    .arity = -4,
+    .key_specs = (RedisModuleCommandKeySpec *)CMS_MERGE_KEYSPECS,
+    .args = (RedisModuleCommandArg *)CMS_MERGE_ARGS,
+};
 
 int RegisterCMSCommandInfos(RedisModuleCtx *ctx) {
     RedisModuleCommand *cmd_incrby = RedisModule_GetCommand(ctx, "CMS.INCRBY");
@@ -147,6 +187,14 @@ int RegisterCMSCommandInfos(RedisModuleCtx *ctx) {
         return REDISMODULE_ERR;
     }
     if (RedisModule_SetCommandInfo(cmd_initbyprob, &CMS_INITBYPROB_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *cmd_merge = RedisModule_GetCommand(ctx, "CMS.MERGE");
+    if (!cmd_merge) {
+        return REDISMODULE_ERR;
+    }
+    if (RedisModule_SetCommandInfo(cmd_merge, &CMS_MERGE_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 

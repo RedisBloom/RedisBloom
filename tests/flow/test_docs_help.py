@@ -274,7 +274,7 @@ class testCommandDocsAndHelp():
             complexity='O(n) where n is the number of items',
             arity=-4,
             since='2.0.0',
-            args=[('key', 'key'), ('item_increment', 'block')],
+            args=[('key', 'key'), ('items', 'block')],
             key_pos=1,
         )
 
@@ -317,5 +317,19 @@ class testCommandDocsAndHelp():
             arity=4,
             since='2.0.0',
             args=[('key', 'key'), ('error', 'double'), ('probability', 'double')],
+            key_pos=1,
+        )
+
+    def test_command_docs_cms_merge(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cms.merge',
+            summary='Merges several sketches into one sketch. All sketches must have identical width and depth. Weights can be used to multiply certain sketches. Default weight is 1.',
+            complexity='O(n) where n is the number of sketches',
+            arity=-4,
+            since='2.0.0',
+            args=[('key', 'key'), ('numKeys', 'integer'), ('source', 'key'), ('weights', 'block')],
             key_pos=1,
         )
