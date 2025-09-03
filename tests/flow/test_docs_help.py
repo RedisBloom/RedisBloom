@@ -263,3 +263,17 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('topk', 'integer'), ('params', 'block')],
             key_pos=1,
         )
+
+    def test_command_docs_cms_incrby(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cms.incrby',
+            summary='Increases the count of item by increment. Multiple items can be increased with one call.',
+            complexity='O(n) where n is the number of items',
+            arity=-4,
+            since='2.0.0',
+            args=[('key', 'key'), ('item_increment', 'block')],
+            key_pos=1,
+        )
