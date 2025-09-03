@@ -9,7 +9,7 @@ static const RedisModuleCommandKeySpec CF_RESERVE_KEYSPECS[] = {
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
-     .fk.range = {.lastkey = 0, .keystep = 0, .limit = 0}},
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
     {0}};
 
 static const RedisModuleCommandArg CF_RESERVE_ARGS[] = {
@@ -18,27 +18,23 @@ static const RedisModuleCommandArg CF_RESERVE_ARGS[] = {
     {.name = "bucketsize",
      .type = REDISMODULE_ARG_TYPE_BLOCK,
      .flags = REDISMODULE_CMD_ARG_OPTIONAL,
-     .subargs = (RedisModuleCommandArg[]){
-        {.name = "CAPACITY", .type = REDISMODULE_ARG_TYPE_STRING},
-        {.name = "VALUE", .type = REDISMODULE_ARG_TYPE_STRING},
-        {0}
-     }},
+     .subargs = (RedisModuleCommandArg[]){{.name = "CAPACITY", .type = REDISMODULE_ARG_TYPE_STRING},
+                                          {.name = "VALUE", .type = REDISMODULE_ARG_TYPE_STRING},
+                                          {0}}},
     {.name = "maxiterations",
      .type = REDISMODULE_ARG_TYPE_BLOCK,
      .flags = REDISMODULE_CMD_ARG_OPTIONAL,
-     .subargs = (RedisModuleCommandArg[]){
-        {.name = "MAXITERATIONS", .type = REDISMODULE_ARG_TYPE_STRING},
-        {.name = "VALUE", .type = REDISMODULE_ARG_TYPE_STRING},
-        {0}
-     }},
+     .subargs =
+         (RedisModuleCommandArg[]){{.name = "MAXITERATIONS", .type = REDISMODULE_ARG_TYPE_STRING},
+                                   {.name = "VALUE", .type = REDISMODULE_ARG_TYPE_STRING},
+                                   {0}}},
     {.name = "expansion",
      .type = REDISMODULE_ARG_TYPE_BLOCK,
      .flags = REDISMODULE_CMD_ARG_OPTIONAL,
-     .subargs = (RedisModuleCommandArg[]){
-        {.name = "EXPANSION", .type = REDISMODULE_ARG_TYPE_STRING},
-        {.name = "VALUE", .type = REDISMODULE_ARG_TYPE_STRING},
-        {0}
-     }},
+     .subargs =
+         (RedisModuleCommandArg[]){{.name = "EXPANSION", .type = REDISMODULE_ARG_TYPE_STRING},
+                                   {.name = "VALUE", .type = REDISMODULE_ARG_TYPE_STRING},
+                                   {0}}},
     {0}};
 
 static const RedisModuleCommandInfo CF_RESERVE_INFO = {

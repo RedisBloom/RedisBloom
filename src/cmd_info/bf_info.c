@@ -9,7 +9,7 @@ static const RedisModuleCommandKeySpec BF_ADD_KEYSPECS[] = {
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
-     .fk.range = {.lastkey = 0, .keystep = 0, .limit = 0}},
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
     {0}};
 
 static const RedisModuleCommandArg BF_ADD_ARGS[] = {
@@ -36,7 +36,7 @@ static const RedisModuleCommandKeySpec BF_EXISTS_KEYSPECS[] = {
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
-     .fk.range = {.lastkey = 0, .keystep = 0, .limit = 0}},
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
     {0}};
 
 static const RedisModuleCommandArg BF_EXISTS_ARGS[] = {
@@ -63,7 +63,7 @@ static const RedisModuleCommandKeySpec BF_INFO_KEYSPECS[] = {
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
-     .fk.range = {.lastkey = 0, .keystep = 0, .limit = 0}},
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
     {0}};
 
 static const RedisModuleCommandArg BF_INFO_ARGS[] = {
@@ -101,7 +101,7 @@ static const RedisModuleCommandKeySpec BF_CARD_KEYSPECS[] = {
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
-     .fk.range = {.lastkey = 0, .keystep = 0, .limit = 0}},
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
     {0}};
 
 static const RedisModuleCommandArg BF_CARD_ARGS[] = {
@@ -126,7 +126,7 @@ static const RedisModuleCommandKeySpec BF_INSERT_KEYSPECS[] = {
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
-     .fk.range = {.lastkey = 0, .keystep = 0, .limit = 0}},
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
     {0}};
 
 static const RedisModuleCommandArg BF_INSERT_ARGS[] = {
@@ -186,7 +186,7 @@ static const RedisModuleCommandKeySpec BF_LOADCHUNK_KEYSPECS[] = {
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
-     .fk.range = {.lastkey = 0, .keystep = 0, .limit = 0}},
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
     {0}};
 
 static const RedisModuleCommandArg BF_LOADCHUNK_ARGS[] = {
@@ -214,7 +214,7 @@ static const RedisModuleCommandKeySpec BF_MADD_KEYSPECS[] = {
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
-     .fk.range = {.lastkey = 0, .keystep = 0, .limit = 0}},
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
     {0}};
 
 static const RedisModuleCommandArg BF_MADD_ARGS[] = {
@@ -241,7 +241,7 @@ static const RedisModuleCommandKeySpec BF_MEXISTS_KEYSPECS[] = {
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
-     .fk.range = {.lastkey = 0, .keystep = 0, .limit = 0}},
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
     {0}};
 
 static const RedisModuleCommandArg BF_MEXISTS_ARGS[] = {
@@ -267,7 +267,7 @@ static const RedisModuleCommandKeySpec BF_RESERVE_KEYSPECS[] = {
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
-     .fk.range = {.lastkey = 0, .keystep = 0, .limit = 0}},
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
     {0}};
 
 static const RedisModuleCommandArg BF_RESERVE_ARGS[] = {
@@ -305,7 +305,7 @@ static const RedisModuleCommandKeySpec BF_SCANDUMP_KEYSPECS[] = {
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
-     .fk.range = {.lastkey = 0, .keystep = 0, .limit = 0}},
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
     {0}};
 
 static const RedisModuleCommandArg BF_SCANDUMP_ARGS[] = {
