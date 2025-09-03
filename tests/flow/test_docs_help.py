@@ -165,3 +165,17 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('iterator', 'integer')],
             key_pos=1,
         )
+
+    def test_command_docs_topk_add(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'topk.add',
+            summary='Adds an item to a Top-k sketch. Multiple items can be added at the same time. If an item enters the Top-K sketch, the item that is expelled (if any) is returned',
+            complexity='O(n * k) where n is the number of items and k is the depth',
+            arity=-3,
+            since='2.0.0',
+            args=[('key', 'key'), ('item', 'string')],
+            key_pos=1,
+        )
