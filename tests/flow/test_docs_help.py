@@ -221,3 +221,17 @@ class testCommandDocsAndHelp():
             args=[('key', 'key')],
             key_pos=1,
         )
+
+    def test_command_docs_topk_list(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'topk.list',
+            summary='Return the full list of items in Top-K sketch',
+            complexity='O(k*log(k)) where k is the value of top-k',
+            arity=-2,
+            since='2.0.0',
+            args=[('key', 'key'), ('withcount', 'pure-token')],
+            key_pos=1,
+        )

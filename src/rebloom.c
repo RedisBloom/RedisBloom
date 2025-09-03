@@ -1558,7 +1558,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 #undef RegisterCommand
 
     CMSModule_onLoad(ctx, argv, argc);
-    TopKModule_onLoad(ctx, argv, argc);
+    if (TopKModule_onLoad(ctx, argv, argc) == REDISMODULE_ERR)
+        return REDISMODULE_ERR;
     if (TDigestModule_onLoad(ctx, argv, argc) == REDISMODULE_ERR)
         return REDISMODULE_ERR;
 

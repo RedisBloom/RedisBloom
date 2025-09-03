@@ -109,17 +109,47 @@ static const RedisModuleCommandKeySpec TOPK_INFO_KEYSPECS[] = {
     {0}};
 
 static const RedisModuleCommandArg TOPK_INFO_ARGS[] = {
-    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
-    {0}};
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0}, {0}};
 
 static const RedisModuleCommandInfo TOPK_INFO_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Returns number of required items (k), width, depth, and decay values of a given sketch",
+    .summary =
+        "Returns number of required items (k), width, depth, and decay values of a given sketch",
     .complexity = "O(1)",
     .since = "2.0.0",
     .arity = 2,
     .key_specs = (RedisModuleCommandKeySpec *)TOPK_INFO_KEYSPECS,
     .args = (RedisModuleCommandArg *)TOPK_INFO_ARGS,
+};
+
+// ===============================
+// TOPK.LIST
+// ===============================
+static const RedisModuleCommandKeySpec TOPK_LIST_KEYSPECS[] = {
+    {.notes = "the name of the sketch",
+     .flags = REDISMODULE_CMD_KEY_RO,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg TOPK_LIST_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "withcount",
+     .type = REDISMODULE_ARG_TYPE_PURE_TOKEN,
+     .token = "WITHCOUNT",
+     .flags = REDISMODULE_CMD_ARG_OPTIONAL},
+    {0}};
+
+static const RedisModuleCommandInfo TOPK_LIST_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Return the full list of items in Top-K sketch",
+    .complexity = "O(k*log(k)) where k is the value of top-k",
+    .since = "2.0.0",
+    .arity = -2,
+    .key_specs = (RedisModuleCommandKeySpec *)TOPK_LIST_KEYSPECS,
+    .args = (RedisModuleCommandArg *)TOPK_LIST_ARGS,
 };
 
 int RegisterTopKCommandInfos(RedisModuleCtx *ctx) {
@@ -152,6 +182,15 @@ int RegisterTopKCommandInfos(RedisModuleCtx *ctx) {
         return REDISMODULE_ERR;
     }
     if (RedisModule_SetCommandInfo(cmd_info, &TOPK_INFO_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *cmd_list = RedisModule_GetCommand(ctx, "TOPK.LIST");
+    if (!cmd_list) {
+        return REDISMODULE_ERR;
+    }
+    if (RedisModule_SetCommandInfo(cmd_list, &TOPK_LIST_INFO) == REDISMODULE_ERR) {
+        printf("TOPK.LIST command info set error\n");
         return REDISMODULE_ERR;
     }
 
