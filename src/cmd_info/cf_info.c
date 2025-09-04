@@ -269,6 +269,33 @@ static const RedisModuleCommandInfo CF_MEXISTS_INFO = {
     .args = (RedisModuleCommandArg *)CF_MEXISTS_ARGS,
 };
 
+// ===============================
+// CF.SCANDUMP
+// ===============================
+static const RedisModuleCommandKeySpec CF_SCANDUMP_KEYSPECS[] = {
+    {.notes = "is key name for a cuckoo filter to save.",
+     .flags = REDISMODULE_CMD_KEY_RW,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg CF_SCANDUMP_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "iterator", .type = REDISMODULE_ARG_TYPE_INTEGER},
+    {0}};
+
+static const RedisModuleCommandInfo CF_SCANDUMP_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Begins an incremental save of the cuckoo filter. The first time this command is called, the value of iter should be 0.",
+    .complexity = "O(n), where n is the capacity",
+    .since = "1.0.0",
+    .arity = 3,
+    .key_specs = (RedisModuleCommandKeySpec *)CF_SCANDUMP_KEYSPECS,
+    .args = (RedisModuleCommandArg *)CF_SCANDUMP_ARGS,
+};
+
 int RegisterCFCommandInfos(RedisModuleCtx *ctx) {
     RedisModuleCommand *reserve_cmd = RedisModule_GetCommand(ctx, "cf.reserve");
     if (!reserve_cmd)
@@ -323,6 +350,13 @@ int RegisterCFCommandInfos(RedisModuleCtx *ctx) {
     if (!mexists_cmd)
         return REDISMODULE_ERR;
     if (RedisModule_SetCommandInfo(mexists_cmd, &CF_MEXISTS_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *scandump_cmd = RedisModule_GetCommand(ctx, "cf.scandump");
+    if (!scandump_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(scandump_cmd, &CF_SCANDUMP_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
