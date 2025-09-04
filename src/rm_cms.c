@@ -14,6 +14,7 @@
 #include "version.h"
 #include "common.h"
 
+#include "cmd_info/command_info.h"
 #include <limits.h>
 #include <math.h>
 #include <stdlib.h>
@@ -362,6 +363,9 @@ int CMSModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RegisterCommand(ctx, "cms.info", CMSKetch_Info, "readonly", "read fast");
 
 #undef RegisterCommand
+
+    if (RegisterCMSCommandInfos(ctx) != REDISMODULE_OK)
+        return REDISMODULE_ERR;
 
     return REDISMODULE_OK;
 }
