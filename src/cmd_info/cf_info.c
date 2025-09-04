@@ -151,7 +151,7 @@ static const RedisModuleCommandArg CF_INSERT_ARGS[] = {
              {.name = "capacity", .type = REDISMODULE_ARG_TYPE_PURE_TOKEN, .token = "CAPACITY"},
              {.name = "capacity", .type = REDISMODULE_ARG_TYPE_INTEGER},
              {0}}},
-    {.name = "NOCREATE",
+    {.name = "nocreate",
      .type = REDISMODULE_ARG_TYPE_PURE_TOKEN,
      .flags = REDISMODULE_CMD_ARG_OPTIONAL,
      .token = "NOCREATE"},
@@ -195,7 +195,7 @@ static const RedisModuleCommandArg CF_INSERTNX_ARGS[] = {
              {.name = "capacity", .type = REDISMODULE_ARG_TYPE_PURE_TOKEN, .token = "CAPACITY"},
              {.name = "capacity", .type = REDISMODULE_ARG_TYPE_INTEGER},
              {0}}},
-    {.name = "NOCREATE",
+    {.name = "nocreate",
      .type = REDISMODULE_ARG_TYPE_PURE_TOKEN,
      .flags = REDISMODULE_CMD_ARG_OPTIONAL,
      .token = "NOCREATE"},
@@ -205,9 +205,12 @@ static const RedisModuleCommandArg CF_INSERTNX_ARGS[] = {
 
 static const RedisModuleCommandInfo CF_INSERTNX_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Adds one or more items to a cuckoo filter if they did not exist previously, "
-               "allowing the filter to be created with a custom capacity if it does not exist yet."
-               "sub-filters and i is maxIterations",
+    .summary =
+        "Adds one or more items to a cuckoo filter if they did not exist previously, allowing the "
+        "filter to be created with a custom capacity if it does not exist yet.",
+    .complexity =
+        "O(n * (k + i)), where n is the number of items, k is the number of sub-filters and i "
+        "is maxIterations",
     .since = "1.0.0",
     .arity = -4,
     .key_specs = (RedisModuleCommandKeySpec *)CF_INSERT_KEYSPECS,
@@ -288,7 +291,8 @@ static const RedisModuleCommandArg CF_SCANDUMP_ARGS[] = {
 
 static const RedisModuleCommandInfo CF_SCANDUMP_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Begins an incremental save of the cuckoo filter. The first time this command is called, the value of iter should be 0.",
+    .summary = "Begins an incremental save of the cuckoo filter. The first time this command is "
+               "called, the value of iter should be 0.",
     .complexity = "O(n), where n is the capacity",
     .since = "1.0.0",
     .arity = 3,
