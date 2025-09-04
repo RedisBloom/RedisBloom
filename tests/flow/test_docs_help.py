@@ -207,3 +207,17 @@ class testCommandDocsAndHelp():
             args=[('key', 'key')],
             key_pos=1,
         )
+
+    def test_command_docs_cf_insert(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cf.insert',
+            summary='Adds one or more items to a cuckoo filter, allowing the filter to be created with a custom capacity if it does not exist yet. This command is similar to CF.ADD, except that more than one item can be added and capacity can be specified.',
+            complexity='O(n * (k + i)), where n is the number of items, k is the number of sub-filters and i is maxIterations',
+            arity=-4,
+            since='1.0.0',
+            args=[('key', 'key'), ('capacity', 'block'), ('nocreate', 'pure-token'), ('items', 'pure-token'), ('item', 'string')],
+            key_pos=1,
+        )
