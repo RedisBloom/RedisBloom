@@ -76,6 +76,33 @@ static const RedisModuleCommandInfo CF_DEL_INFO = {
     .args = (RedisModuleCommandArg *)CF_DEL_ARGS,
 };
 
+// ===============================
+// CF.EXISTS
+// ===============================
+static const RedisModuleCommandKeySpec CF_EXISTS_KEYSPECS[] = {
+    {.notes = "is key name for a cuckoo filter.",
+     .flags = REDISMODULE_CMD_KEY_RO,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg CF_EXISTS_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "item", .type = REDISMODULE_ARG_TYPE_STRING},
+    {0}};
+
+static const RedisModuleCommandInfo CF_EXISTS_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Determines whether a given item was added to a cuckoo filter.",
+    .complexity = "O(k), where k is the number of sub-filters",
+    .since = "1.0.0",
+    .arity = 3,
+    .key_specs = (RedisModuleCommandKeySpec *)CF_EXISTS_KEYSPECS,
+    .args = (RedisModuleCommandArg *)CF_EXISTS_ARGS,
+};
+
 int RegisterCFCommandInfos(RedisModuleCtx *ctx) {
     RedisModuleCommand *reserve_cmd = RedisModule_GetCommand(ctx, "cf.reserve");
     if (!reserve_cmd)
@@ -88,6 +115,13 @@ int RegisterCFCommandInfos(RedisModuleCtx *ctx) {
     if (!del_cmd)
         return REDISMODULE_ERR;
     if (RedisModule_SetCommandInfo(del_cmd, &CF_DEL_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *exists_cmd = RedisModule_GetCommand(ctx, "cf.exists");
+    if (!exists_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(exists_cmd, &CF_EXISTS_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 

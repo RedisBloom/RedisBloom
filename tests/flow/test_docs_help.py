@@ -179,3 +179,17 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('item', 'string')],
             key_pos=1,
         )
+
+    def test_command_docs_cf_exists(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cf.exists',
+            summary='Determines whether a given item was added to a cuckoo filter.',
+            complexity='O(k), where k is the number of sub-filters',
+            arity=3,
+            since='1.0.0',
+            args=[('key', 'key'), ('item', 'string')],
+            key_pos=1,
+        )
