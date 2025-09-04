@@ -214,6 +214,34 @@ static const RedisModuleCommandInfo CF_INSERTNX_INFO = {
     .args = (RedisModuleCommandArg *)CF_INSERT_ARGS,
 };
 
+// ===============================
+// CF.LOADCHUNK
+// ===============================
+static const RedisModuleCommandKeySpec CF_LOADCHUNK_KEYSPECS[] = {
+    {.notes = "is key name for a cuckoo filter.",
+     .flags = REDISMODULE_CMD_KEY_RW,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg CF_LOADCHUNK_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "iterator", .type = REDISMODULE_ARG_TYPE_INTEGER},
+    {.name = "data", .type = REDISMODULE_ARG_TYPE_STRING},
+    {0}};
+
+static const RedisModuleCommandInfo CF_LOADCHUNK_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Restores a cuckoo filter previously saved using CF.SCANDUMP.",
+    .complexity = "O(n), where n is the capacity",
+    .since = "1.0.0",
+    .arity = 4,
+    .key_specs = (RedisModuleCommandKeySpec *)CF_LOADCHUNK_KEYSPECS,
+    .args = (RedisModuleCommandArg *)CF_LOADCHUNK_ARGS,
+};
+
 int RegisterCFCommandInfos(RedisModuleCtx *ctx) {
     RedisModuleCommand *reserve_cmd = RedisModule_GetCommand(ctx, "cf.reserve");
     if (!reserve_cmd)
@@ -254,6 +282,13 @@ int RegisterCFCommandInfos(RedisModuleCtx *ctx) {
     if (!insertnx_cmd)
         return REDISMODULE_ERR;
     if (RedisModule_SetCommandInfo(insertnx_cmd, &CF_INSERTNX_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *loadchunk_cmd = RedisModule_GetCommand(ctx, "cf.loadchunk");
+    if (!loadchunk_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(loadchunk_cmd, &CF_LOADCHUNK_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
