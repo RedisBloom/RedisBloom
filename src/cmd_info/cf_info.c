@@ -103,6 +103,31 @@ static const RedisModuleCommandInfo CF_EXISTS_INFO = {
     .args = (RedisModuleCommandArg *)CF_EXISTS_ARGS,
 };
 
+// ===============================
+// CF.INFO
+// ===============================
+static const RedisModuleCommandKeySpec CF_INFO_KEYSPECS[] = {
+    {.notes = "is key name for a cuckoo filter.",
+     .flags = REDISMODULE_CMD_KEY_RO,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg CF_INFO_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0}, {0}};
+
+static const RedisModuleCommandInfo CF_INFO_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Returns information about a cuckoo filter.",
+    .complexity = "O(1)",
+    .since = "1.0.0",
+    .arity = 1,
+    .key_specs = (RedisModuleCommandKeySpec *)CF_INFO_KEYSPECS,
+    .args = (RedisModuleCommandArg *)CF_INFO_ARGS,
+};
+
 int RegisterCFCommandInfos(RedisModuleCtx *ctx) {
     RedisModuleCommand *reserve_cmd = RedisModule_GetCommand(ctx, "cf.reserve");
     if (!reserve_cmd)
@@ -122,6 +147,13 @@ int RegisterCFCommandInfos(RedisModuleCtx *ctx) {
     if (!exists_cmd)
         return REDISMODULE_ERR;
     if (RedisModule_SetCommandInfo(exists_cmd, &CF_EXISTS_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *info_cmd = RedisModule_GetCommand(ctx, "cf.info");
+    if (!info_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(info_cmd, &CF_INFO_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
