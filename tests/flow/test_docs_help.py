@@ -166,7 +166,7 @@ class testCommandDocsAndHelp():
             key_pos=1,
         )
 
-def test_command_docs_topk_add(self):
+    def test_command_docs_topk_add(self):
         env = self.env
         if server_version_less_than(env, '7.0.0'):
             env.skip()
