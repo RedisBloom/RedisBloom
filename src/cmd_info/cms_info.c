@@ -1,7 +1,237 @@
 #include "redismodule.h"
+// ===============================
+// CMS.INCRBY
+// ===============================
+static const RedisModuleCommandKeySpec CMS_INCRBY_KEYSPECS[] = {
+    {.notes = "the name of the sketch",
+     .flags = REDISMODULE_CMD_KEY_RW,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg CMS_INCRBY_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {
+        .name = "items",
+        .type = REDISMODULE_ARG_TYPE_BLOCK,
+        .flags = REDISMODULE_CMD_ARG_MULTIPLE,
+        .subargs =
+            (RedisModuleCommandArg[]){{.name = "item", .type = REDISMODULE_ARG_TYPE_STRING},
+                                      {.name = "increment", .type = REDISMODULE_ARG_TYPE_INTEGER},
+                                      {0}},
+    },
+    {0}};
+
+static const RedisModuleCommandInfo CMS_INCRBY_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary =
+        "Increases the count of item by increment. Multiple items can be increased with one call.",
+    .complexity = "O(n) where n is the number of items",
+    .since = "2.0.0",
+    .arity = -4,
+    .key_specs = (RedisModuleCommandKeySpec *)CMS_INCRBY_KEYSPECS,
+    .args = (RedisModuleCommandArg *)CMS_INCRBY_ARGS,
+};
+
+// ===============================
+// CMS.INFO
+// ===============================
+static const RedisModuleCommandKeySpec CMS_INFO_KEYSPECS[] = {
+    {.notes = "the name of the sketch",
+     .flags = REDISMODULE_CMD_KEY_RO,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg CMS_INFO_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0}, {0}};
+
+static const RedisModuleCommandInfo CMS_INFO_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Returns width, depth and total count of the sketch",
+    .complexity = "O(1)",
+    .since = "2.0.0",
+    .arity = 2,
+    .key_specs = (RedisModuleCommandKeySpec *)CMS_INFO_KEYSPECS,
+    .args = (RedisModuleCommandArg *)CMS_INFO_ARGS,
+};
+
+// ===============================
+// CMS.INITBYDIM
+// ===============================
+static const RedisModuleCommandKeySpec CMS_INITBYDIM_KEYSPECS[] = {
+    {.notes = "the name of the sketch",
+     .flags = REDISMODULE_CMD_KEY_RW,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg CMS_INITBYDIM_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "width", .type = REDISMODULE_ARG_TYPE_INTEGER},
+    {.name = "depth", .type = REDISMODULE_ARG_TYPE_INTEGER},
+    {0}};
+
+static const RedisModuleCommandInfo CMS_INITBYDIM_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Initializes a Count-Min Sketch to dimensions specified by user",
+    .complexity = "O(1)",
+    .since = "2.0.0",
+    .arity = 4,
+    .key_specs = (RedisModuleCommandKeySpec *)CMS_INITBYDIM_KEYSPECS,
+    .args = (RedisModuleCommandArg *)CMS_INITBYDIM_ARGS,
+};
+
+// ===============================
+// CMS.INITBYPROB
+// ===============================
+static const RedisModuleCommandKeySpec CMS_INITBYPROB_KEYSPECS[] = {
+    {.notes = "the name of the sketch",
+     .flags = REDISMODULE_CMD_KEY_RW,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg CMS_INITBYPROB_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "error", .type = REDISMODULE_ARG_TYPE_DOUBLE},
+    {.name = "probability", .type = REDISMODULE_ARG_TYPE_DOUBLE},
+    {0}};
+
+static const RedisModuleCommandInfo CMS_INITBYPROB_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Initializes a Count-Min Sketch to accommodate requested tolerances.",
+    .complexity = "O(1)",
+    .since = "2.0.0",
+    .arity = 4,
+    .key_specs = (RedisModuleCommandKeySpec *)CMS_INITBYPROB_KEYSPECS,
+    .args = (RedisModuleCommandArg *)CMS_INITBYPROB_ARGS,
+};
+
+// ===============================
+// CMS.MERGE
+// ===============================
+static const RedisModuleCommandKeySpec CMS_MERGE_KEYSPECS[] = {
+    {.notes = "the name of the sketch",
+     .flags = REDISMODULE_CMD_KEY_RW,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg CMS_MERGE_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "numKeys", .type = REDISMODULE_ARG_TYPE_INTEGER},
+    {.name = "source", .type = REDISMODULE_ARG_TYPE_KEY, .flags = REDISMODULE_CMD_ARG_MULTIPLE},
+    {
+        .name = "weights",
+        .type = REDISMODULE_ARG_TYPE_BLOCK,
+        .flags = REDISMODULE_CMD_ARG_OPTIONAL,
+        .subargs =
+            (RedisModuleCommandArg[]){
+                {.name = "weights", .type = REDISMODULE_ARG_TYPE_PURE_TOKEN, .token = "WEIGHTS"},
+                {.name = "weight",
+                 .type = REDISMODULE_ARG_TYPE_DOUBLE,
+                 .flags = REDISMODULE_CMD_ARG_MULTIPLE},
+                {0}},
+    },
+    {0}};
+
+static const RedisModuleCommandInfo CMS_MERGE_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Merges several sketches into one sketch. All sketches must have identical width "
+               "and depth. Weights can be used to multiply certain sketches. Default weight is 1.",
+    .complexity = "O(n) where n is the number of sketches",
+    .since = "2.0.0",
+    .arity = -4,
+    .key_specs = (RedisModuleCommandKeySpec *)CMS_MERGE_KEYSPECS,
+    .args = (RedisModuleCommandArg *)CMS_MERGE_ARGS,
+};
+
+// ===============================
+// CMS.QUERY
+// ===============================
+static const RedisModuleCommandKeySpec CMS_QUERY_KEYSPECS[] = {
+    {.notes = "the name of the sketch",
+     .flags = REDISMODULE_CMD_KEY_RO,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg CMS_QUERY_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "item", .type = REDISMODULE_ARG_TYPE_STRING, .flags = REDISMODULE_CMD_ARG_MULTIPLE},
+    {0}};
+
+static const RedisModuleCommandInfo CMS_QUERY_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Returns the count for one or more items in a sketch",
+    .complexity = "O(n) where n is the number of items",
+    .since = "2.0.0",
+    .arity = -3,
+    .key_specs = (RedisModuleCommandKeySpec *)CMS_QUERY_KEYSPECS,
+    .args = (RedisModuleCommandArg *)CMS_QUERY_ARGS,
+};
 
 int RegisterCMSCommandInfos(RedisModuleCtx *ctx) {
-    /* TODO: add CMS command infos similar to CF. */
-    (void)ctx;
+    RedisModuleCommand *cmd_incrby = RedisModule_GetCommand(ctx, "CMS.INCRBY");
+    if (!cmd_incrby) {
+        return REDISMODULE_ERR;
+    }
+    if (RedisModule_SetCommandInfo(cmd_incrby, &CMS_INCRBY_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *cmd_info = RedisModule_GetCommand(ctx, "CMS.INFO");
+    if (!cmd_info) {
+        return REDISMODULE_ERR;
+    }
+    if (RedisModule_SetCommandInfo(cmd_info, &CMS_INFO_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *cmd_initbydim = RedisModule_GetCommand(ctx, "CMS.INITBYDIM");
+    if (!cmd_initbydim) {
+        return REDISMODULE_ERR;
+    }
+    if (RedisModule_SetCommandInfo(cmd_initbydim, &CMS_INITBYDIM_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *cmd_initbyprob = RedisModule_GetCommand(ctx, "CMS.INITBYPROB");
+    if (!cmd_initbyprob) {
+        return REDISMODULE_ERR;
+    }
+    if (RedisModule_SetCommandInfo(cmd_initbyprob, &CMS_INITBYPROB_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *cmd_merge = RedisModule_GetCommand(ctx, "CMS.MERGE");
+    if (!cmd_merge) {
+        return REDISMODULE_ERR;
+    }
+    if (RedisModule_SetCommandInfo(cmd_merge, &CMS_MERGE_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *cmd_query = RedisModule_GetCommand(ctx, "CMS.QUERY");
+    if (!cmd_query) {
+        return REDISMODULE_ERR;
+    }
+    if (RedisModule_SetCommandInfo(cmd_query, &CMS_QUERY_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
     return REDISMODULE_OK;
 }

@@ -166,6 +166,188 @@ class testCommandDocsAndHelp():
             key_pos=1,
         )
 
+    def test_command_docs_topk_add(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'topk.add',
+            summary='Adds an item to a Top-k sketch. Multiple items can be added at the same time. If an item enters the Top-K sketch, the item that is expelled (if any) is returned',
+            complexity='O(n * k) where n is the number of items and k is the depth',
+            arity=-3,
+            since='2.0.0',
+            args=[('key', 'key'), ('item', 'string')],
+            key_pos=1,
+        )
+
+    def test_command_docs_topk_count(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'topk.count',
+            summary='Return the count for one or more items are in a sketch',
+            complexity='O(n) where n is the number of items',
+            arity=-3,
+            since='2.0.0',
+            args=[('key', 'key'), ('item', 'string')],
+            key_pos=1,
+        )
+    
+    def test_command_docs_topk_incrby(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'topk.incrby',
+            summary='Increases the count of one or more items by increment',
+            complexity='O(n * k * incr) where n is the number of items, k is the depth and incr is the increment',
+            arity=-4,
+            since='2.0.0',
+            args=[('key', 'key'), ('item_increment', 'block')],
+            key_pos=1,
+        )
+
+    def test_command_docs_topk_info(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'topk.info',
+            summary='Returns number of required items (k), width, depth, and decay values of a given sketch',
+            complexity='O(1)',
+            arity=2,
+            since='2.0.0',
+            args=[('key', 'key')],
+            key_pos=1,
+        )
+
+    def test_command_docs_topk_list(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'topk.list',
+            summary='Return the full list of items in Top-K sketch',
+            complexity='O(k*log(k)) where k is the value of top-k',
+            arity=-2,
+            since='2.0.0',
+            args=[('key', 'key'), ('withcount', 'pure-token')],
+            key_pos=1,
+        )
+
+    def test_command_docs_topk_query(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'topk.query',
+            summary='Checks whether one or more items are one of the Top-K items',
+            complexity='O(n) where n is the number of items',
+            arity=-3,
+            since='2.0.0',
+            args=[('key', 'key'), ('item', 'string')],
+            key_pos=1,
+        )
+    
+    def test_command_docs_topk_reserve(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'topk.reserve',
+            summary='Initializes a Top-K sketch with specified parameters',
+            complexity='O(1)',
+            arity=-3,
+            since='2.0.0',
+            args=[('key', 'key'), ('topk', 'integer'), ('params', 'block')],
+            key_pos=1,
+        )
+
+    def test_command_docs_cms_incrby(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cms.incrby',
+            summary='Increases the count of item by increment. Multiple items can be increased with one call.',
+            complexity='O(n) where n is the number of items',
+            arity=-4,
+            since='2.0.0',
+            args=[('key', 'key'), ('items', 'block')],
+            key_pos=1,
+        )
+
+    def test_command_docs_cms_info(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cms.info',
+            summary='Returns width, depth and total count of the sketch',
+            complexity='O(1)',
+            arity=2,
+            since='2.0.0',
+            args=[('key', 'key')],
+            key_pos=1,
+        )
+    
+    def test_command_docs_cms_initbydim(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cms.initbydim',
+            summary='Initializes a Count-Min Sketch to dimensions specified by user',
+            complexity='O(1)',
+            arity=4,
+            since='2.0.0',
+            args=[('key', 'key'), ('width', 'integer'), ('depth', 'integer')],
+            key_pos=1,
+        )
+
+    def test_command_docs_cms_initbyprob(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cms.initbyprob',
+            summary='Initializes a Count-Min Sketch to accommodate requested tolerances.',
+            complexity='O(1)',
+            arity=4,
+            since='2.0.0',
+            args=[('key', 'key'), ('error', 'double'), ('probability', 'double')],
+            key_pos=1,
+        )
+
+    def test_command_docs_cms_merge(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cms.merge',
+            summary='Merges several sketches into one sketch. All sketches must have identical width and depth. Weights can be used to multiply certain sketches. Default weight is 1.',
+            complexity='O(n) where n is the number of sketches',
+            arity=-4,
+            since='2.0.0',
+            args=[('key', 'key'), ('numKeys', 'integer'), ('source', 'key'), ('weights', 'block')],
+            key_pos=1,
+        )
+
+    def test_command_docs_cms_query(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cms.query',
+            summary='Returns the count for one or more items in a sketch',
+            complexity='O(n) where n is the number of items',
+            arity=-3,
+            since='2.0.0',
+            args=[('key', 'key'), ('item', 'string')],
+            key_pos=1,
+        )
+        
     def test_command_docs_cf_del(self):
         env = self.env
         if server_version_less_than(env, '7.0.0'):

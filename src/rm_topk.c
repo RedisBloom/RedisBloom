@@ -12,6 +12,7 @@
 #include "version.h"
 #include "rmutil/util.h"
 
+#include "cmd_info/command_info.h"
 #include "topk.h"
 #include "rm_topk.h"
 #include "rm_cms.h"
@@ -374,6 +375,8 @@ int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RegisterCommand(ctx, "topk.info", TopK_Info_Cmd, "readonly", "read fast");
 
 #undef RegisterCommand
+    if (RegisterTopKCommandInfos(ctx) != REDISMODULE_OK)
+        return REDISMODULE_ERR;
 
     return REDISMODULE_OK;
 }
