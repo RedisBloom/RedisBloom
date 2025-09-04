@@ -166,7 +166,7 @@ class testCommandDocsAndHelp():
             key_pos=1,
         )
 
-    def test_command_docs_topk_add(self):
+def test_command_docs_topk_add(self):
         env = self.env
         if server_version_less_than(env, '7.0.0'):
             env.skip()
@@ -345,5 +345,117 @@ class testCommandDocsAndHelp():
             arity=-3,
             since='2.0.0',
             args=[('key', 'key'), ('item', 'string')],
+            key_pos=1,
+        )
+        
+    def test_command_docs_cf_del(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cf.del',
+            summary='Deletes an item once from the filter. If the item exists only once, it will be removed from the filter. If the item was added multiple times, it will still be present.',
+            complexity='O(k), where k is the number of sub-filters',
+            arity=3,
+            since='1.0.0',
+            args=[('key', 'key'), ('item', 'string')],
+            key_pos=1,
+        )
+
+    def test_command_docs_cf_exists(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cf.exists',
+            summary='Determines whether a given item was added to a cuckoo filter.',
+            complexity='O(k), where k is the number of sub-filters',
+            arity=3,
+            since='1.0.0',
+            args=[('key', 'key'), ('item', 'string')],
+            key_pos=1,
+        )
+
+    def test_command_docs_cf_info(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cf.info',
+            summary='Returns information about a cuckoo filter.',
+            complexity='O(1)',
+            arity=2,
+            since='1.0.0',
+            args=[('key', 'key')],
+            key_pos=1,
+        )
+
+    def test_command_docs_cf_insert(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cf.insert',
+            summary='Adds one or more items to a cuckoo filter, allowing the filter to be created with a custom capacity if it does not exist yet. This command is similar to CF.ADD, except that more than one item can be added and capacity can be specified.',
+            complexity='O(n * (k + i)), where n is the number of items, k is the number of sub-filters and i is maxIterations',
+            arity=-4,
+            since='1.0.0',
+            args=[('key', 'key'), ('capacity', 'block'), ('nocreate', 'pure-token'), ('items', 'pure-token'), ('item', 'string')],
+            key_pos=1,
+        )
+
+    def test_command_docs_cf_insertnx(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cf.insertnx',
+            summary='Adds one or more items to a cuckoo filter if they did not exist previously, allowing the filter to be created with a custom capacity if it does not exist yet.',
+            complexity='O(n * (k + i)), where n is the number of items, k is the number of sub-filters and i is maxIterations',
+            arity=-4,
+            since='1.0.0',
+            args=[('key', 'key'), ('capacity', 'block'), ('nocreate', 'pure-token'), ('items', 'pure-token'), ('item', 'string')],
+            key_pos=1,
+        )
+
+    def test_command_docs_cf_loadchunk(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cf.loadchunk',
+            summary='Restores a cuckoo filter previously saved using CF.SCANDUMP.',
+            complexity='O(n), where n is the capacity',
+            arity=4,
+            since='1.0.0',
+            args=[('key', 'key'), ('iterator', 'integer'), ('data', 'string')],
+            key_pos=1,
+        )
+
+    def test_command_docs_cf_mexists(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cf.mexists',
+            summary='Determines whether a given item was added to a cuckoo filter.',
+            complexity='O(k * n), where k is the number of sub-filters and n is the number of items',
+            arity=-3,
+            since='1.0.0',
+            args=[('key', 'key'), ('item', 'string')],
+            key_pos=1,
+        )
+
+    def test_command_docs_cf_scandump(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cf.scandump',
+            summary='Begins an incremental save of the cuckoo filter. The first time this command is called, the value of iter should be 0.',
+            complexity='O(n), where n is the capacity',
+            arity=3,
+            since='1.0.0',
+            args=[('key', 'key'), ('iterator', 'integer')],
             key_pos=1,
         )
