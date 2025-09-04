@@ -123,7 +123,7 @@ static const RedisModuleCommandInfo CF_INFO_INFO = {
     .summary = "Returns information about a cuckoo filter.",
     .complexity = "O(1)",
     .since = "1.0.0",
-    .arity = 1,
+    .arity = 2,
     .key_specs = (RedisModuleCommandKeySpec *)CF_INFO_KEYSPECS,
     .args = (RedisModuleCommandArg *)CF_INFO_ARGS,
 };
@@ -242,6 +242,33 @@ static const RedisModuleCommandInfo CF_LOADCHUNK_INFO = {
     .args = (RedisModuleCommandArg *)CF_LOADCHUNK_ARGS,
 };
 
+// ===============================
+// CF.MEXISTS
+// ===============================
+static const RedisModuleCommandKeySpec CF_MEXISTS_KEYSPECS[] = {
+    {.notes = "is key name for a cuckoo filter.",
+     .flags = REDISMODULE_CMD_KEY_RO,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg CF_MEXISTS_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "item", .type = REDISMODULE_ARG_TYPE_STRING, .flags = REDISMODULE_CMD_ARG_MULTIPLE},
+    {0}};
+
+static const RedisModuleCommandInfo CF_MEXISTS_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Determines whether a given item was added to a cuckoo filter.",
+    .complexity = "O(k * n), where k is the number of sub-filters and n is the number of items",
+    .since = "1.0.0",
+    .arity = -3,
+    .key_specs = (RedisModuleCommandKeySpec *)CF_MEXISTS_KEYSPECS,
+    .args = (RedisModuleCommandArg *)CF_MEXISTS_ARGS,
+};
+
 int RegisterCFCommandInfos(RedisModuleCtx *ctx) {
     RedisModuleCommand *reserve_cmd = RedisModule_GetCommand(ctx, "cf.reserve");
     if (!reserve_cmd)
@@ -289,6 +316,13 @@ int RegisterCFCommandInfos(RedisModuleCtx *ctx) {
     if (!loadchunk_cmd)
         return REDISMODULE_ERR;
     if (RedisModule_SetCommandInfo(loadchunk_cmd, &CF_LOADCHUNK_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *mexists_cmd = RedisModule_GetCommand(ctx, "cf.mexists");
+    if (!mexists_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(mexists_cmd, &CF_MEXISTS_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
