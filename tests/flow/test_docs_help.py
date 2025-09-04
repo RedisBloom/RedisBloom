@@ -165,3 +165,17 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('iterator', 'integer')],
             key_pos=1,
         )
+
+    def test_command_docs_cf_del(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cf.del',
+            summary='Deletes an item once from the filter. If the item exists only once, it will be removed from the filter. If the item was added multiple times, it will still be present.',
+            complexity='O(k), where k is the number of sub-filters',
+            arity=3,
+            since='1.0.0',
+            args=[('key', 'key'), ('item', 'string')],
+            key_pos=1,
+        )
