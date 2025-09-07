@@ -487,3 +487,17 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('rank', 'double')],
             key_pos=1,
         )
+
+    def test_command_docs_tdigest_byrevrank(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'tdigest.byrevrank',
+            summary='Returns, for each input reverse rank (revrank), an estimation of the floating-point value with that reverse rank. Multiple estimations can be retrieved in a single call.',
+            complexity='O(N) where N is the number of reverse ranks specified.',
+            arity=-3,
+            since='2.4.0',
+            args=[('key', 'key'), ('reverse_rank', 'double')],
+            key_pos=1,
+        )
