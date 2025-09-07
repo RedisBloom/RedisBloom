@@ -3,14 +3,83 @@
 // ===============================
 // CF.ADD key item
 // ===============================
+static const RedisModuleCommandKeySpec CF_ADD_KEYSPECS[] = {
+    {.notes = "is key name for a cuckoo filter.",
+     .flags = REDISMODULE_CMD_KEY_RW,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg CF_ADD_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "item", .type = REDISMODULE_ARG_TYPE_STRING},
+    {0}};
+
+static const RedisModuleCommandInfo CF_ADD_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Adds an item to a cuckoo filter. A filter will be created if it does not exist.",
+    .complexity = "O(k), where k is the number of sub-filters",
+    .since = "1.0.0",
+    .arity = 3,
+    .key_specs = (RedisModuleCommandKeySpec *)CF_ADD_KEYSPECS,
+    .args = (RedisModuleCommandArg *)CF_ADD_ARGS,
+};
 
 // ===============================
 // CF.ADDNX key item
 // ===============================
+static const RedisModuleCommandKeySpec CF_ADDNX_KEYSPECS[] = {
+    {.notes = "is key name for a cuckoo filter.",
+     .flags = REDISMODULE_CMD_KEY_RW,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg CF_ADDNX_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "item", .type = REDISMODULE_ARG_TYPE_STRING},
+    {0}};
+
+static const RedisModuleCommandInfo CF_ADDNX_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Adds an item to a cuckoo filter, only if the item did not exist previously.",
+    .complexity = "O(k), where k is the number of sub-filters",
+    .since = "1.0.0",
+    .arity = 3,
+    .key_specs = (RedisModuleCommandKeySpec *)CF_ADDNX_KEYSPECS,
+    .args = (RedisModuleCommandArg *)CF_ADDNX_ARGS,
+};
 
 // ===============================
 // CF.COUNT key item
 // ===============================
+static const RedisModuleCommandKeySpec CF_COUNT_KEYSPECS[] = {
+    {.notes = "is key name for a cuckoo filter.",
+     .flags = REDISMODULE_CMD_KEY_RO,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg CF_COUNT_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "item", .type = REDISMODULE_ARG_TYPE_STRING},
+    {0}};
+
+static const RedisModuleCommandInfo CF_COUNT_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Returns the number of times an item may be in the filter.",
+    .complexity = "O(k), where k is the number of sub-filters",
+    .since = "1.0.0",
+    .arity = 3,
+    .key_specs = (RedisModuleCommandKeySpec *)CF_COUNT_KEYSPECS,
+    .args = (RedisModuleCommandArg *)CF_COUNT_ARGS,
+};
 
 
 
@@ -316,6 +385,27 @@ static const RedisModuleCommandInfo CF_SCANDUMP_INFO = {
 
 
 int RegisterCFCommandInfos(RedisModuleCtx *ctx) {
+    RedisModuleCommand *add_cmd = RedisModule_GetCommand(ctx, "cf.add");
+    if (!add_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(add_cmd, &CF_ADD_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *addnx_cmd = RedisModule_GetCommand(ctx, "cf.addnx");
+    if (!addnx_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(addnx_cmd, &CF_ADDNX_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *count_cmd = RedisModule_GetCommand(ctx, "cf.count");
+    if (!count_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(count_cmd, &CF_COUNT_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
     RedisModuleCommand *del_cmd = RedisModule_GetCommand(ctx, "cf.del");
     if (!del_cmd)
         return REDISMODULE_ERR;
