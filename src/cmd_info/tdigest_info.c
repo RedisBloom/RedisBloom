@@ -53,6 +53,37 @@ static const RedisModuleCommandInfo TDIGEST_BYRANK_INFO = {
     .args = (RedisModuleCommandArg *)TDIGEST_BYRANK_ARGS,
 };
 
+// ===============================
+// TDIGEST.BYREVRANK
+// ===============================
+static const RedisModuleCommandKeySpec TDIGEST_BYREVRANK_KEYSPECS[] = {
+    {.notes = "is the key name for an existing t-digest sketch.",
+     .flags = REDISMODULE_CMD_KEY_RO,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg TDIGEST_BYREVRANK_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "reverse_rank",
+     .type = REDISMODULE_ARG_TYPE_DOUBLE,
+     .flags = REDISMODULE_CMD_ARG_MULTIPLE},
+    {0}};
+
+static const RedisModuleCommandInfo TDIGEST_BYREVRANK_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary =
+        "Returns, for each input reverse rank (revrank), an estimation of the floating-point value "
+        "with that reverse rank. Multiple estimations can be retrieved in a single call.",
+    .complexity = "O(N) where N is the number of reverse ranks specified.",
+    .since = "2.4.0",
+    .arity = -3,
+    .key_specs = (RedisModuleCommandKeySpec *)TDIGEST_BYREVRANK_KEYSPECS,
+    .args = (RedisModuleCommandArg *)TDIGEST_BYREVRANK_ARGS,
+};
+
 int RegisterTDigestCommandInfos(RedisModuleCtx *ctx) {
     RedisModuleCommand *cmd_add = RedisModule_GetCommand(ctx, "tdigest.add");
     if (!cmd_add) {
@@ -67,6 +98,14 @@ int RegisterTDigestCommandInfos(RedisModuleCtx *ctx) {
         return REDISMODULE_ERR;
     }
     if (RedisModule_SetCommandInfo(cmd_byrank, &TDIGEST_BYRANK_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *cmd_byrevrank = RedisModule_GetCommand(ctx, "tdigest.byrevrank");
+    if (!cmd_byrevrank) {
+        return REDISMODULE_ERR;
+    }
+    if (RedisModule_SetCommandInfo(cmd_byrevrank, &TDIGEST_BYREVRANK_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
