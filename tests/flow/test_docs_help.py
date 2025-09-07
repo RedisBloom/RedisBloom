@@ -459,3 +459,17 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('iterator', 'integer')],
             key_pos=1,
         )
+
+    def test_command_docs_tdigest_add(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'tdigest.add',
+            summary='Adds one or more observations to a t-digest sketch.',
+            complexity='O(N), where N is the number of samples to add',
+            arity=-3,
+            since='2.4.0',
+            args=[('key', 'key'), ('value', 'double')],
+            key_pos=1,
+        )
