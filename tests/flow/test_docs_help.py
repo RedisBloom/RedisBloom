@@ -529,3 +529,17 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('compression_block', 'block')],
             key_pos=1,
         )
+
+    def test_command_docs_tdigest_max(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'tdigest.max',
+            summary='Returns the maximum observation value from a t-digest sketch.',
+            complexity='O(1)',
+            arity=2,
+            since='2.4.0',
+            args=[('key', 'key')],
+            key_pos=1,
+        )
