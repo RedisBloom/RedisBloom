@@ -473,3 +473,17 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('value', 'double')],
             key_pos=1,
         )
+
+    def test_command_docs_tdigest_byrank(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'tdigest.byrank',
+            summary='Returns the value at the given rank in the t-digest sketch.',
+            complexity='O(N) where N is the number of ranks specified',
+            arity=-3,
+            since='2.4.0',
+            args=[('key', 'key'), ('rank', 'double')],
+            key_pos=1,
+        )
