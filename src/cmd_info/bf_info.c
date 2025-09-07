@@ -73,7 +73,7 @@ static const RedisModuleCommandArg BF_INFO_ARGS[] = {
      .flags = REDISMODULE_CMD_ARG_OPTIONAL,
      .subargs =
          (RedisModuleCommandArg[]){
-             {.name = "CAPACITY", .type = REDISMODULE_ARG_TYPE_PURE_TOKEN, .token = "CAPACITY"},
+             {.name = "capcaity", .type = REDISMODULE_ARG_TYPE_PURE_TOKEN, .token = "CAPACITY"},
              {.name = "SIZE", .type = REDISMODULE_ARG_TYPE_PURE_TOKEN, .token = "SIZE"},
              {.name = "FILTERS", .type = REDISMODULE_ARG_TYPE_PURE_TOKEN, .token = "FILTERS"},
              {.name = "ITEMS", .type = REDISMODULE_ARG_TYPE_PURE_TOKEN, .token = "ITEMS"},

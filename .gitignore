@@ -20,3 +20,4 @@
 /bin/
 /1/
 .DS_Store
+.venv
