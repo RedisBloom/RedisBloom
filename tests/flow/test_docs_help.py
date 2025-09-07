@@ -515,3 +515,17 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('value', 'double')],
             key_pos=1,
         )
+
+    def test_command_docs_tdigest_create(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'tdigest.create',
+            summary='Allocates memory and initializes a new t-digest sketch.',
+            complexity='O(1)',
+            arity=-2,
+            since='2.4.0',
+            args=[('key', 'key'), ('compression_block', 'block')],
+            key_pos=1,
+        )
