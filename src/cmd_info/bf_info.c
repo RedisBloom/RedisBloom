@@ -1,7 +1,7 @@
 #include "redismodule.h"
 
 // ===============================
-// BF.ADD
+// BF.ADD key item
 // ===============================
 static const RedisModuleCommandKeySpec BF_ADD_KEYSPECS[] = {
     {.notes = "is key name for a Bloom filter to add the item to.",
@@ -28,7 +28,32 @@ static const RedisModuleCommandInfo BF_ADD_INFO = {
 };
 
 // ===============================
-// BF.EXISTS
+// BF.CARD key
+// ===============================
+static const RedisModuleCommandKeySpec BF_CARD_KEYSPECS[] = {
+    {.notes = "is key name for a Bloom filter.",
+     .flags = REDISMODULE_CMD_KEY_RO,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg BF_CARD_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0}, {0}};
+
+static const RedisModuleCommandInfo BF_CARD_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Returns the cardinality of a Bloom filter",
+    .complexity = "O(1)",
+    .since = "2.4.4",
+    .arity = 2,
+    .key_specs = (RedisModuleCommandKeySpec *)BF_CARD_KEYSPECS,
+    .args = (RedisModuleCommandArg *)BF_CARD_ARGS,
+};
+
+// ===============================
+// BF.EXISTS key item
 // ===============================
 static const RedisModuleCommandKeySpec BF_EXISTS_KEYSPECS[] = {
     {.notes = "is key name for a Bloom filter to check the item in.",
@@ -55,7 +80,7 @@ static const RedisModuleCommandInfo BF_EXISTS_INFO = {
 };
 
 // ===============================
-// BF.INFO
+// BF.INFO key [CAPACITY | SIZE | FILTERS | ITEMS | EXPANSION]
 // ===============================
 static const RedisModuleCommandKeySpec BF_INFO_KEYSPECS[] = {
     {.notes = "is key name for a Bloom filter.",
@@ -93,32 +118,7 @@ static const RedisModuleCommandInfo BF_INFO_INFO = {
 };
 
 // ===============================
-// BF.CARD
-// ===============================
-static const RedisModuleCommandKeySpec BF_CARD_KEYSPECS[] = {
-    {.notes = "is key name for a Bloom filter.",
-     .flags = REDISMODULE_CMD_KEY_RO,
-     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
-     .bs.index = {.pos = 1},
-     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
-     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
-    {0}};
-
-static const RedisModuleCommandArg BF_CARD_ARGS[] = {
-    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0}, {0}};
-
-static const RedisModuleCommandInfo BF_CARD_INFO = {
-    .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Returns the cardinality of a Bloom filter",
-    .complexity = "O(1)",
-    .since = "2.4.4",
-    .arity = 2,
-    .key_specs = (RedisModuleCommandKeySpec *)BF_CARD_KEYSPECS,
-    .args = (RedisModuleCommandArg *)BF_CARD_ARGS,
-};
-
-// ===============================
-// BF.INSERT
+// BF.INSERT key [CAPACITY capacity] [ERROR error] [EXPANSION expansion] [NOCREATE] [NONSCALING] ITEMS item [item ...]
 // ===============================
 static const RedisModuleCommandKeySpec BF_INSERT_KEYSPECS[] = {
     {.notes = "is key name for a Bloom filter to insert the item to.",
@@ -166,6 +166,7 @@ static const RedisModuleCommandArg BF_INSERT_ARGS[] = {
     {.name = "items", .type = REDISMODULE_ARG_TYPE_PURE_TOKEN, .token = "ITEMS"},
     {.name = "item", .type = REDISMODULE_ARG_TYPE_STRING, .flags = REDISMODULE_CMD_ARG_MULTIPLE},
     {0}};
+
 static const RedisModuleCommandInfo BF_INSERT_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
     .summary =
@@ -178,7 +179,7 @@ static const RedisModuleCommandInfo BF_INSERT_INFO = {
 };
 
 // ===============================
-// BF.LOADCHUNK
+// BF.LOADCHUNK key iterator data
 // ===============================
 static const RedisModuleCommandKeySpec BF_LOADCHUNK_KEYSPECS[] = {
     {.notes = "is key name for a Bloom filter to load the chunk to.",
@@ -206,7 +207,7 @@ static const RedisModuleCommandInfo BF_LOADCHUNK_INFO = {
 };
 
 // ===============================
-// BF.MADD
+// BF.MADD key item [item ...]
 // ===============================
 static const RedisModuleCommandKeySpec BF_MADD_KEYSPECS[] = {
     {.notes = "is key name for a Bloom filter to add the items to.",
@@ -233,7 +234,7 @@ static const RedisModuleCommandInfo BF_MADD_INFO = {
 };
 
 // ===============================
-// BF.MEXISTS
+// BF.MEXISTS key item [item ...]
 // ===============================
 static const RedisModuleCommandKeySpec BF_MEXISTS_KEYSPECS[] = {
     {.notes = "is key name for a Bloom filter.",
@@ -248,6 +249,7 @@ static const RedisModuleCommandArg BF_MEXISTS_ARGS[] = {
     {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
     {.name = "item", .type = REDISMODULE_ARG_TYPE_STRING, .flags = REDISMODULE_CMD_ARG_MULTIPLE},
     {0}};
+
 static const RedisModuleCommandInfo BF_MEXISTS_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
     .summary = "Checks whether one or more items exist in a Bloom Filter",
@@ -259,7 +261,7 @@ static const RedisModuleCommandInfo BF_MEXISTS_INFO = {
 };
 
 // ===============================
-// BF.RESERVE
+// BF.RESERVE key error_rate capacity [EXPANSION expansion] [NONSCALING]
 // ===============================
 static const RedisModuleCommandKeySpec BF_RESERVE_KEYSPECS[] = {
     {.notes = "is key name for the the Bloom filter to be created.",
@@ -297,7 +299,7 @@ static const RedisModuleCommandInfo BF_RESERVE_INFO = {
 };
 
 // ===============================
-// BF.SCANDUMP
+// BF.SCANDUMP key iterator
 // ===============================
 static const RedisModuleCommandKeySpec BF_SCANDUMP_KEYSPECS[] = {
     {.notes = "is key name for a Bloom filter to save.",
@@ -331,6 +333,13 @@ int RegisterBFCommandInfos(RedisModuleCtx *ctx) {
         return REDISMODULE_ERR;
     }
 
+    RedisModuleCommand *cmd_card = RedisModule_GetCommand(ctx, "bf.card");
+    if (!cmd_card)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(cmd_card, &BF_CARD_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
     RedisModuleCommand *cmd_exists = RedisModule_GetCommand(ctx, "bf.exists");
     if (!cmd_exists)
         return REDISMODULE_ERR;
@@ -342,13 +351,6 @@ int RegisterBFCommandInfos(RedisModuleCtx *ctx) {
     if (!cmd_info)
         return REDISMODULE_ERR;
     if (RedisModule_SetCommandInfo(cmd_info, &BF_INFO_INFO) == REDISMODULE_ERR) {
-        return REDISMODULE_ERR;
-    }
-
-    RedisModuleCommand *cmd_card = RedisModule_GetCommand(ctx, "bf.card");
-    if (!cmd_card)
-        return REDISMODULE_ERR;
-    if (RedisModule_SetCommandInfo(cmd_card, &BF_CARD_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 

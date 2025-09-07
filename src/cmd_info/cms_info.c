@@ -1,6 +1,7 @@
 #include "redismodule.h"
+
 // ===============================
-// CMS.INCRBY
+// CMS.INCRBY key item increment [item increment ...]
 // ===============================
 static const RedisModuleCommandKeySpec CMS_INCRBY_KEYSPECS[] = {
     {.notes = "the name of the sketch",
@@ -36,7 +37,7 @@ static const RedisModuleCommandInfo CMS_INCRBY_INFO = {
 };
 
 // ===============================
-// CMS.INFO
+// CMS.INFO key
 // ===============================
 static const RedisModuleCommandKeySpec CMS_INFO_KEYSPECS[] = {
     {.notes = "the name of the sketch",
@@ -61,7 +62,7 @@ static const RedisModuleCommandInfo CMS_INFO_INFO = {
 };
 
 // ===============================
-// CMS.INITBYDIM
+// CMS.INITBYDIM key width depth
 // ===============================
 static const RedisModuleCommandKeySpec CMS_INITBYDIM_KEYSPECS[] = {
     {.notes = "the name of the sketch",
@@ -89,7 +90,7 @@ static const RedisModuleCommandInfo CMS_INITBYDIM_INFO = {
 };
 
 // ===============================
-// CMS.INITBYPROB
+// CMS.INITBYPROB key error probability
 // ===============================
 static const RedisModuleCommandKeySpec CMS_INITBYPROB_KEYSPECS[] = {
     {.notes = "the name of the sketch",
@@ -117,7 +118,7 @@ static const RedisModuleCommandInfo CMS_INITBYPROB_INFO = {
 };
 
 // ===============================
-// CMS.MERGE
+// CMS.MERGE destination numKeys source [source ...] [WEIGHTS weight [weight ...]]
 // ===============================
 static const RedisModuleCommandKeySpec CMS_MERGE_KEYSPECS[] = {
     {.notes = "the name of the sketch",
@@ -158,7 +159,7 @@ static const RedisModuleCommandInfo CMS_MERGE_INFO = {
 };
 
 // ===============================
-// CMS.QUERY
+// CMS.QUERY key item [item ...]
 // ===============================
 static const RedisModuleCommandKeySpec CMS_QUERY_KEYSPECS[] = {
     {.notes = "the name of the sketch",

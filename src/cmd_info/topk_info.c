@@ -1,7 +1,7 @@
 #include "redismodule.h"
 
 // ===============================
-// TOPK.ADD
+// TOPK.ADD key items [items ...]
 // ===============================
 static const RedisModuleCommandKeySpec TOPK_ADD_KEYSPECS[] = {
     {.notes = "the name of the sketch where items are added",
@@ -29,7 +29,7 @@ static const RedisModuleCommandInfo TOPK_ADD_INFO = {
 };
 
 // ===============================
-// TOPK.COUNT
+// TOPK.COUNT key item [item ...]
 // ===============================
 static const RedisModuleCommandKeySpec TOPK_COUNT_KEYSPECS[] = {
     {.notes = "the name of the sketch where items are to be counted",
@@ -61,7 +61,7 @@ static const RedisModuleCommandInfo TOPK_COUNT_INFO = {
 };
 
 // ===============================
-// TOPK.INCRBY
+// TOPK.INCRBY key item increment [item increment ...]
 // ===============================
 static const RedisModuleCommandKeySpec TOPK_INCRBY_KEYSPECS[] = {
     {.notes = "the name of the sketch",
@@ -97,7 +97,7 @@ static const RedisModuleCommandInfo TOPK_INCRBY_INFO = {
 };
 
 // ===============================
-// TOPK.INFO
+// TOPK.INFO key
 // ===============================
 static const RedisModuleCommandKeySpec TOPK_INFO_KEYSPECS[] = {
     {.notes = "the name of the sketch",
@@ -123,7 +123,7 @@ static const RedisModuleCommandInfo TOPK_INFO_INFO = {
 };
 
 // ===============================
-// TOPK.LIST
+// TOPK.LIST key [WITHCOUNT]
 // ===============================
 static const RedisModuleCommandKeySpec TOPK_LIST_KEYSPECS[] = {
     {.notes = "the name of the sketch",
@@ -153,7 +153,7 @@ static const RedisModuleCommandInfo TOPK_LIST_INFO = {
 };
 
 // ===============================
-// TOPK.QUERY
+// TOPK.QUERY key item [item ...]
 // ===============================
 static const RedisModuleCommandKeySpec TOPK_QUERY_KEYSPECS[] = {
     {.notes = "the name of the sketch",
@@ -180,7 +180,7 @@ static const RedisModuleCommandInfo TOPK_QUERY_INFO = {
 };
 
 // ===============================
-// TOPK.RESERVE
+// TOPK.RESERVE key topk [width depth decay]
 // ===============================
 static const RedisModuleCommandKeySpec TOPK_RESERVE_KEYSPECS[] = {
     {.notes = "the name of the sketch",
