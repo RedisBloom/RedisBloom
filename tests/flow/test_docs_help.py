@@ -501,3 +501,17 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('reverse_rank', 'double')],
             key_pos=1,
         )
+
+    def test_command_docs_tdigest_cdf(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'tdigest.cdf',
+            summary='Returns, for each input value, an estimation of the floating-point fraction of (observations smaller than the given value + half the observations equal to the given value). Multiple fractions can be retrieved in a single call.',
+            complexity='O(N) where N is the number of values specified.',
+            arity=-3,
+            since='2.4.0',
+            args=[('key', 'key'), ('value', 'double')],
+            key_pos=1,
+        )
