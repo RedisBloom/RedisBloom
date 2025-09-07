@@ -113,6 +113,43 @@ static const RedisModuleCommandInfo TDIGEST_CDF_INFO = {
     .args = (RedisModuleCommandArg *)TDIGEST_CDF_ARGS,
 };
 
+// ===============================
+// TDIGEST.CREATE
+// ===============================
+static const RedisModuleCommandKeySpec TDIGEST_CREATE_KEYSPECS[] = {
+    {.notes = "is the key name for a new t-digest sketch.",
+     .flags = REDISMODULE_CMD_KEY_RW,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg TDIGEST_CREATE_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
+    {.name = "compression_block",
+     .type = REDISMODULE_ARG_TYPE_BLOCK,
+     .flags = REDISMODULE_CMD_ARG_OPTIONAL,
+     .subargs =
+         (RedisModuleCommandArg[]){
+             {.name = "compression_token",
+              .type = REDISMODULE_ARG_TYPE_PURE_TOKEN,
+              .token = "COMPRESSION"},
+             {.name = "compression", .type = REDISMODULE_ARG_TYPE_INTEGER},
+             {0},
+         }},
+    {0}};
+
+static const RedisModuleCommandInfo TDIGEST_CREATE_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Allocates memory and initializes a new t-digest sketch.",
+    .complexity = "O(1)",
+    .since = "2.4.0",
+    .arity = -2,
+    .key_specs = (RedisModuleCommandKeySpec *)TDIGEST_CREATE_KEYSPECS,
+    .args = (RedisModuleCommandArg *)TDIGEST_CREATE_ARGS,
+};
+
 int RegisterTDigestCommandInfos(RedisModuleCtx *ctx) {
     RedisModuleCommand *cmd_add = RedisModule_GetCommand(ctx, "tdigest.add");
     if (!cmd_add) {
@@ -143,6 +180,14 @@ int RegisterTDigestCommandInfos(RedisModuleCtx *ctx) {
         return REDISMODULE_ERR;
     }
     if (RedisModule_SetCommandInfo(cmd_cdf, &TDIGEST_CDF_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *cmd_create = RedisModule_GetCommand(ctx, "tdigest.create");
+    if (!cmd_create) {
+        return REDISMODULE_ERR;
+    }
+    if (RedisModule_SetCommandInfo(cmd_create, &TDIGEST_CREATE_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
