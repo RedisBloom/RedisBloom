@@ -11,6 +11,7 @@
 #include "rmutil/util.h"
 #include "version.h"
 #include "rm_cms.h"
+#include "cmd_info/command_info.h"
 
 #include "redismodule.h"
 #include "common.h"
@@ -953,6 +954,9 @@ int TDigestModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     RegisterCommand(ctx, "tdigest.info", TDigestSketch_Info, "readonly", "read fast");
 
 #undef RegisterCommand
+
+    if (RegisterTDigestCommandInfos(ctx) != REDISMODULE_OK)
+        return REDISMODULE_ERR;
 
     return REDISMODULE_OK;
 }
