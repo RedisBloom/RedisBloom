@@ -163,8 +163,7 @@ static const RedisModuleCommandKeySpec TDIGEST_MAX_KEYSPECS[] = {
     {0}};
 
 static const RedisModuleCommandArg TDIGEST_MAX_ARGS[] = {
-    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
-    {0}};
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0}, {0}};
 
 static const RedisModuleCommandInfo TDIGEST_MAX_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
