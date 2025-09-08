@@ -798,7 +798,7 @@
   },
   "TDIGEST.ADD": {
     "summary": "Adds one or more observations to a t-digest sketch",
-    "complexity": "O(N) , where N is the number of samples to add",
+    "complexity": "O(N), where N is the number of samples to add",
     "arguments": [
       {
         "name": "key",
@@ -977,7 +977,7 @@
   },
   "TDIGEST.BYRANK": {
     "summary": "Returns, for each input rank, an estimation of the value (floating-point) with that rank",
-    "complexity": "O(1)",
+    "complexity": "O(N) where N is the number of ranks specified",
     "arguments": [
       {
         "name": "key",
