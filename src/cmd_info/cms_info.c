@@ -4,7 +4,7 @@
 // CMS.INCRBY key item increment [item increment ...]
 // ===============================
 static const RedisModuleCommandKeySpec CMS_INCRBY_KEYSPECS[] = {
-    {.notes = "the name of the sketch",
+    {.notes = "",
      .flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
@@ -39,7 +39,7 @@ static const RedisModuleCommandInfo CMS_INCRBY_INFO = {
 // CMS.INFO key
 // ===============================
 static const RedisModuleCommandKeySpec CMS_INFO_KEYSPECS[] = {
-    {.notes = "the name of the sketch",
+    {.notes = "",
      .flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
@@ -64,7 +64,7 @@ static const RedisModuleCommandInfo CMS_INFO_INFO = {
 // CMS.INITBYDIM key width depth
 // ===============================
 static const RedisModuleCommandKeySpec CMS_INITBYDIM_KEYSPECS[] = {
-    {.notes = "the name of the sketch",
+    {.notes = "",
      .flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
@@ -92,7 +92,7 @@ static const RedisModuleCommandInfo CMS_INITBYDIM_INFO = {
 // CMS.INITBYPROB key error probability
 // ===============================
 static const RedisModuleCommandKeySpec CMS_INITBYPROB_KEYSPECS[] = {
-    {.notes = "the name of the sketch",
+    {.notes = "",
      .flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
@@ -120,7 +120,7 @@ static const RedisModuleCommandInfo CMS_INITBYPROB_INFO = {
 // CMS.MERGE destination numKeys source [source ...] [WEIGHTS weight [weight ...]]
 // ===============================
 static const RedisModuleCommandKeySpec CMS_MERGE_KEYSPECS[] = {
-    {.notes = "the name of the sketch",
+    {.notes = "",
      .flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
@@ -160,7 +160,7 @@ static const RedisModuleCommandInfo CMS_MERGE_INFO = {
 // CMS.QUERY key item [item ...]
 // ===============================
 static const RedisModuleCommandKeySpec CMS_QUERY_KEYSPECS[] = {
-    {.notes = "the name of the sketch",
+    {.notes = "",
      .flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},

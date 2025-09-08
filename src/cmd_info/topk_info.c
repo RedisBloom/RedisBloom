@@ -4,7 +4,7 @@
 // TOPK.ADD key items [items ...]
 // ===============================
 static const RedisModuleCommandKeySpec TOPK_ADD_KEYSPECS[] = {
-    {.notes = "the name of the sketch where items are added",
+    {.notes = "",
      .flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
@@ -31,7 +31,7 @@ static const RedisModuleCommandInfo TOPK_ADD_INFO = {
 // TOPK.COUNT key item [item ...]
 // ===============================
 static const RedisModuleCommandKeySpec TOPK_COUNT_KEYSPECS[] = {
-    {.notes = "the name of the sketch where items are to be counted",
+    {.notes = "",
      .flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
@@ -63,7 +63,7 @@ static const RedisModuleCommandInfo TOPK_COUNT_INFO = {
 // TOPK.INCRBY key item increment [item increment ...]
 // ===============================
 static const RedisModuleCommandKeySpec TOPK_INCRBY_KEYSPECS[] = {
-    {.notes = "the name of the sketch",
+    {.notes = "",
      .flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
@@ -99,7 +99,7 @@ static const RedisModuleCommandInfo TOPK_INCRBY_INFO = {
 // TOPK.INFO key
 // ===============================
 static const RedisModuleCommandKeySpec TOPK_INFO_KEYSPECS[] = {
-    {.notes = "the name of the sketch",
+    {.notes = "",
      .flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
@@ -124,7 +124,7 @@ static const RedisModuleCommandInfo TOPK_INFO_INFO = {
 // TOPK.LIST key [WITHCOUNT]
 // ===============================
 static const RedisModuleCommandKeySpec TOPK_LIST_KEYSPECS[] = {
-    {.notes = "the name of the sketch",
+    {.notes = "",
      .flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
@@ -154,7 +154,7 @@ static const RedisModuleCommandInfo TOPK_LIST_INFO = {
 // TOPK.QUERY key item [item ...]
 // ===============================
 static const RedisModuleCommandKeySpec TOPK_QUERY_KEYSPECS[] = {
-    {.notes = "the name of the sketch",
+    {.notes = "",
      .flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
@@ -181,7 +181,7 @@ static const RedisModuleCommandInfo TOPK_QUERY_INFO = {
 // TOPK.RESERVE key topk [width depth decay]
 // ===============================
 static const RedisModuleCommandKeySpec TOPK_RESERVE_KEYSPECS[] = {
-    {.notes = "the name of the sketch",
+    {.notes = "",
      .flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},

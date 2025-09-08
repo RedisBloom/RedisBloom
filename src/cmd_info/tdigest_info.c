@@ -1,9 +1,10 @@
 #include "redismodule.h"
+
 // ===============================
-// TDIGEST.ADD
+// TDIGEST.ADD key value [value ...]
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_ADD_KEYSPECS[] = {
-    {.notes = "is the key name for an existing t-digest sketch.",
+    {.notes = "",
      .flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
@@ -27,10 +28,10 @@ static const RedisModuleCommandInfo TDIGEST_ADD_INFO = {
 };
 
 // ===============================
-// TDIGEST.BYRANK
+// TDIGEST.BYRANK key rank [rank ...]
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_BYRANK_KEYSPECS[] = {
-    {.notes = "is the key name for an existing t-digest sketch.",
+    {.notes = "",
      .flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
@@ -54,10 +55,10 @@ static const RedisModuleCommandInfo TDIGEST_BYRANK_INFO = {
 };
 
 // ===============================
-// TDIGEST.BYREVRANK
+// TDIGEST.BYREVRANK key reverse_rank [reverse_rank ...]
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_BYREVRANK_KEYSPECS[] = {
-    {.notes = "is the key name for an existing t-digest sketch.",
+    {.notes = "",
      .flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
@@ -85,10 +86,10 @@ static const RedisModuleCommandInfo TDIGEST_BYREVRANK_INFO = {
 };
 
 // ===============================
-// TDIGEST.CDF
+// TDIGEST.CDF key value [value ...]
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_CDF_KEYSPECS[] = {
-    {.notes = "is the key name for an existing t-digest sketch.",
+    {.notes = "",
      .flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
@@ -114,10 +115,10 @@ static const RedisModuleCommandInfo TDIGEST_CDF_INFO = {
 };
 
 // ===============================
-// TDIGEST.CREATE
+// TDIGEST.CREATE key [COMPRESSION compression]
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_CREATE_KEYSPECS[] = {
-    {.notes = "is the key name for a new t-digest sketch.",
+    {.notes = "",
      .flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
@@ -151,10 +152,10 @@ static const RedisModuleCommandInfo TDIGEST_CREATE_INFO = {
 };
 
 // ===============================
-// TDIGEST.MAX
+// TDIGEST.MAX key
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_MAX_KEYSPECS[] = {
-    {.notes = "is the key name for an existing t-digest sketch.",
+    {.notes = "",
      .flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
