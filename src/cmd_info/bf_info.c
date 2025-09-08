@@ -19,7 +19,7 @@ static const RedisModuleCommandArg BF_ADD_ARGS[] = {
 
 static const RedisModuleCommandInfo BF_ADD_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Adds an item to a Bloom filter.",
+    .summary = "Adds an item to a Bloom Filter",
     .complexity = "O(k), where k is the number of hash functions used by the last sub-filter",
     .since = "1.0.0",
     .arity = 3,
