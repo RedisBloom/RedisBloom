@@ -19,8 +19,8 @@ static const RedisModuleCommandArg CF_ADD_ARGS[] = {
 
 static const RedisModuleCommandInfo CF_ADD_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Adds an item to a cuckoo filter. A filter will be created if it does not exist.",
-    .complexity = "O(k), where k is the number of sub-filters",
+    .summary = "Adds an item to a Cuckoo Filter",
+    .complexity = "O(k + i), where k is the number of sub-filters and i is maxIterations",
     .since = "1.0.0",
     .arity = 3,
     .key_specs = (RedisModuleCommandKeySpec *)CF_ADD_KEYSPECS,
@@ -46,8 +46,8 @@ static const RedisModuleCommandArg CF_ADDNX_ARGS[] = {
 
 static const RedisModuleCommandInfo CF_ADDNX_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Adds an item to a cuckoo filter, only if the item did not exist previously.",
-    .complexity = "O(k), where k is the number of sub-filters",
+    .summary = "Adds an item to a Cuckoo Filter if the item did not exist previously.",
+    .complexity = "O(k + i), where k is the number of sub-filters and i is maxIterations",
     .since = "1.0.0",
     .arity = 3,
     .key_specs = (RedisModuleCommandKeySpec *)CF_ADDNX_KEYSPECS,
@@ -73,15 +73,13 @@ static const RedisModuleCommandArg CF_COUNT_ARGS[] = {
 
 static const RedisModuleCommandInfo CF_COUNT_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Returns the number of times an item may be in the filter.",
+    .summary = "Return the number of times an item might be in a Cuckoo Filter",
     .complexity = "O(k), where k is the number of sub-filters",
     .since = "1.0.0",
     .arity = 3,
     .key_specs = (RedisModuleCommandKeySpec *)CF_COUNT_KEYSPECS,
     .args = (RedisModuleCommandArg *)CF_COUNT_ARGS,
 };
-
-
 
 // ===============================
 // CF.DEL key item
@@ -102,9 +100,7 @@ static const RedisModuleCommandArg CF_DEL_ARGS[] = {
 
 static const RedisModuleCommandInfo CF_DEL_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary =
-        "Deletes an item once from the filter. If the item exists only once, it will be removed "
-        "from the filter. If the item was added multiple times, it will still be present.",
+    .summary = "Deletes an item from a Cuckoo Filter",
     .complexity = "O(k), where k is the number of sub-filters",
     .since = "1.0.0",
     .arity = 3,
@@ -131,7 +127,7 @@ static const RedisModuleCommandArg CF_EXISTS_ARGS[] = {
 
 static const RedisModuleCommandInfo CF_EXISTS_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Determines whether a given item was added to a cuckoo filter.",
+    .summary = "Checks whether one or more items exist in a Cuckoo Filter",
     .complexity = "O(k), where k is the number of sub-filters",
     .since = "1.0.0",
     .arity = 3,
@@ -156,7 +152,7 @@ static const RedisModuleCommandArg CF_INFO_ARGS[] = {
 
 static const RedisModuleCommandInfo CF_INFO_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Returns information about a cuckoo filter.",
+    .summary = "Returns information about a Cuckoo Filter",
     .complexity = "O(1)",
     .since = "1.0.0",
     .arity = 2,
@@ -197,11 +193,10 @@ static const RedisModuleCommandArg CF_INSERT_ARGS[] = {
 
 static const RedisModuleCommandInfo CF_INSERT_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Adds one or more items to a cuckoo filter, allowing the filter to be created with "
-               "a custom capacity if it does not exist yet. This command is similar to CF.ADD, "
-               "except that more than one item can be added and capacity can be specified.",
-    .complexity = "O(n * (k + i)), where n is the number of items, k is the number of "
-                  "sub-filters and i is maxIterations",
+    .summary =
+        "Adds one or more items to a Cuckoo Filter. A filter will be created if it does not exist",
+    .complexity = "O(n * (k + i)), where n is the number of items, k is the number of sub-filters "
+                  "and i is maxIterations",
     .since = "1.0.0",
     .arity = -4,
     .key_specs = (RedisModuleCommandKeySpec *)CF_INSERT_KEYSPECS,
@@ -241,12 +236,10 @@ static const RedisModuleCommandArg CF_INSERTNX_ARGS[] = {
 
 static const RedisModuleCommandInfo CF_INSERTNX_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary =
-        "Adds one or more items to a cuckoo filter if they did not exist previously, allowing the "
-        "filter to be created with a custom capacity if it does not exist yet.",
-    .complexity =
-        "O(n * (k + i)), where n is the number of items, k is the number of sub-filters and i "
-        "is maxIterations",
+    .summary = "Adds one or more items to a Cuckoo Filter if the items did not exist previously. A "
+               "filter will be created if it does not exist",
+    .complexity = "O(n * (k + i)), where n is the number of items, k is the number of sub-filters "
+                  "and i is maxIterations",
     .since = "1.0.0",
     .arity = -4,
     .key_specs = (RedisModuleCommandKeySpec *)CF_INSERT_KEYSPECS,
@@ -273,7 +266,7 @@ static const RedisModuleCommandArg CF_LOADCHUNK_ARGS[] = {
 
 static const RedisModuleCommandInfo CF_LOADCHUNK_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Restores a cuckoo filter previously saved using CF.SCANDUMP.",
+    .summary = "Restores a filter previously saved using SCANDUMP",
     .complexity = "O(n), where n is the capacity",
     .since = "1.0.0",
     .arity = 4,
@@ -300,7 +293,7 @@ static const RedisModuleCommandArg CF_MEXISTS_ARGS[] = {
 
 static const RedisModuleCommandInfo CF_MEXISTS_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Determines whether a given item was added to a cuckoo filter.",
+    .summary = "Checks whether one or more items exist in a Cuckoo Filter",
     .complexity = "O(k * n), where k is the number of sub-filters and n is the number of items",
     .since = "1.0.0",
     .arity = -3,
@@ -374,15 +367,13 @@ static const RedisModuleCommandArg CF_SCANDUMP_ARGS[] = {
 
 static const RedisModuleCommandInfo CF_SCANDUMP_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Begins an incremental save of the cuckoo filter. The first time this command is "
-               "called, the value of iter should be 0.",
+    .summary = "Begins an incremental save of the bloom filter",
     .complexity = "O(n), where n is the capacity",
     .since = "1.0.0",
     .arity = 3,
     .key_specs = (RedisModuleCommandKeySpec *)CF_SCANDUMP_KEYSPECS,
     .args = (RedisModuleCommandArg *)CF_SCANDUMP_ARGS,
 };
-
 
 int RegisterCFCommandInfos(RedisModuleCtx *ctx) {
     RedisModuleCommand *add_cmd = RedisModule_GetCommand(ctx, "cf.add");
