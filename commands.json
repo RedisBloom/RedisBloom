@@ -623,7 +623,7 @@
     "group": "cms"
   },
   "TOPK.RESERVE": {
-    "summary": "Initializes a TopK with specified parameters",
+    "summary": "Initializes a Top-K sketch with specified parameters",
     "complexity": "O(1)",
     "arguments": [
       {
@@ -658,7 +658,7 @@
     "group": "topk"
   },
   "TOPK.ADD": {
-    "summary": "Increases the count of one or more items by increment",
+    "summary": "Adds an item to a Top-k sketch. Multiple items can be added at the same time.",
     "complexity": "O(n * k) where n is the number of items and k is the depth",
     "arguments": [
       {
@@ -737,8 +737,8 @@
     "group": "topk"
   },
   "TOPK.LIST": {
-    "summary": "Return full list of items in Top K list",
-    "complexity": "O(k) where k is the value of top-k",
+    "summary": "Return the full list of items in Top-K sketch.",
+    "complexity": "O(k*log(k)) where k is the value of top-k",
     "arguments": [
       {
         "name": "key",

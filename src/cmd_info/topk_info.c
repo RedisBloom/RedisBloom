@@ -19,8 +19,7 @@ static const RedisModuleCommandArg TOPK_ADD_ARGS[] = {
 
 static const RedisModuleCommandInfo TOPK_ADD_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Adds an item to a Top-k sketch. Multiple items can be added at the same time. If "
-               "an item enters the Top-K sketch, the item that is expelled (if any) is returned",
+    .summary = "Adds an item to a Top-k sketch. Multiple items can be added at the same time.",
     .complexity = "O(n * k) where n is the number of items and k is the depth",
     .since = "2.0.0",
     .arity = -3,
@@ -113,8 +112,7 @@ static const RedisModuleCommandArg TOPK_INFO_ARGS[] = {
 
 static const RedisModuleCommandInfo TOPK_INFO_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary =
-        "Returns number of required items (k), width, depth, and decay values of a given sketch",
+    .summary = "Returns information about a sketch",
     .complexity = "O(1)",
     .since = "2.0.0",
     .arity = 2,
@@ -144,7 +142,7 @@ static const RedisModuleCommandArg TOPK_LIST_ARGS[] = {
 
 static const RedisModuleCommandInfo TOPK_LIST_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Return the full list of items in Top-K sketch",
+    .summary = "Return the full list of items in Top-K sketch.",
     .complexity = "O(k*log(k)) where k is the value of top-k",
     .since = "2.0.0",
     .arity = -2,
@@ -171,7 +169,7 @@ static const RedisModuleCommandArg TOPK_QUERY_ARGS[] = {
 
 static const RedisModuleCommandInfo TOPK_QUERY_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Checks whether one or more items are one of the Top-K items",
+    .summary = "Checks whether one or more items are in a sketch",
     .complexity = "O(n) where n is the number of items",
     .since = "2.0.0",
     .arity = -3,
