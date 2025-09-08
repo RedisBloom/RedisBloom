@@ -13,6 +13,8 @@ jobs:
   report:
     runs-on: ubuntu-latest
 #    if: ${{ github.event.workflow_run.event == 'schedule' && github.event.workflow_run.head_branch == 'master' }}
+    env:
+      SLACK_HOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
     steps:
       - name: Build report text
         id: build
@@ -105,13 +107,12 @@ jobs:
             const text = lines.join('\n');
             core.setOutput('text', text);
       - name: publish to summary
-        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
+        if: ${{ env.SLACK_HOOK != '' }}
         run: |
           echo "text=${{ steps.build.outputs.text }}" >> $GITHUB_STEP_SUMMARY
       - name: Post to Slack (webhook)
-        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
+        if: ${{ env.SLACK_HOOK != '' }}
         env:
-          SLACK_HOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
           TEXT: ${{ steps.build.outputs.text }}
         run: |
           set -euo pipefail
