@@ -2,7 +2,7 @@ name: Report Workflow Results
 
 on:
   workflow_run:
-    workflows: ["Event Nightly", "Event Tag"]
+    workflows: ["Event CI", "Event Nightly", "Event Tag"]
     types: [completed]
 
 permissions:
