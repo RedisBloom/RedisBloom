@@ -27,8 +27,7 @@ static const RedisModuleCommandArg CMS_INCRBY_ARGS[] = {
 
 static const RedisModuleCommandInfo CMS_INCRBY_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary =
-        "Increases the count of item by increment. Multiple items can be increased with one call.",
+    .summary = "Increases the count of one or more items by increment",
     .complexity = "O(n) where n is the number of items",
     .since = "2.0.0",
     .arity = -4,
@@ -53,7 +52,7 @@ static const RedisModuleCommandArg CMS_INFO_ARGS[] = {
 
 static const RedisModuleCommandInfo CMS_INFO_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Returns width, depth and total count of the sketch",
+    .summary = "Returns information about a sketch",
     .complexity = "O(1)",
     .since = "2.0.0",
     .arity = 2,
@@ -149,8 +148,7 @@ static const RedisModuleCommandArg CMS_MERGE_ARGS[] = {
 
 static const RedisModuleCommandInfo CMS_MERGE_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Merges several sketches into one sketch. All sketches must have identical width "
-               "and depth. Weights can be used to multiply certain sketches. Default weight is 1.",
+    .summary = "Merges several sketches into one sketch",
     .complexity = "O(n) where n is the number of sketches",
     .since = "2.0.0",
     .arity = -4,
