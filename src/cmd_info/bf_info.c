@@ -118,7 +118,8 @@ static const RedisModuleCommandInfo BF_INFO_INFO = {
 };
 
 // ===============================
-// BF.INSERT key [CAPACITY capacity] [ERROR error] [EXPANSION expansion] [NOCREATE] [NONSCALING] ITEMS item [item ...]
+// BF.INSERT key [CAPACITY capacity] [ERROR error] [EXPANSION expansion] [NOCREATE] [NONSCALING]
+// ITEMS item [item ...]
 // ===============================
 static const RedisModuleCommandKeySpec BF_INSERT_KEYSPECS[] = {
     {.notes = "",

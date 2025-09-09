@@ -305,7 +305,8 @@ static const RedisModuleCommandInfo CF_MEXISTS_INFO = {
 };
 
 // ===============================
-// CF.RESERVE key capacity [BUCKETSIZE bucketsize] [MAXITERATIONS maxiterations] [EXPANSION expansion]
+// CF.RESERVE key capacity [BUCKETSIZE bucketsize] [MAXITERATIONS maxiterations] [EXPANSION
+// expansion]
 // ===============================
 static const RedisModuleCommandKeySpec CF_RESERVE_KEYSPECS[] = {
     {.notes = "",

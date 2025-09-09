@@ -46,7 +46,8 @@ static const RedisModuleCommandArg TDIGEST_BYRANK_ARGS[] = {
 
 static const RedisModuleCommandInfo TDIGEST_BYRANK_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Returns, for each input rank, an estimation of the value (floating-point) with that rank",
+    .summary =
+        "Returns, for each input rank, an estimation of the value (floating-point) with that rank",
     .complexity = "O(N) where N is the number of ranks specified",
     .since = "2.4.0",
     .arity = -3,
@@ -201,7 +202,8 @@ static const RedisModuleCommandInfo TDIGEST_MAX_INFO = {
 };
 
 // ===============================
-// TDIGEST.MERGE destination-key numkeys source-key [source-key ...] [COMPRESSION compression] [OVERRIDE]
+// TDIGEST.MERGE destination-key numkeys source-key [source-key ...] [COMPRESSION compression]
+// [OVERRIDE]
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_MERGE_KEYSPECS[] = {
     {.notes = "",
