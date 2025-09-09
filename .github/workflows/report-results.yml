@@ -8,6 +8,8 @@ on:
 permissions:
   contents: read
   actions: read
+  statuses: write   # This is required for post commit status
+
 
 jobs:
   report:
