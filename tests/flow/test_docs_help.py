@@ -30,7 +30,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'bf.add',
-            summary='Adds an item to a Bloom filter.',
+            summary="Adds an item to a Bloom Filter",
             complexity='O(k), where k is the number of hash functions used by the last sub-filter',
             arity=3,
             since='1.0.0',
@@ -151,7 +151,7 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('error_rate', 'double'), ('capacity', 'integer'), ('expansion', 'block'), ('nonscaling', 'pure-token')],
             key_pos=1,
         )
-    
+
     def test_command_docs_bf_scandump(self):
         env = self.env
         if server_version_less_than(env, '7.0.0'):
@@ -172,7 +172,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'topk.add',
-            summary='Adds an item to a Top-k sketch. Multiple items can be added at the same time. If an item enters the Top-K sketch, the item that is expelled (if any) is returned',
+            summary='Adds an item to a Top-k sketch. Multiple items can be added at the same time.',
             complexity='O(n * k) where n is the number of items and k is the depth',
             arity=-3,
             since='2.0.0',
@@ -214,7 +214,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'topk.info',
-            summary='Returns number of required items (k), width, depth, and decay values of a given sketch',
+            summary='Returns information about a sketch',
             complexity='O(1)',
             arity=2,
             since='2.0.0',
@@ -228,7 +228,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'topk.list',
-            summary='Return the full list of items in Top-K sketch',
+            summary="Return the full list of items in Top-K sketch.",
             complexity='O(k*log(k)) where k is the value of top-k',
             arity=-2,
             since='2.0.0',
@@ -242,7 +242,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'topk.query',
-            summary='Checks whether one or more items are one of the Top-K items',
+            summary='Checks whether one or more items are in a sketch',
             complexity='O(n) where n is the number of items',
             arity=-3,
             since='2.0.0',
@@ -270,7 +270,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'cms.incrby',
-            summary='Increases the count of item by increment. Multiple items can be increased with one call.',
+            summary='Increases the count of one or more items by increment',
             complexity='O(n) where n is the number of items',
             arity=-4,
             since='2.0.0',
@@ -284,7 +284,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'cms.info',
-            summary='Returns width, depth and total count of the sketch',
+            summary='Returns information about a sketch',
             complexity='O(1)',
             arity=2,
             since='2.0.0',
@@ -326,7 +326,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'cms.merge',
-            summary='Merges several sketches into one sketch. All sketches must have identical width and depth. Weights can be used to multiply certain sketches. Default weight is 1.',
+            summary='Merges several sketches into one sketch',
             complexity='O(n) where n is the number of sketches',
             arity=-4,
             since='2.0.0',
@@ -354,7 +354,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'cf.del',
-            summary='Deletes an item once from the filter. If the item exists only once, it will be removed from the filter. If the item was added multiple times, it will still be present.',
+            summary='Deletes an item from a Cuckoo Filter',
             complexity='O(k), where k is the number of sub-filters',
             arity=3,
             since='1.0.0',
@@ -368,7 +368,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'cf.exists',
-            summary='Determines whether a given item was added to a cuckoo filter.',
+            summary='Checks whether one or more items exist in a Cuckoo Filter',
             complexity='O(k), where k is the number of sub-filters',
             arity=3,
             since='1.0.0',
@@ -382,7 +382,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'cf.info',
-            summary='Returns information about a cuckoo filter.',
+            summary='Returns information about a Cuckoo Filter',
             complexity='O(1)',
             arity=2,
             since='1.0.0',
@@ -396,7 +396,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'cf.insert',
-            summary='Adds one or more items to a cuckoo filter, allowing the filter to be created with a custom capacity if it does not exist yet. This command is similar to CF.ADD, except that more than one item can be added and capacity can be specified.',
+            summary='Adds one or more items to a Cuckoo Filter. A filter will be created if it does not exist',
             complexity='O(n * (k + i)), where n is the number of items, k is the number of sub-filters and i is maxIterations',
             arity=-4,
             since='1.0.0',
@@ -410,7 +410,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'cf.insertnx',
-            summary='Adds one or more items to a cuckoo filter if they did not exist previously, allowing the filter to be created with a custom capacity if it does not exist yet.',
+            summary='Adds one or more items to a Cuckoo Filter if the items did not exist previously. A filter will be created if it does not exist',
             complexity='O(n * (k + i)), where n is the number of items, k is the number of sub-filters and i is maxIterations',
             arity=-4,
             since='1.0.0',
@@ -424,7 +424,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'cf.loadchunk',
-            summary='Restores a cuckoo filter previously saved using CF.SCANDUMP.',
+            summary='Restores a filter previously saved using SCANDUMP',
             complexity='O(n), where n is the capacity',
             arity=4,
             since='1.0.0',
@@ -438,7 +438,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'cf.mexists',
-            summary='Determines whether a given item was added to a cuckoo filter.',
+            summary='Checks whether one or more items exist in a Cuckoo Filter',
             complexity='O(k * n), where k is the number of sub-filters and n is the number of items',
             arity=-3,
             since='1.0.0',
@@ -452,7 +452,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'cf.scandump',
-            summary='Begins an incremental save of the cuckoo filter. The first time this command is called, the value of iter should be 0.',
+            summary='Begins an incremental save of the bloom filter',
             complexity='O(n), where n is the capacity',
             arity=3,
             since='1.0.0',
@@ -466,7 +466,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'tdigest.add',
-            summary='Adds one or more observations to a t-digest sketch.',
+            summary='Adds one or more observations to a t-digest sketch',
             complexity='O(N), where N is the number of samples to add',
             arity=-3,
             since='2.4.0',
@@ -480,7 +480,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'tdigest.byrank',
-            summary='Returns the value at the given rank in the t-digest sketch.',
+            summary='Returns, for each input rank, an estimation of the value (floating-point) with that rank',
             complexity='O(N) where N is the number of ranks specified',
             arity=-3,
             since='2.4.0',
@@ -494,7 +494,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'tdigest.byrevrank',
-            summary='Returns, for each input reverse rank (revrank), an estimation of the floating-point value with that reverse rank. Multiple estimations can be retrieved in a single call.',
+            summary='Returns, for each input reverse rank, an estimation of the value (floating-point) with that reverse rank',
             complexity='O(N) where N is the number of reverse ranks specified.',
             arity=-3,
             since='2.4.0',
@@ -522,7 +522,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'tdigest.create',
-            summary='Allocates memory and initializes a new t-digest sketch.',
+            summary='Allocates memory and initializes a new t-digest sketch',
             complexity='O(1)',
             arity=-2,
             since='2.4.0',
@@ -536,7 +536,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'tdigest.max',
-            summary='Returns the maximum observation value from a t-digest sketch.',
+            summary='Returns the maximum observation value from a t-digest sketch',
             complexity='O(1)',
             arity=2,
             since='2.4.0',

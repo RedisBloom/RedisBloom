@@ -77,7 +77,7 @@ static const RedisModuleCommandInfo TDIGEST_BYREVRANK_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
     .summary = "Returns, for each input reverse rank, an estimation of the value (floating-point) "
                "with that reverse rank",
-    .complexity = "O(1)",
+    .complexity = "O(N) where N is the number of reverse ranks specified.",
     .since = "2.4.0",
     .arity = -3,
     .key_specs = (RedisModuleCommandKeySpec *)TDIGEST_BYREVRANK_KEYSPECS,
