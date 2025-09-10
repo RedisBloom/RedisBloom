@@ -889,7 +889,7 @@
   },
   "TDIGEST.QUANTILE": {
     "summary": "Returns, for each input fraction, an estimation of the value (floating point) that is smaller than the given fraction of observations",
-    "complexity": "O(1)",
+    "complexity": "O(N) where N is the number of quantiles specified.",
     "arguments": [
       {
         "name": "key",
@@ -943,7 +943,7 @@
   },
   "TDIGEST.RANK": {
     "summary": "Returns, for each input value (floating-point), the estimated rank of the value (the number of observations in the sketch that are smaller than the value + half the number of observations that are equal to the value)",
-    "complexity": "O(1)",
+    "complexity": "O(N) where N is the number of values specified.",
     "arguments": [
       {
         "name": "key",
@@ -960,7 +960,7 @@
   },
   "TDIGEST.REVRANK": {
     "summary": "Returns, for each input value (floating-point), the estimated reverse rank of the value (the number of observations in the sketch that are larger than the value + half the number of observations that are equal to the value)",
-    "complexity": "O(1)",
+    "complexity": "O(N) where N is the number of values specified.",
     "arguments": [
       {
         "name": "key",

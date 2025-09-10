@@ -293,7 +293,7 @@ static const RedisModuleCommandInfo TDIGEST_QUANTILE_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
     .summary = "Returns, for each input fraction, an estimation of the value (floating point) that "
                "is smaller than the given fraction of observations",
-    .complexity = "O(1)",
+    .complexity = "O(N) where N is the number of quantiles specified.",
     .since = "2.4.0",
     .arity = -3,
     .key_specs = (RedisModuleCommandKeySpec *)TDIGEST_QUANTILE_KEYSPECS,
@@ -322,7 +322,7 @@ static const RedisModuleCommandInfo TDIGEST_RANK_INFO = {
     .summary = "Returns, for each input value (floating-point), the estimated rank of the value "
                "(the number of observations in the sketch that are smaller than the value + half "
                "the number of observations that are equal to the value)",
-    .complexity = "O(1)",
+    .complexity = "O(N) where N is the number of values specified.",
     .since = "2.4.0",
     .arity = -3,
     .key_specs = (RedisModuleCommandKeySpec *)TDIGEST_RANK_KEYSPECS,
@@ -376,7 +376,7 @@ static const RedisModuleCommandInfo TDIGEST_REVRANK_INFO = {
     .summary = "Returns, for each input value (floating-point), the estimated reverse rank of the "
                "value (the number of observations in the sketch that are larger than the value + "
                "half the number of observations that are equal to the value)",
-    .complexity = "O(1)",
+    .complexity = "O(N) where N is the number of values specified.",
     .since = "2.4.0",
     .arity = -3,
     .key_specs = (RedisModuleCommandKeySpec *)TDIGEST_REVRANK_KEYSPECS,

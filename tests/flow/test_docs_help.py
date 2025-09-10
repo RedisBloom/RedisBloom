@@ -193,7 +193,7 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('item', 'string')],
             key_pos=1,
         )
-    
+
     def test_command_docs_topk_incrby(self):
         env = self.env
         if server_version_less_than(env, '7.0.0'):
@@ -347,7 +347,49 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('item', 'string')],
             key_pos=1,
         )
-        
+
+    def test_command_docs_cf_add(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cf.add',
+            summary="Adds an item to a Cuckoo Filter",
+            complexity='O(k + i), where k is the number of sub-filters and i is maxIterations',
+            arity=3,
+            since='1.0.0',
+            args=[('key', 'key'), ('item', 'string')],
+            key_pos=1,
+        )
+
+    def test_command_docs_cf_addnx(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cf.addnx',
+            summary="Adds an item to a Cuckoo Filter if the item did not exist previously.",
+            complexity='O(k + i), where k is the number of sub-filters and i is maxIterations',
+            arity=3,
+            since='1.0.0',
+            args=[('key', 'key'), ('item', 'string')],
+            key_pos=1,
+        )
+
+    def test_command_docs_cf_count(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'cf.count',
+            summary='Return the number of times an item might be in a Cuckoo Filter',
+            complexity='O(k), where k is the number of sub-filters',
+            arity=-3,
+            since='1.0.0',
+            args=[('key', 'key'), ('item', 'string')],
+            key_pos=1,
+        )
+
     def test_command_docs_cf_del(self):
         env = self.env
         if server_version_less_than(env, '7.0.0'):
@@ -530,6 +572,20 @@ class testCommandDocsAndHelp():
             key_pos=1,
         )
 
+    def test_command_docs_tdigest_info(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'tdigest.info',
+            summary='Returns information and statistics about a t-digest sketch',
+            complexity='O(1)',
+            arity=-2,
+            since='2.4.0',
+            args=[('key', 'key')],
+            key_pos=1,
+        )
+
     def test_command_docs_tdigest_max(self):
         env = self.env
         if server_version_less_than(env, '7.0.0'):
@@ -543,3 +599,102 @@ class testCommandDocsAndHelp():
             args=[('key', 'key')],
             key_pos=1,
         )
+
+    def test_command_docs_tdigest_merge(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'tdigest.merge',
+            summary='Merges multiple t-digest sketches into a single sketch',
+            complexity='O(N*K), where N is the number of centroids and K being the number of input sketches',
+            arity=-4,
+            since='2.4.0',
+            args=[('destination-key', 'key'), ('numkeys', 'integer'), ('source-key', 'key'), ('compression', 'block'), ('override', 'pure-token')],
+            key_pos=1,
+        )
+
+    def test_command_docs_tdigest_min(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'tdigest.min',
+            summary='Returns the minimum observation value from a t-digest sketch',
+            complexity='O(1)',
+            arity=2,
+            since='2.4.0',
+            args=[('key', 'key')],
+            key_pos=1,
+        )
+
+    def test_command_docs_tdigest_quantile(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'tdigest.quantile',
+            summary='Returns, for each input fraction, an estimation of the value (floating point) that is smaller than the given fraction of observations',
+            complexity='O(N) where N is the number of quantiles specified.',
+            arity=-3,
+            since='2.4.0',
+            args=[('key', 'key'), ('quantile', 'double')],
+            key_pos=1,
+        )
+
+    def test_command_docs_tdigest_rank(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'tdigest.rank',
+            summary='Returns, for each input value (floating-point), the estimated rank of the value (the number of observations in the sketch that are smaller than the value + half the number of observations that are equal to the value)',
+            complexity='O(N) where N is the number of values specified.',
+            arity=-3,
+            since='2.4.0',
+            args=[('key', 'key'), ('value', 'double')],
+            key_pos=1,
+        )
+
+    def test_command_docs_tdigest_reset(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'tdigest.reset',
+            summary='Resets a t-digest sketch: empty the sketch and re-initializes it.',
+            complexity='O(1)',
+            arity=2,
+            since='2.4.0',
+            args=[('key', 'key')],
+            key_pos=1,
+        )
+
+    def test_command_docs_tdigest_revrank(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'tdigest.revrank',
+            summary='Returns, for each input value (floating-point), the estimated reverse rank of the value (the number of observations in the sketch that are larger than the value + half the number of observations that are equal to the value)',
+            complexity="O(N) where N is the number of values specified.",
+            arity=-3,
+            since='2.4.0',
+            args=[('key', 'key'), ('value', 'double')],
+            key_pos=1,
+        )
+
+    def test_command_docs_tdigest_trimmed_mean(self):
+        env = self.env
+        if server_version_less_than(env, '7.0.0'):
+            env.skip()
+        assert_docs(
+            env, 'tdigest.trimmed_mean',
+            summary='Returns an estimation of the mean value from the sketch, excluding observation values outside the low and high cutoff quantiles',
+            complexity="O(N) where N is the number of centroids",
+            arity=4,
+            since='2.4.0',
+            args=[('key', 'key'), ('low_cut_quantile', 'double'), ('high_cut_quantile', 'double')],
+            key_pos=1,
+        )
+
