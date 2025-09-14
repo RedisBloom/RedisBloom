@@ -134,6 +134,7 @@ s3_upload() {
 PROD=redisbloom PREFIX=redisbloom s3_upload
 
 # Upload beta files if they exist
+echo "# Debug: Checking for beta directory at $ROOT/bin/artifacts/beta"
 if [[ -d $ROOT/bin/artifacts/beta ]]; then
 	echo "# Uploading beta artifacts..."
 	cd $ROOT/bin/artifacts/beta
@@ -144,7 +145,7 @@ if [[ -d $ROOT/bin/artifacts/beta ]]; then
 	[[ $VERBOSE == 1 ]] && du -ah ${DU_ARGS} *
 	
 	# Upload beta files to beta directory
-	local beta_upload_dir="${S3_URL}/redisbloom/beta"
+	beta_upload_dir="${S3_URL}/redisbloom/beta"
 	files=$(ls redisbloom.*${PLATFORM}*.zip 2>/dev/null || true)
 	for file in $files; do
 		$OP aws s3 cp $file $beta_upload_dir/ --acl public-read --no-progress
@@ -153,7 +154,7 @@ if [[ -d $ROOT/bin/artifacts/beta ]]; then
 	
 	# Also upload to staging beta if staging mode
 	if [[ $STAGING == 1 ]]; then
-		local staging_beta_upload_dir="${S3_URL}/redisbloom/beta"
+		staging_beta_upload_dir="${S3_URL}/redisbloom/beta"
 		for file in $files; do
 			$OP aws s3 cp $file $staging_beta_upload_dir/ --acl public-read --no-progress
 		done

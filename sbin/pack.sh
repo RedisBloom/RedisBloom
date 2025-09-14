@@ -212,7 +212,9 @@ pack_ramp() {
 	fi
 
 	# For nightly builds, create files in both beta and snapshots directories
+	echo "# Debug: SNAPSHOT=$SNAPSHOT, NIGHTLY_VERSION=$NIGHTLY_VERSION"
 	if [[ $SNAPSHOT == 1 && -n $NIGHTLY_VERSION ]]; then
+		echo "# Creating beta and branch files for nightly build..."
 		# Get the original branch name (without nightly version)
 		local original_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "master")
 		original_branch=${original_branch//[^A-Za-z0-9._-]/_}
