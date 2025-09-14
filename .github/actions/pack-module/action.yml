@@ -2,7 +2,7 @@ name: Run pack module script
 
 inputs:
   nightly-version:
-    description: 'Version suffix for nightly builds (DDMMYYYY.HHMMSS.RUN_NUMBER format)'
+    description: 'Version suffix for nightly builds (YYYYMMDD.HHMMSS.RUN_NUMBER format)'
     required: false
 
 runs:
