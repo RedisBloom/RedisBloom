@@ -20,5 +20,9 @@ runs:
         git config --global --add safe.directory $GITHUB_WORKSPACE
         if [[ -n "${{ inputs.nightly-version }}" ]]; then
           export NIGHTLY_VERSION="${{ inputs.nightly-version }}"
+          # For nightly builds, use the nightly version as the branch name for packaging
+          PACK_BRANCH="99.99.99.${{ inputs.nightly-version }}"
+        else
+          PACK_BRANCH="$TAG_OR_BRANCH"
         fi
-        make pack BRANCH=$TAG_OR_BRANCH SHOW=1
+        make pack BRANCH="$PACK_BRANCH" SHOW=1
