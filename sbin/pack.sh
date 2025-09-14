@@ -222,14 +222,18 @@ pack_ramp() {
 		# Create beta directory for versioned files
 		mkdir -p $ARTDIR/beta
 		
+		# Create versioned filenames for beta directory
+		local versioned_package=$stem.${SEMVER}${VARIANT}.zip
+		local versioned_package_debug=$stem_debug.${SEMVER}${VARIANT}.zip
+		
 		# Copy versioned files to beta directory
 		if [[ -f $ARTDIR/$packdir/$fq_package ]]; then
-			runn cp $ARTDIR/$packdir/$fq_package $ARTDIR/beta/$fq_package
-			echo "# Created beta version $(realpath $ARTDIR/beta/$fq_package)"
+			runn cp $ARTDIR/$packdir/$fq_package $ARTDIR/beta/$versioned_package
+			echo "# Created beta version $(realpath $ARTDIR/beta/$versioned_package)"
 		fi
 		if [[ -f $ARTDIR/$packdir/$fq_package_debug ]]; then
-			runn cp $ARTDIR/$packdir/$fq_package_debug $ARTDIR/beta/$fq_package_debug
-			echo "# Created beta debug version $(realpath $ARTDIR/beta/$fq_package_debug)"
+			runn cp $ARTDIR/$packdir/$fq_package_debug $ARTDIR/beta/$versioned_package_debug
+			echo "# Created beta debug version $(realpath $ARTDIR/beta/$versioned_package_debug)"
 		fi
 		
 		# Create branch-named files in snapshots directory (overwrite the versioned ones)
@@ -305,9 +309,14 @@ pack_deps() {
 NUMVER="$(NUMERIC=1 $SBIN/getver)"
 SEMVER="$($SBIN/getver)"
 
+# Debug: Show environment variables
+echo "# Debug: NIGHTLY_VERSION environment variable: '$NIGHTLY_VERSION'"
+echo "# Debug: Original SEMVER: '$SEMVER'"
+
 # Append nightly version suffix if provided
 if [[ -n $NIGHTLY_VERSION ]]; then
 	SEMVER="${SEMVER}.${NIGHTLY_VERSION}"
+	echo "# Debug: Modified SEMVER with nightly version: '$SEMVER'"
 fi
 
 if [[ -n $VARIANT ]]; then
@@ -406,6 +415,7 @@ if [[ $RAMP == 1 ]]; then
 	MODULE=$(realpath $MODULE)
 
 	[[ $RELEASE == 1 ]] && SNAPSHOT=0 pack_ramp
+	echo "# Debug: About to call pack_ramp with SNAPSHOT=$SNAPSHOT, BRANCH='$BRANCH'"
 	[[ $SNAPSHOT == 1 ]] && pack_ramp
 
 	echo "# Done."
