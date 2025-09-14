@@ -1,5 +1,10 @@
 name: Run pack module script
 
+inputs:
+  nightly-version:
+    description: 'Version suffix for nightly builds (DDMMYYYY.HHMMSS.RUN_NUMBER format)'
+    required: false
+
 runs:
   using: composite
   steps:
@@ -13,4 +18,7 @@ runs:
         . venv/bin/activate
         export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
         git config --global --add safe.directory $GITHUB_WORKSPACE
+        if [[ -n "${{ inputs.nightly-version }}" ]]; then
+          export NIGHTLY_VERSION="${{ inputs.nightly-version }}"
+        fi
         make pack BRANCH=$TAG_OR_BRANCH SHOW=1

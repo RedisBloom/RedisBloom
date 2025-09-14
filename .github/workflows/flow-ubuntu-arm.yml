@@ -17,6 +17,10 @@ on:
         description: 'Redis ref to checkout'
         type: string
         required: true
+      nightly-version:
+        description: 'Version suffix for nightly builds (DDMMYYYY.HHMMSS.RUN_NUMBER format)'
+        type: string
+        required: false
 
 
 jobs:
@@ -37,6 +41,7 @@ jobs:
         with:
           github-ref: ${{ github.ref }}
           redis-ref: ${{ inputs.redis-ref }}
+          nightly-version: ${{ inputs.nightly-version }}
   ubuntu-arm64:
     runs-on: ubuntu24-arm64-4-16 # ubuntu24-arm64-2-8
     strategy:
@@ -182,6 +187,9 @@ jobs:
           . venv/bin/activate
           export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
           git config --global --add safe.directory $GITHUB_WORKSPACE
+          if [[ -n "${{ inputs.nightly-version }}" ]]; then
+            export NIGHTLY_VERSION="${{ inputs.nightly-version }}"
+          fi
           make pack BRANCH=$TAG_OR_BRANCH SHOW=1
       - name: Upload artifacts to S3
         uses: ./.github/actions/upload-artifacts-to-s3

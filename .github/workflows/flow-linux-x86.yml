@@ -23,6 +23,10 @@ on:
         description: 'Run sanitizer on the tests'
         type: boolean
         default: false
+      nightly-version:
+        description: 'Version suffix for nightly builds (DDMMYYYY.HHMMSS.RUN_NUMBER format)'
+        type: string
+        required: false
 
 jobs:
   prepare-values:
@@ -43,6 +47,7 @@ jobs:
         with:
           github-ref: ${{ github.ref }}
           redis-ref: ${{ inputs.redis-ref }}
+          nightly-version: ${{ inputs.nightly-version }}
       - name: Set matrix
         id: set-matrix
         run: |
@@ -171,6 +176,8 @@ jobs:
       - name: Pack module
         if: ${{ !inputs.run_valgrind && !inputs.run_sanitizer }}
         uses: ./.github/actions/pack-module
+        with:
+          nightly-version: ${{ inputs.nightly-version }}
       - name: Upload artifacts to S3
         if: ${{ !inputs.run_valgrind && !inputs.run_sanitizer }}
         uses: ./.github/actions/upload-artifacts-to-s3

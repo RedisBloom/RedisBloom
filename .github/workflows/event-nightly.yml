@@ -24,41 +24,57 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       redis-ref: ${{ steps.set-env.outputs.redis-ref }}
+      nightly-version: ${{ steps.set-env.outputs.nightly-version }}
     steps:
       - name: set env
         id: set-env
         run: |
           echo "redis-ref=${{ inputs.redis-ref || 'unstable' }}" >> $GITHUB_OUTPUT  # todo change per version/tag
+          
+          # Generate unique nightly version with date and GitHub run number
+          # Format: DDMMYYYY.HHMMSS.RUN_NUMBER (to handle parallel runs and multiple daily runs)
+          DATE_PART=$(date +'%d%m%Y')
+          TIME_PART=$(date +'%H%M%S')
+          RUN_NUMBER="${{ github.run_number }}"
+          NIGHTLY_VERSION="${DATE_PART}.${TIME_PART}.${RUN_NUMBER}"
+          
+          echo "nightly-version=${NIGHTLY_VERSION}" >> $GITHUB_OUTPUT
+          echo "Generated nightly version: ${NIGHTLY_VERSION}"
   build-linux-x86:
     uses: ./.github/workflows/flow-linux-x86.yml
     needs: [prepare-values]
     with:
       os: bionic focal jammy rocky8 rocky9 bullseye amazonlinux2 mariner2 azurelinux3
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+      nightly-version: ${{needs.prepare-values.outputs.nightly-version}}
     secrets: inherit
   ubuntu-arm64:
     uses: ./.github/workflows/flow-ubuntu-arm.yml
     needs: [prepare-values]
     with:
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+      nightly-version: ${{needs.prepare-values.outputs.nightly-version}}
     secrets: inherit
   azurelinux3-arm64:
     uses: ./.github/workflows/flow-azurelinux3-arm64.yml
     needs: [prepare-values]
     with:
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+      nightly-version: ${{needs.prepare-values.outputs.nightly-version}}
     secrets: inherit
   macos:
     uses: ./.github/workflows/flow-macos.yml
     needs: [prepare-values]
     with:
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+      nightly-version: ${{needs.prepare-values.outputs.nightly-version}}
     secrets: inherit
   alpine:
     uses: ./.github/workflows/flow-alpine.yml
     needs: [prepare-values]
     with:
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+      nightly-version: ${{needs.prepare-values.outputs.nightly-version}}
     secrets: inherit
   linux-valgrind:
     uses: ./.github/workflows/flow-linux-x86.yml
@@ -66,6 +82,7 @@ jobs:
     with:
       os: jammy
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+      nightly-version: ${{needs.prepare-values.outputs.nightly-version}}
       run_valgrind: true
     secrets: inherit
   linux-sanitizer:
@@ -74,6 +91,7 @@ jobs:
     with:
       os: jammy
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+      nightly-version: ${{needs.prepare-values.outputs.nightly-version}}
       run_sanitizer: true
     secrets: inherit
   spellcheck:

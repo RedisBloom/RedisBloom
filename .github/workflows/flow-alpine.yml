@@ -17,6 +17,10 @@ on:
         description: 'Redis ref to checkout'
         type: string
         required: true
+      nightly-version:
+        description: 'Version suffix for nightly builds (DDMMYYYY.HHMMSS.RUN_NUMBER format)'
+        type: string
+        required: false
 
 jobs:
   prepare-values:
@@ -36,6 +40,7 @@ jobs:
         with:
           github-ref: ${{ github.ref }}
           redis-ref: ${{ inputs.redis-ref }}
+          nightly-version: ${{ inputs.nightly-version }}
   alpine:
     runs-on: ${{matrix.runs_on}}
     defaults:
@@ -84,6 +89,8 @@ jobs:
         uses: ./.github/actions/run-tests
       - name: Pack module
         uses: ./.github/actions/pack-module
+        with:
+          nightly-version: ${{ inputs.nightly-version }}
       - name: Upload artifacts to S3
         uses: ./.github/actions/upload-artifacts-to-s3
         with:

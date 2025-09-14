@@ -270,6 +270,11 @@ pack_deps() {
 NUMVER="$(NUMERIC=1 $SBIN/getver)"
 SEMVER="$($SBIN/getver)"
 
+# Append nightly version suffix if provided
+if [[ -n $NIGHTLY_VERSION ]]; then
+	SEMVER="${SEMVER}.${NIGHTLY_VERSION}"
+fi
+
 if [[ -n $VARIANT ]]; then
 	_VARIANT="-${VARIANT}"
 fi
