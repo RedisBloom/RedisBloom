@@ -212,6 +212,12 @@ static const RedisModuleCommandKeySpec TDIGEST_MERGE_KEYSPECS[] = {
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
      .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {.notes = "",
+     .flags = REDISMODULE_CMD_KEY_RO,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 3},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = -1, .keystep = 1, .limit = 0}},
     {0}};
 
 static const RedisModuleCommandArg TDIGEST_MERGE_ARGS[] = {
