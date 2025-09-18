@@ -9,8 +9,8 @@ inputs:
   redis-ref:
     description: Redis ref
     required: false
-  nightly-version:
-    description: Version suffix for nightly builds (YYYYMMDD.HHMMSS.RUN_NUMBER format)
+  beta-version:
+    description: Version suffix for beta builds (YYYYMMDD.HHMMSS.RUN_NUMBER format)
     required: false
 
 outputs:

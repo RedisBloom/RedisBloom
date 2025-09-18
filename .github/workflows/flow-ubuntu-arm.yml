@@ -17,7 +17,7 @@ on:
         description: 'Redis ref to checkout'
         type: string
         required: true
-      nightly-version:
+      beta-version:
         description: 'Version suffix for nightly builds (YYYYMMDD.HHMMSS.RUN_NUMBER format)'
         type: string
         required: false
@@ -41,7 +41,7 @@ jobs:
         with:
           github-ref: ${{ github.ref }}
           redis-ref: ${{ inputs.redis-ref }}
-          nightly-version: ${{ inputs.nightly-version }}
+          beta-version: ${{ inputs.beta-version }}
   ubuntu-arm64:
     runs-on: ubuntu24-arm64-4-16 # ubuntu24-arm64-2-8
     strategy:
@@ -197,4 +197,4 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           github-ref: ${{ github.ref }}
-          beta-version: ${{ inputs.nightly-version }}
+          beta-version: ${{ inputs.beta-version }}

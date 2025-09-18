@@ -212,10 +212,10 @@ pack_ramp() {
 	fi
 
 	# For nightly builds, create files in both beta and snapshots directories
-	echo "# Debug: SNAPSHOT=$SNAPSHOT, NIGHTLY_VERSION=$NIGHTLY_VERSION"
-	if [[ $SNAPSHOT == 1 && -n $NIGHTLY_VERSION ]]; then
-		echo "# Creating beta and branch files for nightly build..."
-		# Get the original branch name (without nightly version)
+	echo "# Debug: SNAPSHOT=$SNAPSHOT, BETA_VERSION=$BETA_VERSION"
+	if [[ $SNAPSHOT == 1 && -n $BETA_VERSION ]]; then
+		echo "# Creating beta and branch files for beta build..."
+		# Get the original branch name (without beta version)
 		local original_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "master")
 		original_branch=${original_branch//[^A-Za-z0-9._-]/_}
 		
@@ -310,13 +310,13 @@ NUMVER="$(NUMERIC=1 $SBIN/getver)"
 SEMVER="$($SBIN/getver)"
 
 # Debug: Show environment variables
-echo "# Debug: NIGHTLY_VERSION environment variable: '$NIGHTLY_VERSION'"
+echo "# Debug: BETA_VERSION environment variable: '$BETA_VERSION'"
 echo "# Debug: Original SEMVER: '$SEMVER'"
 
-# Append nightly version suffix if provided
-if [[ -n $NIGHTLY_VERSION ]]; then
-	SEMVER="${SEMVER}.${NIGHTLY_VERSION}"
-	echo "# Debug: Modified SEMVER with nightly version: '$SEMVER'"
+# Append beta version suffix if provided
+if [[ -n $BETA_VERSION ]]; then
+	SEMVER="${SEMVER}.${BETA_VERSION}"
+	echo "# Debug: Modified SEMVER with beta version: '$SEMVER'"
 fi
 
 if [[ -n $VARIANT ]]; then
