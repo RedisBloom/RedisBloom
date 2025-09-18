@@ -36,7 +36,7 @@ on:
         type: boolean
         default: false
       beta-version:
-        description: 'Version suffix for nightly builds (YYYYMMDD.HHMMSS.RUN_NUMBER format)'
+        description: 'Version suffix for beta builds (YYYYMMDD.HHMMSS.RUN_NUMBER format)'
         type: string
         required: false
 

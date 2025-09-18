@@ -18,7 +18,7 @@ on:
         type: string
         required: true
       beta-version:
-        description: 'Version suffix for nightly builds (YYYYMMDD.HHMMSS.RUN_NUMBER format)'
+        description: 'Version suffix for beta builds (YYYYMMDD.HHMMSS.RUN_NUMBER format)'
         type: string
         required: false
 
@@ -187,8 +187,8 @@ jobs:
           . venv/bin/activate
           export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
           git config --global --add safe.directory $GITHUB_WORKSPACE
-          if [[ -n "${{ inputs.nightly-version }}" ]]; then
-            export NIGHTLY_VERSION="${{ inputs.nightly-version }}"
+          if [[ -n "${{ inputs.beta-version }}" ]]; then
+            export BETA_VERSION="${{ inputs.beta-version }}"
           fi
           make pack BRANCH=$TAG_OR_BRANCH SHOW=1
       - name: Upload artifacts to S3
