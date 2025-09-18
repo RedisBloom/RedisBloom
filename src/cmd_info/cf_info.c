@@ -224,9 +224,8 @@ static const RedisModuleCommandArg CF_INSERTNX_ARGS[] = {
      .type = REDISMODULE_ARG_TYPE_BLOCK,
      .flags = REDISMODULE_CMD_ARG_OPTIONAL,
      .subargs =
-         (RedisModuleCommandArg[]){
-             {.name = "capacity", .type = REDISMODULE_ARG_TYPE_INTEGER},
-             {0}}},
+         (RedisModuleCommandArg[]){{.name = "capacity", .type = REDISMODULE_ARG_TYPE_INTEGER},
+                                   {0}}},
     {.name = "nocreate",
      .type = REDISMODULE_ARG_TYPE_PURE_TOKEN,
      .flags = REDISMODULE_CMD_ARG_OPTIONAL,
@@ -322,22 +321,23 @@ static const RedisModuleCommandArg CF_RESERVE_ARGS[] = {
     {.name = "bucketsize",
      .type = REDISMODULE_ARG_TYPE_BLOCK,
      .flags = REDISMODULE_CMD_ARG_OPTIONAL,
-     .subargs = (RedisModuleCommandArg[]){{.name = "CAPACITY", .type = REDISMODULE_ARG_TYPE_STRING},
-                                          {.name = "VALUE", .type = REDISMODULE_ARG_TYPE_STRING},
-                                          {0}}},
+     .token = "BUCKETSIZE",
+     .subargs =
+         (RedisModuleCommandArg[]){{.name = "bucketsize", .type = REDISMODULE_ARG_TYPE_INTEGER},
+                                   {0}}},
     {.name = "maxiterations",
      .type = REDISMODULE_ARG_TYPE_BLOCK,
      .flags = REDISMODULE_CMD_ARG_OPTIONAL,
+     .token = "MAXITERATIONS",
      .subargs =
-         (RedisModuleCommandArg[]){{.name = "MAXITERATIONS", .type = REDISMODULE_ARG_TYPE_STRING},
-                                   {.name = "VALUE", .type = REDISMODULE_ARG_TYPE_STRING},
+         (RedisModuleCommandArg[]){{.name = "maxiterations", .type = REDISMODULE_ARG_TYPE_INTEGER},
                                    {0}}},
     {.name = "expansion",
      .type = REDISMODULE_ARG_TYPE_BLOCK,
      .flags = REDISMODULE_CMD_ARG_OPTIONAL,
+     .token = "EXPANSION",
      .subargs =
-         (RedisModuleCommandArg[]){{.name = "EXPANSION", .type = REDISMODULE_ARG_TYPE_STRING},
-                                   {.name = "VALUE", .type = REDISMODULE_ARG_TYPE_STRING},
+         (RedisModuleCommandArg[]){{.name = "expansion", .type = REDISMODULE_ARG_TYPE_INTEGER},
                                    {0}}},
     {0}};
 
