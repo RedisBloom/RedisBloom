@@ -225,13 +225,12 @@ static const RedisModuleCommandArg CF_INSERTNX_ARGS[] = {
      .flags = REDISMODULE_CMD_ARG_OPTIONAL,
      .subargs =
          (RedisModuleCommandArg[]){
-             {.name = "capacity", .type = REDISMODULE_ARG_TYPE_PURE_TOKEN, .token = "CAPACITY"},
              {.name = "capacity", .type = REDISMODULE_ARG_TYPE_INTEGER},
              {0}}},
     {.name = "nocreate",
      .type = REDISMODULE_ARG_TYPE_PURE_TOKEN,
      .flags = REDISMODULE_CMD_ARG_OPTIONAL,
-     .token = "NOCREATE"},
+     .token = "CAPACITY"},
     {.name = "items", .type = REDISMODULE_ARG_TYPE_PURE_TOKEN, .token = "ITEMS"},
     {.name = "item", .type = REDISMODULE_ARG_TYPE_STRING, .flags = REDISMODULE_CMD_ARG_MULTIPLE},
     {0}};
