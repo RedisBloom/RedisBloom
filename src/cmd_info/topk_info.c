@@ -249,7 +249,6 @@ int RegisterTopKCommandInfos(RedisModuleCtx *ctx) {
         return REDISMODULE_ERR;
     }
     if (RedisModule_SetCommandInfo(cmd_list, &TOPK_LIST_INFO) == REDISMODULE_ERR) {
-        printf("TOPK.LIST command info set error\n");
         return REDISMODULE_ERR;
     }
 
