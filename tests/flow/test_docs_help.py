@@ -610,7 +610,7 @@ class testCommandDocsAndHelp():
             complexity='O(N*K), where N is the number of centroids and K being the number of input sketches',
             arity=-4,
             since='2.4.0',
-            args=[('destination-key', 'key'), ('numkeys', 'integer'), ('source-key', 'key'), ('compression', 'block'), ('override', 'pure-token')],
+            args=[('destination-key', 'key'), ('numkeys', 'integer'), ('source-key', 'key'), ('compression_block', 'block'), ('override', 'pure-token')],
             key_pos=1,
         )
 
