@@ -23,6 +23,10 @@ on:
         description: 'Run sanitizer on the tests'
         type: boolean
         default: false
+      beta-version:
+        description: 'Version suffix for beta builds (YYYYMMDD.HHMMSS.RUN_NUMBER format)'
+        type: string
+        required: false
 
 jobs:
   prepare-values:
@@ -43,6 +47,7 @@ jobs:
         with:
           github-ref: ${{ github.ref }}
           redis-ref: ${{ inputs.redis-ref }}
+          beta-version: ${{ inputs.beta-version }}
       - name: Set matrix
         id: set-matrix
         run: |
@@ -171,6 +176,8 @@ jobs:
       - name: Pack module
         if: ${{ !inputs.run_valgrind && !inputs.run_sanitizer }}
         uses: ./.github/actions/pack-module
+        with:
+          beta-version: ${{ inputs.beta-version }}
       - name: Upload artifacts to S3
         if: ${{ !inputs.run_valgrind && !inputs.run_sanitizer }}
         uses: ./.github/actions/upload-artifacts-to-s3
@@ -178,3 +185,4 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           github-ref: ${{ github.ref }}
+          beta-version: ${{ inputs.beta-version }}

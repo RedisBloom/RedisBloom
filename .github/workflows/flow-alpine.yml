@@ -17,6 +17,10 @@ on:
         description: 'Redis ref to checkout'
         type: string
         required: true
+      beta-version:
+        description: 'Version suffix for beta builds (YYYYMMDD.HHMMSS.RUN_NUMBER format)'
+        type: string
+        required: false
 
 jobs:
   prepare-values:
@@ -36,6 +40,7 @@ jobs:
         with:
           github-ref: ${{ github.ref }}
           redis-ref: ${{ inputs.redis-ref }}
+          beta-version: ${{ inputs.beta-version }}
   alpine:
     runs-on: ${{matrix.runs_on}}
     defaults:
@@ -84,9 +89,12 @@ jobs:
         uses: ./.github/actions/run-tests
       - name: Pack module
         uses: ./.github/actions/pack-module
+        with:
+          beta-version: ${{ inputs.beta-version }}
       - name: Upload artifacts to S3
         uses: ./.github/actions/upload-artifacts-to-s3
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           github-ref: ${{ github.ref }}
+          beta-version: ${{ inputs.beta-version }}

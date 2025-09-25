@@ -131,4 +131,30 @@ s3_upload() {
 
 #----------------------------------------------------------------------------------------------
 
-PROD=redisbloom PREFIX=redisbloom s3_upload
+if [[ $BETA == 1 ]]; then
+	echo "# Uploading to BETA folder with version: $BETA_VERSION"
+	
+	# Upload beta files from beta directory if it exists
+	if [[ -d $ROOT/bin/artifacts/beta ]]; then
+		cd $ROOT/bin/artifacts/beta
+		
+		if du --help | grep -q -- --apparent-size; then
+			DU_ARGS='--apparent-size'
+		fi
+		[[ $VERBOSE == 1 ]] && du -ah ${DU_ARGS} *
+		
+		# Upload beta files to beta directory (production only)
+		beta_upload_dir="${S3_URL}/redisbloom/beta"
+		
+		files=$(ls redisbloom.*${PLATFORM}*.zip 2>/dev/null || true)
+		for file in $files; do
+			$OP aws s3 cp $file $beta_upload_dir/ --acl public-read --no-progress
+		done
+		[[ $VERBOSE == 1 ]] && $OP aws s3 ls $beta_upload_dir/
+	else
+		echo "# No beta directory found at $ROOT/bin/artifacts/beta"
+	fi
+else
+	# Regular upload
+	PROD=redisbloom PREFIX=redisbloom s3_upload
+fi
