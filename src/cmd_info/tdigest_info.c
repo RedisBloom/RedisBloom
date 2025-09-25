@@ -4,8 +4,7 @@
 // TDIGEST.ADD key value [value ...]
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_ADD_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RW,
+    {.flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -31,8 +30,7 @@ static const RedisModuleCommandInfo TDIGEST_ADD_INFO = {
 // TDIGEST.BYRANK key rank [rank ...]
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_BYRANK_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RO,
+    {.flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -59,8 +57,7 @@ static const RedisModuleCommandInfo TDIGEST_BYRANK_INFO = {
 // TDIGEST.BYREVRANK key reverse_rank [reverse_rank ...]
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_BYREVRANK_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RO,
+    {.flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -89,8 +86,7 @@ static const RedisModuleCommandInfo TDIGEST_BYREVRANK_INFO = {
 // TDIGEST.CDF key value [value ...]
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_CDF_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RO,
+    {.flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -118,8 +114,7 @@ static const RedisModuleCommandInfo TDIGEST_CDF_INFO = {
 // TDIGEST.CREATE key [COMPRESSION compression]
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_CREATE_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RW,
+    {.flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -155,8 +150,7 @@ static const RedisModuleCommandInfo TDIGEST_CREATE_INFO = {
 // TDIGEST.INFO key
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_INFO_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RO,
+    {.flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -180,8 +174,7 @@ static const RedisModuleCommandInfo TDIGEST_INFO_INFO = {
 // TDIGEST.MAX key
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_MAX_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RO,
+    {.flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -206,14 +199,12 @@ static const RedisModuleCommandInfo TDIGEST_MAX_INFO = {
 // [OVERRIDE]
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_MERGE_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RW,
+    {.flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
      .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RO,
+    {.flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 3},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -259,8 +250,7 @@ static const RedisModuleCommandInfo TDIGEST_MERGE_INFO = {
 // TDIGEST.MIN key
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_MIN_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RO,
+    {.flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -284,8 +274,7 @@ static const RedisModuleCommandInfo TDIGEST_MIN_INFO = {
 // TDIGEST.QUANTILE key quantile [quantile ...]
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_QUANTILE_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RO,
+    {.flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -314,8 +303,7 @@ static const RedisModuleCommandInfo TDIGEST_QUANTILE_INFO = {
 // TDIGEST.RANK key value [value ...]
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_RANK_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RO,
+    {.flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -343,8 +331,7 @@ static const RedisModuleCommandInfo TDIGEST_RANK_INFO = {
 // TDIGEST.RESET key
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_RESET_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RW,
+    {.flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -368,8 +355,7 @@ static const RedisModuleCommandInfo TDIGEST_RESET_INFO = {
 // TDIGEST.REVRANK key value [value ...]
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_REVRANK_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RO,
+    {.flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -397,8 +383,7 @@ static const RedisModuleCommandInfo TDIGEST_REVRANK_INFO = {
 // TDIGEST.TRIMMED_MEAN key low_cut_quantile high_cut_quantile
 // ===============================
 static const RedisModuleCommandKeySpec TDIGEST_TRIMMED_MEAN_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RO,
+    {.flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,

@@ -4,8 +4,7 @@
 // CF.ADD key item
 // ===============================
 static const RedisModuleCommandKeySpec CF_ADD_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RW,
+    {.flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -31,10 +30,7 @@ static const RedisModuleCommandInfo CF_ADD_INFO = {
 // CF.ADDNX key item
 // ===============================
 static const RedisModuleCommandKeySpec CF_ADDNX_KEYSPECS[] = {
-    {.notes = "This command is slower than CF.ADD because it first checks whether the item exists. "
-              "Since CF.EXISTS can result in false positive, CF.ADDNX may not add an item because "
-              "it is supposedly already exist, which may be wrong.",
-     .flags = REDISMODULE_CMD_KEY_RW,
+    {.flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -60,8 +56,7 @@ static const RedisModuleCommandInfo CF_ADDNX_INFO = {
 // CF.COUNT key item
 // ===============================
 static const RedisModuleCommandKeySpec CF_COUNT_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RO,
+    {.flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -87,8 +82,7 @@ static const RedisModuleCommandInfo CF_COUNT_INFO = {
 // CF.DEL key item
 // ===============================
 static const RedisModuleCommandKeySpec CF_DEL_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RW,
+    {.flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -114,8 +108,7 @@ static const RedisModuleCommandInfo CF_DEL_INFO = {
 // CF.EXISTS key item
 // ===============================
 static const RedisModuleCommandKeySpec CF_EXISTS_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RO,
+    {.flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -141,8 +134,7 @@ static const RedisModuleCommandInfo CF_EXISTS_INFO = {
 // CF.INFO key
 // ===============================
 static const RedisModuleCommandKeySpec CF_INFO_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RO,
+    {.flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -166,8 +158,7 @@ static const RedisModuleCommandInfo CF_INFO_INFO = {
 // CF.INSERT key [CAPACITY capacity] [NOCREATE] ITEMS item [item ...]
 // ===============================
 static const RedisModuleCommandKeySpec CF_INSERT_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RW,
+    {.flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -208,10 +199,7 @@ static const RedisModuleCommandInfo CF_INSERT_INFO = {
 // CF.INSERTNX key [CAPACITY capacity] [NOCREATE] ITEMS item [item ...]
 // ===============================
 static const RedisModuleCommandKeySpec CF_INSERTNX_KEYSPECS[] = {
-    {.notes = "This command is slower than CF.INSERT because it first checks whether each item "
-              "exists. Since CF.EXISTS can result in false positive, CF.INSERTNX may not add an "
-              "item because it is supposedly already exist, which may be wrong.",
-     .flags = REDISMODULE_CMD_KEY_RW,
+    {.flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -250,9 +238,7 @@ static const RedisModuleCommandInfo CF_INSERTNX_INFO = {
 // CF.LOADCHUNK key iterator data
 // ===============================
 static const RedisModuleCommandKeySpec CF_LOADCHUNK_KEYSPECS[] = {
-    {.notes = "This command overwrites the cuckoo filter stored under key. Make sure that the "
-              "cuckoo filter is not changed between invocations.",
-     .flags = REDISMODULE_CMD_KEY_RW,
+    {.flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -279,8 +265,7 @@ static const RedisModuleCommandInfo CF_LOADCHUNK_INFO = {
 // CF.MEXISTS key item [item ...]
 // ===============================
 static const RedisModuleCommandKeySpec CF_MEXISTS_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RO,
+    {.flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -307,8 +292,7 @@ static const RedisModuleCommandInfo CF_MEXISTS_INFO = {
 // expansion]
 // ===============================
 static const RedisModuleCommandKeySpec CF_RESERVE_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RW,
+    {.flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -355,8 +339,7 @@ static const RedisModuleCommandInfo CF_RESERVE_INFO = {
 // CF.SCANDUMP key iterator
 // ===============================
 static const RedisModuleCommandKeySpec CF_SCANDUMP_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RW,
+    {.flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,

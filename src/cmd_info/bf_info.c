@@ -4,8 +4,7 @@
 // BF.ADD key item
 // ===============================
 static const RedisModuleCommandKeySpec BF_ADD_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RW,
+    {.flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -31,8 +30,7 @@ static const RedisModuleCommandInfo BF_ADD_INFO = {
 // BF.CARD key
 // ===============================
 static const RedisModuleCommandKeySpec BF_CARD_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RO,
+    {.flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -56,8 +54,7 @@ static const RedisModuleCommandInfo BF_CARD_INFO = {
 // BF.EXISTS key item
 // ===============================
 static const RedisModuleCommandKeySpec BF_EXISTS_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RO,
+    {.flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -83,8 +80,7 @@ static const RedisModuleCommandInfo BF_EXISTS_INFO = {
 // BF.INFO key [CAPACITY | SIZE | FILTERS | ITEMS | EXPANSION]
 // ===============================
 static const RedisModuleCommandKeySpec BF_INFO_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RO,
+    {.flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -122,8 +118,7 @@ static const RedisModuleCommandInfo BF_INFO_INFO = {
 // ITEMS item [item ...]
 // ===============================
 static const RedisModuleCommandKeySpec BF_INSERT_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RW,
+    {.flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -183,9 +178,7 @@ static const RedisModuleCommandInfo BF_INSERT_INFO = {
 // BF.LOADCHUNK key iterator data
 // ===============================
 static const RedisModuleCommandKeySpec BF_LOADCHUNK_KEYSPECS[] = {
-    {.notes = "This command overwrites the Bloom filter stored under key. Make sure that the Bloom "
-              "filter is not changed between invocations.",
-     .flags = REDISMODULE_CMD_KEY_RW,
+    {.flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -212,8 +205,7 @@ static const RedisModuleCommandInfo BF_LOADCHUNK_INFO = {
 // BF.MADD key item [item ...]
 // ===============================
 static const RedisModuleCommandKeySpec BF_MADD_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RW,
+    {.flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -239,8 +231,7 @@ static const RedisModuleCommandInfo BF_MADD_INFO = {
 // BF.MEXISTS key item [item ...]
 // ===============================
 static const RedisModuleCommandKeySpec BF_MEXISTS_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RO,
+    {.flags = REDISMODULE_CMD_KEY_RO,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -266,8 +257,7 @@ static const RedisModuleCommandInfo BF_MEXISTS_INFO = {
 // BF.RESERVE key error_rate capacity [EXPANSION expansion] [NONSCALING]
 // ===============================
 static const RedisModuleCommandKeySpec BF_RESERVE_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RW,
+    {.flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
@@ -304,8 +294,7 @@ static const RedisModuleCommandInfo BF_RESERVE_INFO = {
 // BF.SCANDUMP key iterator
 // ===============================
 static const RedisModuleCommandKeySpec BF_SCANDUMP_KEYSPECS[] = {
-    {.notes = "",
-     .flags = REDISMODULE_CMD_KEY_RW,
+    {.flags = REDISMODULE_CMD_KEY_RW,
      .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
