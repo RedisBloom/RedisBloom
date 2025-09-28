@@ -9,6 +9,9 @@ inputs:
   redis-ref:
     description: Redis ref
     required: false
+  beta-version:
+    description: Version suffix for beta builds (YYYYMMDD.HHMMSS.RUN_NUMBER format)
+    required: false
 
 outputs:
   TAGGED:
