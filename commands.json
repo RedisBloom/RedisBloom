@@ -623,7 +623,7 @@
     "group": "cms"
   },
   "TOPK.RESERVE": {
-    "summary": "Initializes a TopK with specified parameters",
+    "summary": "Initializes a Top-K sketch with specified parameters",
     "complexity": "O(1)",
     "arguments": [
       {
@@ -658,7 +658,7 @@
     "group": "topk"
   },
   "TOPK.ADD": {
-    "summary": "Increases the count of one or more items by increment",
+    "summary": "Adds an item to a Top-k sketch. Multiple items can be added at the same time.",
     "complexity": "O(n * k) where n is the number of items and k is the depth",
     "arguments": [
       {
@@ -737,8 +737,8 @@
     "group": "topk"
   },
   "TOPK.LIST": {
-    "summary": "Return full list of items in Top K list",
-    "complexity": "O(k) where k is the value of top-k",
+    "summary": "Return the full list of items in Top-K sketch.",
+    "complexity": "O(k*log(k)) where k is the value of top-k",
     "arguments": [
       {
         "name": "key",
@@ -798,7 +798,7 @@
   },
   "TDIGEST.ADD": {
     "summary": "Adds one or more observations to a t-digest sketch",
-    "complexity": "O(N) , where N is the number of samples to add",
+    "complexity": "O(N), where N is the number of samples to add",
     "arguments": [
       {
         "name": "key",
@@ -889,7 +889,7 @@
   },
   "TDIGEST.QUANTILE": {
     "summary": "Returns, for each input fraction, an estimation of the value (floating point) that is smaller than the given fraction of observations",
-    "complexity": "O(1)",
+    "complexity": "O(N) where N is the number of quantiles specified.",
     "arguments": [
       {
         "name": "key",
@@ -943,7 +943,7 @@
   },
   "TDIGEST.RANK": {
     "summary": "Returns, for each input value (floating-point), the estimated rank of the value (the number of observations in the sketch that are smaller than the value + half the number of observations that are equal to the value)",
-    "complexity": "O(1)",
+    "complexity": "O(N) where N is the number of values specified.",
     "arguments": [
       {
         "name": "key",
@@ -960,7 +960,7 @@
   },
   "TDIGEST.REVRANK": {
     "summary": "Returns, for each input value (floating-point), the estimated reverse rank of the value (the number of observations in the sketch that are larger than the value + half the number of observations that are equal to the value)",
-    "complexity": "O(1)",
+    "complexity": "O(N) where N is the number of values specified.",
     "arguments": [
       {
         "name": "key",
@@ -977,7 +977,7 @@
   },
   "TDIGEST.BYRANK": {
     "summary": "Returns, for each input rank, an estimation of the value (floating-point) with that rank",
-    "complexity": "O(1)",
+    "complexity": "O(N) where N is the number of ranks specified",
     "arguments": [
       {
         "name": "key",
@@ -994,7 +994,7 @@
   },
   "TDIGEST.BYREVRANK": {
     "summary": "Returns, for each input reverse rank, an estimation of the value (floating-point) with that reverse rank",
-    "complexity": "O(1)",
+    "complexity": "O(N) where N is the number of reverse ranks specified.",
     "arguments": [
       {
         "name": "key",
