@@ -102,6 +102,12 @@ jobs:
               apt upgrade -yqq
               apt install -yqq git wget build-essential lcov openssl libssl-dev \
                 python3 python3-pip python3-venv python3-dev unzip rsync libclang-dev clang curl cmake
+          - image: "rockylinux:9"
+            nick: "rocky9"
+            install_git: |
+              dnf install -y git
+            install_deps: |
+              echo "Dependencies will be installed via install_script.sh"
     defaults:
       run:
         shell: bash
@@ -153,10 +159,19 @@ jobs:
           python-version: '3.9'
           architecture: 'arm64'
       - name: Install dependencies
+        if: matrix.docker.image != 'rockylinux:9'
         run: |
           ${{ matrix.docker.install_deps }}
         env:
           DEBIAN_FRONTEND: noninteractive
+      - name: Setup Rocky9 dependencies
+        if: matrix.docker.image == 'rockylinux:9'
+        working-directory: .install
+        shell: bash
+        run: |
+          echo ::group::Install dependencies
+            ./install_script.sh 
+          echo ::endgroup::
       - name: Install python dependencies
         run: |
           echo ::group::activate venv
