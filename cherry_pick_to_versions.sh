@@ -150,7 +150,7 @@ cherry_pick_to_version() {
     
     # Cherry-pick the commit
     print_info "Cherry-picking commit $commit_hash to $new_branch"
-    if git cherry-pick "$commit_hash"; then
+    if git cherry-pick -x "$commit_hash"; then
         print_success "Successfully cherry-picked $commit_hash to $new_branch"
         
         # Push the new branch to remote
