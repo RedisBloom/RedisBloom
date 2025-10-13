@@ -44,6 +44,7 @@ jobs:
           beta-version: ${{ inputs.beta-version }}
   ubuntu-arm64:
     runs-on: ubuntu24-arm64-4-16 # ubuntu24-arm64-2-8
+    timeout-minutes: 120
     strategy:
       matrix:
         docker:
@@ -110,6 +111,9 @@ jobs:
           - image: "rockylinux:9"
             nick: "rocky9"
             install_git: |
+              sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/rocky*.repo
+              sed -i 's|#baseurl=http://dl.rockylinux.org/\$contentdir|baseurl=http://dl.rockylinux.org/pub/rocky|g' /etc/yum.repos.d/rocky*.repo
+              dnf clean all
               dnf install -y git
             install_deps: |
               echo "Dependencies will be installed via install_script.sh"
@@ -125,8 +129,11 @@ jobs:
       BRANCH: ${{ needs.prepare-values.outputs.BRANCH }}
       TAG_OR_BRANCH: ${{ needs.prepare-values.outputs.TAG_OR_BRANCH}}
       PIP_BREAK_SYSTEM_PACKAGES: 1
+      DEBIAN_FRONTEND: noninteractive
     steps:
       - name: Install git
+        env:
+          DEBIAN_FRONTEND: noninteractive
         run: |
           ${{ matrix.docker.install_git }}
       - name: git checkout
