@@ -55,6 +55,15 @@ LD_LIBS += $(MODULE_SO)
 
 include $(MK)/rules
 
+ifeq ($(OS),macos)
+CC_FLAGS += -fblocks
+endif
+
+ifneq ($(SAN),)
+CC_FLAGS += -fblocks
+LD_LIBS += -lBlocksRuntime
+endif
+
 -include $(CC_DEPS)
 
 $(BINDIR)/%.o: $(SRCDIR)/%.c

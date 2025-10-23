@@ -59,10 +59,14 @@ void CuckooFilter_Free(CuckooFilter *filter) {
     if (!filter) {
         return;
     }
-    for (uint16_t ii = 0; ii < filter->numFilters; ++ii) {
-        CUCKOO_FREE(filter->filters[ii].data);
+    if (filter->filters) {
+        for (uint16_t ii = 0; ii < filter->numFilters; ++ii) {
+            if (filter->filters[ii].data) {
+                CUCKOO_FREE(filter->filters[ii].data);
+            }
+        }
+        CUCKOO_FREE(filter->filters);
     }
-    CUCKOO_FREE(filter->filters);
 }
 
 static int CuckooFilter_Grow(CuckooFilter *filter) {
@@ -79,10 +83,7 @@ static int CuckooFilter_Grow(CuckooFilter *filter) {
 
     filter->filters = filtersArray;
     SubCF *currentFilter = filtersArray + filter->numFilters;
-    *currentFilter = (SubCF) {
-        .bucketSize = filter->bucketSize,
-        .data = NULL
-    };
+    *currentFilter = (SubCF){.bucketSize = filter->bucketSize, .data = NULL};
 
     size_t growth = pow(filter->expansion, filter->numFilters);
     // filter->numBuckets variable is 56 bits. Check if multiplication
@@ -249,7 +250,7 @@ static CuckooInsertStatus Filter_KOInsert(CuckooFilter *filter, SubCF *curFilter
                                           const LookupParams *params);
 
 static CuckooInsertStatus CuckooFilter_InsertFP(CuckooFilter *filter, const LookupParams *params) {
-    for (uint16_t ii = filter->numFilters; ii --> 0; ) {
+    for (uint16_t ii = filter->numFilters; ii-- > 0;) {
         uint8_t *slot = Filter_FindAvailable(&filter->filters[ii], params);
         if (slot) {
             *slot = params->fp;
@@ -347,8 +348,8 @@ typedef enum {
 /**
  * Attempt to move a slot from one bucket to another filter
  */
-static RelocStatus relocateSlot(CuckooFilter *cf, CuckooBucket bucket, uint16_t filterIx, uint64_t bucketIx,
-                        uint16_t slotIx) {
+static RelocStatus relocateSlot(CuckooFilter *cf, CuckooBucket bucket, uint16_t filterIx,
+                                uint64_t bucketIx, uint16_t slotIx) {
     LookupParams params = {0};
     if ((params.fp = bucket[slotIx]) == CUCKOO_NULLFP) {
         // Nothing in this slot.
@@ -382,8 +383,8 @@ static RelocStatus CuckooFilter_CompactSingle(CuckooFilter *cf, uint16_t filterI
 
     for (uint64_t bucketIx = 0; bucketIx < currentFilter->numBuckets; ++bucketIx) {
         for (uint16_t slotIx = 0; slotIx < currentFilter->bucketSize; ++slotIx) {
-            RelocStatus status = relocateSlot(cf, &filter[bucketIx * currentFilter->bucketSize], filterIx,
-                                      bucketIx, slotIx);
+            RelocStatus status = relocateSlot(cf, &filter[bucketIx * currentFilter->bucketSize],
+                                              filterIx, bucketIx, slotIx);
             if (status == RELOC_FAIL) {
                 rv = RELOC_FAIL;
             }
@@ -403,7 +404,7 @@ static RelocStatus CuckooFilter_CompactSingle(CuckooFilter *cf, uint16_t filterI
  * be freed and therefore following filter cannot be freed either.
  */
 void CuckooFilter_Compact(CuckooFilter *cf, bool cont) {
-    for (uint16_t ii = cf->numFilters; 0 <-- ii; ) {
+    for (uint16_t ii = cf->numFilters; 0 < --ii;) {
         if (CuckooFilter_CompactSingle(cf, ii) == RELOC_FAIL && !cont) {
             // if compacting failed, stop as lower filters cannot be freed.
             break;
