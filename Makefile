@@ -176,6 +176,15 @@ all: bindirs $(TARGET)
 
 include $(MK)/rules
 
+ifeq ($(OS),macos)
+CC_FLAGS += -fblocks
+endif
+
+ifneq ($(SAN),)
+CC_FLAGS += -fblocks
+LD_LIBS += -lBlocksRuntime
+endif
+
 #----------------------------------------------------------------------------------------------
 
 ifeq ($(DEPS),1)
