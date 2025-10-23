@@ -87,16 +87,24 @@ TopK *TopK_Create(uint32_t k, uint32_t width, uint32_t depth, double decay) {
 }
 
 void TopK_Destroy(TopK *topk) {
-    assert(topk);
-
-    for (uint32_t i = 0; i < topk->k; ++i) {
-        TOPK_FREE(topk->heap[i].item);
+    if (!topk) {
+        return;
     }
 
-    TOPK_FREE(topk->heap);
-    topk->heap = NULL;
-    TOPK_FREE(topk->data);
-    topk->data = NULL;
+    if (topk->heap) {
+        for (uint32_t i = 0; i < topk->k; ++i) {
+            if (topk->heap[i].item) {
+                TOPK_FREE(topk->heap[i].item);
+            }
+        }
+
+        TOPK_FREE(topk->heap);
+        topk->heap = NULL;
+    }
+    if (topk->data) {
+        TOPK_FREE(topk->data);
+        topk->data = NULL;
+    }
     TOPK_FREE(topk);
 }
 
