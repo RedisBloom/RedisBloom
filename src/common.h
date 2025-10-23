@@ -6,6 +6,14 @@
 
 #pragma once
 
+#if defined(__GNUC__)
+#define likely(x) __builtin_expect((x), 1)
+#define unlikely(x) __builtin_expect((x), 0)
+#elif _MSC_VER
+#define likely(x) (x)
+#define unlikely(x) (x)
+#endif
+
 #include "redismodule.h"
 #if defined(DEBUG) || !defined(NDEBUG)
 #include "readies/cetara/diag/gdb.h"

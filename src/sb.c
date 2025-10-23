@@ -47,10 +47,15 @@ void SBChain_Free(SBChain *sb) {
         return;
     }
 
-    for (size_t ii = 0; ii < sb->nfilters; ++ii) {
-        bloom_free(&sb->filters[ii].inner);
+    if (sb->filters) {
+        for (size_t ii = 0; ii < sb->nfilters; ++ii) {
+            if (sb->filters[ii].inner.bf) {
+                RedisModule_Free(sb->filters[ii].inner.bf);
+            }
+        }
+        RedisModule_Free(sb->filters);
     }
-    RedisModule_Free(sb->filters);
+
     RedisModule_Free(sb);
 }
 
