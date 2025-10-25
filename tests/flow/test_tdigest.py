@@ -5,7 +5,9 @@ from numpy import NaN
 import redis
 import math
 import random
+import os
 from random import randint
+from common import ARCH
 
 
 def parse_tdigest_info(array_reply):
@@ -966,6 +968,9 @@ class testTDigest:
 
     def test_insufficient_memory(self):
         if os.environ.get('SANITIZER') != None:
+            self.env.skip()
+        # Skip on ARM64 due to server crash instead of graceful allocation failure
+        if ARCH == 'arm64v8':
             self.env.skip()
         self.cmd("FLUSHALL")
         self.env.expect('tdigest.create', 'k', 'compression', 100000000000000000).error().contains('allocation failed')
