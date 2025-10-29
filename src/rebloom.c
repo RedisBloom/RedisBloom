@@ -15,6 +15,7 @@
 #include "rm_cms.h"
 #include "rm_topk.h"
 #include "rm_tdigest.h"
+#include "load_io_error.h"
 #include "version.h"
 #include "common.h"
 #include "rmutil/util.h"
@@ -1220,13 +1221,20 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
 
     // Load our modules
     SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
-    sb->size = RedisModule_LoadUnsigned(io);
-    sb->nfilters = RedisModule_LoadUnsigned(io);
+    bool err = false;
+    errdefer(err, SBChain_Free(sb));
+
+    sb->size = LoadUnsigned_IOError(io, err, NULL);
+    sb->nfilters = LoadUnsigned_IOError(io, err, NULL);
+    if (sb->nfilters <= 0) {
+        RedisModule_Free(sb);
+        return NULL;
+    }
     if (encver >= BF_MIN_OPTIONS_ENC) {
-        sb->options = RedisModule_LoadUnsigned(io);
+        sb->options = LoadUnsigned_IOError(io, err, NULL);
     }
     if (encver >= BF_MIN_GROWTH_ENC) {
-        sb->growth = RedisModule_LoadUnsigned(io);
+        sb->growth = LoadUnsigned_IOError(io, err, NULL);
     } else {
         sb->growth = 2;
     }
@@ -1234,28 +1242,27 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
     // Sanity:
     assert(sb->nfilters < 1000);
     sb->filters = RedisModule_Calloc(sb->nfilters, sizeof(*sb->filters));
-
     for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         SBLink *lb = sb->filters + ii;
         struct bloom *bm = &lb->inner;
 
-        bm->entries = RedisModule_LoadUnsigned(io);
-        bm->error = RedisModule_LoadDouble(io);
-        bm->hashes = RedisModule_LoadUnsigned(io);
-        bm->bpe = RedisModule_LoadDouble(io);
+        bm->entries = LoadUnsigned_IOError(io, err, NULL);
+        bm->error = LoadDouble_IOError(io, err, NULL);
+        bm->hashes = LoadUnsigned_IOError(io, err, NULL);
+        bm->bpe = LoadDouble_IOError(io, err, NULL);
         if (encver == 0) {
             bm->bits = (double)bm->entries * bm->bpe;
         } else {
-            bm->bits = RedisModule_LoadUnsigned(io);
-            bm->n2 = RedisModule_LoadUnsigned(io);
+            bm->bits = LoadUnsigned_IOError(io, err, NULL);
+            bm->n2 = LoadUnsigned_IOError(io, err, NULL);
         }
         if (sb->options & BLOOM_OPT_FORCE64) {
             bm->force64 = 1;
         }
         size_t sztmp;
-        bm->bf = (unsigned char *)RedisModule_LoadStringBuffer(io, &sztmp);
+        bm->bf = (unsigned char *)LoadStringBuffer_IOError(io, &sztmp, err, NULL);
         bm->bytes = sztmp;
-        lb->size = RedisModule_LoadUnsigned(io);
+        lb->size = LoadUnsigned_IOError(io, err, NULL);
     }
 
     return sb;
@@ -1330,20 +1337,22 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
        hashing") printf("\n64 bit mode\n\n");
         }*/
 
+    bool err = false;
     CuckooFilter *cf = RedisModule_Calloc(1, sizeof(*cf));
-    cf->numFilters = RedisModule_LoadUnsigned(io);
-    cf->numBuckets = RedisModule_LoadUnsigned(io);
-    cf->numItems = RedisModule_LoadUnsigned(io);
+    errdefer(err, CuckooFilter_Free(cf));
+    cf->numFilters = LoadUnsigned_IOError(io, err, NULL);
+    cf->numBuckets = LoadUnsigned_IOError(io, err, NULL);
+    cf->numItems = LoadUnsigned_IOError(io, err, NULL);
     if (encver < CF_MIN_EXPANSION_VERSION) { // CF_ENCODING_VERSION when added
         cf->numDeletes = 0;                  // Didn't exist earlier. bug fix
         cf->bucketSize = rm_config.cf_bucket_size.value;
         cf->maxIterations = rm_config.cf_max_iterations.value;
         cf->expansion = rm_config.cf_expansion_factor.value;
     } else {
-        cf->numDeletes = RedisModule_LoadUnsigned(io);
-        cf->bucketSize = RedisModule_LoadUnsigned(io);
-        cf->maxIterations = RedisModule_LoadUnsigned(io);
-        cf->expansion = RedisModule_LoadUnsigned(io);
+        cf->numDeletes = LoadUnsigned_IOError(io, err, NULL);
+        cf->bucketSize = LoadUnsigned_IOError(io, err, NULL);
+        cf->maxIterations = LoadUnsigned_IOError(io, err, NULL);
+        cf->expansion = LoadUnsigned_IOError(io, err, NULL);
     }
 
     cf->filters = RedisModule_Calloc(cf->numFilters, sizeof(*cf->filters));
@@ -1353,11 +1362,11 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
         if (encver < CF_MIN_EXPANSION_VERSION) {
             cf->filters[ii].numBuckets = cf->numBuckets;
         } else {
-            cf->filters[ii].numBuckets = RedisModule_LoadUnsigned(io);
+            cf->filters[ii].numBuckets = LoadUnsigned_IOError(io, err, NULL);
         }
 
         size_t lenDummy = 0;
-        cf->filters[ii].data = (MyCuckooBucket *)RedisModule_LoadStringBuffer(io, &lenDummy);
+        cf->filters[ii].data = (MyCuckooBucket *)LoadStringBuffer_IOError(io, &lenDummy, err, NULL);
         assert(cf->filters[ii].data != NULL && lenDummy == cf->filters[ii].bucketSize *
                                                                cf->filters[ii].numBuckets *
                                                                sizeof(*cf->filters[ii].data));
@@ -1485,6 +1494,8 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     if (argc % 2) {
         BAIL("Invalid number of arguments passed");
     }
+
+    RedisModule_SetModuleOptions(ctx, REDISMODULE_OPTIONS_HANDLE_IO_ERRORS);
 
     for (int ii = 0; ii < argc; ii += 2) {
         tryGetConfigFromArgs(ctx, argv, ii, BF_INITIAL_SIZE_LEGACY, bf_initial_size);
