@@ -18,6 +18,11 @@
 #include "common.h"
 #include <math.h>
 
+#define TOPK_DEFAULT_WIDTH 8
+#define TOPK_DEFAULT_DEPTH 7
+#define TOPK_DEFAULT_DECAY 0.9
+
+#include "load_io_error.h"
 // clang-format off
 #define INNER_ERROR(x) \
     do { \
@@ -45,28 +50,33 @@ static int GetTopKKey(RedisModuleCtx *ctx, RedisModuleString *keyName, TopK **to
 }
 
 static int createTopK(RedisModuleCtx *ctx, RedisModuleString **argv, int argc, TopK **topk) {
-    long long k, width, depth;
+    long long tmp_ll;
+    uint32_t k, width, depth;
     double decay;
-    if ((RedisModule_StringToLongLong(argv[2], &k) != REDISMODULE_OK) || k < 1) {
+    if ((RedisModule_StringToLongLong(argv[2], &tmp_ll) != REDISMODULE_OK) || tmp_ll > UINT32_MAX ||
+        tmp_ll < 1) {
         INNER_ERROR("TopK: invalid k");
     }
+    k = (uint32_t)tmp_ll;
     if (argc == 6) {
-        if ((RedisModule_StringToLongLong(argv[3], &width) != REDISMODULE_OK) || width < 1 ||
-            width > UINT32_MAX) {
+        if ((RedisModule_StringToLongLong(argv[3], &tmp_ll) != REDISMODULE_OK) ||
+            tmp_ll > UINT32_MAX || tmp_ll < 1) {
             INNER_ERROR("TopK: invalid width");
         }
-        if ((RedisModule_StringToLongLong(argv[4], &depth) != REDISMODULE_OK) || depth < 1 ||
-            depth > UINT32_MAX) {
+        width = (uint32_t)tmp_ll;
+        if ((RedisModule_StringToLongLong(argv[4], &tmp_ll) != REDISMODULE_OK) ||
+            tmp_ll > UINT32_MAX || tmp_ll < 1) {
             INNER_ERROR("TopK: invalid depth");
         }
+        depth = (uint32_t)tmp_ll;
         if ((RedisModule_StringToDouble(argv[5], &decay) != REDISMODULE_OK) ||
             (decay <= 0 || decay > 1)) {
             INNER_ERROR("TopK: invalid decay value. must be '<= 1' & '> 0'");
         }
     } else {
-        width = 8;
-        depth = 7;
-        decay = 0.9;
+        width = TOPK_DEFAULT_WIDTH;
+        depth = TOPK_DEFAULT_DEPTH;
+        decay = TOPK_DEFAULT_DECAY;
     }
     *topk = TopK_Create(k, width, depth, decay);
     if (!(*topk)) {
@@ -299,18 +309,21 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
         return NULL;
     }
     TopK *topk = TOPK_CALLOC(1, sizeof(TopK));
-    topk->k = RedisModule_LoadUnsigned(io);
-    topk->width = RedisModule_LoadUnsigned(io);
-    topk->depth = RedisModule_LoadUnsigned(io);
-    topk->decay = RedisModule_LoadDouble(io);
+    bool err = false;
+    errdefer(err, TopK_Destroy(topk));
+    topk->k = LoadUnsigned_IOError(io, err, NULL);
+    topk->width = LoadUnsigned_IOError(io, err, NULL);
+    topk->depth = LoadUnsigned_IOError(io, err, NULL);
+    topk->decay = LoadDouble_IOError(io, err, NULL);
 
     size_t dataSize, heapSize, itemSize;
-    topk->data = (Bucket *)RedisModule_LoadStringBuffer(io, &dataSize);
+    topk->data = (Bucket *)LoadStringBuffer_IOError(io, &dataSize, err, NULL);
     assert(dataSize == ((size_t)topk->width) * topk->depth * sizeof(Bucket));
-    topk->heap = (HeapBucket *)RedisModule_LoadStringBuffer(io, &heapSize);
+    topk->heap = (HeapBucket *)LoadStringBuffer_IOError(io, &heapSize, err, NULL);
     assert(heapSize == topk->k * sizeof(HeapBucket));
+
     for (uint32_t i = 0; i < topk->k; ++i) {
-        topk->heap[i].item = RedisModule_LoadStringBuffer(io, &itemSize);
+        topk->heap[i].item = LoadStringBuffer_IOError(io, &itemSize, err, NULL);
         if (itemSize == 1) {
             RedisModule_Free(topk->heap[i].item);
             topk->heap[i].item = NULL;
@@ -319,7 +332,7 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
 
     /* Initialize lookupTable */
     for (uint32_t i = 0; i < TOPK_DECAY_LOOKUP_TABLE; ++i) {
-        topk->lookupTable[i] = pow(topk->decay, i);
+        topk->lookupTable[i] = i == 0 ? 1 : topk->lookupTable[i - 1] * topk->decay;
     }
 
     return topk;
