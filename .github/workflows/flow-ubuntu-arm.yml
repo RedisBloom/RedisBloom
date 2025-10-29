@@ -39,6 +39,7 @@ jobs:
           redis-ref: ${{ inputs.redis-ref }}
   ubuntu-arm64:
     runs-on: ubuntu24-arm64-4-16 # ubuntu24-arm64-2-8
+    timeout-minutes: 120
     strategy:
       matrix:
         docker:
@@ -102,6 +103,15 @@ jobs:
               apt upgrade -yqq
               apt install -yqq git wget build-essential lcov openssl libssl-dev \
                 python3 python3-pip python3-venv python3-dev unzip rsync libclang-dev clang curl cmake
+          - image: "rockylinux:9"
+            nick: "rocky9"
+            install_git: |
+              sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/rocky*.repo
+              sed -i 's|#baseurl=http://dl.rockylinux.org/\$contentdir|baseurl=http://dl.rockylinux.org/pub/rocky|g' /etc/yum.repos.d/rocky*.repo
+              dnf clean all
+              dnf install -y git
+            install_deps: |
+              echo "Dependencies will be installed via install_script.sh"
     defaults:
       run:
         shell: bash
@@ -114,8 +124,11 @@ jobs:
       BRANCH: ${{ needs.prepare-values.outputs.BRANCH }}
       TAG_OR_BRANCH: ${{ needs.prepare-values.outputs.TAG_OR_BRANCH}}
       PIP_BREAK_SYSTEM_PACKAGES: 1
+      DEBIAN_FRONTEND: noninteractive
     steps:
       - name: Install git
+        env:
+          DEBIAN_FRONTEND: noninteractive
         run: |
           ${{ matrix.docker.install_git }}
       - name: git checkout
@@ -145,10 +158,19 @@ jobs:
           python-version: '3.9'
           architecture: 'arm64'
       - name: Install dependencies
+        if: matrix.docker.image != 'rockylinux:9'
         run: |
           ${{ matrix.docker.install_deps }}
         env:
           DEBIAN_FRONTEND: noninteractive
+      - name: Setup Rocky9 dependencies
+        if: matrix.docker.image == 'rockylinux:9'
+        working-directory: .install
+        shell: bash
+        run: |
+          echo ::group::Install dependencies
+            ./install_script.sh 
+          echo ::endgroup::
       - name: Install python dependencies
         run: |
           echo ::group::activate venv

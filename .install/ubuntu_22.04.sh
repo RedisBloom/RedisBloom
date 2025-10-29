@@ -7,4 +7,4 @@ $MODE apt update -qq
 $MODE apt upgrade -yqq
 $MODE apt install -yqq --fix-missing git wget build-essential lcov openssl libssl-dev \
   python3 python3-pip python3-venv python3-dev unzip rsync libclang-dev clang curl \
-  autoconf automake libtool cmake lcov valgrind
+  autoconf automake libtool cmake lcov valgrind libblocksruntime-dev

@@ -25,6 +25,7 @@
 #define TD_DEFAULT_COMPRESSION 100
 
 #include "tdigest.h"
+#include "load_io_error.h"
 
 RedisModuleType *TDigestSketchType;
 size_t TDigestMemUsage(const void *value);
@@ -863,31 +864,33 @@ void TDigestRdbSave(RedisModuleIO *rdb, void *value) {
 
 void *TDigestRdbLoad(RedisModuleIO *rdb, int encver) {
     /* Load the network layout. */
-    const double compression = RedisModule_LoadDouble(rdb);
+    bool err = false;
+    const double compression = LoadDouble_IOError(rdb, err, NULL);
     td_histogram_t *tdigest = td_new(compression);
-    tdigest->min = RedisModule_LoadDouble(rdb);
-    tdigest->max = RedisModule_LoadDouble(rdb);
+    errdefer(err, td_free(tdigest));
+    tdigest->min = LoadDouble_IOError(rdb, err, NULL);
+    tdigest->max = LoadDouble_IOError(rdb, err, NULL);
 
     // cap is the total size of nodes
-    tdigest->cap = RedisModule_LoadSigned(rdb);
+    tdigest->cap = LoadSigned_IOError(rdb, err, NULL);
 
     // merged_nodes is the number of merged nodes at the front of nodes.
-    tdigest->merged_nodes = RedisModule_LoadSigned(rdb);
+    tdigest->merged_nodes = LoadSigned_IOError(rdb, err, NULL);
 
     // unmerged_nodes is the number of buffered nodes.
-    tdigest->unmerged_nodes = RedisModule_LoadSigned(rdb);
+    tdigest->unmerged_nodes = LoadSigned_IOError(rdb, err, NULL);
 
     // we run the merge in reverse every other merge to avoid left-to-right bias in merging
-    tdigest->total_compressions = RedisModule_LoadSigned(rdb);
+    tdigest->total_compressions = LoadSigned_IOError(rdb, err, NULL);
 
-    tdigest->merged_weight = RedisModule_LoadDouble(rdb);
-    tdigest->unmerged_weight = RedisModule_LoadDouble(rdb);
+    tdigest->merged_weight = LoadDouble_IOError(rdb, err, NULL);
+    tdigest->unmerged_weight = LoadDouble_IOError(rdb, err, NULL);
 
     for (size_t i = 0; i < tdigest->merged_nodes; i++) {
-        tdigest->nodes_mean[i] = RedisModule_LoadDouble(rdb);
+        tdigest->nodes_mean[i] = LoadDouble_IOError(rdb, err, NULL);
     }
     for (size_t i = 0; i < tdigest->merged_nodes; i++) {
-        tdigest->nodes_weight[i] = RedisModule_LoadDouble(rdb);
+        tdigest->nodes_weight[i] = LoadDouble_IOError(rdb, err, NULL);
     }
     return tdigest;
 }

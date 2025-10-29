@@ -24,7 +24,6 @@ bloom_hashval bloom_calc_hash64(const void *buffer, int len);
 ////////////////////////////////////////////////////////////////////////////////
 #define ERROR_TIGHTENING_RATIO 0.5
 #define CUR_FILTER(sb) ((sb)->filters + ((sb)->nfilters - 1))
-
 static int SBChain_AddLink(SBChain *chain, uint64_t size, double error_rate) {
     chain->filters =
         RedisModule_Realloc(chain->filters, sizeof(*chain->filters) * (chain->nfilters + 1));
@@ -33,16 +32,28 @@ static int SBChain_AddLink(SBChain *chain, uint64_t size, double error_rate) {
     *newlink = (SBLink){
         .size = 0,
     };
-
+    int rc = bloom_init(&newlink->inner, size, error_rate, chain->options);
+    if (rc != 0) {
+        return rc;
+    }
     chain->nfilters++;
-    return bloom_init(&newlink->inner, size, error_rate, chain->options);
+    return rc;
 }
 
 void SBChain_Free(SBChain *sb) {
-    for (size_t ii = 0; ii < sb->nfilters; ++ii) {
-        bloom_free(&sb->filters[ii].inner);
+    if (!sb) {
+        return;
     }
-    RedisModule_Free(sb->filters);
+
+    if (sb->filters) {
+        for (size_t ii = 0; ii < sb->nfilters; ++ii) {
+            if (sb->filters[ii].inner.bf) {
+                bloom_free(&sb->filters[ii].inner);
+            }
+        }
+        RedisModule_Free(sb->filters);
+    }
+
     RedisModule_Free(sb);
 }
 
@@ -75,6 +86,9 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
 
     // Determine if we need to add more items?
     SBLink *cur = CUR_FILTER(sb);
+    if (!cur) {
+        return -1;
+    }
     if (cur->size >= cur->inner.entries) {
         if (sb->options & BLOOM_OPT_NO_SCALING) {
             return -2;
@@ -244,6 +258,11 @@ int SB_ValidateIntegrity(const SBChain *sb) {
 SBChain *SB_NewChainFromHeader(const char *buf, size_t bufLen, const char **errmsg) {
     const dumpedChainHeader *header = (const void *)buf;
     if (bufLen < sizeof(dumpedChainHeader)) {
+        *errmsg = "ERR received bad data"; // LCOV_EXCL_LINE
+        return NULL;                       // LCOV_EXCL_LINE
+    }
+
+    if (header->nfilters <= 0) {
         *errmsg = "ERR received bad data"; // LCOV_EXCL_LINE
         return NULL;                       // LCOV_EXCL_LINE
     }

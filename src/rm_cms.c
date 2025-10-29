@@ -14,7 +14,8 @@
 #include <math.h>
 #include <stdlib.h>
 #include <strings.h>
-
+#include <stdbool.h>
+#include "load_io_error.h"
 // clang-format off
 #define INNER_ERROR(x) \
     do { \
@@ -300,22 +301,24 @@ void CMSRdbSave(RedisModuleIO *io, void *obj) {
                                  cms->width * cms->depth * sizeof(uint32_t));
 }
 
+void CMSFree(void *value) { CMS_Destroy(value); }
+
 void *CMSRdbLoad(RedisModuleIO *io, int encver) {
     if (encver > CMS_ENC_VER) {
         return NULL;
     }
 
     CMSketch *cms = CMS_CALLOC(1, sizeof(CMSketch));
-    cms->width = RedisModule_LoadUnsigned(io);
-    cms->depth = RedisModule_LoadUnsigned(io);
-    cms->counter = RedisModule_LoadUnsigned(io);
+    bool err = false;
+    errdefer(err, CMSFree(cms));
+    cms->width = LoadUnsigned_IOError(io, err, NULL);
+    cms->depth = LoadUnsigned_IOError(io, err, NULL);
+    cms->counter = LoadUnsigned_IOError(io, err, NULL);
     size_t length = cms->width * cms->depth * sizeof(size_t);
-    cms->array = (uint32_t *)RedisModule_LoadStringBuffer(io, &length);
+    cms->array = (uint32_t *)LoadStringBuffer_IOError(io, &length, err, NULL);
 
     return cms;
 }
-
-void CMSFree(void *value) { CMS_Destroy(value); }
 
 size_t CMSMemUsage(const void *value) {
     CMSketch *cms = (CMSketch *)value;

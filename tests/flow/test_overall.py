@@ -750,3 +750,29 @@ class testRedisBloomNoCodec():
                         str(e) != "invalid chunk - Too big for current filter" and
                         str(e) != "received bad data"):
                     raise e
+
+
+    def test_insufficient_memory(self):
+        # skip because capacity must be in the range [1, 1073741824]
+        self.env.skip()
+        self.env.skipOnVersionSmaller('7.4')
+        env = self.env
+        env.cmd('FLUSHALL')
+
+        env.expect('bf.reserve', 'bf', 0.01, 1000000000000000000).error().contains('Insufficient memory to create filter')
+        env.expect('bf.insert', 'bf', 'capacity', 1000000000000000000, 'error', 0.01, 'ITEMS', 1).error().contains('Insufficient memory to create filter')
+
+
+    def test_arbitrary_offset(self):
+        # skip because we dont have a solution yet for big allocations that should not panic the server
+        self.env.skip()
+        env = self.env
+        env.cmd('FLUSHALL')
+
+        env.cmd('bf.loadchunk', 'k', 1, b'\x11\x18\xf3\xdd\x74\x48\x01\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00\x00\x11\x18\xf3\xdd\x74\x48\x01\x00\x9a\x99\x99\x99\x99\x99\xb9\x3f\x9a\x99\x99\x99\x99\x99\xb9\x3f\x01\x00\x00\x00\x11\x18\xf3\xdd\x74\x48\x01\x00\x00')
+        env.expect('bf.add', 'k', 1).error().contains('problem inserting into filter')
+        env.expect('bf.loadchunk', 'k', 71752852194637, b'HELLO').error().contains('invalid offset')
+
+    def test_load_error_handling(self):
+        env = self.env
+        env.expect('restore', 'a', 0, b'\a\x810\x16\xe5\xa2\x89\xbe\xf8\x04\x02\x02\x02\x01\x02\x05\x15\x15\x02@d\x04{\x14\xaeG\xe1zt?\x02\b\x04\xe9\x86/\xb25\x0e&@\x02D\x80\x02\x00\x05\xc3=@\x90\x01\x00\x00\x80\x00\x00\b \x06\x00\x10 \x03@\a\xe0\t\x00\xc0\x15\xc0\a\x02\x00\x00\x01 \x03 \x00@2\xe0\x00\x00\xc0\x1d \a\xe0\x06\x1e@\x0e \x15`\x00\xc0\a \x00\xc0=@\x1e`\x00\x01\x00\x00\x02\x02\x00\x0c\x00j\xb3hZ\xc1\xd7\xd5e').error().contains('DUMP payload version or checksum are wrong')
