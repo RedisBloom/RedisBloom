@@ -239,3 +239,8 @@ class testTopK():
         self.env.expect('topk.reserve', 'x', '3', '2000000000', '200000000', '1').error().contains('Insufficient memory to create topk data structure')
         self.env.expect('topk.reserve', 'x', '3', '900000000000', '1', '1').error().contains('TopK: invalid width')
         self.env.expect('topk.reserve', 'x', '3', '1', '900000000000', '1').error().contains('TopK: invalid depth')
+    
+    def test_overflow_k_width_depth(self):
+        self.env.expect('topk.reserve poc 4294967296 1 1 0.1').error().contains('TopK: invalid k')
+        self.env.expect('topk.reserve poc 1 4294967296 1 0.1').error().contains('TopK: invalid width')
+        self.env.expect('topk.reserve poc 1 1 4294967296 0.1').error().contains('TopK: invalid depth')
