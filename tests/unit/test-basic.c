@@ -47,6 +47,15 @@ TEST_F(basic, sbBasic) {
     SBChain_Free(chain);
 }
 
+TEST_F(basic, sbEmptyChainCreationError) {
+    const char *errmsg = NULL;
+    size_t bufLen;
+    
+    static char header[20] = {0};
+    SBChain *sb = SB_NewChainFromHeader(header, sizeof(header), &errmsg);
+    ASSERT_EQ(NULL, sb);
+}
+
 TEST_F(basic, sbExpansion) {
     int err;
     // Note that the chain auto-expands to 6 items by default with the given

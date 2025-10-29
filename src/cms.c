@@ -48,10 +48,14 @@ void CMS_DimFromProb(double error, double delta, size_t *width, size_t *depth) {
 }
 
 void CMS_Destroy(CMSketch *cms) {
-    assert(cms);
+    if (!cms) {
+        return;
+    }
 
-    CMS_FREE(cms->array);
-    cms->array = NULL;
+    if (cms->array) {
+        CMS_FREE(cms->array);
+        cms->array = NULL;
+    }
 
     CMS_FREE(cms);
 }
