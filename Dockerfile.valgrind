@@ -1,0 +1,71 @@
+# Dockerfile for running Valgrind tests
+FROM ubuntu:22.04
+
+# Prevent interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install build dependencies and valgrind (matching .install/ubuntu_22.04.sh)
+RUN apt-get update && apt-get install -y --fix-missing \
+    git \
+    wget \
+    build-essential \
+    lcov \
+    openssl \
+    libssl-dev \
+    python3 \
+    python3-pip \
+    python3-venv \
+    python3-dev \
+    unzip \
+    rsync \
+    libclang-dev \
+    clang \
+    curl \
+    autoconf \
+    automake \
+    libtool \
+    cmake \
+    valgrind \
+    libblocksruntime-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+# Copy the source code
+COPY . .
+
+# Setup Python environment
+RUN ./deps/readies/bin/getpy3 || python3 -m pip install --user --upgrade pip
+RUN python3 -m venv venv || true
+RUN . venv/bin/activate || true
+
+# Setup build environment
+RUN ./deps/readies/bin/getupdates || true
+RUN ./sbin/setup || ./.install/common_installations.sh || true
+
+# Get Redis (needed for tests) - try multiple versions
+RUN ./deps/readies/bin/getredis -v 8.0 || \
+    ./deps/readies/bin/getredis -v 7.4 || \
+    ./deps/readies/bin/getredis -v 7.2 || \
+    echo "Redis fetch failed"
+
+# Build the module
+RUN make clean && make
+
+# Clean up any leftover RDB files that might cause issues
+RUN find /build -name "*.rdb" -delete 2>/dev/null || true
+RUN rm -rf /build/dump.rdb /build/*.rdb 2>/dev/null || true
+
+# Set environment for tests
+ENV PATH="/usr/local/bin:${PATH}:/build/venv/bin"
+ENV REDIS_SERVER="/usr/local/bin/redis-server"
+ENV MODULE=/build/bin/linux-arm64v8-release/redisbloom.so
+
+# Default command: run valgrind tests
+# CMD ["bash", "-c", "cd tests/flow && MODULE=$MODULE VG=1 GEN=1 TEST=test_overall_testRedisBloomNoCodec ./tests.sh"]
+
+### Sanitizer error in /__w/RedisBloom/RedisBloom/tests/flow/logs/ea2c1f367df04d348929353f258e3bd0.master-1-test_overall_testRedisBloomNoCodec-oss.asan.log.9227:
+# CMD ["bash", "-c", "cd tests/flow && MODULE=$MODULE SAN=address GEN=1 TEST=test_overall_testRedisBloomNoCodec ./tests.sh"]
+CMD ['/bin/bash']
+
+
