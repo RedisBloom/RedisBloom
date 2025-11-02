@@ -32,9 +32,5 @@ if [ "$#" -gt 0 ]; then
     echo "Running with arguments: $@"
     docker run --rm "$IMAGE_NAME" "$@"
 else
-    read -p "Run all tests now? (y/n) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        docker run --rm "$IMAGE_NAME"
-    fi
+    docker run --rm "$IMAGE_NAME"
 fi

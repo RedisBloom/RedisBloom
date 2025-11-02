@@ -79,6 +79,6 @@ ENV REDIS_SERVER="/usr/local/bin/redis-server"
 # CMD ["bash", "-c", "cd tests/flow && MODULE=$MODULE VG=1 GEN=1 TEST=test_overall_testRedisBloomNoCodec ./tests.sh"]
 
 ### Sanitizer error in /__w/RedisBloom/RedisBloom/tests/flow/logs/ea2c1f367df04d348929353f258e3bd0.master-1-test_overall_testRedisBloomNoCodec-oss.asan.log.9227:
-CMD ["bash", "-c", "cd /build/tests/flow && MODULE=$(find /build/bin -name 'redisbloom.so' -type f | head -1) SAN=address GEN=1 TEST=test_overall.py:testRedisBloomNoCodec ./tests.sh"]
+CMD ["bash", "-c", "cd /build/tests/flow && MODULE=$(find /build/bin -name 'redisbloom.so' -type f | head -1) SAN=address QUICK=1 GEN=1 TEST=test_overall.py:testRedisBloomNoCodec ./tests.sh"]
 
 
