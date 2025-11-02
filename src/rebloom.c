@@ -1221,40 +1221,20 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
 
     // Load our modules
     SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
-    if (sb == NULL) {
-        return NULL;
-    }
-    sb->filters = NULL;  // Ensure it's NULL for proper cleanup
-    sb->nfilters = 0;     // Ensure it's 0 for proper cleanup
+    bool err = false;
+    errdefer(err, SBChain_Free(sb));
 
-    // Load values and check for errors explicitly to ensure cleanup runs
-    sb->size = RedisModule_LoadUnsigned(io);
-    if (RedisModule_IsIOError(io)) {
-        SBChain_Free(sb);
-        return NULL;
-    }
-    sb->nfilters = RedisModule_LoadUnsigned(io);
-    if (RedisModule_IsIOError(io)) {
-        SBChain_Free(sb);
-        return NULL;
-    }
+    sb->size = LoadUnsigned_IOError(io, err, NULL);
+    sb->nfilters = LoadUnsigned_IOError(io, err, NULL);
     if (sb->nfilters <= 0) {
-        SBChain_Free(sb);
+        RedisModule_Free(sb);
         return NULL;
     }
     if (encver >= BF_MIN_OPTIONS_ENC) {
-        sb->options = RedisModule_LoadUnsigned(io);
-        if (RedisModule_IsIOError(io)) {
-            SBChain_Free(sb);
-            return NULL;
-        }
+        sb->options = LoadUnsigned_IOError(io, err, NULL);
     }
     if (encver >= BF_MIN_GROWTH_ENC) {
-        sb->growth = RedisModule_LoadUnsigned(io);
-        if (RedisModule_IsIOError(io)) {
-            SBChain_Free(sb);
-            return NULL;
-        }
+        sb->growth = LoadUnsigned_IOError(io, err, NULL);
     } else {
         sb->growth = 2;
     }
@@ -1262,63 +1242,27 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
     // Sanity:
     assert(sb->nfilters < 1000);
     sb->filters = RedisModule_Calloc(sb->nfilters, sizeof(*sb->filters));
-    if (sb->filters == NULL) {
-        SBChain_Free(sb);
-        return NULL;
-    }
     for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         SBLink *lb = sb->filters + ii;
         struct bloom *bm = &lb->inner;
 
-        bm->entries = RedisModule_LoadUnsigned(io);
-        if (RedisModule_IsIOError(io)) {
-            SBChain_Free(sb);
-            return NULL;
-        }
-        bm->error = RedisModule_LoadDouble(io);
-        if (RedisModule_IsIOError(io)) {
-            SBChain_Free(sb);
-            return NULL;
-        }
-        bm->hashes = RedisModule_LoadUnsigned(io);
-        if (RedisModule_IsIOError(io)) {
-            SBChain_Free(sb);
-            return NULL;
-        }
-        bm->bpe = RedisModule_LoadDouble(io);
-        if (RedisModule_IsIOError(io)) {
-            SBChain_Free(sb);
-            return NULL;
-        }
+        bm->entries = LoadUnsigned_IOError(io, err, NULL);
+        bm->error = LoadDouble_IOError(io, err, NULL);
+        bm->hashes = LoadUnsigned_IOError(io, err, NULL);
+        bm->bpe = LoadDouble_IOError(io, err, NULL);
         if (encver == 0) {
             bm->bits = (double)bm->entries * bm->bpe;
         } else {
-            bm->bits = RedisModule_LoadUnsigned(io);
-            if (RedisModule_IsIOError(io)) {
-                SBChain_Free(sb);
-                return NULL;
-            }
-            bm->n2 = RedisModule_LoadUnsigned(io);
-            if (RedisModule_IsIOError(io)) {
-                SBChain_Free(sb);
-                return NULL;
-            }
+            bm->bits = LoadUnsigned_IOError(io, err, NULL);
+            bm->n2 = LoadUnsigned_IOError(io, err, NULL);
         }
         if (sb->options & BLOOM_OPT_FORCE64) {
             bm->force64 = 1;
         }
         size_t sztmp;
-        bm->bf = (unsigned char *)RedisModule_LoadStringBuffer(io, &sztmp);
-        if (RedisModule_IsIOError(io)) {
-            SBChain_Free(sb);
-            return NULL;
-        }
+        bm->bf = (unsigned char *)LoadStringBuffer_IOError(io, &sztmp, err, NULL);
         bm->bytes = sztmp;
-        lb->size = RedisModule_LoadUnsigned(io);
-        if (RedisModule_IsIOError(io)) {
-            SBChain_Free(sb);
-            return NULL;
-        }
+        lb->size = LoadUnsigned_IOError(io, err, NULL);
     }
 
     return sb;
