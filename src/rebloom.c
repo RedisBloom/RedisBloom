@@ -1227,7 +1227,7 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
     sb->size = LoadUnsigned_IOError(io, err, NULL);
     sb->nfilters = LoadUnsigned_IOError(io, err, NULL);
     if (sb->nfilters <= 0) {
-        err = true;
+        RedisModule_Free(sb);
         return NULL;
     }
     if (encver >= BF_MIN_OPTIONS_ENC) {

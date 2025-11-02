@@ -94,9 +94,6 @@ static inline __attribute__((__always_inline__)) void defer_cleanup_(void (^*blo
     __extension__({                                                                                \
         char *res = RedisModule_LoadStringBuffer((rdb), (len));                                    \
         if (RedisModule_IsIOError(rdb)) {                                                          \
-            if (res != NULL) {                                                                     \
-                RedisModule_Free(res);                                                             \
-            }                                                                                      \
             is_err = true;                                                                         \
             return ret;                                                                            \
         }                                                                                          \
