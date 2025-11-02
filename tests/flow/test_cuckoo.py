@@ -187,9 +187,11 @@ class testCuckoo():
         self.cmd('cf.add', 'nums', 'Redis')
         self.cmd('cf.del', 'nums', 'Redis')
         d1 = self.cmd('cf.debug', 'nums')
+        # Disable auto-save to prevent "Background save already in progress" error
+        self.cmd('CONFIG', 'SET', 'save', '')
         self.env.dumpAndReload()
-        # for _ in self.client.retry_with_rdb_reload():
-        #     self.cmd('ping')
+        # Restore default save configuration
+        self.cmd('CONFIG', 'SET', 'save', '60 1')
         d2 = self.cmd('cf.debug', 'nums')
         self.assertEqual(d1, d2)
 
