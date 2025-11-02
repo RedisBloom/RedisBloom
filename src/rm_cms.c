@@ -321,6 +321,9 @@ void *CMSRdbLoad(RedisModuleIO *io, int encver) {
     cms->counter = LoadUnsigned_IOError(io, err, NULL);
     size_t length = cms->width * cms->depth * sizeof(size_t);
     cms->array = (uint32_t *)LoadStringBuffer_IOError(io, &length, err, NULL);
+    if (err) {
+        return NULL;
+    }
 
     return cms;
 }

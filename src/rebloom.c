@@ -1261,6 +1261,9 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
         }
         size_t sztmp;
         bm->bf = (unsigned char *)LoadStringBuffer_IOError(io, &sztmp, err, NULL);
+        if (err) {
+            return NULL;
+        }
         bm->bytes = sztmp;
         lb->size = LoadUnsigned_IOError(io, err, NULL);
     }
@@ -1367,6 +1370,9 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
 
         size_t lenDummy = 0;
         cf->filters[ii].data = (MyCuckooBucket *)LoadStringBuffer_IOError(io, &lenDummy, err, NULL);
+        if (err) {
+            return NULL;
+        }
         assert(cf->filters[ii].data != NULL && lenDummy == cf->filters[ii].bucketSize *
                                                                cf->filters[ii].numBuckets *
                                                                sizeof(*cf->filters[ii].data));
