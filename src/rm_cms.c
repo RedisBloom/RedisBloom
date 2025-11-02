@@ -317,8 +317,17 @@ void *CMSRdbLoad(RedisModuleIO *io, int encver) {
     bool err = false;
     errdefer(err, CMSFree(cms));
     cms->width = LoadUnsigned_IOError(io, err, NULL);
+    if (err) {
+        return NULL;
+    }
     cms->depth = LoadUnsigned_IOError(io, err, NULL);
+    if (err) {
+        return NULL;
+    }
     cms->counter = LoadUnsigned_IOError(io, err, NULL);
+    if (err) {
+        return NULL;
+    }
     size_t length = cms->width * cms->depth * sizeof(size_t);
     cms->array = (uint32_t *)LoadStringBuffer_IOError(io, &length, err, NULL);
     if (err) {

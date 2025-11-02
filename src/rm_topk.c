@@ -313,9 +313,21 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
     bool err = false;
     errdefer(err, TopK_Destroy(topk));
     topk->k = LoadUnsigned_IOError(io, err, NULL);
+    if (err) {
+        return NULL;
+    }
     topk->width = LoadUnsigned_IOError(io, err, NULL);
+    if (err) {
+        return NULL;
+    }
     topk->depth = LoadUnsigned_IOError(io, err, NULL);
+    if (err) {
+        return NULL;
+    }
     topk->decay = LoadDouble_IOError(io, err, NULL);
+    if (err) {
+        return NULL;
+    }
 
     size_t dataSize, heapSize, itemSize;
     topk->data = (Bucket *)LoadStringBuffer_IOError(io, &dataSize, err, NULL);

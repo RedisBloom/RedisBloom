@@ -1225,16 +1225,28 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
     errdefer(err, SBChain_Free(sb));
 
     sb->size = LoadUnsigned_IOError(io, err, NULL);
+    if (err) {
+        return NULL;
+    }
     sb->nfilters = LoadUnsigned_IOError(io, err, NULL);
+    if (err) {
+        return NULL;
+    }
     if (sb->nfilters <= 0) {
         RedisModule_Free(sb);
         return NULL;
     }
     if (encver >= BF_MIN_OPTIONS_ENC) {
         sb->options = LoadUnsigned_IOError(io, err, NULL);
+        if (err) {
+            return NULL;
+        }
     }
     if (encver >= BF_MIN_GROWTH_ENC) {
         sb->growth = LoadUnsigned_IOError(io, err, NULL);
+        if (err) {
+            return NULL;
+        }
     } else {
         sb->growth = 2;
     }
@@ -1247,14 +1259,32 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
         struct bloom *bm = &lb->inner;
 
         bm->entries = LoadUnsigned_IOError(io, err, NULL);
+        if (err) {
+            return NULL;
+        }
         bm->error = LoadDouble_IOError(io, err, NULL);
+        if (err) {
+            return NULL;
+        }
         bm->hashes = LoadUnsigned_IOError(io, err, NULL);
+        if (err) {
+            return NULL;
+        }
         bm->bpe = LoadDouble_IOError(io, err, NULL);
+        if (err) {
+            return NULL;
+        }
         if (encver == 0) {
             bm->bits = (double)bm->entries * bm->bpe;
         } else {
             bm->bits = LoadUnsigned_IOError(io, err, NULL);
+            if (err) {
+                return NULL;
+            }
             bm->n2 = LoadUnsigned_IOError(io, err, NULL);
+            if (err) {
+                return NULL;
+            }
         }
         if (sb->options & BLOOM_OPT_FORCE64) {
             bm->force64 = 1;
@@ -1266,6 +1296,9 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
         }
         bm->bytes = sztmp;
         lb->size = LoadUnsigned_IOError(io, err, NULL);
+        if (err) {
+            return NULL;
+        }
     }
 
     return sb;
@@ -1344,8 +1377,17 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
     CuckooFilter *cf = RedisModule_Calloc(1, sizeof(*cf));
     errdefer(err, CuckooFilter_Free(cf));
     cf->numFilters = LoadUnsigned_IOError(io, err, NULL);
+    if (err) {
+        return NULL;
+    }
     cf->numBuckets = LoadUnsigned_IOError(io, err, NULL);
+    if (err) {
+        return NULL;
+    }
     cf->numItems = LoadUnsigned_IOError(io, err, NULL);
+    if (err) {
+        return NULL;
+    }
     if (encver < CF_MIN_EXPANSION_VERSION) { // CF_ENCODING_VERSION when added
         cf->numDeletes = 0;                  // Didn't exist earlier. bug fix
         cf->bucketSize = rm_config.cf_bucket_size.value;
@@ -1353,9 +1395,21 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
         cf->expansion = rm_config.cf_expansion_factor.value;
     } else {
         cf->numDeletes = LoadUnsigned_IOError(io, err, NULL);
+        if (err) {
+            return NULL;
+        }
         cf->bucketSize = LoadUnsigned_IOError(io, err, NULL);
+        if (err) {
+            return NULL;
+        }
         cf->maxIterations = LoadUnsigned_IOError(io, err, NULL);
+        if (err) {
+            return NULL;
+        }
         cf->expansion = LoadUnsigned_IOError(io, err, NULL);
+        if (err) {
+            return NULL;
+        }
     }
 
     cf->filters = RedisModule_Calloc(cf->numFilters, sizeof(*cf->filters));
@@ -1366,6 +1420,9 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
             cf->filters[ii].numBuckets = cf->numBuckets;
         } else {
             cf->filters[ii].numBuckets = LoadUnsigned_IOError(io, err, NULL);
+            if (err) {
+                return NULL;
+            }
         }
 
         size_t lenDummy = 0;
