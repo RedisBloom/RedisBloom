@@ -31,26 +31,41 @@ RUN apt-get update && apt-get install -y --fix-missing \
 
 WORKDIR /build
 
-# Copy the source code
-COPY . .
+# Copy dependency files first to leverage Docker layer caching
+# These files rarely change, so dependency installation will be cached
+COPY deps/ ./deps/
+COPY sbin/ ./sbin/
+COPY Makefile ./
+COPY build/ ./build/
+COPY tests/flow/requirements.txt ./tests/flow/requirements.txt
 
 # Setup Python environment
 RUN ./deps/readies/bin/getpy3 || python3 -m pip install --user --upgrade pip
 RUN python3 -m venv venv || true
 RUN . venv/bin/activate || true
 
+# Install Python test dependencies (cached unless requirements.txt changes)
+RUN if [ -f ./tests/flow/requirements.txt ]; then \
+        . venv/bin/activate && pip install -r ./tests/flow/requirements.txt || true; \
+    fi
+
 # Setup build environment
 RUN ./deps/readies/bin/getupdates || true
 RUN ./sbin/setup || ./.install/common_installations.sh || true
 
-# Get Redis (needed for tests) - try multiple versions
-RUN ./deps/readies/bin/getredis -v 8.0 || \
-    ./deps/readies/bin/getredis -v 7.4 || \
-    ./deps/readies/bin/getredis -v 7.2 || \
+# Get Redis with address sanitizer (needed for tests) - try multiple versions
+RUN ./deps/readies/bin/getredis -v 8.0 --clang-asan || \
+    ./deps/readies/bin/getredis -v 7.4 --clang-asan || \
+    ./deps/readies/bin/getredis -v 7.2 --clang-asan || \
     echo "Redis fetch failed"
 
-# Build the module
-RUN make clean && make
+# Now copy the rest of the source code (this invalidates cache less frequently)
+COPY src/ ./src/
+COPY tests/ ./tests/
+COPY module.conf ./
+
+# Build the module with address sanitizer
+RUN make clean && make SAN=address
 
 # Clean up any leftover RDB files that might cause issues
 RUN find /build -name "*.rdb" -delete 2>/dev/null || true
@@ -59,13 +74,11 @@ RUN rm -rf /build/dump.rdb /build/*.rdb 2>/dev/null || true
 # Set environment for tests
 ENV PATH="/usr/local/bin:${PATH}:/build/venv/bin"
 ENV REDIS_SERVER="/usr/local/bin/redis-server"
-ENV MODULE=/build/bin/linux-arm64v8-release/redisbloom.so
 
 # Default command: run valgrind tests
 # CMD ["bash", "-c", "cd tests/flow && MODULE=$MODULE VG=1 GEN=1 TEST=test_overall_testRedisBloomNoCodec ./tests.sh"]
 
 ### Sanitizer error in /__w/RedisBloom/RedisBloom/tests/flow/logs/ea2c1f367df04d348929353f258e3bd0.master-1-test_overall_testRedisBloomNoCodec-oss.asan.log.9227:
-# CMD ["bash", "-c", "cd tests/flow && MODULE=$MODULE SAN=address GEN=1 TEST=test_overall_testRedisBloomNoCodec ./tests.sh"]
-CMD ['/bin/bash']
+CMD ["bash", "-c", "cd /build/tests/flow && MODULE=$(find /build/bin -name 'redisbloom.so' -type f | head -1) SAN=address GEN=1 TEST=test_overall.py:testRedisBloomNoCodec ./tests.sh"]
 
 
