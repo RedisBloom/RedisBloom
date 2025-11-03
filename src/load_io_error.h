@@ -50,8 +50,7 @@ static inline __attribute__((__always_inline__)) void defer_cleanup_(void (^*blo
         defer {                                                                                    \
             if (unlikely(*err_ptr))                                                                \
                 __VA_ARGS__;                                                                       \
-        }                                                                                          \
-        ;                                                                                          \
+        };                                                                                         \
     })
 
 #define LoadDouble_IOError(rdb, is_err, ret)                                                       \
