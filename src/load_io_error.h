@@ -45,8 +45,9 @@ static inline __attribute__((__always_inline__)) void defer_cleanup_(void (^*blo
 /// errdefer(err, { free(p); })
 /// ```
 #define errdefer(err, ...)                                                                         \
+    typeof(err) *err_ptr = &(err);                                                                 \
     defer {                                                                                        \
-        if (unlikely(err))                                                                         \
+        if (unlikely(*err_ptr))                                                                    \
             __VA_ARGS__;                                                                           \
     }
 
