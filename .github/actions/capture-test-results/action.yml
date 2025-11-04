@@ -1,0 +1,97 @@
+name: Capture Test Results
+description: Capture test output and parse results for Slack notification
+
+inputs:
+  os-name:
+    description: 'OS name/platform identifier'
+    required: true
+    type: string
+  test-log-dir:
+    description: 'Directory containing test logs'
+    required: false
+    default: 'tests/flow/logs'
+
+outputs:
+  results-file:
+    description: 'Path to the results JSON file'
+    value: 'test-results.json'
+
+runs:
+  using: composite
+  steps:
+    - name: Capture and parse test results
+      shell: bash
+      id: parse
+      run: |
+        OS_NAME="${{ inputs.os-name }}"
+        TEST_LOG_DIR="${{ inputs.test-log-dir }}"
+        RESULTS_FILE="test-results-${OS_NAME}.json"
+        
+        # Try to find test output in logs
+        # RLTest typically outputs to stdout, but logs might be in the log directory
+        TEST_OUTPUT=""
+        
+        # Look for test summary in log files
+        if [ -d "$TEST_LOG_DIR" ]; then
+          # Find the most recent log file
+          LATEST_LOG=$(find "$TEST_LOG_DIR" -name "*.log" -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2- || echo "")
+          if [ -n "$LATEST_LOG" ] && [ -f "$LATEST_LOG" ]; then
+            # Extract last 100 lines which should contain the summary
+            TEST_OUTPUT=$(tail -100 "$LATEST_LOG" 2>/dev/null || echo "")
+          fi
+        fi
+        
+        # If we didn't find logs, try to capture from GitHub Actions output
+        # This is a fallback - we'll parse whatever we can find
+        if [ -z "$TEST_OUTPUT" ]; then
+          # Try to find any test output files
+          TEST_OUTPUT=$(find . -name "*.log" -o -name "*test*output*" 2>/dev/null | head -1 | xargs tail -100 2>/dev/null || echo "")
+        fi
+        
+        # Also check for test output file from run-tests action
+        if [ -f "$GITHUB_WORKSPACE/test_output.log" ]; then
+          TEST_OUTPUT=$(cat "$GITHUB_WORKSPACE/test_output.log" || echo "")
+        fi
+        
+        # Parse the output using the parse script
+        PARSE_SCRIPT="$GITHUB_WORKSPACE/.github/scripts/parse-test-results.sh"
+        if [ ! -f "$PARSE_SCRIPT" ]; then
+          PARSE_SCRIPT="$GITHUB_ACTION_PATH/../../scripts/parse-test-results.sh"
+        fi
+        
+        if [ -n "$TEST_OUTPUT" ] && [ -f "$PARSE_SCRIPT" ]; then
+          echo "$TEST_OUTPUT" | bash "$PARSE_SCRIPT" "" "$RESULTS_FILE"
+        else
+          # If no output found, create empty results
+          cat > "$RESULTS_FILE" <<EOF
+{
+  "os": "$OS_NAME",
+  "passed": 0,
+  "failed": 0,
+  "skipped": 0,
+  "total": 0,
+  "status": "unknown"
+}
+EOF
+        fi
+        
+        # Add OS name to results
+        if [ -f "$RESULTS_FILE" ]; then
+          # Use jq if available, otherwise use sed
+          if command -v jq >/dev/null 2>&1; then
+            jq ". + {\"os\": \"$OS_NAME\"}" "$RESULTS_FILE" > "${RESULTS_FILE}.tmp" && mv "${RESULTS_FILE}.tmp" "$RESULTS_FILE"
+          else
+            # Fallback: manually add OS field
+            sed -i 's/^{/{ "os": "'"$OS_NAME"'",/' "$RESULTS_FILE"
+          fi
+        fi
+        
+        echo "results-file=$RESULTS_FILE" >> $GITHUB_OUTPUT
+        echo "Results captured: $RESULTS_FILE"
+        
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ inputs.os-name }}
+        path: test-results-${{ inputs.os-name }}.json
+        if-no-files-found: warn
