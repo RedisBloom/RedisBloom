@@ -133,14 +133,19 @@ CuckooFilter *CFHeader_Load(const CFHeader *header) {
         cur->bucketSize = header->bucketSize;
         cur->numBuckets = filter->numBuckets * pow(filter->expansion, ii);
 
-        // Check for overflow: numBuckets * bucketSize * sizeof(CuckooBucket)
-        if (cur->numBuckets != 0 && filter->bucketSize != 0 &&
-            cur->numBuckets > SIZE_MAX / filter->bucketSize / sizeof(CuckooBucket)) {
+        // Check for overflow in two steps:
+        // 1. numBuckets * bucketSize (computed in code before Calloc)
+        // 2. result * sizeof(CuckooBucket) (done inside Calloc)
+        if (cur->numBuckets != 0 && filter->bucketSize > SIZE_MAX / cur->numBuckets) {
+            goto error;
+        }
+        
+        size_t totalBuckets = cur->numBuckets * filter->bucketSize;
+        if (totalBuckets > 0 && totalBuckets > SIZE_MAX / sizeof(CuckooBucket)) {
             goto error;
         }
 
-        cur->data =
-            RedisModule_Calloc((size_t)cur->numBuckets * filter->bucketSize, sizeof(CuckooBucket));
+        cur->data = RedisModule_Calloc(totalBuckets, sizeof(CuckooBucket));
     }
     return filter;
 
