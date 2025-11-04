@@ -16,6 +16,7 @@ name: Flow MACOS
 permissions:
   id-token: write
   contents: read
+  actions: read
 
 on:
   workflow_dispatch:

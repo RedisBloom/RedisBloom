@@ -3,6 +3,7 @@ name: Flow alpine
 permissions:
   id-token: write
   contents: read
+  actions: read
   
 on:
   workflow_dispatch: # Allows you to run this workflow manually from the Actions tab

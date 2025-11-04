@@ -143,8 +143,21 @@ jobs:
       - name: Format and send Slack message
         if: always()
         run: |
+          echo "=== Starting Slack message step ==="
+          echo "Summary file output: ${{ steps.aggregate.outputs.summary_file }}"
+          echo "Total passed: ${{ steps.aggregate.outputs.total_passed }}"
+          echo "Total failed: ${{ steps.aggregate.outputs.total_failed }}"
+          echo "Total skipped: ${{ steps.aggregate.outputs.total_skipped }}"
+          
           # Read summary file
           SUMMARY_FILE="${{ steps.aggregate.outputs.summary_file }}"
+          
+          if [ -z "$SUMMARY_FILE" ]; then
+            echo "ERROR: Summary file output is empty"
+            SUMMARY_FILE="test-summary.json"
+          fi
+          
+          echo "Using summary file: $SUMMARY_FILE"
           
           # Build message
           NIGHTLY_NAME="Event Nightly"
@@ -195,13 +208,34 @@ jobs:
           
           # Send to Slack
           WEBHOOK_URL="${{ secrets.DATATYPES_SLACK_WEBHOOK_URL }}"
-          if [ -n "$WEBHOOK_URL" ] && [ "$WEBHOOK_URL" != "" ]; then
-            curl -X POST -H 'Content-type: application/json' \
-              --data "$PAYLOAD" \
-              "$WEBHOOK_URL"
-            echo "Slack message sent successfully"
-          else
-            echo "DATATYPES_SLACK_WEBHOOK_URL secret not set. Message would be:"
+          echo "Checking webhook URL..."
+          if [ -z "$WEBHOOK_URL" ] || [ "$WEBHOOK_URL" = "" ]; then
+            echo "ERROR: DATATYPES_SLACK_WEBHOOK_URL secret not set or empty"
+            echo "Message would be:"
             echo "$MESSAGE_TEXT"
+            exit 1
+          fi
+          
+          echo "Webhook URL found (length: ${#WEBHOOK_URL})"
+          echo "Sending Slack message..."
+          
+          # Send with better error handling
+          HTTP_CODE=$(curl -s -o /tmp/slack_response.txt -w "%{http_code}" \
+            -X POST -H 'Content-type: application/json' \
+            --data "$PAYLOAD" \
+            "$WEBHOOK_URL")
+          
+          echo "HTTP response code: $HTTP_CODE"
+          
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Slack message sent successfully"
+            cat /tmp/slack_response.txt
+          else
+            echo "❌ Failed to send Slack message. HTTP code: $HTTP_CODE"
+            echo "Response:"
+            cat /tmp/slack_response.txt || echo "No response body"
+            echo "Payload (first 200 chars):"
+            echo "$PAYLOAD" | head -c 200
+            exit 1
           fi
 

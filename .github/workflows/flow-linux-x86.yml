@@ -3,6 +3,7 @@ name: Flow Linux x86
 permissions:
   id-token: write
   contents: read
+  actions: read
 
 on:
   workflow_call: # Allows to run this workflow from another workflow

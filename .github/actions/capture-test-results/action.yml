@@ -86,18 +86,27 @@ runs:
         
         # Add OS name to results
         if [ -f "$RESULTS_FILE" ]; then
-          # Use jq if available, otherwise use sed
+          # Use jq if available, otherwise use sed with proper escaping
           if command -v jq >/dev/null 2>&1; then
             jq ". + {\"os\": \"$OS_NAME\"}" "$RESULTS_FILE" > "${RESULTS_FILE}.tmp" && mv "${RESULTS_FILE}.tmp" "$RESULTS_FILE"
           else
-            # Fallback: manually add OS field
-            sed -i 's/^{/{ "os": "'"$OS_NAME"'",/' "$RESULTS_FILE"
+            # Fallback: manually add OS field using sed
+            # Escape special characters in OS_NAME for sed replacement
+            # Escape backslashes and ampersands in the replacement string
+            OS_NAME_ESC=$(echo "$OS_NAME" | sed 's/\\/\\\\/g; s/&/\\&/g; s/"/\\"/g')
+            sed -i "s|^{|{ \"os\": \"${OS_NAME_ESC}\",|" "$RESULTS_FILE"
           fi
         fi
         
+        # Ensure file exists and set outputs
+        if [ ! -f "$RESULTS_FILE" ]; then
+          echo "Warning: Results file not created: $RESULTS_FILE"
+          # Create empty file as fallback
+          printf '{"os":"%s","passed":0,"failed":0,"skipped":0,"total":0,"status":"error"}\n' "$OS_NAME" > "$RESULTS_FILE"
+        fi
+        
+        # Always set outputs (file should exist now)
         echo "results-file=$RESULTS_FILE" >> $GITHUB_OUTPUT
-        echo "os-name-sanitized=$OS_NAME_SANITIZED" >> $GITHUB_OUTPUT
-        echo "artifact-name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
         echo "Results captured: $RESULTS_FILE"
         
         # Copy file to workspace root so it can be accessed outside container if needed
@@ -111,6 +120,9 @@ runs:
           cp "$RESULTS_FILE" "$GITHUB_WORKSPACE/.test-results/test-results-${OS_NAME_SANITIZED}.json" || true
         fi
         
+        echo "os-name-sanitized=$OS_NAME_SANITIZED" >> $GITHUB_OUTPUT
+        echo "artifact-name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+        
         # Check if we're in a container with GLIBC/permission issues
         # Older containers may not be able to use actions/upload-artifact
         CHECK_GLIBC=$(ldd --version 2>/dev/null | head -1 || echo "unknown")
@@ -119,7 +131,7 @@ runs:
         
     - name: Upload test results artifact
       continue-on-error: true
-      if: always()
+      if: always() && steps.parse.outputs.results-file != '' && steps.parse.outputs.results-file != 'null'
       uses: actions/upload-artifact@v4
       with:
         name: ${{ steps.parse.outputs.artifact-name }}
@@ -128,3 +140,4 @@ runs:
       env:
         # Try to work around GLIBC issues in older containers
         NODE_OPTIONS: ""
+

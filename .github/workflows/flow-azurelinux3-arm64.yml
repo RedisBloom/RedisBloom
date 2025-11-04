@@ -4,6 +4,7 @@ name: Build and Test AzureLinux3 on arm64
 permissions:
   id-token: write
   contents: read
+  actions: read
 
 on:
   workflow_dispatch: # Allows you to run this workflow manually from the Actions tab
