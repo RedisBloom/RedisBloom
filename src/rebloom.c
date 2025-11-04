@@ -892,7 +892,10 @@ static int CFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **arg
             return RedisModule_ReplyWithError(ctx, "Invalid header");
         }
 
-        cf = CFHeader_Load((CFHeader *)blob);
+        // Copy to aligned struct to avoid unaligned access
+        CFHeader header;
+        memcpy(&header, blob, sizeof(CFHeader));
+        cf = CFHeader_Load(&header);
         if (cf == NULL) {
             return RedisModule_ReplyWithError(ctx, "Couldn't create filter!");
         }

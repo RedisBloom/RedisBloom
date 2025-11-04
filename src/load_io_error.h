@@ -44,12 +44,21 @@ static inline __attribute__((__always_inline__)) void defer_cleanup_(void (^*blo
 /// void *p = malloc(10);
 /// errdefer(err, { free(p); })
 /// ```
-#define errdefer(err, ...)                                                                         \
-    typeof(err) *err_ptr = &(err);                                                                 \
+#define ERRDEFER_CONCAT_(a, b) a##b
+#define ERRDEFER_CONCAT(a, b) ERRDEFER_CONCAT_(a, b)
+
+#define ERRDEFER_IMPL_(err, err_ptr_name, ...)                                                     \
+    typeof(err) *err_ptr_name = &(err);                                                            \
     defer {                                                                                        \
-        if (unlikely(*err_ptr))                                                                    \
+        if (unlikely(*err_ptr_name))                                                               \
             __VA_ARGS__;                                                                           \
     }
+
+#define ERRDEFER_IMPL(err, counter, ...)                                                           \
+    ERRDEFER_IMPL_(err, ERRDEFER_CONCAT(ERRDEFER_PTR_, counter), __VA_ARGS__)
+
+#define errdefer(err, ...)                                                                         \
+    ERRDEFER_IMPL(err, __COUNTER__, __VA_ARGS__)
 
 #define LoadDouble_IOError(rdb, is_err, ret)                                                       \
     __extension__({                                                                                \
