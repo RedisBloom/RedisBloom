@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   test-summary:
@@ -40,8 +41,14 @@ jobs:
           # Create summary JSON
           SUMMARY_FILE="test-summary.json"
           
-          # Initialize arrays
+          # Initialize arrays - ensure it's valid JSON
           echo "[]" > "$SUMMARY_FILE"
+          
+          # Validate the initial file
+          if ! jq empty "$SUMMARY_FILE" 2>/dev/null; then
+            echo "Warning: Invalid initial summary file, resetting"
+            echo "[]" > "$SUMMARY_FILE"
+          fi
           
           # Process all test result artifacts
           TOTAL_PASSED=0
@@ -52,30 +59,71 @@ jobs:
           for result_file in test-results-*/test-results-*.json; do
             if [ -f "$result_file" ]; then
               echo "Processing: $result_file"
-              # Extract OS name from path
+              
+              # Validate JSON file first
+              if ! command -v jq >/dev/null 2>&1 || ! jq empty "$result_file" 2>/dev/null; then
+                echo "Warning: Invalid JSON in $result_file, skipping"
+                continue
+              fi
+              
+              # Extract OS name from path or get from JSON
               OS_NAME=$(basename "$result_file" .json | sed 's/test-results-//')
               
               # Read and add OS field if not present
               if command -v jq >/dev/null 2>&1; then
-                # Add OS name if not present
-                jq ". + {os: \"$OS_NAME\"}" "$result_file" > "${result_file}.tmp" && mv "${result_file}.tmp" "$result_file"
+                # Get OS name from JSON if available, otherwise use filename
+                JSON_OS=$(jq -r '.os // empty' "$result_file" 2>/dev/null || echo "")
+                if [ -z "$JSON_OS" ] || [ "$JSON_OS" = "null" ]; then
+                  JSON_OS="$OS_NAME"
+                fi
                 
-                # Add to summary array
-                jq ". + [$(cat "$result_file")]" "$SUMMARY_FILE" > "${SUMMARY_FILE}.tmp" && mv "${SUMMARY_FILE}.tmp" "$SUMMARY_FILE"
+                # Create entry with OS name
+                ENTRY=$(jq -c ". + {os: \"$JSON_OS\"}" "$result_file" 2>/dev/null)
                 
-                # Accumulate totals
-                PASSED=$(jq -r '.passed // 0' "$result_file")
-                FAILED=$(jq -r '.failed // 0' "$result_file")
-                SKIPPED=$(jq -r '.skipped // 0' "$result_file")
-                
-                TOTAL_PASSED=$((TOTAL_PASSED + PASSED))
-                TOTAL_FAILED=$((TOTAL_FAILED + FAILED))
-                TOTAL_SKIPPED=$((TOTAL_SKIPPED + SKIPPED))
+                if [ -n "$ENTRY" ] && [ "$ENTRY" != "null" ] && [ "$ENTRY" != "" ]; then
+                  # Add to summary array using jq properly
+                  # Use jq to append the entry to the existing array
+                  jq --argjson entry "$ENTRY" '. + [$entry]' "$SUMMARY_FILE" > "${SUMMARY_FILE}.tmp" 2>/dev/null
+                  
+                  # Validate and move
+                  if [ -f "${SUMMARY_FILE}.tmp" ] && jq empty "${SUMMARY_FILE}.tmp" 2>/dev/null; then
+                    mv "${SUMMARY_FILE}.tmp" "$SUMMARY_FILE"
+                  else
+                    echo "Warning: Failed to add entry to summary for $result_file, trying fallback"
+                    # Fallback: read current array, add entry manually
+                    CURRENT=$(cat "$SUMMARY_FILE" 2>/dev/null || echo "[]")
+                    echo "$CURRENT" | jq --argjson entry "$ENTRY" '. + [$entry]' > "${SUMMARY_FILE}.tmp" 2>/dev/null
+                    if [ -f "${SUMMARY_FILE}.tmp" ] && jq empty "${SUMMARY_FILE}.tmp" 2>/dev/null; then
+                      mv "${SUMMARY_FILE}.tmp" "$SUMMARY_FILE"
+                    else
+                      echo "Warning: Could not add entry for $result_file"
+                      rm -f "${SUMMARY_FILE}.tmp"
+                    fi
+                  fi
+                  
+                  # Accumulate totals
+                  PASSED=$(jq -r '.passed // 0' "$result_file" 2>/dev/null || echo "0")
+                  FAILED=$(jq -r '.failed // 0' "$result_file" 2>/dev/null || echo "0")
+                  SKIPPED=$(jq -r '.skipped // 0' "$result_file" 2>/dev/null || echo "0")
+                  
+                  # Ensure values are valid numbers
+                  PASSED=${PASSED:-0}
+                  FAILED=${FAILED:-0}
+                  SKIPPED=${SKIPPED:-0}
+                  
+                  TOTAL_PASSED=$((TOTAL_PASSED + PASSED))
+                  TOTAL_FAILED=$((TOTAL_FAILED + FAILED))
+                  TOTAL_SKIPPED=$((TOTAL_SKIPPED + SKIPPED))
+                fi
               else
                 # Fallback: use sed/awk if jq not available
-                PASSED=$(grep -o '"passed":[0-9]*' "$result_file" | grep -o '[0-9]*' || echo "0")
-                FAILED=$(grep -o '"failed":[0-9]*' "$result_file" | grep -o '[0-9]*' || echo "0")
-                SKIPPED=$(grep -o '"skipped":[0-9]*' "$result_file" | grep -o '[0-9]*' || echo "0")
+                PASSED=$(grep -o '"passed":[0-9]*' "$result_file" | grep -o '[0-9]*' | head -1 || echo "0")
+                FAILED=$(grep -o '"failed":[0-9]*' "$result_file" | grep -o '[0-9]*' | head -1 || echo "0")
+                SKIPPED=$(grep -o '"skipped":[0-9]*' "$result_file" | grep -o '[0-9]*' | head -1 || echo "0")
+                
+                PASSED=${PASSED:-0}
+                FAILED=${FAILED:-0}
+                SKIPPED=${SKIPPED:-0}
                 
                 TOTAL_PASSED=$((TOTAL_PASSED + PASSED))
                 TOTAL_FAILED=$((TOTAL_FAILED + FAILED))
