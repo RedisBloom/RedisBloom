@@ -63,16 +63,7 @@ runs:
           echo "$TEST_OUTPUT" | bash "$PARSE_SCRIPT" "" "$RESULTS_FILE"
         else
           # If no output found, create empty results
-          cat > "$RESULTS_FILE" <<EOF
-{
-  "os": "$OS_NAME",
-  "passed": 0,
-  "failed": 0,
-  "skipped": 0,
-  "total": 0,
-  "status": "unknown"
-}
-EOF
+          printf '{"os":"%s","passed":0,"failed":0,"skipped":0,"total":0,"status":"unknown"}\n' "$OS_NAME" > "$RESULTS_FILE"
         fi
         
         # Add OS name to results
