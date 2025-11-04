@@ -100,3 +100,10 @@ jobs:
   linter:
     uses: ./.github/workflows/flow-linter.yml
     secrets: inherit
+  test-summary:
+    uses: ./.github/workflows/test-summary.yml
+    needs: [prepare-values, build-linux-x86, ubuntu-arm64, azurelinux3-arm64, macos, alpine, linux-valgrind, linux-sanitizer]
+    if: always()
+    with:
+      redis-ref: ${{ needs.prepare-values.outputs.redis-ref }}
+    secrets: inherit

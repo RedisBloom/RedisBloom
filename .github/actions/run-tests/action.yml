@@ -29,4 +29,8 @@ runs:
         echo ::group::Install python dependencies
           ./.install/common_installations.sh
         echo ::endgroup::
-        make test VG=${{inputs.run_valgrind}} SAN=${{inputs.run_sanitizer}} REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+        # Capture test output to file for parsing
+        TEST_OUTPUT_FILE="$GITHUB_WORKSPACE/test_output.log"
+        make test VG=${{inputs.run_valgrind}} SAN=${{inputs.run_sanitizer}} REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server 2>&1 | tee "$TEST_OUTPUT_FILE" || true
+        # Store path for later steps
+        echo "TEST_OUTPUT_FILE=$TEST_OUTPUT_FILE" >> $GITHUB_ENV
