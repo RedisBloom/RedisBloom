@@ -134,78 +134,16 @@ jobs:
           COMMIT_MSG_ESC=$(echo "$COMMIT_MSG" | sed 's/"/\\"/g' | sed 's/\\/\\\\/g')
           PER_OS_SUMMARY_ESC=$(echo "$PER_OS_SUMMARY" | sed 's/"/\\"/g' | sed 's/\\/\\\\/g')
           
-          PAYLOAD=$(cat <<'PAYLOAD_EOF'
-{
-  "text": "Event Nightly Test Results",
-  "blocks": [
-    {
-      "type": "header",
-      "text": {
-        "type": "plain_text",
-        "text": "Event Nightly"
-      }
-    },
-    {
-      "type": "section",
-      "fields": [
-        {
-          "type": "mrkdwn",
-          "text": "*Redis Version:*\nREDIS_VERSION_PLACEHOLDER"
-        },
-        {
-          "type": "mrkdwn",
-          "text": "*Build:*\nCOMMIT_SHA_PLACEHOLDER"
-        }
-      ]
-    },
-    {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "*Commit:* COMMIT_MSG_PLACEHOLDER"
-      }
-    },
-    {
-      "type": "divider"
-    },
-    {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "*Overall Summary*\n✅ Passed: TOTAL_PASSED_PLACEHOLDER | ❌ Failed: TOTAL_FAILED_PLACEHOLDER | ⏭️ Skipped: TOTAL_SKIPPED_PLACEHOLDER"
-      }
-    },
-    {
-      "type": "divider"
-    },
-    {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "*Per-OS Results*\nPER_OS_SUMMARY_PLACEHOLDER"
-      }
-    },
-    {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "<WORKFLOW_URL_PLACEHOLDER|View Workflow Run>"
-      }
-    }
-  ]
-}
-PAYLOAD_EOF
-          )
-          
-          # Replace placeholders
-          PAYLOAD=$(echo "$PAYLOAD" | sed "s/REDIS_VERSION_PLACEHOLDER/${REDIS_VERSION}/g" | \
-            sed "s/COMMIT_SHA_PLACEHOLDER/${COMMIT_SHA}/g" | \
-            sed "s/COMMIT_MSG_PLACEHOLDER/${COMMIT_MSG_ESC}/g" | \
-            sed "s/TOTAL_PASSED_PLACEHOLDER/${TOTAL_PASSED}/g" | \
-            sed "s/TOTAL_FAILED_PLACEHOLDER/${TOTAL_FAILED}/g" | \
-            sed "s/TOTAL_SKIPPED_PLACEHOLDER/${TOTAL_SKIPPED}/g" | \
-            sed "s|PER_OS_SUMMARY_PLACEHOLDER|${PER_OS_SUMMARY_ESC}|g" | \
-            sed "s|WORKFLOW_URL_PLACEHOLDER|${WORKFLOW_URL}|g")
+          # Build JSON payload using printf to avoid heredoc YAML parsing issues
+          PAYLOAD=$(printf '{"text":"Event Nightly Test Results","blocks":[{"type":"header","text":{"type":"plain_text","text":"Event Nightly"}},{"type":"section","fields":[{"type":"mrkdwn","text":"*Redis Version:*\n%s"},{"type":"mrkdwn","text":"*Build:*\n%s"}]},{"type":"section","text":{"type":"mrkdwn","text":"*Commit:* %s"}},{"type":"divider"},{"type":"section","text":{"type":"mrkdwn","text":"*Overall Summary*\n✅ Passed: %s | ❌ Failed: %s | ⏭️ Skipped: %s"}},{"type":"divider"},{"type":"section","text":{"type":"mrkdwn","text":"*Per-OS Results*\n%s"}},{"type":"section","text":{"type":"mrkdwn","text":"<%s|View Workflow Run>"}}]}' \
+            "$REDIS_VERSION" \
+            "$COMMIT_SHA" \
+            "$COMMIT_MSG_ESC" \
+            "$TOTAL_PASSED" \
+            "$TOTAL_FAILED" \
+            "$TOTAL_SKIPPED" \
+            "$PER_OS_SUMMARY_ESC" \
+            "$WORKFLOW_URL")
           
           # Send to Slack
           WEBHOOK_URL="${{ secrets.DATATYPES_SLACK_WEBHOOK_URL }}"
