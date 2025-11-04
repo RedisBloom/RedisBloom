@@ -133,7 +133,9 @@ CuckooFilter *CFHeader_Load(const CFHeader *header) {
         cur->bucketSize = header->bucketSize;
         cur->numBuckets = filter->numBuckets * pow(filter->expansion, ii);
 
-        if (cur->numBuckets != 0 && filter->bucketSize > SIZE_MAX / cur->numBuckets) {
+        // Check for overflow: numBuckets * bucketSize * sizeof(CuckooBucket)
+        if (cur->numBuckets != 0 && filter->bucketSize != 0 &&
+            cur->numBuckets > SIZE_MAX / filter->bucketSize / sizeof(CuckooBucket)) {
             goto error;
         }
 
