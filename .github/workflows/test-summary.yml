@@ -174,7 +174,13 @@ jobs:
           
           if [ -f "$SUMMARY_FILE" ] && command -v jq >/dev/null 2>&1; then
             # Use jq to format per-OS results
-            PER_OS_SUMMARY=$(jq -r '.[] | "• *\(.os // "unknown")*: ✅ Passed: \(.passed // 0) | ❌ Failed: \(.failed // 0) | ⏭️ Skipped: \(.skipped // 0)"' "$SUMMARY_FILE" | tr '\n' '\n')
+            # Format: OS name on one line, then stats on next line
+            # Only show Failed if there are actual failures
+            PER_OS_SUMMARY=$(jq -r '.[] | 
+              "• *\(.os // "unknown")*\n" +
+              "  ✅ Passed: \(.passed // 0)" +
+              (if (.failed // 0) > 0 then " | ❌ Failed: \(.failed // 0)" else "" end) +
+              " | ⏭️ Skipped: \(.skipped // 0)"' "$SUMMARY_FILE" | tr '\n' '\n')
           else
             # Fallback: simple text
             PER_OS_SUMMARY="Test results available. Check workflow for details."
