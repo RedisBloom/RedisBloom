@@ -45,7 +45,7 @@ jobs:
     uses: ./.github/workflows/flow-linux-x86.yml
     needs: [prepare-values]
     with:
-      os: jammy
+      os: bionic focal jammy rocky8 rocky9 bullseye amazonlinux2 mariner2 azurelinux3
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
       beta-version: ${{needs.prepare-values.outputs.beta-version}}
     secrets: inherit
@@ -56,48 +56,45 @@ jobs:
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
       beta-version: ${{needs.prepare-values.outputs.beta-version}}
     secrets: inherit
-  # Temporarily disabled for testing - only running on jammy and ubuntu-arm64
-  # azurelinux3-arm64:
-  #   uses: ./.github/workflows/flow-azurelinux3-arm64.yml
-  #   needs: [prepare-values]
-  #   with:
-  #     redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
-  #     beta-version: ${{needs.prepare-values.outputs.beta-version}}
-  #   secrets: inherit
-  # macos:
-  #   uses: ./.github/workflows/flow-macos.yml
-  #   needs: [prepare-values]
-  #   with:
-  #     redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
-  #     beta-version: ${{needs.prepare-values.outputs.beta-version}}
-  #   secrets: inherit
-  # alpine:
-  #   uses: ./.github/workflows/flow-alpine.yml
-  #   needs: [prepare-values]
-  #   with:
-  #     redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
-  #     beta-version: ${{needs.prepare-values.outputs.beta-version}}
-  #   secrets: inherit
-  # Temporarily disabled for testing
-  # linux-valgrind:
-  #   uses: ./.github/workflows/flow-linux-x86.yml
-  #   needs: [prepare-values]
-  #   with:
-  #     os: jammy
-  #     redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
-  #     beta-version: ${{needs.prepare-values.outputs.beta-version}}
-  #     run_valgrind: true
-  #   secrets: inherit
-  # Temporarily disabled for testing
-  # linux-sanitizer:
-  #   uses: ./.github/workflows/flow-linux-x86.yml
-  #   needs: [prepare-values]
-  #   with:
-  #     os: jammy
-  #     redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
-  #     beta-version: ${{needs.prepare-values.outputs.beta-version}}
-  #     run_sanitizer: true
-  #   secrets: inherit
+  azurelinux3-arm64:
+    uses: ./.github/workflows/flow-azurelinux3-arm64.yml
+    needs: [prepare-values]
+    with:
+      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+      beta-version: ${{needs.prepare-values.outputs.beta-version}}
+    secrets: inherit
+  macos:
+    uses: ./.github/workflows/flow-macos.yml
+    needs: [prepare-values]
+    with:
+      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+      beta-version: ${{needs.prepare-values.outputs.beta-version}}
+    secrets: inherit
+  alpine:
+    uses: ./.github/workflows/flow-alpine.yml
+    needs: [prepare-values]
+    with:
+      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+      beta-version: ${{needs.prepare-values.outputs.beta-version}}
+    secrets: inherit
+  linux-valgrind:
+    uses: ./.github/workflows/flow-linux-x86.yml
+    needs: [prepare-values]
+    with:
+      os: jammy
+      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+      beta-version: ${{needs.prepare-values.outputs.beta-version}}
+      run_valgrind: true
+    secrets: inherit
+  linux-sanitizer:
+    uses: ./.github/workflows/flow-linux-x86.yml
+    needs: [prepare-values]
+    with:
+      os: jammy
+      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+      beta-version: ${{needs.prepare-values.outputs.beta-version}}
+      run_sanitizer: true
+    secrets: inherit
   spellcheck:
     uses: ./.github/workflows/flow-spellcheck.yml
     secrets: inherit
@@ -106,7 +103,7 @@ jobs:
     secrets: inherit
   test-summary:
     uses: ./.github/workflows/test-summary.yml
-    needs: [prepare-values, build-linux-x86, ubuntu-arm64]
+    needs: [prepare-values, build-linux-x86, ubuntu-arm64, azurelinux3-arm64, macos, alpine, linux-valgrind, linux-sanitizer]
     if: always()
     with:
       redis-ref: ${{ needs.prepare-values.outputs.redis-ref }}
