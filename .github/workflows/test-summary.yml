@@ -169,21 +169,37 @@ jobs:
           # Title format: nightly name, Redis version, commit number and message
           TITLE="*${NIGHTLY_NAME}* | Redis: ${REDIS_VERSION} | Build: ${COMMIT_SHA} - ${COMMIT_MSG}"
           
-          # Build per-OS summary
-          PER_OS_SUMMARY=""
+          # Build per-OS summary for failed OSs only
+          # An OS is considered failed if: failed > 0 OR passed = 0
+          FAILED_OS_SUMMARY=""
+          FULL_OS_SUMMARY=""
           
           if [ -f "$SUMMARY_FILE" ] && command -v jq >/dev/null 2>&1; then
-            # Use jq to format per-OS results
-            # Format: OS name on one line, then stats on next line
-            # Only show Failed if there are actual failures
-            PER_OS_SUMMARY=$(jq -r '.[] | 
+            # Build full summary for all OSs (for the expandable section)
+            FULL_OS_SUMMARY=$(jq -r '.[] | 
               "• *\(.os // "unknown")*\n" +
               "  ✅ Passed: \(.passed // 0)" +
               (if (.failed // 0) > 0 then " | ❌ Failed: \(.failed // 0)" else "" end) +
               " | ⏭️ Skipped: \(.skipped // 0)"' "$SUMMARY_FILE" | tr '\n' '\n')
+            
+            # Build summary for failed OSs only (failed > 0 OR passed = 0)
+            # For OSs with passed = 0, add a link to the workflow
+            FAILED_OS_SUMMARY=$(jq -r --arg workflow_url "$WORKFLOW_URL" '.[] | 
+              select((.failed // 0) > 0 or (.passed // 0) == 0) |
+              "• *\(.os // "unknown")*\n" +
+              "  ✅ Passed: \(.passed // 0)" +
+              (if (.failed // 0) > 0 then " | ❌ Failed: \(.failed // 0)" else "" end) +
+              " | ⏭️ Skipped: \(.skipped // 0)" +
+              (if (.passed // 0) == 0 then " | <" + $workflow_url + "|View Details>" else "" end)' "$SUMMARY_FILE" | tr '\n' '\n')
+            
+            # If no failed OSs, set a message
+            if [ -z "$FAILED_OS_SUMMARY" ] || [ "$FAILED_OS_SUMMARY" = "" ]; then
+              FAILED_OS_SUMMARY="✅ All OSs passed successfully!"
+            fi
           else
             # Fallback: simple text
-            PER_OS_SUMMARY="Test results available. Check workflow for details."
+            FAILED_OS_SUMMARY="Test results available. Check workflow for details."
+            FULL_OS_SUMMARY="Test results available. Check workflow for details."
           fi
           
           # Overall summary
@@ -194,22 +210,24 @@ jobs:
           OVERALL_SUMMARY="*Overall Summary:*\n✅ Passed: ${TOTAL_PASSED} | ❌ Failed: ${TOTAL_FAILED} | ⏭️ Skipped: ${TOTAL_SKIPPED}"
           
           # Build full message text
-          MESSAGE_TEXT="${TITLE}\n\n${OVERALL_SUMMARY}\n\n*Per-OS Results:*\n${PER_OS_SUMMARY}\n\n<${WORKFLOW_URL}|View Workflow Run>"
+          MESSAGE_TEXT="${TITLE}\n\n${OVERALL_SUMMARY}\n\n*Failed OSs:*\n${FAILED_OS_SUMMARY}\n\n<${WORKFLOW_URL}|View Full Summary>"
           
           # Build Slack payload with blocks
-          # Escape special characters for JSON
-          COMMIT_MSG_ESC=$(echo "$COMMIT_MSG" | sed 's/"/\\"/g' | sed 's/\\/\\\\/g')
-          PER_OS_SUMMARY_ESC=$(echo "$PER_OS_SUMMARY" | sed 's/"/\\"/g' | sed 's/\\/\\\\/g')
+          # Escape special characters for JSON using jq for proper escaping
+          COMMIT_MSG_ESC=$(echo "$COMMIT_MSG" | jq -Rs . | sed 's/^"//;s/"$//')
+          FAILED_OS_SUMMARY_ESC=$(echo "$FAILED_OS_SUMMARY" | jq -Rs . | sed 's/^"//;s/"$//')
+          FULL_OS_SUMMARY_ESC=$(echo "$FULL_OS_SUMMARY" | jq -Rs . | sed 's/^"//;s/"$//')
           
           # Build JSON payload using printf to avoid heredoc YAML parsing issues
-          PAYLOAD=$(printf '{"text":"Event Nightly Test Results","blocks":[{"type":"header","text":{"type":"plain_text","text":"Event Nightly"}},{"type":"section","fields":[{"type":"mrkdwn","text":"*Redis Version:*\n%s"},{"type":"mrkdwn","text":"*Build:*\n%s"}]},{"type":"section","text":{"type":"mrkdwn","text":"*Commit:* %s"}},{"type":"divider"},{"type":"section","text":{"type":"mrkdwn","text":"*Overall Summary*\n✅ Passed: %s | ❌ Failed: %s | ⏭️ Skipped: %s"}},{"type":"divider"},{"type":"section","text":{"type":"mrkdwn","text":"*Per-OS Results*\n%s"}},{"type":"section","text":{"type":"mrkdwn","text":"<%s|View Workflow Run>"}}]}' \
+          # Structure: Header, Redis/Build info, Commit, Divider, Overall Summary, Divider, Failed OSs, Button for Full Summary
+          PAYLOAD=$(printf '{"text":"Event Nightly Test Results","blocks":[{"type":"header","text":{"type":"plain_text","text":"Event Nightly"}},{"type":"section","fields":[{"type":"mrkdwn","text":"*Redis Version:*\n%s"},{"type":"mrkdwn","text":"*Build:*\n%s"}]},{"type":"section","text":{"type":"mrkdwn","text":"*Commit:* %s"}},{"type":"divider"},{"type":"section","text":{"type":"mrkdwn","text":"*Overall Summary*\n✅ Passed: %s | ❌ Failed: %s | ⏭️ Skipped: %s"}},{"type":"divider"},{"type":"section","text":{"type":"mrkdwn","text":"*Failed OSs:*\n%s"}},{"type":"actions","elements":[{"type":"button","text":{"type":"plain_text","text":"Show Full Summary","emoji":true},"url":"%s","style":"primary"}]}]}' \
             "$REDIS_VERSION" \
             "$COMMIT_SHA" \
             "$COMMIT_MSG_ESC" \
             "$TOTAL_PASSED" \
             "$TOTAL_FAILED" \
             "$TOTAL_SKIPPED" \
-            "$PER_OS_SUMMARY_ESC" \
+            "$FAILED_OS_SUMMARY_ESC" \
             "$WORKFLOW_URL")
           
           # Send to Slack
