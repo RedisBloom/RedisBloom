@@ -43,6 +43,9 @@ jobs:
           redis-ref: ${{ inputs.redis-ref }}
           beta-version: ${{ inputs.beta-version }}
   alpine:
+    permissions:
+      actions: read
+      contents: read
     runs-on: ${{matrix.runs_on}}
     defaults:
       run:
