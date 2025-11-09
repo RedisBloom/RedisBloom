@@ -16,11 +16,11 @@
 #endif
 
 #ifndef REBLOOM_VERSION_MINOR
-#define REBLOOM_VERSION_MINOR 3
+#define REBLOOM_VERSION_MINOR 4
 #endif
 
 #ifndef REBLOOM_VERSION_PATCH
-#define REBLOOM_VERSION_PATCH 91
+#define REBLOOM_VERSION_PATCH 0
 #endif
 
 #define REBLOOM_MODULE_VERSION                                                                     \
