@@ -44,6 +44,7 @@ jobs:
           beta-version: ${{ inputs.beta-version }}
   alpine:
     permissions:
+      id-token: write
       actions: read
       contents: read
     runs-on: ${{matrix.runs_on}}
