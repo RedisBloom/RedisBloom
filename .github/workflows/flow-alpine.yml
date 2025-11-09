@@ -96,6 +96,16 @@ jobs:
           git fetch origin ${{needs.prepare-values.outputs.redis-ref}}
           git checkout ${{needs.prepare-values.outputs.redis-ref}}
           git submodule update
+      - name: Capture test results on failure
+        if: failure()
+        shell: bash
+        run: |
+          # Create error results file if job fails early
+          OS_NAME="alpine-${{ matrix.runs_on }}"
+          OS_NAME_SANITIZED=$(echo "$OS_NAME" | sed 's/[:/\\<>|*?]/_/g' | sed 's/__*/_/g' | sed 's/^_//' | sed 's/_$//')
+          RESULTS_FILE="$GITHUB_WORKSPACE/test-results-${OS_NAME_SANITIZED}.json"
+          printf '{"os":"%s","passed":0,"failed":0,"skipped":0,"total":0,"status":"error"}\n' "$OS_NAME" > "$RESULTS_FILE"
+          echo "Created error results file: $RESULTS_FILE"
       - name: Build
         uses: ./.github/actions/build-module-and-redis
       - name: Run Tests
@@ -116,3 +126,34 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           github-ref: ${{ github.ref }}
           beta-version: ${{ inputs.beta-version }}
+      - name: Ensure test results artifact exists and upload
+        if: always()
+        shell: bash
+        run: |
+          # Ensure we have a test results artifact even if job failed early
+          OS_NAME="alpine-${{ matrix.runs_on }}"
+          OS_NAME_SANITIZED=$(echo "$OS_NAME" | sed 's/[:/\\<>|*?]/_/g' | sed 's/__*/_/g' | sed 's/^_//' | sed 's/_$//')
+          RESULTS_FILE="$GITHUB_WORKSPACE/test-results-${OS_NAME_SANITIZED}.json"
+          JOB_NAME="${{ github.job }}"
+          JOB_NAME_SANITIZED=$(echo "$JOB_NAME" | sed 's/[^a-zA-Z0-9_-]/_/g' | sed 's/__*/_/g' | sed 's/^_//' | sed 's/_$//')
+          ARTIFACT_NAME="test-results-${JOB_NAME_SANITIZED}-${OS_NAME_SANITIZED}"
+          
+          # Create error results file if it doesn't exist
+          if [ ! -f "$RESULTS_FILE" ]; then
+            printf '{"os":"%s","passed":0,"failed":0,"skipped":0,"total":0,"status":"error"}\n' "$OS_NAME" > "$RESULTS_FILE"
+            echo "Created error results file: $RESULTS_FILE"
+          fi
+          
+          # Ensure file exists
+          if [ -f "$RESULTS_FILE" ]; then
+            echo "Results file exists: $RESULTS_FILE"
+            echo "Artifact name: $ARTIFACT_NAME"
+          fi
+      - name: Upload test results artifact (fallback)
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ github.job }}-alpine-${{ matrix.runs_on }}
+          path: test-results-*.json
+          if-no-files-found: ignore
