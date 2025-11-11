@@ -96,16 +96,6 @@ jobs:
           git fetch origin ${{needs.prepare-values.outputs.redis-ref}}
           git checkout ${{needs.prepare-values.outputs.redis-ref}}
           git submodule update
-      - name: Capture test results on failure
-        if: failure()
-        shell: bash
-        run: |
-          # Create error results file if job fails early
-          OS_NAME="alpine-${{ matrix.runs_on }}"
-          OS_NAME_SANITIZED=$(echo "$OS_NAME" | sed 's/[:/\\<>|*?]/_/g' | sed 's/__*/_/g' | sed 's/^_//' | sed 's/_$//')
-          RESULTS_FILE="$GITHUB_WORKSPACE/test-results-${OS_NAME_SANITIZED}.json"
-          printf '{"os":"%s","passed":0,"failed":0,"skipped":0,"total":0,"status":"error"}\n' "$OS_NAME" > "$RESULTS_FILE"
-          echo "Created error results file: $RESULTS_FILE"
       - name: Build
         uses: ./.github/actions/build-module-and-redis
       - name: Run Tests

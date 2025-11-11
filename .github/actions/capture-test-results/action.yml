@@ -45,8 +45,16 @@ runs:
         
         # Look for test summary in log files
         if [ -d "$TEST_LOG_DIR" ]; then
-          # Find the most recent log file
-          LATEST_LOG=$(find "$TEST_LOG_DIR" -name "*.log" -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2- || echo "")
+          # Find the most recent log file (cross-platform: works on both GNU and BSD find)
+          # Use find with -exec stat for cross-platform compatibility
+          # Try BSD format first (macOS), then GNU format (Linux) as fallback
+          LATEST_LOG=""
+          # Try BSD/macOS stat format first: stat -f '%m %N' (modification time, filename)
+          LATEST_LOG=$(find "$TEST_LOG_DIR" -name "*.log" -type f -exec stat -f '%m %N' {} + 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2- || echo "")
+          # Fallback: if BSD format failed, try GNU/Linux stat format: stat -c '%Y %n'
+          if [ -z "$LATEST_LOG" ] || [ ! -f "$LATEST_LOG" ]; then
+            LATEST_LOG=$(find "$TEST_LOG_DIR" -name "*.log" -type f -exec stat -c '%Y %n' {} + 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2- || echo "")
+          fi
           if [ -n "$LATEST_LOG" ] && [ -f "$LATEST_LOG" ]; then
             # Extract last 100 lines which should contain the summary
             TEST_OUTPUT=$(tail -100 "$LATEST_LOG" 2>/dev/null || echo "")
@@ -90,11 +98,13 @@ runs:
           if command -v jq >/dev/null 2>&1; then
             jq ". + {\"os\": \"$OS_NAME\"}" "$RESULTS_FILE" > "${RESULTS_FILE}.tmp" && mv "${RESULTS_FILE}.tmp" "$RESULTS_FILE"
           else
-            # Fallback: manually add OS field using sed
+            # Fallback: manually add OS field using sed (cross-platform compatible)
             # Escape special characters in OS_NAME for sed replacement
             # Escape backslashes and ampersands in the replacement string
             OS_NAME_ESC=$(echo "$OS_NAME" | sed 's/\\/\\\\/g; s/&/\\&/g; s/"/\\"/g')
-            sed -i "s|^{|{ \"os\": \"${OS_NAME_ESC}\",|" "$RESULTS_FILE"
+            # Use temporary file approach for cross-platform compatibility
+            # This works on both macOS (BSD sed) and Linux (GNU sed)
+            sed "s|^{|{ \"os\": \"${OS_NAME_ESC}\",|" "$RESULTS_FILE" > "${RESULTS_FILE}.tmp" && mv "${RESULTS_FILE}.tmp" "$RESULTS_FILE"
           fi
         fi
         
