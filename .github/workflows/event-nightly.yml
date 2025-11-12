@@ -3,6 +3,7 @@ name: Event Nightly
 permissions:
   id-token: write
   contents: read
+  actions: read
 
 on:
   push:
@@ -19,6 +20,11 @@ on:
         description: 'Redis ref to checkout'
         required: true
         default: 'unstable'
+      send-slack-message:
+        description: 'Send summary message to Slack channel'
+        required: false
+        type: boolean
+        default: false
 jobs:
   prepare-values:
     runs-on: ubuntu-latest
@@ -99,4 +105,12 @@ jobs:
     secrets: inherit
   linter:
     uses: ./.github/workflows/flow-linter.yml
+    secrets: inherit
+  test-summary:
+    uses: ./.github/workflows/test-summary.yml
+    needs: [prepare-values, build-linux-x86, ubuntu-arm64, azurelinux3-arm64, macos, alpine, linux-valgrind, linux-sanitizer]
+    if: always() && (github.event_name == 'schedule' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.send-slack-message == true))
+    with:
+      redis-ref: ${{ needs.prepare-values.outputs.redis-ref }}
+      send-slack-message: ${{ github.event_name == 'schedule' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.send-slack-message == true) }}
     secrets: inherit
