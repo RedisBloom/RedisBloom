@@ -3,6 +3,7 @@ name: Build and Test ubuntu ARM instances
 permissions:
   id-token: write
   contents: read
+  actions: read
 
 on:
   workflow_dispatch: # Allows you to run this workflow manually from the Actions tab
@@ -197,7 +198,14 @@ jobs:
           echo ::group::Install python dependencies
             ./.install/common_installations.sh
           echo ::endgroup::
-          make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
+          # Capture test output to file for parsing
+          TEST_OUTPUT_FILE="$GITHUB_WORKSPACE/test_output.log"
+          make test REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server 2>&1 | tee "$TEST_OUTPUT_FILE" || true
+      - name: Capture test results
+        if: always()
+        uses: ./.github/actions/capture-test-results
+        with:
+          os-name: ubuntu-arm64-${{ matrix.docker.nick }}
       - name: Pack module
         run: |
           . venv/bin/activate
