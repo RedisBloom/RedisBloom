@@ -166,14 +166,13 @@ jobs:
           
           # Build message
           NIGHTLY_NAME="Event Nightly"
-          REPO_NAME="${{ github.repository }}"
           REDIS_VERSION="${{ inputs.redis-ref }}"
           COMMIT_SHA="${{ steps.commit.outputs.sha }}"
           COMMIT_MSG="${{ steps.commit.outputs.message }}"
           WORKFLOW_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           
-          # Title format: repo name, nightly name, Redis version, commit number and message
-          TITLE="*${REPO_NAME}* - ${NIGHTLY_NAME} | Redis: ${REDIS_VERSION} | Build: ${COMMIT_SHA} - ${COMMIT_MSG}"
+          # Title format: nightly name, Redis version, commit number and message
+          TITLE="*${NIGHTLY_NAME}* | Redis: ${REDIS_VERSION} | Build: ${COMMIT_SHA} - ${COMMIT_MSG}"
           
           # Build per-OS summary for failed OSs only
           # An OS is considered failed if: failed > 0 OR passed = 0 OR status = "error" OR status = "unknown"
@@ -234,8 +233,7 @@ jobs:
           
           # Build JSON payload using printf to avoid heredoc YAML parsing issues
           # Structure: Header, Redis/Build info, Commit, Divider, Overall Summary, Link below summary, Divider, Failed OSs, Button for Full Summary
-          PAYLOAD=$(printf '{"text":"Event Nightly Test Results","blocks":[{"type":"header","text":{"type":"plain_text","text":"%s - Event Nightly"}},{"type":"section","fields":[{"type":"mrkdwn","text":"*Redis Version:*\n%s"},{"type":"mrkdwn","text":"*Build:*\n%s"}]},{"type":"section","text":{"type":"mrkdwn","text":"*Commit:* %s"}},{"type":"divider"},{"type":"section","text":{"type":"mrkdwn","text":"*Overall Summary*\n✅ Passed: %s | ❌ Failed: %s | ⏭️ Skipped: %s"}},{"type":"section","text":{"type":"mrkdwn","text":"<%s|View Workflow Run>"}},{"type":"divider"},{"type":"section","text":{"type":"mrkdwn","text":"*Failed OSs:*\n%s"}},{"type":"actions","elements":[{"type":"button","text":{"type":"plain_text","text":"Show Full Summary","emoji":true},"url":"%s","style":"primary"}]}]}' \
-            "$REPO_NAME" \
+          PAYLOAD=$(printf '{"text":"Event Nightly Test Results","blocks":[{"type":"header","text":{"type":"plain_text","text":"Event Nightly"}},{"type":"section","fields":[{"type":"mrkdwn","text":"*Redis Version:*\n%s"},{"type":"mrkdwn","text":"*Build:*\n%s"}]},{"type":"section","text":{"type":"mrkdwn","text":"*Commit:* %s"}},{"type":"divider"},{"type":"section","text":{"type":"mrkdwn","text":"*Overall Summary*\n✅ Passed: %s | ❌ Failed: %s | ⏭️ Skipped: %s"}},{"type":"section","text":{"type":"mrkdwn","text":"<%s|View Workflow Run>"}},{"type":"divider"},{"type":"section","text":{"type":"mrkdwn","text":"*Failed OSs:*\n%s"}},{"type":"actions","elements":[{"type":"button","text":{"type":"plain_text","text":"Show Full Summary","emoji":true},"url":"%s","style":"primary"}]}]}' \
             "$REDIS_VERSION" \
             "$COMMIT_SHA" \
             "$COMMIT_MSG_ESC" \
