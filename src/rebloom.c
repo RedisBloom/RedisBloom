@@ -1180,8 +1180,6 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
         sb->growth = 2;
     }
 
-    // Sanity:
-    assert(sb->nfilters < 1000);
     sb->filters = RedisModule_Calloc(sb->nfilters, sizeof(*sb->filters));
     for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         SBLink *lb = sb->filters + ii;
