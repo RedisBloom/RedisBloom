@@ -46,28 +46,29 @@ jobs:
           
           echo "beta-version=${BETA_VERSION}" >> $GITHUB_OUTPUT
           echo "Generated beta version: ${BETA_VERSION}"
-  build-linux-x86:
-    uses: ./.github/workflows/flow-linux-x86.yml
-    needs: [prepare-values]
-    with:
-      os: bionic focal jammy rocky8 rocky9 bullseye amazonlinux2 mariner2 azurelinux3
-      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
-      beta-version: ${{needs.prepare-values.outputs.beta-version}}
-    secrets: inherit
-  ubuntu-arm64:
-    uses: ./.github/workflows/flow-ubuntu-arm.yml
-    needs: [prepare-values]
-    with:
-      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
-      beta-version: ${{needs.prepare-values.outputs.beta-version}}
-    secrets: inherit
-  azurelinux3-arm64:
-    uses: ./.github/workflows/flow-azurelinux3-arm64.yml
-    needs: [prepare-values]
-    with:
-      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
-      beta-version: ${{needs.prepare-values.outputs.beta-version}}
-    secrets: inherit
+  # TEMPORARY: Commented out for testing Slack changes - only running macOS
+  # build-linux-x86:
+  #   uses: ./.github/workflows/flow-linux-x86.yml
+  #   needs: [prepare-values]
+  #   with:
+  #     os: bionic focal jammy rocky8 rocky9 bullseye amazonlinux2 mariner2 azurelinux3
+  #     redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+  #     beta-version: ${{needs.prepare-values.outputs.beta-version}}
+  #   secrets: inherit
+  # ubuntu-arm64:
+  #   uses: ./.github/workflows/flow-ubuntu-arm.yml
+  #   needs: [prepare-values]
+  #   with:
+  #     redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+  #     beta-version: ${{needs.prepare-values.outputs.beta-version}}
+  #   secrets: inherit
+  # azurelinux3-arm64:
+  #   uses: ./.github/workflows/flow-azurelinux3-arm64.yml
+  #   needs: [prepare-values]
+  #   with:
+  #     redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+  #     beta-version: ${{needs.prepare-values.outputs.beta-version}}
+  #   secrets: inherit
   macos:
     uses: ./.github/workflows/flow-macos.yml
     needs: [prepare-values]
@@ -75,40 +76,40 @@ jobs:
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
       beta-version: ${{needs.prepare-values.outputs.beta-version}}
     secrets: inherit
-  alpine:
-    uses: ./.github/workflows/flow-alpine.yml
-    needs: [prepare-values]
-    with:
-      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
-      beta-version: ${{needs.prepare-values.outputs.beta-version}}
-    secrets: inherit
-  linux-valgrind:
-    uses: ./.github/workflows/flow-linux-x86.yml
-    needs: [prepare-values]
-    with:
-      os: jammy
-      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
-      beta-version: ${{needs.prepare-values.outputs.beta-version}}
-      run_valgrind: true
-    secrets: inherit
-  linux-sanitizer:
-    uses: ./.github/workflows/flow-linux-x86.yml
-    needs: [prepare-values]
-    with:
-      os: jammy
-      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
-      beta-version: ${{needs.prepare-values.outputs.beta-version}}
-      run_sanitizer: true
-    secrets: inherit
-  spellcheck:
-    uses: ./.github/workflows/flow-spellcheck.yml
-    secrets: inherit
-  linter:
-    uses: ./.github/workflows/flow-linter.yml
-    secrets: inherit
+  # alpine:
+  #   uses: ./.github/workflows/flow-alpine.yml
+  #   needs: [prepare-values]
+  #   with:
+  #     redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+  #     beta-version: ${{needs.prepare-values.outputs.beta-version}}
+  #   secrets: inherit
+  # linux-valgrind:
+  #   uses: ./.github/workflows/flow-linux-x86.yml
+  #   needs: [prepare-values]
+  #   with:
+  #     os: jammy
+  #     redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+  #     beta-version: ${{needs.prepare-values.outputs.beta-version}}
+  #     run_valgrind: true
+  #   secrets: inherit
+  # linux-sanitizer:
+  #   uses: ./.github/workflows/flow-linux-x86.yml
+  #   needs: [prepare-values]
+  #   with:
+  #     os: jammy
+  #     redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+  #     beta-version: ${{needs.prepare-values.outputs.beta-version}}
+  #     run_sanitizer: true
+  #   secrets: inherit
+  # spellcheck:
+  #   uses: ./.github/workflows/flow-spellcheck.yml
+  #   secrets: inherit
+  # linter:
+  #   uses: ./.github/workflows/flow-linter.yml
+  #   secrets: inherit
   test-summary:
     uses: ./.github/workflows/test-summary.yml
-    needs: [prepare-values, build-linux-x86, ubuntu-arm64, azurelinux3-arm64, macos, alpine, linux-valgrind, linux-sanitizer]
+    needs: [prepare-values, macos]
     if: always() && (github.event_name == 'schedule' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.send-slack-message == true))
     with:
       redis-ref: ${{ needs.prepare-values.outputs.redis-ref }}
