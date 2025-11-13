@@ -16,6 +16,7 @@ name: Flow MACOS
 permissions:
   id-token: write
   contents: read
+  actions: read
 
 on:
   workflow_dispatch:
@@ -133,6 +134,11 @@ jobs:
         uses: ./.github/actions/build-module-and-redis
       - name: Run Tests
         uses: ./.github/actions/run-tests
+      - name: Capture test results
+        if: always()
+        uses: ./.github/actions/capture-test-results
+        with:
+          os-name: ${{ matrix.os }}
       - name: Upload test artifacts
         if: failure()
         uses: ./.github/actions/upload-artifacts
