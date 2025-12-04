@@ -1021,6 +1021,7 @@ uint64_t BFCapacity(SBChain *bf) {
 }
 
 static size_t BFMemUsage(const void *value);
+static size_t CFMemUsage(const void *value);
 
 static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
@@ -1112,17 +1113,6 @@ static int BFCard_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     return REDISMODULE_OK;
 }
 
-static uint64_t CFSize(const CuckooFilter *cf) {
-    uint64_t size = sizeof *cf;
-    size += sizeof *cf->filters * cf->numFilters;
-    uint64_t numBuckets = 0;
-    for (const SubCF *filter = cf->filters; filter < cf->filters + cf->numFilters; ++filter) {
-        numBuckets += filter->numBuckets;
-    }
-    size += numBuckets * cf->bucketSize;
-    return size;
-}
-
 static int CFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     if (argc != 2) {
@@ -1138,7 +1128,7 @@ static int CFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 
     RedisModule_ReplyWithMapOrArray(ctx, 8 * 2, true);
     RedisModule_ReplyWithSimpleString(ctx, "Size");
-    RedisModule_ReplyWithLongLong(ctx, CFSize(cf));
+    RedisModule_ReplyWithLongLong(ctx, CFMemUsage(cf));
     RedisModule_ReplyWithSimpleString(ctx, "Number of buckets");
     RedisModule_ReplyWithLongLong(ctx, cf->numBuckets);
     RedisModule_ReplyWithSimpleString(ctx, "Number of filters");
