@@ -332,8 +332,10 @@ static int CMSDefrag(RedisModuleDefragCtx *ctx, RedisModuleString *key, void **v
 }
 
 size_t CMSMemUsage(const void *value) {
-    CMSketch *cms = (CMSketch *)value;
-    return sizeof(cms) + cms->width * cms->depth * sizeof(size_t);
+    const CMSketch *cms = value;
+    size_t size = sizeof *cms;
+    size += sizeof *cms->array * cms->width * cms->depth;
+    return size;
 }
 
 int CMSModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {

@@ -905,7 +905,7 @@ void *TDigestRdbLoad(RedisModuleIO *rdb, int encver) {
 }
 
 void TDigestFree(void *value) {
-    td_histogram_t *tdigest = (td_histogram_t *)value;
+    td_histogram_t *tdigest = value;
     td_free(tdigest);
 }
 
@@ -917,9 +917,10 @@ static int TDigestDefrag(RedisModuleDefragCtx *ctx, RedisModuleString *key, void
 }
 
 size_t TDigestMemUsage(const void *value) {
-    td_histogram_t *tdigest = (td_histogram_t *)value;
-    size_t size = sizeof(tdigest);
-    size += (2 * (tdigest->cap * sizeof(double)));
+    const td_histogram_t *tdigest = value;
+    size_t size = sizeof *tdigest;
+    size += sizeof *tdigest->nodes_mean * tdigest->cap;
+    size += sizeof *tdigest->nodes_weight * tdigest->cap;
     return size;
 }
 

@@ -133,7 +133,7 @@ class testResp3():
                             b'Merged nodes': 51, b'Unmerged nodes': 422,
                             b'Merged weight': 9578, b'Unmerged weight': 422,
                             b'Observations': 10000, b'Total compressions': 17,
-                            b'Memory usage': 9768}
+                            b'Memory usage': 9840}
 
         env.cmd('topk.reserve', 'topk', '2', '50', '5', '0.9')
         env.cmd('topk.add', 'topk', 'foo', 'bar', 'baz', '42', 'foo', 'bar', 'baz', )
