@@ -309,7 +309,7 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
     if (encver > TOPK_ENC_VER) {
         return NULL;
     }
-    TopK *topk = TOPK_CALLOC(1, sizeof(TopK));
+    TopK *topk = TOPK_CALLOC(1, sizeof *topk);
     bool err = false;
     errdefer(err, TopK_Destroy(topk));
     topk->k = LoadUnsigned_IOError(io, err, NULL);
@@ -317,18 +317,15 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
     topk->depth = LoadUnsigned_IOError(io, err, NULL);
     topk->decay = LoadDouble_IOError(io, err, NULL);
 
-    size_t dataSize, heapSize, itemSize;
-    topk->data = (Bucket *)LoadStringBuffer_IOError(io, &dataSize, err, NULL);
-    assert(dataSize == ((size_t)topk->width) * topk->depth * sizeof(Bucket));
-    topk->heap = (HeapBucket *)LoadStringBuffer_IOError(io, &heapSize, err, NULL);
-    assert(heapSize == topk->k * sizeof(HeapBucket));
+    size_t size;
+    topk->data = (Bucket *)LoadStringBuffer_IOError(io, &size, err, NULL);
+    assert(size == sizeof *topk->data * topk->width * topk->depth);
+    topk->heap = (HeapBucket *)LoadStringBuffer_IOError(io, &size, err, NULL);
+    assert(size == sizeof *topk->heap * topk->k);
 
-    for (uint32_t i = 0; i < topk->k; ++i) {
-        topk->heap[i].item = LoadStringBuffer_IOError(io, &itemSize, err, NULL);
-        if (itemSize == 1) {
-            RedisModule_Free(topk->heap[i].item);
-            topk->heap[i].item = NULL;
-        }
+    for (HeapBucket *bucket = topk->heap; bucket < topk->heap + topk->k; ++bucket) {
+        char *it = LoadStringBuffer_IOError(io, &size, err, NULL);
+        bucket->item = size == 1 ? RedisModule_Free(it), NULL : it;
     }
 
     /* Initialize lookupTable */
