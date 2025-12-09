@@ -1345,21 +1345,20 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
         cf->expansion = LoadUnsigned_IOError(io, err, NULL);
     }
 
-    cf->filters = RedisModule_Calloc(cf->numFilters, sizeof(*cf->filters));
-    for (size_t ii = 0, exp = 1; ii < cf->numFilters; ++ii, exp *= cf->expansion) {
-        cf->filters[ii].bucketSize = cf->bucketSize;
+    cf->filters = RedisModule_Calloc(cf->numFilters, sizeof *cf->filters);
+    for (SubCF *filter = cf->filters; filter < cf->filters + cf->numFilters; ++filter) {
+        filter->bucketSize = cf->bucketSize;
 
         if (encver < CF_MIN_EXPANSION_VERSION) {
-            cf->filters[ii].numBuckets = cf->numBuckets;
+            filter->numBuckets = cf->numBuckets;
         } else {
-            cf->filters[ii].numBuckets = LoadUnsigned_IOError(io, err, NULL);
+            filter->numBuckets = LoadUnsigned_IOError(io, err, NULL);
         }
 
-        size_t lenDummy = 0;
-        cf->filters[ii].data = (MyCuckooBucket *)LoadStringBuffer_IOError(io, &lenDummy, err, NULL);
-        assert(cf->filters[ii].data != NULL && lenDummy == cf->filters[ii].bucketSize *
-                                                               cf->filters[ii].numBuckets *
-                                                               sizeof(*cf->filters[ii].data));
+        size_t len = 0;
+        filter->data = (MyCuckooBucket *)LoadStringBuffer_IOError(io, &len, err, NULL);
+        assert(filter->data);
+        assert(len == sizeof *filter->data * filter->bucketSize * filter->numBuckets);
     }
     return cf;
 }
