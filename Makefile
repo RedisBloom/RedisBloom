@@ -3,6 +3,13 @@ ROOT=.
 
 include $(ROOT)/deps/readies/mk/main
 
+# RedisBloom only supports 64-bit architectures
+ifneq ($(ARCH),x64)
+ifneq ($(ARCH),arm64v8)
+$(error RedisBloom only supports 64-bit architectures (x64, arm64v8). Current architecture: $(ARCH))
+endif
+endif
+
 MK_ALL_TARGETS=bindirs deps build
 
 #----------------------------------------------------------------------------------------------
