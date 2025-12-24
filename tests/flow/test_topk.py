@@ -235,3 +235,8 @@ class testTopK():
         self.env.expect('topk.reserve poc 4294967296 1 1 0.1').error().contains('TopK: invalid k')
         self.env.expect('topk.reserve poc 1 4294967296 1 0.1').error().contains('TopK: invalid width')
         self.env.expect('topk.reserve poc 1 1 4294967296 0.1').error().contains('TopK: invalid depth')
+
+    def test_rdb_load_overflow(self):
+        self.cmd('FLUSHALL')
+        rdb_bytes = b'\x07\x81N\x8aJ\xf96\x0f\x10\x00\x02\x00\x02\x80\x80\x00\x00\x00\x02\x80@\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x05\x00\x05\x00\x00\xff\x0c\x00AuG7\xae3\xbe\xab'
+        self.env.expect('RESTORE', 'hax', '0', rdb_bytes, 'REPLACE').error()
