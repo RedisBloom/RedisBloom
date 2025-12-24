@@ -20,7 +20,7 @@
 #endif
 
 #ifndef REBLOOM_VERSION_PATCH
-#define REBLOOM_VERSION_PATCH 9
+#define REBLOOM_VERSION_PATCH 12
 #endif
 
 #define REBLOOM_MODULE_VERSION                                                                     \

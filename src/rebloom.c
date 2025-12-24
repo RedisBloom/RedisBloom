@@ -21,6 +21,7 @@
 #include "rmutil/util.h"
 #include "config.h"
 
+#include <math.h>
 #include <assert.h>
 #include <strings.h> // strncasecmp
 #include <string.h>
@@ -1258,7 +1259,17 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
         }
         size_t sztmp;
         bm->bf = (unsigned char *)LoadStringBuffer_IOError(io, &sztmp, err, NULL);
+        // Validate that the buffer is at least large enough for the number of bits
+        // We need at least ceil(bits/8) bytes
+        if (sztmp < ceil(bm->bits / 8.0)) {
+            err = true;
+            return NULL;
+        }
         bm->bytes = sztmp;
+        if (bloom_validate_integrity(bm) != 0) {
+            err = true;
+            return NULL;
+        }
         lb->size = LoadUnsigned_IOError(io, err, NULL);
     }
 
@@ -1338,6 +1349,10 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
     errdefer(err, CuckooFilter_Free(cf));
     cf->numFilters = LoadUnsigned_IOError(io, err, NULL);
     cf->numBuckets = LoadUnsigned_IOError(io, err, NULL);
+    if (cf->numFilters == 0 || cf->numBuckets == 0) {
+        err = true;
+        return NULL;
+    }
     cf->numItems = LoadUnsigned_IOError(io, err, NULL);
     if (encver < CF_MIN_EXPANSION_VERSION) { // CF_ENCODING_VERSION when added
         cf->numDeletes = 0;                  // Didn't exist earlier. bug fix
