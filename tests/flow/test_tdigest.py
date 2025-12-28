@@ -1,7 +1,7 @@
 
 from ast import arg
 from common import *
-from numpy import NaN
+from numpy import nan as NaN
 import redis
 import math
 import random
