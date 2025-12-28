@@ -183,6 +183,10 @@ class testCuckoo():
         self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE a 10 MAXITERATIONS string')
 
     def test_num_deletes(self):
+        # bgsave can happens in bgsave or aof rewrite or slave full sync.
+        # in this case, the dympAndReload function is flacky and depends on the timing of the bgsave.
+        # so we skip this test on slave.
+        self.env.skipOnSlave()
         self.cmd('FLUSHALL')
         self.cmd('cf.add', 'nums', 'Redis')
         self.cmd('cf.del', 'nums', 'Redis')

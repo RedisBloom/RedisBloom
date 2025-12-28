@@ -811,3 +811,9 @@ class testRedisBloomNoCodec():
         env.expect("RESTORE", "hax", 0, rdb_bytes, "REPLACE").error().contains(
             "Bad data format"
         )
+    def test_load_bloom_with_large_number_of_filters(self):
+        env = self.env
+        env.cmd('FLUSHALL')
+        env.cmd('bf.reserve', 'poc', 0.0001, 1, 'EXPANSION', 1)
+        env.cmd('bf.madd', 'poc', 'items', *[str(i) for i in range(10000, 15000)])
+        env.dumpAndReload()
