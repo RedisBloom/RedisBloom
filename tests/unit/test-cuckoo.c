@@ -209,6 +209,73 @@ TEST_F(cuckoo, testBucketSize) {
     CuckooFilter_Free(&ck);
 }
 
+TEST_F(cuckoo, testValidationSecurity) {
+    // Test the security vulnerability fix for expansion=0 with multiple filters
+    CuckooFilter ck;
+    
+    // Test case 1: Valid filter should pass validation
+    memset(&ck, 0, sizeof(ck));
+    ck.bucketSize = 2;
+    ck.numFilters = 2;
+    ck.maxIterations = 20;
+    ck.expansion = 1;  // Valid expansion
+    ck.numBuckets = 16; // Power of 2
+    
+    ASSERT_EQ(0, CuckooFilter_ValidateIntegrity(&ck));  // Should pass
+    
+    // Test case 2: Invalid filter with expansion=0 and numFilters>1 should fail
+    ck.expansion = 0;  // This causes pow(0, 1) = 0 buckets
+    ck.numFilters = 2; // Multiple filters trigger the vulnerability
+    
+    ASSERT_EQ(1, CuckooFilter_ValidateIntegrity(&ck));  // Should fail
+    
+    // Test case 3: expansion=0 with numFilters=1 should be OK (no pow calculation issue)
+    ck.expansion = 0;
+    ck.numFilters = 1;
+    
+    ASSERT_EQ(0, CuckooFilter_ValidateIntegrity(&ck));  // Should pass
+    
+    // Test case 4: Other validation failures
+    ck.expansion = 1;
+    ck.numFilters = 2;
+    ck.numBuckets = 0;  // Invalid - zero buckets
+    
+    ASSERT_EQ(1, CuckooFilter_ValidateIntegrity(&ck));  // Should fail
+    
+    // Test case 5: numBuckets not power of 2
+    ck.numBuckets = 15;  // Not power of 2
+    
+    ASSERT_EQ(1, CuckooFilter_ValidateIntegrity(&ck));  // Should fail
+    
+    // Test case 6: Null pointer
+    ASSERT_EQ(1, CuckooFilter_ValidateIntegrity(NULL));  // Should fail
+}
+
+TEST_F(cuckoo, testMalformedHeaderProtection) {
+    // Test protection against malformed headers that could cause crashes
+    
+    // Simulate malformed header values that previously caused crashes
+    CuckooFilter ck;
+    memset(&ck, 0, sizeof(ck));
+    
+    // These are the dangerous values from the security vulnerability
+    ck.bucketSize = 1;      // Within valid range [1, 255]  
+    ck.numFilters = 2;      // Within valid range [1, 65536]
+    ck.maxIterations = 1;   // Within valid range [1, 65535]
+    ck.expansion = 0;       // DANGEROUS: causes pow(0, 1) = 0
+    ck.numBuckets = 1;      // Power of 2, > 0
+    
+    // This should now be caught by our security fix
+    ASSERT_EQ(1, CuckooFilter_ValidateIntegrity(&ck));  // Should fail
+    
+    // Test with various other dangerous expansion/numFilters combinations
+    for (int filters = 2; filters <= 5; filters++) {
+        ck.numFilters = filters;
+        ck.expansion = 0;
+        ASSERT_EQ(1, CuckooFilter_ValidateIntegrity(&ck));  // Should always fail
+    }
+}
+
 int main(int argc, char **argv) {
     test__abort_on_fail = 1;
     RedisModule_Calloc = calloc_wrap;

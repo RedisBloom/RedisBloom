@@ -805,3 +805,10 @@ class testRedisBloomNoCodec():
     def test_load_error_handling(self):
         env = self.env
         env.expect('restore', 'a', 0, b'\a\x810\x16\xe5\xa2\x89\xbe\xf8\x04\x02\x02\x02\x01\x02\x05\x15\x15\x02@d\x04{\x14\xaeG\xe1zt?\x02\b\x04\xe9\x86/\xb25\x0e&@\x02D\x80\x02\x00\x05\xc3=@\x90\x01\x00\x00\x80\x00\x00\b \x06\x00\x10 \x03@\a\xe0\t\x00\xc0\x15\xc0\a\x02\x00\x00\x01 \x03 \x00@2\xe0\x00\x00\xc0\x1d \a\xe0\x06\x1e@\x0e \x15`\x00\xc0\a \x00\xc0=@\x1e`\x00\x01\x00\x00\x02\x02\x00\x0c\x00j\xb3hZ\xc1\xd7\xd5e').error().contains('Bad data format')
+
+    def test_load_bloom_with_large_number_of_filters(self):
+        env = self.env
+        env.cmd('FLUSHALL')
+        env.cmd('bf.reserve', 'poc', 0.0001, 1, 'EXPANSION', 1)
+        env.cmd('bf.madd', 'poc', 'items', *[str(i) for i in range(10000, 15000)])
+        env.dumpAndReload()
