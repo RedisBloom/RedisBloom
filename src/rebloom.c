@@ -21,6 +21,7 @@
 #include "rmutil/util.h"
 #include "config.h"
 
+#include <math.h>
 #include <assert.h>
 #include <strings.h> // strncasecmp
 #include <string.h>
@@ -1260,6 +1261,12 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
         }
         size_t sztmp;
         bm->bf = (unsigned char *)LoadStringBuffer_IOError(io, &sztmp, err, NULL);
+        // Validate that the buffer is at least large enough for the number of bits
+        // We need at least ceil(bits/8) bytes
+        if (sztmp < ceil(bm->bits / 8.0)) {
+            err = true;
+            return NULL;
+        }
         bm->bytes = sztmp;
         lb->size = LoadUnsigned_IOError(io, err, NULL);
     }
