@@ -133,7 +133,11 @@ CuckooFilter *CFHeader_Load(const CFHeader *header) {
         cur->bucketSize = header->bucketSize;
         cur->numBuckets = filter->numBuckets * pow(filter->expansion, ii);
 
-        if (cur->numBuckets != 0 && filter->bucketSize > SIZE_MAX / cur->numBuckets) {
+        if (cur->numBuckets == 0) {
+            goto error;
+        }
+
+        if (filter->bucketSize > SIZE_MAX / cur->numBuckets) {
             goto error;
         }
 
