@@ -1347,6 +1347,10 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
     errdefer(err, CuckooFilter_Free(cf));
     cf->numFilters = LoadUnsigned_IOError(io, err, NULL);
     cf->numBuckets = LoadUnsigned_IOError(io, err, NULL);
+    if (cf->numFilters == 0 || cf->numBuckets == 0) {
+        err = true;
+        return NULL;
+    }
     cf->numItems = LoadUnsigned_IOError(io, err, NULL);
     if (encver < CF_MIN_EXPANSION_VERSION) { // CF_ENCODING_VERSION when added
         cf->numDeletes = 0;                  // Didn't exist earlier. bug fix
