@@ -64,7 +64,7 @@ class testACL():
       env.expect('AUTH', 'testusr', '123').true()
 
       # Such a user shouldn't be able to run any `bloom` commands (or any other commands)
-      env.expect('bf.exists').error().contains(
+      env.expect('bf.exists a a').error().contains(
           "User testusr has no permissions to run the 'bf.exists' command")
 
       # Add `read` permissions to `testusr`
@@ -81,7 +81,7 @@ class testACL():
           env.expect(cmd).error().notContains("User testusr has no permissions")
 
       # `testusr` should not be able to run `bloom` commands that are not `read`
-      env.expect('bf.reserve').error().contains(
+      env.expect('bf.reserve bf 0.01 1000').error().contains(
           "User testusr has no permissions to run the 'bf.reserve' command")
 
       # Add `write` permissions to `testusr`
@@ -109,5 +109,5 @@ class testACL():
       env.expect('bf.exists', 'test', 'bar').equal(0)
 
       # `testusr2` should not be able to run any `cuckoo` commands
-      env.expect('cf.reserve').error().contains(
+      env.expect('cf.reserve cf 1000').error().contains(
           "User testusr2 has no permissions to run the 'cf.reserve' command")

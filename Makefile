@@ -3,6 +3,13 @@ ROOT=.
 
 include $(ROOT)/deps/readies/mk/main
 
+# RedisBloom only supports 64-bit architectures
+ifneq ($(ARCH),x64)
+ifneq ($(ARCH),arm64v8)
+$(error RedisBloom only supports 64-bit architectures (x64, arm64v8). Current architecture: $(ARCH))
+endif
+endif
+
 MK_ALL_TARGETS=bindirs deps build
 
 #----------------------------------------------------------------------------------------------
@@ -127,6 +134,11 @@ _SOURCES=\
 	deps/bloom/bloom.c \
 	deps/murmur2/MurmurHash2.c \
 	deps/rmutil/util.c \
+	src/cmd_info/cf_info.c \
+	src/cmd_info/bf_info.c \
+	src/cmd_info/cms_info.c \
+	src/cmd_info/tdigest_info.c \
+	src/cmd_info/topk_info.c \
 	src/rebloom.c \
 	src/sb.c \
 	src/cf.c \

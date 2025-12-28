@@ -16,6 +16,9 @@
 >
 > See https://github.com/redis/redis
 
+> [!NOTE]
+> 32 bit systems are not supported.
+
 ## Overview
 
 RedisBloom adds a set of probabilistic data structures to Redis, including Bloom filter, Cuckoo filter, Count-min sketch, Top-K, and t-digest. Using this capability, you can query streaming data without needing to store all the elements of the stream. Probabilistic data structures each answer the following questions:

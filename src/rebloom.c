@@ -20,6 +20,7 @@
 #include "common.h"
 #include "rmutil/util.h"
 #include "config.h"
+#include "cmd_info/command_info.h"
 
 #include <math.h>
 #include <assert.h>
@@ -1021,6 +1022,7 @@ uint64_t BFCapacity(SBChain *bf) {
 }
 
 static size_t BFMemUsage(const void *value);
+static size_t CFMemUsage(const void *value);
 
 static int BFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
@@ -1112,15 +1114,6 @@ static int BFCard_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     return REDISMODULE_OK;
 }
 
-uint64_t CFSize(CuckooFilter *cf) {
-    uint64_t numBuckets = 0;
-    for (uint16_t ii = 0; ii < cf->numFilters; ++ii) {
-        numBuckets += cf->filters[ii].numBuckets;
-    }
-
-    return sizeof(*cf) + sizeof(*cf->filters) * cf->numFilters + numBuckets * cf->bucketSize;
-}
-
 static int CFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
     if (argc != 2) {
@@ -1136,7 +1129,7 @@ static int CFInfo_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
 
     RedisModule_ReplyWithMapOrArray(ctx, 8 * 2, true);
     RedisModule_ReplyWithSimpleString(ctx, "Size");
-    RedisModule_ReplyWithLongLong(ctx, CFSize(cf));
+    RedisModule_ReplyWithLongLong(ctx, CFMemUsage(cf));
     RedisModule_ReplyWithSimpleString(ctx, "Number of buckets");
     RedisModule_ReplyWithLongLong(ctx, cf->numBuckets);
     RedisModule_ReplyWithSimpleString(ctx, "Number of filters");
@@ -1239,8 +1232,6 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
         sb->growth = 2;
     }
 
-    // Sanity:
-    assert(sb->nfilters < 1000);
     sb->filters = RedisModule_Calloc(sb->nfilters, sizeof(*sb->filters));
     for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         SBLink *lb = sb->filters + ii;
@@ -1292,18 +1283,19 @@ static void BFFree(void *value) { SBChain_Free(value); }
 
 static size_t BFMemUsage(const void *value) {
     const SBChain *sb = value;
-    size_t rv = sizeof(*sb);
-    for (size_t ii = 0; ii < sb->nfilters; ++ii) {
-        rv += sizeof(*sb->filters);
-        rv += sb->filters[ii].inner.bytes;
+    size_t size = sizeof *sb;
+    size += sizeof *sb->filters * sb->nfilters;
+    for (const SBLink *filter = sb->filters; filter < sb->filters + sb->nfilters; ++filter) {
+        size += filter->inner.bytes;
     }
-    return rv;
+    return size;
 }
 
 static int BFDefrag(RedisModuleDefragCtx *ctx, RedisModuleString *key, void **value) {
     *value = defragPtr(ctx, *value);
     SBChain *sb = *value;
     sb->filters = defragPtr(ctx, sb->filters);
+    return REDISMODULE_OK;
 }
 
 static void CFFree(void *value) {
@@ -1384,14 +1376,12 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
 
 static size_t CFMemUsage(const void *value) {
     const CuckooFilter *cf = value;
-
-    size_t filtersSize = 0;
-    for (size_t ii = 0; ii < cf->numFilters; ++ii) {
-        filtersSize +=
-            cf->filters[ii].bucketSize * cf->filters[ii].numBuckets * sizeof(*cf->filters[ii].data);
+    size_t size = sizeof *cf;
+    size += sizeof *cf->filters * cf->numFilters;
+    for (const SubCF *filter = cf->filters; filter < cf->filters + cf->numFilters; ++filter) {
+        size += sizeof *filter->data * filter->bucketSize * filter->numBuckets;
     }
-
-    return sizeof(*cf) + sizeof(*cf->filters) * cf->numFilters + filtersSize;
+    return size;
 }
 
 static int CFDefrag(RedisModuleDefragCtx *ctx, RedisModuleString *key, void **value) {
@@ -1402,6 +1392,7 @@ static int CFDefrag(RedisModuleDefragCtx *ctx, RedisModuleString *key, void **va
     for (size_t ii = 0; ii < cf->numFilters; ++ii) {
         cf->filters[ii].data = defragPtr(ctx, cf->filters[ii].data);
     }
+    return REDISMODULE_OK;
 }
 
 static void CFAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *obj) {
@@ -1524,7 +1515,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     }
 
 #define RegisterCommand(ctx, name, cmd, mode, acl)                                                 \
-    RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl " bloom")
+    RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl " bloom");
 
     RegisterAclCategory(ctx, "bloom");
     RegisterCommand(ctx, "bf.reserve", BFReserve_RedisCommand, "write deny-oom", "write fast");
@@ -1569,10 +1560,16 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 
     RegisterCommand(ctx, "cf.info", CFInfo_RedisCommand, "readonly fast", "read fast");
     RegisterCommand(ctx, "cf.debug", CFDebug_RedisCommand, "readonly fast", "read");
+    if (RegisterCFCommandInfos(ctx) != REDISMODULE_OK)
+        return REDISMODULE_ERR;
+    if (RegisterBFCommandInfos(ctx) != REDISMODULE_OK)
+        return REDISMODULE_ERR;
 #undef RegisterCommand
 
-    CMSModule_onLoad(ctx, argv, argc);
-    TopKModule_onLoad(ctx, argv, argc);
+    if (CMSModule_onLoad(ctx, argv, argc) == REDISMODULE_ERR)
+        return REDISMODULE_ERR;
+    if (TopKModule_onLoad(ctx, argv, argc) == REDISMODULE_ERR)
+        return REDISMODULE_ERR;
     if (TDigestModule_onLoad(ctx, argv, argc) == REDISMODULE_ERR)
         return REDISMODULE_ERR;
 

@@ -12,6 +12,7 @@
 #include "version.h"
 #include "rmutil/util.h"
 
+#include "cmd_info/command_info.h"
 #include "topk.h"
 #include "rm_topk.h"
 #include "rm_cms.h"
@@ -380,9 +381,11 @@ static int TopKDefrag(RedisModuleDefragCtx *ctx, RedisModuleString *key, void **
 }
 
 static size_t TopKMemUsage(const void *value) {
-    TopK *topk = (TopK *)value;
-    return sizeof(TopK) + ((size_t)topk->width) * topk->depth * sizeof(Bucket) +
-           topk->k * sizeof(HeapBucket);
+    const TopK *topk = value;
+    size_t size = sizeof *topk;
+    size += sizeof *topk->data * topk->width * topk->depth;
+    size += sizeof *topk->heap * topk->k;
+    return size;
 }
 
 int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
@@ -415,6 +418,8 @@ int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RegisterCommand(ctx, "topk.info", TopK_Info_Cmd, "readonly", "read fast");
 
 #undef RegisterCommand
+    if (RegisterTopKCommandInfos(ctx) != REDISMODULE_OK)
+        return REDISMODULE_ERR;
 
     return REDISMODULE_OK;
 }

@@ -11,6 +11,7 @@
 #include "rmutil/util.h"
 #include "version.h"
 #include "rm_cms.h"
+#include "cmd_info/command_info.h"
 
 #include "redismodule.h"
 #include "common.h"
@@ -909,7 +910,7 @@ void *TDigestRdbLoad(RedisModuleIO *rdb, int encver) {
 }
 
 void TDigestFree(void *value) {
-    td_histogram_t *tdigest = (td_histogram_t *)value;
+    td_histogram_t *tdigest = value;
     td_free(tdigest);
 }
 
@@ -921,9 +922,10 @@ static int TDigestDefrag(RedisModuleDefragCtx *ctx, RedisModuleString *key, void
 }
 
 size_t TDigestMemUsage(const void *value) {
-    td_histogram_t *tdigest = (td_histogram_t *)value;
-    size_t size = sizeof(tdigest);
-    size += (2 * (tdigest->cap * sizeof(double)));
+    const td_histogram_t *tdigest = value;
+    size_t size = sizeof *tdigest;
+    size += sizeof *tdigest->nodes_mean * tdigest->cap;
+    size += sizeof *tdigest->nodes_weight * tdigest->cap;
     return size;
 }
 
@@ -964,6 +966,9 @@ int TDigestModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     RegisterCommand(ctx, "tdigest.info", TDigestSketch_Info, "readonly", "read fast");
 
 #undef RegisterCommand
+
+    if (RegisterTDigestCommandInfos(ctx) != REDISMODULE_OK)
+        return REDISMODULE_ERR;
 
     return REDISMODULE_OK;
 }
