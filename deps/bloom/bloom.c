@@ -27,10 +27,10 @@
 #define STRING(n) #n
 
 extern void (*RedisModule_Free)(void *ptr);
-extern void * (*RedisModule_Calloc)(size_t nmemb, size_t size);
-extern void * (*RedisModule_TryCalloc)(size_t nmemb, size_t size);
+extern void *(*RedisModule_Calloc)(size_t nmemb, size_t size);
+extern void *(*RedisModule_TryCalloc)(size_t nmemb, size_t size);
 
-#define BLOOM_TRYCALLOC(...) \
+#define BLOOM_TRYCALLOC(...)                                                                       \
     RedisModule_TryCalloc ? RedisModule_TryCalloc(__VA_ARGS__) : RedisModule_Calloc(__VA_ARGS__)
 #define BLOOM_FREE RedisModule_Free
 
@@ -237,10 +237,9 @@ const char *bloom_version() { return MAKESTRING(BLOOM_VERSION); }
 
 // Returns 0 on success
 int bloom_validate_integrity(struct bloom *bloom) {
-    if (bloom->error <= 0 || bloom->error >= 1.0 ||
-        (bloom->n2 != 0 && bloom->bits < (1ULL << bloom->n2)) ||
-        bloom->bits == 0 || bloom->bits != bloom->bytes * 8 ||
-        bloom->hashes != (int)ceil(LN2 * bloom->bpe)) {
+    if (bloom->error <= 0 || bloom->error >= 1.0 || (bloom->n2 > 63) ||
+        (bloom->n2 != 0 && bloom->bits < (1ULL << bloom->n2)) || bloom->bits == 0 ||
+        bloom->bits != bloom->bytes * 8 || bloom->hashes != (int)ceil(LN2 * bloom->bpe)) {
         return 1;
     }
 

@@ -1259,6 +1259,10 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
             return NULL;
         }
         bm->bytes = sztmp;
+        if (bloom_validate_integrity(bm) != 0) {
+            err = true;
+            return NULL;
+        }
         lb->size = LoadUnsigned_IOError(io, err, NULL);
     }
 
