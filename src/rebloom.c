@@ -17,6 +17,7 @@
 #include "common.h"
 #include "rmutil/util.h"
 
+#include <math.h>
 #include <assert.h>
 #include <strings.h> // strncasecmp
 #include <string.h>
@@ -1224,7 +1225,17 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
         }
         size_t sztmp;
         bm->bf = (unsigned char *)LoadStringBuffer_IOError(io, &sztmp, err, NULL);
+        // Validate that the buffer is at least large enough for the number of bits
+        // We need at least ceil(bits/8) bytes
+        if (sztmp < ceil(bm->bits / 8.0)) {
+            err = true;
+            return NULL;
+        }
         bm->bytes = sztmp;
+        if (bloom_validate_integrity(bm) != 0) {
+            err = true;
+            return NULL;
+        }
         lb->size = LoadUnsigned_IOError(io, err, NULL);
     }
 
@@ -1301,9 +1312,13 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
 
     bool err = false;
     CuckooFilter *cf = RedisModule_Calloc(1, sizeof(*cf));
-    errdefer(err, CuckooFilter_Free(cf));
+    errdefer(err, CFFree(cf));
     cf->numFilters = LoadUnsigned_IOError(io, err, NULL);
     cf->numBuckets = LoadUnsigned_IOError(io, err, NULL);
+    if (cf->numFilters == 0 || cf->numBuckets == 0) {
+        err = true;
+        return NULL;
+    }
     cf->numItems = LoadUnsigned_IOError(io, err, NULL);
     if (encver < CF_MIN_EXPANSION_VERSION) { // CF_ENCODING_VERSION when added
         cf->numDeletes = 0;                  // Didn't exist earlier. bug fix
@@ -1317,21 +1332,20 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
         cf->expansion = LoadUnsigned_IOError(io, err, NULL);
     }
 
-    cf->filters = RedisModule_Calloc(cf->numFilters, sizeof(*cf->filters));
-    for (size_t ii = 0, exp = 1; ii < cf->numFilters; ++ii, exp *= cf->expansion) {
-        cf->filters[ii].bucketSize = cf->bucketSize;
+    cf->filters = RedisModule_Calloc(cf->numFilters, sizeof *cf->filters);
+    for (SubCF *filter = cf->filters; filter < cf->filters + cf->numFilters; ++filter) {
+        filter->bucketSize = cf->bucketSize;
 
         if (encver < CF_MIN_EXPANSION_VERSION) {
-            cf->filters[ii].numBuckets = cf->numBuckets;
+            filter->numBuckets = cf->numBuckets;
         } else {
-            cf->filters[ii].numBuckets = LoadUnsigned_IOError(io, err, NULL);
+            filter->numBuckets = LoadUnsigned_IOError(io, err, NULL);
         }
 
-        size_t lenDummy = 0;
-        cf->filters[ii].data = (MyCuckooBucket *)LoadStringBuffer_IOError(io, &lenDummy, err, NULL);
-        assert(cf->filters[ii].data != NULL && lenDummy == cf->filters[ii].bucketSize *
-                                                               cf->filters[ii].numBuckets *
-                                                               sizeof(*cf->filters[ii].data));
+        size_t len = 0;
+        filter->data = (MyCuckooBucket *)LoadStringBuffer_IOError(io, &len, err, NULL);
+        assert(filter->data);
+        assert(len == sizeof *filter->data * filter->bucketSize * filter->numBuckets);
     }
     return cf;
 }

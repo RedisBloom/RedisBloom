@@ -299,7 +299,7 @@ void CMSRdbSave(RedisModuleIO *io, void *obj) {
     RedisModule_SaveUnsigned(io, cms->depth);
     RedisModule_SaveUnsigned(io, cms->counter);
     RedisModule_SaveStringBuffer(io, (const char *)cms->array,
-                                 cms->width * cms->depth * sizeof(uint32_t));
+                                 sizeof *cms->array * cms->width * cms->depth);
 }
 
 void CMSFree(void *value) { CMS_Destroy(value); }
@@ -315,8 +315,20 @@ void *CMSRdbLoad(RedisModuleIO *io, int encver) {
     cms->width = LoadUnsigned_IOError(io, err, NULL);
     cms->depth = LoadUnsigned_IOError(io, err, NULL);
     cms->counter = LoadUnsigned_IOError(io, err, NULL);
-    size_t length = cms->width * cms->depth * sizeof(size_t);
+
+    if (cms->width == 0 || cms->depth == 0) {
+        err = true;
+        return NULL;
+    }
+
+    size_t expected_length = sizeof *cms->array * cms->width * cms->depth;
+    size_t length;
     cms->array = (uint32_t *)LoadStringBuffer_IOError(io, &length, err, NULL);
+
+    if (length != expected_length) {
+        err = true;
+        return NULL;
+    }
 
     return cms;
 }

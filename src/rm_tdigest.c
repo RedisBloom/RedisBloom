@@ -891,6 +891,11 @@ void *TDigestRdbLoad(RedisModuleIO *rdb, int encver) {
     tdigest->merged_weight = LoadDouble_IOError(rdb, err, NULL);
     tdigest->unmerged_weight = LoadDouble_IOError(rdb, err, NULL);
 
+    if (tdigest->merged_nodes < 0 || tdigest->merged_nodes > tdigest->cap) {
+        err = true;
+        return NULL;
+    }
+
     for (size_t i = 0; i < tdigest->merged_nodes; i++) {
         tdigest->nodes_mean[i] = LoadDouble_IOError(rdb, err, NULL);
     }
