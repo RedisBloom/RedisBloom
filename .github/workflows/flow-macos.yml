@@ -81,7 +81,7 @@ jobs:
         run: |
           OS="${{ inputs.os }}"
           if [ -z "${OS}" ]; then
-            OS='["macos-13", "macos-14"]'
+            OS='["macos-14", "macos-15"]'
           else
             OS='["${OS}"]'
           fi
