@@ -1252,13 +1252,38 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
         }
         size_t sztmp;
         bm->bf = (unsigned char *)LoadStringBuffer_IOError(io, &sztmp, err, NULL);
-        // Validate that the buffer is at least large enough for the number of bits
-        // We need at least ceil(bits/8) bytes
-        if (sztmp < ceil(bm->bits / 8.0)) {
+        if (unlikely(bm->bf == NULL) || unlikely(sztmp == 0) ||
+            unlikely(sztmp > (UINT64_MAX / 8))) {
             err = true;
             return NULL;
         }
         bm->bytes = sztmp;
+        if (encver == 0) {
+            // Validate that the buffer is at least large enough for the number of bits.
+            // We need at least ceil(bits/8) bytes.
+            if (sztmp < ceil(bm->bits / 8.0)) {
+                err = true;
+                return NULL;
+            }
+        } else {
+            const uint64_t buf_bits = (uint64_t)sztmp * 8;
+            if (unlikely(bm->bits != buf_bits)) {
+                err = true;
+                return NULL;
+            }
+        }
+
+        if (unlikely(bm->n2 > 63)) {
+            err = true;
+            return NULL;
+        }
+        if (bm->n2 != 0) {
+            const uint64_t mod_bits = (1ULL << bm->n2);
+            if (unlikely(bm->bits < mod_bits)) {
+                err = true;
+                return NULL;
+            }
+        }
         if (bloom_validate_integrity(bm) != 0) {
             err = true;
             return NULL;
