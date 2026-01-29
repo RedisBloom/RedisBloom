@@ -47,4 +47,4 @@ RUN uv venv --python=3.11 /opt/.venv
 ENV VIRTUAL_ENV=/opt/.venv
 ENV PATH="/opt/.venv/bin:${PATH}"
 COPY requierments_docker.txt /workspace/requierments.txt
-RUN uv pip install -r requierments.txt
+RUN CC=gcc CXX=g++ uv pip install -r requierments.txt
