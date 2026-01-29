@@ -51,7 +51,7 @@ jobs:
     needs: [prepare-values]
     with:
       arch: x64
-      os: bionic focal jammy rocky8 rocky9 bullseye amazonlinux2 mariner2 azurelinux3
+      os: bionic focal jammy rocky8 rocky9 bullseye amazonlinux2 mariner2 azurelinux3 alpine
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
       beta-version: ${{needs.prepare-values.outputs.beta-version}}
     secrets: inherit
@@ -60,6 +60,7 @@ jobs:
     needs: [prepare-values]
     with:
       arch: arm64
+      os: bionic focal jammy rocky9 azurelinux3 alpine
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
       beta-version: ${{needs.prepare-values.outputs.beta-version}}
     secrets: inherit
@@ -67,24 +68,6 @@ jobs:
     uses: ./.github/workflows/flow-macos.yml
     needs: [prepare-values]
     with:
-      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
-      beta-version: ${{needs.prepare-values.outputs.beta-version}}
-    secrets: inherit
-  alpine:
-    uses: ./.github/workflows/flow-linux.yml
-    needs: [prepare-values]
-    with:
-      arch: x64
-      os: alpine
-      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
-      beta-version: ${{needs.prepare-values.outputs.beta-version}}
-    secrets: inherit
-  alpine-arm64:
-    uses: ./.github/workflows/flow-linux.yml
-    needs: [prepare-values]
-    with:
-      arch: arm64
-      os: alpine
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
       beta-version: ${{needs.prepare-values.outputs.beta-version}}
     secrets: inherit
@@ -116,7 +99,7 @@ jobs:
     secrets: inherit
   test-summary:
     uses: ./.github/workflows/test-summary.yml
-    needs: [prepare-values, build-linux-x64, build-linux-arm64, macos, alpine, alpine-arm64, linux-valgrind, linux-sanitizer]
+    needs: [prepare-values, build-linux-x64, build-linux-arm64, macos, linux-valgrind, linux-sanitizer]
     if: always() && (github.event_name == 'schedule' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.send-slack-message == true))
     with:
       redis-ref: ${{ needs.prepare-values.outputs.redis-ref }}
