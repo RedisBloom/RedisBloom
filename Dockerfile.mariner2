@@ -1,0 +1,21 @@
+FROM mcr.microsoft.com/cbl-mariner/base/core:2.0
+
+WORKDIR /workspace
+
+RUN tdnf install -y git ca-certificates
+
+COPY .install /workspace/.install
+RUN cd /workspace/.install && ./install_script.sh
+
+ARG REDIS_REF=unstable
+ARG SANITIZER=
+COPY .install/install_redis.sh /tmp/install_redis.sh
+RUN chmod +x /tmp/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /tmp/install_redis.sh
+
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh
+ENV PATH="/usr/local/bin:${PATH}"
+RUN uv venv --python=3.9 /opt/.venv
+ENV VIRTUAL_ENV=/opt/.venv
+ENV PATH="/opt/.venv/bin:${PATH}"
+COPY requierments_docker.txt /workspace/requierments.txt
+RUN uv pip install -r requierments.txt

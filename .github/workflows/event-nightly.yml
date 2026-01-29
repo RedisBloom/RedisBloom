@@ -46,25 +46,20 @@ jobs:
           
           echo "beta-version=${BETA_VERSION}" >> $GITHUB_OUTPUT
           echo "Generated beta version: ${BETA_VERSION}"
-  build-linux-x86:
-    uses: ./.github/workflows/flow-linux-x86.yml
+  build-linux-x64:
+    uses: ./.github/workflows/flow-linux.yml
     needs: [prepare-values]
     with:
+      arch: x64
       os: bionic focal jammy rocky8 rocky9 bullseye amazonlinux2 mariner2 azurelinux3
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
       beta-version: ${{needs.prepare-values.outputs.beta-version}}
     secrets: inherit
-  ubuntu-arm64:
-    uses: ./.github/workflows/flow-ubuntu-arm.yml
+  build-linux-arm64:
+    uses: ./.github/workflows/flow-linux.yml
     needs: [prepare-values]
     with:
-      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
-      beta-version: ${{needs.prepare-values.outputs.beta-version}}
-    secrets: inherit
-  azurelinux3-arm64:
-    uses: ./.github/workflows/flow-azurelinux3-arm64.yml
-    needs: [prepare-values]
-    with:
+      arch: arm64
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
       beta-version: ${{needs.prepare-values.outputs.beta-version}}
     secrets: inherit
@@ -76,25 +71,38 @@ jobs:
       beta-version: ${{needs.prepare-values.outputs.beta-version}}
     secrets: inherit
   alpine:
-    uses: ./.github/workflows/flow-alpine.yml
+    uses: ./.github/workflows/flow-linux.yml
     needs: [prepare-values]
     with:
+      arch: x64
+      os: alpine
+      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+      beta-version: ${{needs.prepare-values.outputs.beta-version}}
+    secrets: inherit
+  alpine-arm64:
+    uses: ./.github/workflows/flow-linux.yml
+    needs: [prepare-values]
+    with:
+      arch: arm64
+      os: alpine
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
       beta-version: ${{needs.prepare-values.outputs.beta-version}}
     secrets: inherit
   linux-valgrind:
-    uses: ./.github/workflows/flow-linux-x86.yml
+    uses: ./.github/workflows/flow-linux.yml
     needs: [prepare-values]
     with:
+      arch: x64
       os: jammy
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
       beta-version: ${{needs.prepare-values.outputs.beta-version}}
       run_valgrind: true
     secrets: inherit
   linux-sanitizer:
-    uses: ./.github/workflows/flow-linux-x86.yml
+    uses: ./.github/workflows/flow-linux.yml
     needs: [prepare-values]
     with:
+      arch: x64
       os: jammy
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
       beta-version: ${{needs.prepare-values.outputs.beta-version}}
@@ -108,7 +116,7 @@ jobs:
     secrets: inherit
   test-summary:
     uses: ./.github/workflows/test-summary.yml
-    needs: [prepare-values, build-linux-x86, ubuntu-arm64, azurelinux3-arm64, macos, alpine, linux-valgrind, linux-sanitizer]
+    needs: [prepare-values, build-linux-x64, build-linux-arm64, macos, alpine, alpine-arm64, linux-valgrind, linux-sanitizer]
     if: always() && (github.event_name == 'schedule' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.send-slack-message == true))
     with:
       redis-ref: ${{ needs.prepare-values.outputs.redis-ref }}
