@@ -99,9 +99,9 @@ jobs:
           OS="${{ inputs.os }}"
           if [ -z "${OS}" ]; then
             if [ "${{ inputs.arch }}" == "arm64" ]; then
-              OS="bionic focal jammy rocky9 azurelinux3"
+              OS="bionic focal jammy rocky9 azurelinux3 amazonlinux2023"
             else
-              OS="bionic focal jammy rocky8 rocky9 bullseye amazonlinux2 mariner2 azurelinux3"
+              OS="bionic focal jammy rocky8 rocky9 bullseye amazonlinux2 amazonlinux2023 mariner2 azurelinux3"
             fi
           fi
           MATRIX="["

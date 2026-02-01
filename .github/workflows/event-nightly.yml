@@ -51,7 +51,7 @@ jobs:
     needs: [prepare-values]
     with:
       arch: x64
-      os: bionic focal jammy rocky8 rocky9 bullseye amazonlinux2 mariner2 azurelinux3 alpine
+      os: bionic focal jammy rocky8 rocky9 bullseye amazonlinux2 amazonlinux2023 mariner2 azurelinux3 alpine
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
       beta-version: ${{needs.prepare-values.outputs.beta-version}}
     secrets: inherit
@@ -60,7 +60,7 @@ jobs:
     needs: [prepare-values]
     with:
       arch: arm64
-      os: bionic focal jammy rocky9 azurelinux3 alpine
+      os: bionic focal jammy rocky9 azurelinux3 amazonlinux2023 alpine
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
       beta-version: ${{needs.prepare-values.outputs.beta-version}}
     secrets: inherit
