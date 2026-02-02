@@ -25,24 +25,16 @@ jobs:
   build-linux-x64:
     uses: ./.github/workflows/flow-linux.yml
     needs: [prepare-values]
-    strategy:
-      fail-fast: false
-      matrix: 
-        redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
     with:
       arch: x64
-      redis-ref: ${{ matrix.redis-ref }}
+      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
     secrets: inherit
   build-linux-arm64:
     uses: ./.github/workflows/flow-linux.yml
     needs: [prepare-values]
-    strategy:
-      fail-fast: false
-      matrix: 
-        redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
     with:
       arch: arm64
-      redis-ref: ${{ matrix.redis-ref }}
+      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
     secrets: inherit
   macos:
     uses: ./.github/workflows/flow-macos.yml
@@ -53,27 +45,19 @@ jobs:
   linux-valgrind:
     uses: ./.github/workflows/flow-linux.yml
     needs: [prepare-values]
-    strategy:
-      fail-fast: false
-      matrix: 
-        redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
     with:
       arch: x64
       os: jammy
-      redis-ref: ${{ matrix.redis-ref }}
+      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
       run_valgrind: true
     secrets: inherit
   linux-sanitizer:
     uses: ./.github/workflows/flow-linux.yml
     needs: [prepare-values]
-    strategy:
-      fail-fast: false
-      matrix: 
-        redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
     with:
       arch: x64
       os: jammy
-      redis-ref: ${{ matrix.redis-ref }}
+      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
       run_sanitizer: true
     secrets: inherit
   spellcheck:
