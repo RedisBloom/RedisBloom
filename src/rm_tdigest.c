@@ -13,6 +13,7 @@
 #include "common.h"
 
 #include <math.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <strings.h>
 #include <stdbool.h>
@@ -873,11 +874,27 @@ void *TDigestRdbLoad(RedisModuleIO *rdb, int encver) {
     const double compression = LoadDouble_IOError(rdb, err, NULL);
     td_histogram_t *tdigest = td_new(compression);
     errdefer(err, td_free(tdigest));
+    if (tdigest == NULL) {
+        err = true;
+        return NULL;
+    }
+    const int allocated_cap = tdigest->cap;
     tdigest->min = LoadDouble_IOError(rdb, err, NULL);
     tdigest->max = LoadDouble_IOError(rdb, err, NULL);
 
     // cap is the total size of nodes
-    tdigest->cap = LoadSigned_IOError(rdb, err, NULL);
+    const int64_t loaded_cap64 = LoadSigned_IOError(rdb, err, NULL);
+    if (loaded_cap64 <= 0 || loaded_cap64 > INT_MAX) {
+        err = true;
+        return NULL;
+    }
+    const int loaded_cap = (int)loaded_cap64;
+    // `td_new(compression)` allocates arrays sized to `allocated_cap`. Reject crafted payloads
+    // which attempt to desync `cap` from the allocated arrays.
+    if (loaded_cap != allocated_cap) {
+        err = true;
+        return NULL;
+    }
 
     // merged_nodes is the number of merged nodes at the front of nodes.
     tdigest->merged_nodes = LoadSigned_IOError(rdb, err, NULL);
@@ -891,7 +908,9 @@ void *TDigestRdbLoad(RedisModuleIO *rdb, int encver) {
     tdigest->merged_weight = LoadDouble_IOError(rdb, err, NULL);
     tdigest->unmerged_weight = LoadDouble_IOError(rdb, err, NULL);
 
-    if (tdigest->merged_nodes < 0 || tdigest->merged_nodes > tdigest->cap) {
+    if (tdigest->merged_nodes < 0 || tdigest->unmerged_nodes < 0 ||
+        tdigest->merged_nodes > allocated_cap || tdigest->unmerged_nodes > allocated_cap ||
+        tdigest->merged_nodes + tdigest->unmerged_nodes > allocated_cap) {
         err = true;
         return NULL;
     }
