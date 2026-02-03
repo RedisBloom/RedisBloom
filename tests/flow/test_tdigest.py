@@ -974,3 +974,53 @@ class testTDigest:
         self.cmd('FLUSHALL')
         rdb_payload = b'\x07\x81L2\x12\xf96\x0f\x10\x00\x04\x00\x00\x00\x00\x00\x00(@\x04\x00\x00\x00\x00\x00\x00\xf0?\x04\x00\x00\x00\x00\x00\x00\xf0?\x02\x01\x02@a\x02\x01\x02\x01\x04\x00\x00\x00\x00\x00\x00\xf0?\x04\x00\x00\x00\x00\x00\x00\xf0?\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04CCCCCCCC\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x00\xff\x0c\x008\x9c\x969\x91:\xcc5'
         self.env.expect('RESTORE', "key", 0, rdb_payload, 'REPLACE').error().contains('Bad data format')
+
+    def test_save_load_single_observation(self):
+        """
+        Test for bug: t-digest with exactly 1 observation loses centroid data after RDB save/load.
+        
+        """
+        self.cmd('FLUSHALL')
+        test_value = 37.069
+        
+        # Create a t-digest with exactly 1 observation
+        key = "single_obs{1}"
+        self.assertOk(self.cmd("tdigest.create", key))
+        self.assertOk(self.cmd("tdigest.add", key, test_value))
+        
+        # Verify initial state
+        td_info_before = parse_tdigest_info(self.cmd("tdigest.info", key))
+        self.assertEqual(1, int(td_info_before["Observations"]))
+        self.assertEqual(test_value, float(self.cmd("tdigest.min", key)))
+        self.assertEqual(test_value, float(self.cmd("tdigest.max", key)))
+        
+        # Save and reload
+        self.assertEqual(True, self.cmd("SAVE"))
+        self.restart_and_reload()
+        
+        # Verify key exists after reload
+        self.assertEqual(1, self.cmd("EXISTS", key))
+        
+        # Verify min/max are still correct (these are saved separately)
+        self.assertEqual(test_value, float(self.cmd("tdigest.min", key)))
+        self.assertEqual(test_value, float(self.cmd("tdigest.max", key)))
+        
+        # Verify observations count is preserved
+        td_info_after = parse_tdigest_info(self.cmd("tdigest.info", key))
+        self.assertEqual(1, int(td_info_after["Observations"]))
+        
+        # THE CRITICAL TEST: Merge to a new key and verify data is preserved
+        # This is where the bug manifests - if centroid data was lost, merged result will be NaN
+        self.assertOk(self.cmd("tdigest.merge", "merged_single{1}", "1", key))
+        
+        # Verify the merged key has the correct min value (not NaN)
+        # If this fails with 'nan', centroid data was lost after RDB load
+        merged_min = self.cmd("tdigest.min", "merged_single{1}")
+        self.env.assertNotEqual(merged_min, 'nan')
+        self.assertEqual(test_value, float(merged_min))
+        
+        # Also verify quantile works correctly
+        quantile_result = self.cmd("tdigest.quantile", "merged_single{1}", 0.5)
+        self.env.assertNotEqual(quantile_result[0], 'nan')
+        self.assertEqual(test_value, float(quantile_result[0]))
+
