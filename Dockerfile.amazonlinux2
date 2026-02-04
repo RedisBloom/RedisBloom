@@ -5,14 +5,9 @@ WORKDIR /workspace
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN yum update -y
-RUN yum install -y wget git which devtoolset-11-gcc devtoolset-11-gcc-c++ devtoolset-11-make \
+RUN yum install -y wget git make which devtoolset-11-gcc devtoolset-11-gcc-c++ devtoolset-11-make \
   rsync python3 unzip tar python3-devel python3-pip awscli libffi-devel clang openssl11 openssl11-devel
-
-RUN source /opt/rh/devtoolset-11/enable
-RUN cp /opt/rh/devtoolset-11/enable /etc/profile.d/scl-devtoolset-11.sh
 RUN ln -s `which openssl11` /usr/bin/openssl
-
-
 
 ENV PATH="/opt/rh/devtoolset-11/root/usr/bin:${PATH}"
 ENV LD_LIBRARY_PATH="/opt/rh/devtoolset-11/root/usr/lib64:${LD_LIBRARY_PATH}"
