@@ -2,22 +2,31 @@ FROM amazonlinux:2
 
 WORKDIR /workspace
 
-RUN yum install -y git
+ENV DEBIAN_FRONTEND=noninteractive
 
-COPY .install /workspace/.install
-RUN cd /workspace/.install && ./install_script.sh
+RUN yum update -y
+RUN yum install -y wget git which devtoolset-11-gcc devtoolset-11-gcc-c++ devtoolset-11-make \
+  rsync python3 unzip tar python3-devel python3-pip awscli libffi-devel clang openssl11 openssl11-devel
+
+RUN source /opt/rh/devtoolset-11/enable
+RUN cp /opt/rh/devtoolset-11/enable /etc/profile.d/scl-devtoolset-11.sh
+RUN ln -s `which openssl11` /usr/bin/openssl
+
+
 
 ENV PATH="/opt/rh/devtoolset-11/root/usr/bin:${PATH}"
 ENV LD_LIBRARY_PATH="/opt/rh/devtoolset-11/root/usr/lib64:${LD_LIBRARY_PATH}"
 
+COPY .install /workspace/.install
+
 ARG REDIS_REF=unstable
 ARG SANITIZER=
-COPY .install/install_redis.sh /tmp/install_redis.sh
-RUN chmod +x /tmp/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /tmp/install_redis.sh
+RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
+
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh
 ENV PATH="/usr/local/bin:${PATH}"
-RUN uv venv --python=3.9 /opt/.venv
+RUN uv venv --python=3.11 /opt/.venv
 ENV VIRTUAL_ENV=/opt/.venv
 ENV PATH="/opt/.venv/bin:${PATH}"
 COPY requirements_docker.txt /workspace/requirements.txt

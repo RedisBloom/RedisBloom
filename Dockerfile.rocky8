@@ -4,20 +4,24 @@ WORKDIR /workspace
 
 RUN dnf install -y git
 
-COPY .install /workspace/.install
-RUN cd /workspace/.install && ./install_script.sh
+RUN yum -y install epel-release
+RUN yum -y install gcc make cmake3 git openssl-devel bzip2-devel libffi-devel zlib-devel wget scl-utils which gcc-toolset-11-gcc gcc-toolset-11-gcc-c++ gcc-toolset-11-libatomic-devel
+RUN yum groupinstall "Development Tools" -y
+RUN cp /opt/rh/gcc-toolset-11/enable /etc/profile.d/gcc-toolset-11.sh
 
 ENV PATH="/opt/rh/gcc-toolset-11/root/usr/bin:${PATH}"
 ENV LD_LIBRARY_PATH="/opt/rh/gcc-toolset-11/root/usr/lib64:${LD_LIBRARY_PATH}"
 
+COPY .install /workspace/.install
+
 ARG REDIS_REF=unstable
 ARG SANITIZER=
-COPY .install/install_redis.sh /tmp/install_redis.sh
-RUN chmod +x /tmp/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /tmp/install_redis.sh
+RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
+
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh
 ENV PATH="/usr/local/bin:${PATH}"
-RUN uv venv --python=3.9 /opt/.venv
+RUN uv venv --python=3.11 /opt/.venv
 ENV VIRTUAL_ENV=/opt/.venv
 ENV PATH="/opt/.venv/bin:${PATH}"
 

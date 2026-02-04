@@ -2,19 +2,18 @@ FROM mcr.microsoft.com/cbl-mariner/base/core:2.0
 
 WORKDIR /workspace
 
-RUN tdnf install -y git ca-certificates
+RUN tdnf install --noplugins --skipsignature -y ca-certificates git build-essential wget tar openssl-devel cmake python3 python3-pip which unzip
 
 COPY .install /workspace/.install
-RUN cd /workspace/.install && ./install_script.sh
 
 ARG REDIS_REF=unstable
 ARG SANITIZER=
-COPY .install/install_redis.sh /tmp/install_redis.sh
-RUN chmod +x /tmp/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /tmp/install_redis.sh
+RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
+
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh
 ENV PATH="/usr/local/bin:${PATH}"
-RUN uv venv --python=3.9 /opt/.venv
+RUN uv venv --python=3.11 /opt/.venv
 ENV VIRTUAL_ENV=/opt/.venv
 ENV PATH="/opt/.venv/bin:${PATH}"
 COPY requirements_docker.txt /workspace/requirements.txt
