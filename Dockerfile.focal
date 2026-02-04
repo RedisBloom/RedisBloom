@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update -qq \
     && apt-get update \
     && apt upgrade -yqq \
-    && apt install -yqq wget make clang-format gcc python3 python3-venv python3-pip lcov git openssl libssl-dev \
+    && apt install -yqq wget make clang-format gcc lcov git openssl libssl-dev \
     unzip rsync build-essential gcc-10 g++-10 cargo libclang-dev clang curl cmake jq automake libtool \
     && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 60 --slave /usr/bin/g++ g++ /usr/bin/g++-10
 
