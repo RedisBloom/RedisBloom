@@ -5,20 +5,12 @@ WORKDIR /workspace
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN yum update -y
-# devtoolset-11 is only available on x86_64, not ARM64
-RUN yum install -y wget git make which gcc gcc-c++ \
-    rsync unzip tar awscli libffi-devel clang openssl11 openssl11-devel python3-devel && \
-    if [ "$(uname -m)" = "x86_64" ]; then \
-    yum install -y devtoolset-11-gcc devtoolset-11-gcc-c++ devtoolset-11-make; \
-    fi
+RUN yum install -y wget git make which devtoolset-11-gcc devtoolset-11-gcc-c++ devtoolset-11-make \
+  rsync unzip tar awscli libffi-devel clang openssl11 openssl11-devel
 RUN ln -s `which openssl11` /usr/bin/openssl
 
-RUN if [ -d "/opt/rh/devtoolset-11/root/usr/bin" ]; then \
-    ln -sf /opt/rh/devtoolset-11/root/usr/bin/gcc /usr/local/bin/gcc && \
-    ln -sf /opt/rh/devtoolset-11/root/usr/bin/g++ /usr/local/bin/g++ && \
-    ln -sf /opt/rh/devtoolset-11/root/usr/bin/cc /usr/local/bin/cc; \
-    fi
-ENV PATH="/usr/local/bin:${PATH}"
+ENV PATH="/opt/rh/devtoolset-11/root/usr/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/opt/rh/devtoolset-11/root/usr/lib64:${LD_LIBRARY_PATH}"
 
 COPY .install /workspace/.install
 
