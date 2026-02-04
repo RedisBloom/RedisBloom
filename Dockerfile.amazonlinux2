@@ -13,7 +13,7 @@ RUN sed -i 's/mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/CentOS-SCLo-scl-rh.re
 RUN sed -i 's/#baseurl=http:\/\/mirror/baseurl=http:\/\/vault/g' /etc/yum.repos.d/CentOS-SCLo-scl-rh.repo # Enable a working baseurl
 
 RUN yum install -y wget git make which devtoolset-11-gcc devtoolset-11-gcc-c++ devtoolset-11-make \
-  rsync unzip tar awscli libffi-devel clang openssl11 openssl11-devel cmake3
+  rsync unzip tar awscli libffi-devel clang openssl11 openssl11-devel cmake
 RUN ln -s `which openssl11` /usr/bin/openssl
 
 RUN source /opt/rh/devtoolset-11/enable
