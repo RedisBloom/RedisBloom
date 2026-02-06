@@ -1,0 +1,39 @@
+FROM mcr.microsoft.com/azurelinux/base/core:3.0
+
+WORKDIR /workspace
+
+RUN tdnf -y update && \
+    tdnf install -y \
+    git \
+    wget \
+    curl \
+    gcc \
+    g++ \
+    make \
+    cmake \
+    libffi-devel \
+    openssl-devel \
+    build-essential \
+    zlib-devel \
+    bzip2-devel \
+    readline-devel \
+    which \
+    unzip \
+    jq \
+    ca-certificates \
+    tar
+
+COPY .install /workspace/.install
+
+ARG REDIS_REF=unstable
+ARG SANITIZER=
+RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
+
+
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh
+ENV PATH="/usr/local/bin:${PATH}"
+RUN uv venv --python=3.11 /opt/.venv
+ENV VIRTUAL_ENV=/opt/.venv
+ENV PATH="/opt/.venv/bin:${PATH}"
+COPY requirements_docker.txt /workspace/requirements.txt
+RUN uv pip install -r requirements.txt
