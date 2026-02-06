@@ -1,0 +1,37 @@
+FROM ubuntu:22.04
+
+WORKDIR /workspace
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    make \
+    gcc \
+    g++ \
+    gdb \
+    clang \
+    valgrind \
+    git \
+    jq \
+    libssl-dev \
+    autoconf \
+    automake \
+    libtool \
+    cmake \
+    curl \
+    libblocksruntime-dev
+
+COPY .install /workspace/.install
+
+ARG REDIS_REF=unstable
+ARG SANITIZER=
+RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
+
+
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh
+ENV PATH="/usr/local/bin:${PATH}"
+RUN uv venv --python=3.11 /opt/.venv
+ENV VIRTUAL_ENV=/opt/.venv
+ENV PATH="/opt/.venv/bin:${PATH}"
+COPY requirements_docker.txt /workspace/requirements.txt
+RUN uv pip install -r requirements.txt

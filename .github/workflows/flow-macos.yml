@@ -81,7 +81,7 @@ jobs:
         run: |
           OS="${{ inputs.os }}"
           if [ -z "${OS}" ]; then
-            OS='["macos-14", "macos-15"]'
+            OS='["macos-14", "macos-15", "macos-26"]'
           else
             OS='["${OS}"]'
           fi
@@ -150,9 +150,9 @@ jobs:
         with:
           beta-version: ${{ inputs.beta-version }}
       - name: Upload artifacts to S3
-        uses: ./.github/actions/upload-artifacts-to-s3
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          github-ref: ${{ github.ref }}
-          beta-version: ${{ inputs.beta-version }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          GITHUB_REF: ${{ github.ref }}
+          BETA_VERSION: ${{ inputs.beta-version }}
+        run: ./sbin/upload-artifacts-s3
