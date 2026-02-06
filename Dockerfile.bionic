@@ -1,0 +1,39 @@
+FROM ubuntu:18.04
+
+WORKDIR /workspace
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt update -qq \
+    && apt upgrade -yqq \
+    && apt dist-upgrade -yqq \
+    && apt install -yqq software-properties-common unzip rsync \
+    && add-apt-repository ppa:ubuntu-toolchain-r/test -y \
+    && apt update \
+    && apt install -yqq build-essential wget curl make gcc-10 g++-10 openssl libssl-dev cargo binfmt-support \
+    lsb-core libclang-dev clang zlib1g-dev jq automake libtool git \
+    && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 60 --slave /usr/bin/g++ g++ /usr/bin/g++-10
+
+RUN wget https://cmake.org/files/v3.28/cmake-3.28.0.tar.gz \
+    && tar -xzvf cmake-3.28.0.tar.gz \
+    && cd cmake-3.28.0 \
+    && ./configure \
+    && make -j$(nproc) \
+    && make install \
+    && cd .. \
+    && rm -rf cmake-3.28.0 cmake-3.28.0.tar.gz \
+    && ln -sf /usr/local/bin/cmake /usr/bin/cmake
+
+COPY .install /workspace/.install
+
+ARG REDIS_REF=unstable
+ARG SANITIZER=
+RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
+
+
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh
+ENV PATH="/usr/local/bin:${PATH}"
+RUN uv venv --python=3.11 /opt/.venv
+ENV VIRTUAL_ENV=/opt/.venv
+ENV PATH="/opt/.venv/bin:${PATH}"
+COPY requirements_docker.txt /workspace/requirements.txt
+RUN uv pip install -r requirements.txt
