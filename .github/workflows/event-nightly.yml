@@ -3,6 +3,7 @@ name: Event Nightly
 permissions:
   id-token: write
   contents: read
+  actions: read
 
 on:
   push:
@@ -19,6 +20,7 @@ on:
         description: 'Redis ref to checkout'
         required: true
         default: 'unstable'
+
 jobs:
   prepare-values:
     runs-on: ubuntu-latest
