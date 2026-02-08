@@ -1,0 +1,54 @@
+FROM alpine:3
+
+WORKDIR /workspace
+
+RUN apk add --no-cache \
+    bash \
+    make \
+    libtool \
+    tar \
+    cmake \
+    python3 \
+    python3-dev \
+    py3-pip \
+    py3-psutil \
+    py3-numpy \
+    gcc \
+    git \
+    curl \
+    build-base \
+    autoconf \
+    automake \
+    py3-cryptography \
+    linux-headers \
+    musl-dev \
+    libffi-dev \
+    openssl-dev \
+    openssh \
+    py-virtualenv \
+    clang18-libclang \
+    gcompat \
+    libstdc++ \
+    libgcc \
+    g++ \
+    openblas-dev \
+    xsimd \
+    xz \
+    bsd-compat-headers \
+    clang18 \
+    jq
+
+COPY .install /workspace/.install
+
+ARG REDIS_REF=unstable
+ARG SANITIZER=
+RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
+
+
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh
+ENV PATH="/usr/local/bin:${PATH}"
+RUN uv venv --python=$(which python3) --system-site-packages /opt/.venv
+ENV VIRTUAL_ENV=/opt/.venv
+ENV PATH="/opt/.venv/bin:${PATH}"
+COPY requirements_docker.txt /workspace/requirements.txt
+RUN uv pip install -r requirements.txt
