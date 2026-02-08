@@ -1,0 +1,28 @@
+FROM rockylinux:9
+
+WORKDIR /workspace
+
+RUN dnf install -y git
+
+RUN yum -y install epel-release
+RUN yum -y install gcc make cmake3 wget openssl-devel bzip2-devel libffi-devel zlib-devel wget scl-utils which gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ gcc-toolset-13-libatomic-devel
+RUN yum groupinstall "Development Tools" -y
+RUN cp /opt/rh/gcc-toolset-13/enable /etc/profile.d/gcc-toolset-13.sh
+
+ENV PATH="/opt/rh/gcc-toolset-13/root/usr/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/opt/rh/gcc-toolset-13/root/usr/lib64:${LD_LIBRARY_PATH}"
+
+COPY .install /workspace/.install
+
+ARG REDIS_REF=unstable
+ARG SANITIZER=
+RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
+
+
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh
+ENV PATH="/usr/local/bin:${PATH}"
+RUN uv venv --python=3.11 /opt/.venv
+ENV VIRTUAL_ENV=/opt/.venv
+ENV PATH="/opt/.venv/bin:${PATH}"
+COPY requirements_docker.txt /workspace/requirements.txt
+RUN uv pip install -r requirements.txt
