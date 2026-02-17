@@ -13,7 +13,7 @@ on:
       redis-ref:
         description: 'Redis ref to checkout'
         required: true
-        default: 'unstable'
+        default: '8.6'
 
 jobs:
   prepare-values:
@@ -24,7 +24,7 @@ jobs:
       - name: set env
         id: set-env
         run: |
-          echo "redis-ref=${{ inputs.redis-ref || 'unstable' }}" >> $GITHUB_OUTPUT
+          echo "redis-ref=${{ inputs.redis-ref || '8.6' }}" >> $GITHUB_OUTPUT
   build-linux-x64:
     uses: ./.github/workflows/flow-linux.yml
     needs: [prepare-values]
