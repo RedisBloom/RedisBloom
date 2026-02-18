@@ -3,7 +3,7 @@
 tdnf install -y build-essential wget tar openssl-devel cmake python3 python3-pip which unzip
 git config --global --add safe.directory $PWD
 
-pip install --upgrade setuptools
+pip install --upgrade "setuptools<81"
 pip install -r tests/flow/requirements.txt
 
 pip install -r .install/build_package_requirements.txt  # required for packing the module (todo: move to pack.sh after refactor)
