@@ -1,0 +1,131 @@
+name: Report Workflow Results
+
+on:
+  workflow_run:
+    workflows: ["Event CI", "Event Nightly", "Event Tag"]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+  statuses: write   # This is required for post commit status
+
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+#    if: ${{ github.event.workflow_run.event == 'schedule' && github.event.workflow_run.head_branch == 'master' }}
+    env:
+      SLACK_HOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+    steps:
+      - name: Build report text
+        id: build
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Fetch jobs for this workflow run
+            const jobsResp = await github.rest.actions.listJobsForWorkflowRun({
+              owner,
+              repo,
+              run_id: run.id,
+              per_page: 100
+            });
+
+            const jobs = jobsResp.data.jobs || [];
+            const total = jobs.length;
+            const byConclusion = jobs.reduce((acc, j) => {
+              const c = (j.conclusion || j.status || 'unknown').toLowerCase();
+              acc[c] = (acc[c] || 0) + 1;
+              return acc;
+            }, {});
+
+            const failedJobs = jobs.filter(j => (j.conclusion || '').toLowerCase() === 'failure');
+            const cancelledJobs = jobs.filter(j => (j.conclusion || '').toLowerCase() === 'cancelled');
+            const successCount = byConclusion['success'] || 0;
+            const failureCount = byConclusion['failure'] || 0;
+            const cancelledCount = byConclusion['cancelled'] || 0;
+
+            function formatDuration(ms) {
+              if (!ms || ms < 0) return 'n/a';
+              const sec = Math.floor(ms / 1000);
+              const h = Math.floor(sec / 3600);
+              const m = Math.floor((sec % 3600) / 60);
+              const s = sec % 60;
+              const parts = [];
+              if (h) parts.push(`${h}h`);
+              if (m) parts.push(`${m}m`);
+              parts.push(`${s}s`);
+              return parts.join(' ');
+            }
+
+            const lines = [];
+            const statusEmoji = failureCount > 0 ? ':x:' : (cancelledCount > 0 ? ':warning:' : ':white_check_mark:');
+            const title = `${statusEmoji} ${run.name} report`;
+            const ref = run.head_branch || run.head_branch === '' ? run.head_branch : (run.head_branch || 'n/a');
+            const sha = (run.head_sha || '').slice(0, 8);
+            const runUrl = run.html_url;
+
+            lines.push(`*${title}*`);
+            lines.push(`Repository: ${owner}/${repo}`);
+            lines.push(`Ref: ${ref} (${sha})`);
+            if (run.display_title) {
+              lines.push(`Title: ${run.display_title}`);
+            }
+            lines.push(`Run: ${runUrl}`);
+            lines.push(`Overall conclusion: ${(run.conclusion || 'unknown').toUpperCase()}`);
+            lines.push(`Summary: success ${successCount}/${total}, failure ${failureCount}, cancelled ${cancelledCount}`);
+
+            if (failedJobs.length > 0) {
+              lines.push('');
+              lines.push('*Failed jobs:*');
+              for (const j of failedJobs) {
+                const started = j.started_at ? new Date(j.started_at) : null;
+                const completed = j.completed_at ? new Date(j.completed_at) : null;
+                const duration = started && completed ? formatDuration(completed - started) : 'n/a';
+                lines.push(`• ${j.name} (${duration}) — <${j.html_url}|logs>`);
+              }
+            }
+
+            if (cancelledJobs.length > 0) {
+              lines.push('');
+              lines.push('*Cancelled jobs:*');
+              for (const j of cancelledJobs) {
+                const started = j.started_at ? new Date(j.started_at) : null;
+                const completed = j.completed_at ? new Date(j.completed_at) : null;
+                const duration = started && completed ? formatDuration(completed - started) : 'n/a';
+                lines.push(`• ${j.name} (${duration}) — <${j.html_url}|logs>`);
+              }
+            }
+
+            if (failedJobs.length === 0 && cancelledJobs.length === 0) {
+              lines.push('');
+              lines.push('All jobs succeeded.');
+            }
+
+            const text = lines.join('\n');
+            core.setOutput('text', text);
+      - name: publish to summary
+        if: ${{ env.SLACK_HOOK != '' }}
+        run: |
+          echo "text=${{ steps.build.outputs.text }}" >> $GITHUB_STEP_SUMMARY
+      - name: Post to Slack (webhook)
+        if: ${{ env.SLACK_HOOK != '' }}
+        env:
+          TEXT: ${{ steps.build.outputs.text }}
+        run: |
+          set -euo pipefail
+          HOOK="$SLACK_HOOK"
+          if [ -z "$HOOK" ]; then
+            echo "Slack webhook is not configured. Skipping notification." >&2
+            exit 0
+          fi
+          # Escape backslashes, quotes, and newlines for JSON
+          esc_text=$(printf '%s' "$TEXT" | python3 -c 'import json,sys; print(json.dumps({"text": sys.stdin.read()}))')
+          # esc_text is a full JSON object like {"text":"..."}
+          curl -sS -X POST -H 'Content-type: application/json' --data "$esc_text" "$HOOK"
+
+
