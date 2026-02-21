@@ -365,35 +365,29 @@ static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
         size_t arglen;
         const char *argstr = RedisModule_StringPtrLen(argv[cur_pos], &arglen);
 
-        switch (tolower(*argstr)) {
-        case 'i':
+        if (arglen == 5 && !strncasecmp(argstr, "items", arglen)) {
             items_index = ++cur_pos;
-            break;
-
-        case 'e':
+        } else if (arglen == 5 && !strncasecmp(argstr, "error", arglen)) {
             if (++cur_pos == argc) {
                 return RedisModule_WrongArity(ctx);
             }
-            if (tolower(*(argstr + 1)) == 'r') { // error rate
-                if (RedisModule_StringToDouble(argv[cur_pos++], &options.error_rate) !=
-                        REDISMODULE_OK ||
-                    !isConfigValid(options.error_rate, rm_config.bf_error_rate)) {
-                    return RedisModule_ReplyWithError(ctx, "Bad error rate");
-                } else if (options.error_rate > BF_ERROR_RATE_CAP) {
-                    options.error_rate = BF_ERROR_RATE_CAP;
-                    RedisModule_Log(ctx, "warning", "Error rate is capped at %f",
-                                    BF_ERROR_RATE_CAP);
-                }
-            } else { // expansion
-                if (RedisModule_StringToLongLong(argv[cur_pos++], &options.expansion) !=
-                        REDISMODULE_OK ||
-                    !isConfigValid(options.expansion, rm_config.bf_expansion_factor)) {
-                    return RedisModule_ReplyWithError(ctx, "Bad expansion");
-                }
+            if (RedisModule_StringToDouble(argv[cur_pos++], &options.error_rate) != REDISMODULE_OK ||
+                !isConfigValid(options.error_rate, rm_config.bf_error_rate)) {
+                return RedisModule_ReplyWithError(ctx, "Bad error rate");
+            } else if (options.error_rate > BF_ERROR_RATE_CAP) {
+                options.error_rate = BF_ERROR_RATE_CAP;
+                RedisModule_Log(ctx, "warning", "Error rate is capped at %f", BF_ERROR_RATE_CAP);
             }
-            break;
-
-        case 'c':
+        } else if (arglen == 9 && !strncasecmp(argstr, "expansion", arglen)) {
+            if (++cur_pos == argc) {
+                return RedisModule_WrongArity(ctx);
+            }
+            if (RedisModule_StringToLongLong(argv[cur_pos++], &options.expansion) !=
+                    REDISMODULE_OK ||
+                !isConfigValid(options.expansion, rm_config.bf_expansion_factor)) {
+                return RedisModule_ReplyWithError(ctx, "Bad expansion");
+            }
+        } else if (arglen == 8 && !strncasecmp(argstr, "capacity", arglen)) {
             if (++cur_pos == argc) {
                 return RedisModule_WrongArity(ctx);
             }
@@ -402,18 +396,13 @@ static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, 
                 !isConfigValid(options.capacity, rm_config.bf_initial_size)) {
                 return RedisModule_ReplyWithError(ctx, "Bad capacity");
             }
-            break;
-
-        case 'n':
-            if (tolower(*(argstr + 2)) == 'c') {
-                options.autocreate = 0;
-            } else {
-                options.nonScaling = BLOOM_OPT_NO_SCALING;
-            }
+        } else if (arglen == 8 && !strncasecmp(argstr, "nocreate", arglen)) {
+            options.autocreate = 0;
             cur_pos++;
-            break;
-
-        default:
+        } else if (arglen == 10 && !strncasecmp(argstr, "nonscaling", arglen)) {
+            options.nonScaling = BLOOM_OPT_NO_SCALING;
+            cur_pos++;
+        } else {
             return RedisModule_ReplyWithError(ctx, "Unknown argument received");
         }
     }

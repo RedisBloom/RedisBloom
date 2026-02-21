@@ -183,6 +183,8 @@ class testRedisBloom():
             env.cmd('bf.insert', 'missingFilter', 'NOCREATE', 'ITEMS', 'foo', 'bar')
         with env.assertResponseError():
             env.cmd('bf.insert', 'missingFilter', 'DONTEXIST', 'NOCREATE')
+        env.expect('bf.insert', 'missingFilter', 'n', 'ITEMS', 'foo').error().contains(
+            'Unknown argument received')
         with env.assertResponseError():
             env.cmd('bf.insert', 'missingFilter')
         with env.assertResponseError():
