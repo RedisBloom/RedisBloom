@@ -1,0 +1,225 @@
+name: Bump Version
+
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to set (format: MAJOR.MINOR.PATCH, e.g., 8.4.8)'
+        required: true
+        type: string
+      skip_nightly_check:
+        description: 'Skip nightly build status check'
+        required: false
+        type: boolean
+        default: false
+      dry_run:
+        description: 'Dry run (do not push changes)'
+        required: false
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version to set (format: MAJOR.MINOR.PATCH, e.g., 8.4.8)'
+        required: true
+        type: string
+      skip_nightly_check:
+        description: 'Skip nightly build status check'
+        required: false
+        type: boolean
+        default: false
+      dry_run:
+        description: 'Dry run (do not push changes)'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: bump-version
+  cancel-in-progress: false
+
+
+jobs:
+  validate-and-check:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    outputs:
+      release_branch: ${{ steps.derive-branch.outputs.release_branch }}
+    steps:
+      - name: Validate version format and derive release branch
+        id: derive-branch
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid version format: $VERSION. Expected format: MAJOR.MINOR.PATCH"
+            exit 1
+          fi
+          echo "Version format validated: $VERSION"
+          RELEASE_BRANCH=$(echo "$VERSION" | cut -d. -f1,2)
+          echo "Derived release branch: $RELEASE_BRANCH"
+          echo "release_branch=$RELEASE_BRANCH" >> $GITHUB_OUTPUT
+      - name: Check nightly build status on release branch
+        if: ${{ !inputs.skip_nightly_check }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ steps.derive-branch.outputs.release_branch }}
+        run: |
+          echo "Checking nightly build status for branch: $BRANCH"
+
+          WORKFLOW_RUNS=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${{ github.repository }}/actions/workflows/event-nightly.yml/runs?branch=$BRANCH&per_page=1" \
+            --jq '.workflow_runs[0]')
+
+          if [ -z "$WORKFLOW_RUNS" ] || [ "$WORKFLOW_RUNS" == "null" ]; then
+            echo "::warning::No nightly workflow runs found for branch $BRANCH"
+            exit 0
+          fi
+
+          STATUS=$(echo "$WORKFLOW_RUNS" | jq -r '.conclusion // "in_progress"')
+          RUN_URL=$(echo "$WORKFLOW_RUNS" | jq -r '.html_url')
+
+          echo "Latest nightly run: $RUN_URL"
+
+          if [ "$STATUS" != "success" ]; then
+            echo "::error::Latest nightly build did not succeed (status: $STATUS). Use 'skip_nightly_check' to override."
+            exit 1
+          fi
+
+          echo "Nightly build passed!"
+
+  bump-version:
+    needs: validate-and-check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate-and-check.outputs.release_branch }}
+          path: release-branch
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if tag already exists
+        working-directory: release-branch
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if git ls-remote --exit-code origin "refs/tags/v$VERSION" >/dev/null 2>&1; then
+            echo "::error::Tag v$VERSION already exists on remote"
+            exit 1
+          fi
+          echo "Tag v$VERSION does not exist, proceeding..."
+
+      - name: Configure Git
+        working-directory: release-branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Set version
+        shell: python
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          import os
+          import re
+          import sys
+          from pathlib import Path
+
+          version = os.environ['VERSION']
+          major, minor, patch = map(int, version.split('.'))
+          version_file = Path('release-branch/src/version.h')
+
+          if not version_file.exists():
+              print(f"::error::Version file not found: {version_file}")
+              sys.exit(1)
+
+          content = version_file.read_text()
+          current = re.search(
+              r'#define REDISTIMESERIES_VERSION_MAJOR (\d+)\n'
+              r'#define REDISTIMESERIES_VERSION_MINOR (\d+)\n'
+              r'#define REDISTIMESERIES_VERSION_PATCH (\d+)',
+              content
+          )
+          print(f"Current version: {current.group(1)}.{current.group(2)}.{current.group(3)}")
+
+          content = re.sub(
+              r'(#define REDISTIMESERIES_VERSION_MAJOR )\d+\n'
+              r'(#define REDISTIMESERIES_VERSION_MINOR )\d+\n'
+              r'(#define REDISTIMESERIES_VERSION_PATCH )\d+',
+              rf'\g<1>{major}\n\g<2>{minor}\n\g<3>{patch}',
+              content
+          )
+          version_file.write_text(content)
+          print(f"Updated to version {major}.{minor}.{patch}")
+
+      - name: Commit version bump
+        working-directory: release-branch
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          git add src/version.h
+          git commit -m "bump version v$VERSION"
+
+      - name: Create annotated tag
+        working-directory: release-branch
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          git tag -a "v$VERSION" -m "Automated bump to v$VERSION"
+
+      - name: Push changes
+        if: ${{ !inputs.dry_run }}
+        working-directory: release-branch
+        env:
+          VERSION: ${{ inputs.version }}
+          RELEASE_BRANCH: ${{ needs.validate-and-check.outputs.release_branch }}
+        run: |
+          git push origin "$RELEASE_BRANCH"
+          git push origin "v$VERSION"
+
+      - name: Verify push
+        if: ${{ !inputs.dry_run }}
+        working-directory: release-branch
+        env:
+          VERSION: ${{ inputs.version }}
+          RELEASE_BRANCH: ${{ needs.validate-and-check.outputs.release_branch }}
+        run: |
+          git ls-remote --exit-code origin "refs/tags/v$VERSION"
+          git ls-remote --exit-code origin "refs/heads/$RELEASE_BRANCH"
+          echo "Verified: tag and branch exist on remote"
+
+      - name: Dry run summary
+        if: ${{ inputs.dry_run }}
+        working-directory: release-branch
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          echo "::notice::DRY RUN - Changes were not pushed"
+          echo "Would have pushed:"
+          echo "  - Commit: bump version v$VERSION"
+          echo "  - Tag: v$VERSION"
+          git log -1 --oneline
+          git tag -l "v$VERSION"
+
+      - name: Summary
+        env:
+          VERSION: ${{ inputs.version }}
+          RELEASE_BRANCH: ${{ needs.validate-and-check.outputs.release_branch }}
+          REF_NAME: ${{ github.ref_name }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          SKIP_NIGHTLY: ${{ inputs.skip_nightly_check }}
+        run: |
+          echo "## Set Version Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: v$VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release Branch**: $RELEASE_BRANCH" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered From**: $REF_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dry Run**: $DRY_RUN" >> $GITHUB_STEP_SUMMARY
+          echo "- **Nightly Check Skipped**: $SKIP_NIGHTLY" >> $GITHUB_STEP_SUMMARY
