@@ -141,21 +141,21 @@ jobs:
               sys.exit(1)
 
           content = version_file.read_text()
-          current = re.search(
-              r'#define REDISTIMESERIES_VERSION_MAJOR (\d+)\n'
-              r'#define REDISTIMESERIES_VERSION_MINOR (\d+)\n'
-              r'#define REDISTIMESERIES_VERSION_PATCH (\d+)',
-              content
-          )
-          print(f"Current version: {current.group(1)}.{current.group(2)}.{current.group(3)}")
 
-          content = re.sub(
-              r'(#define REDISTIMESERIES_VERSION_MAJOR )\d+\n'
-              r'(#define REDISTIMESERIES_VERSION_MINOR )\d+\n'
-              r'(#define REDISTIMESERIES_VERSION_PATCH )\d+',
-              rf'\g<1>{major}\n\g<2>{minor}\n\g<3>{patch}',
-              content
-          )
+          current_major = re.search(r'#define REBLOOM_VERSION_MAJOR (\d+)', content)
+          current_minor = re.search(r'#define REBLOOM_VERSION_MINOR (\d+)', content)
+          current_patch = re.search(r'#define REBLOOM_VERSION_PATCH (\d+)', content)
+
+          if not (current_major and current_minor and current_patch):
+              print(f"::error::Could not parse version from {version_file}")
+              sys.exit(1)
+
+          print(f"Current version: {current_major.group(1)}.{current_minor.group(1)}.{current_patch.group(1)}")
+
+          content = re.sub(r'(#define REBLOOM_VERSION_MAJOR )\d+', rf'\g<1>{major}', content)
+          content = re.sub(r'(#define REBLOOM_VERSION_MINOR )\d+', rf'\g<1>{minor}', content)
+          content = re.sub(r'(#define REBLOOM_VERSION_PATCH )\d+', rf'\g<1>{patch}', content)
+
           version_file.write_text(content)
           print(f"Updated to version {major}.{minor}.{patch}")
 
