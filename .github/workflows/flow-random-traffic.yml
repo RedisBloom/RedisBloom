@@ -104,7 +104,7 @@ jobs:
                 echo "========================================="
                 echo "Running $GEN..."
                 echo "========================================="
-                if ! python3 -m redis_command_generator.$GEN --hosts localhost:6379 --verbose --max_cmd_cnt 200000; then
+                if ! python3 -m redis_command_generator.$GEN --hosts localhost:6379 --verbose --max_cmd_cnt 200000 >> /workspace/random_traffic.txt 2>&1; then
                   echo "ERROR: $GEN failed"
                   EXIT_CODE=1
                 fi
@@ -113,8 +113,7 @@ jobs:
 
               pkill -f redis-server || true
               exit $EXIT_CODE
-            ' 2>&1 | tee random_traffic.txt
-          tail -n 100 random_traffic.txt
+            '
 
       - name: Upload random traffic log
         if: always()
