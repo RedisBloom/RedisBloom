@@ -12,6 +12,11 @@ on:
         required: false
         type: boolean
         default: false
+      job-failures:
+        description: 'Space-separated list of failed upstream job names'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -214,6 +219,20 @@ jobs:
             # Fallback: simple text
             FAILED_OS_SUMMARY="Test results available. Check workflow for details."
             FULL_OS_SUMMARY="Test results available. Check workflow for details."
+          fi
+          
+          # Include upstream job failures in the report
+          JOB_FAILURES=$(echo "${{ inputs.job-failures }}" | xargs)
+          if [ -n "$JOB_FAILURES" ]; then
+            JOB_FAIL_LIST=""
+            for job in $JOB_FAILURES; do
+              JOB_FAIL_LIST+="• *${job}* — ❌ job failed"$'\n'
+            done
+            if [ "$FAILED_OS_SUMMARY" = "✅ All OSs passed successfully!" ]; then
+              FAILED_OS_SUMMARY="$JOB_FAIL_LIST"
+            else
+              FAILED_OS_SUMMARY="${JOB_FAIL_LIST}${FAILED_OS_SUMMARY}"
+            fi
           fi
           
           # Overall summary
