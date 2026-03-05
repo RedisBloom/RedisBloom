@@ -54,10 +54,14 @@ jobs:
           fi
 
   run-random-traffic:
-    name: random-traffic (${{ needs.pick-os.outputs.os }})
+    name: random-traffic (${{ matrix.generator }}, ${{ needs.pick-os.outputs.os }})
     needs: pick-os
     runs-on: ubuntu-latest
     timeout-minutes: ${{ fromJSON(inputs.timeout-minutes || '30') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        generator: [BloomGen, CuckooGen, CmsGen, TopKGen, TDigestGen]
     env:
       DOCKER_IMAGE: redisbloom-${{ needs.pick-os.outputs.os }}:latest
       REDIS_REF: ${{ inputs.redis-ref || 'unstable' }}
@@ -85,7 +89,7 @@ jobs:
             "${DOCKER_IMAGE}" \
             make build
 
-      - name: Run Random Traffic
+      - name: Run Random Traffic - ${{ matrix.generator }}
         run: |
           docker run --rm \
             -v "${GITHUB_WORKSPACE}:/workspace" \
@@ -98,26 +102,17 @@ jobs:
               redis-server --loadmodule ./$MODULE --port 6379 &
               sleep 2
 
-              GENERATORS=("BloomGen" "CuckooGen" "CmsGen" "TopKGen" "TDigestGen")
-              EXIT_CODE=0
-              for GEN in "${GENERATORS[@]}"; do
-                echo "========================================="
-                echo "Running $GEN..."
-                echo "========================================="
-                if ! python3 -m redis_command_generator.$GEN --hosts localhost:6379 --verbose --max_cmd_cnt 1000000 >> /workspace/random_traffic.txt 2>&1; then
-                  echo "ERROR: $GEN failed"
-                  EXIT_CODE=1
-                fi
-                echo ""
-              done
+              echo "========================================="
+              echo "Running ${{ matrix.generator }}..."
+              echo "========================================="
+              python3 -m redis_command_generator.${{ matrix.generator }} --hosts localhost:6379 --verbose --max_cmd_cnt 1000000 2>&1 | tee /workspace/random_traffic.txt
 
               pkill -f redis-server || true
-              exit $EXIT_CODE
             '
 
       - name: Upload random traffic log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: random-traffic-${{ needs.pick-os.outputs.os }}-log
+          name: random-traffic-${{ needs.pick-os.outputs.os }}-${{ matrix.generator }}-log
           path: random_traffic.txt
