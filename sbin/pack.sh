@@ -360,6 +360,10 @@ if [[ $WITH_GITSHA == 1 ]]; then
 	BRANCH="${BRANCH}-${GIT_COMMIT}"
 fi
 
+if [[ -n $BETA_VERSION ]]; then
+	BRANCH="${BRANCH}.${BETA_VERSION}"
+fi
+
 #----------------------------------------------------------------------------------------------
 
 RELEASE_ramp=${PACKAGE_NAME}.$OS-$OSNICK-$ARCH.$SEMVER${VARIANT}.zip
