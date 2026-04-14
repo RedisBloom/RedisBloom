@@ -80,7 +80,7 @@ jobs:
         run: |
           OS="${{ inputs.os }}"
           if [ -z "${OS}" ]; then
-            OS='["macos-14", "macos-15", "macos-26"]'
+            OS='["macos-14", "macos-15", "macos-26", "macos-14-large", "macos-15-intel", "macos-26-intel"]'
           else
             OS='["${OS}"]'
           fi
@@ -126,6 +126,13 @@ jobs:
           ref: ${{ needs.prepare-values.outputs.redis-ref }}
           path: 'redis'
           submodules: recursive
+      - name: Setup macOS 26 SDK
+        if: startsWith(matrix.os, 'macos-26')
+        run: |
+          _SDK="$(xcrun --sdk macosx --show-sdk-path)"
+          echo "SDKROOT=$_SDK" >> $GITHUB_ENV
+          echo "CC=/usr/bin/clang" >> $GITHUB_ENV
+          echo "CXX=/usr/bin/clang++" >> $GITHUB_ENV
       - name: Setup specific
         working-directory: .install
         run: ./install_script.sh
