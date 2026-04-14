@@ -136,11 +136,6 @@ jobs:
       - name: Setup specific
         working-directory: .install
         run: ./install_script.sh
-      - name: Ensure setuptools in venv
-        run: |
-          python3 -m venv venv
-          . venv/bin/activate
-          pip install --upgrade pip setuptools
       - name: Build
         uses: ./.github/actions/build-module-and-redis
       - name: Run Tests

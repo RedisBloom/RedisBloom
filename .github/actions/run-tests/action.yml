@@ -25,6 +25,9 @@ runs:
         echo "source ${GITHUB_WORKSPACE}/venv/bin/activate" >> ~/.bashrc
         echo "source ${GITHUB_WORKSPACE}/venv/bin/activate" >> ~/.zshrc
         . "${GITHUB_WORKSPACE}/venv/bin/activate"
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+          pip install --upgrade pip setuptools
+        fi
         echo ::endgroup::
         echo ::group::Install python dependencies
           ./.install/common_installations.sh
