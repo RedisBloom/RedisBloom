@@ -54,12 +54,13 @@ runs:
     - name: Set the tagged flag
       shell: bash
       id: set-tagged
+      env:
+        REF: ${{ inputs.github-ref }}
       run: |
         # If this is a version tag, then set to false, meaning this
         # is not a production build.
-        export REF="${{ inputs.github-ref }}"
         export PATTERN="refs/tags/v[0-9]+.*"
-        if [[ $REF =~ $PATTERN ]]; then
+        if [[ "$REF" =~ $PATTERN ]]; then
           echo "This is a tagged build"
           echo "TAGGED=1" >> $GITHUB_OUTPUT
         else
