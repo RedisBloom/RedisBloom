@@ -352,8 +352,7 @@ if [[ $WITH_GITSHA == 1 ]]; then
 fi
 
 if [[ -n $BETA_VERSION ]]; then
-	BETA_SUFFIX=$(echo "$BETA_VERSION" | cut -d'.' -f4,5,6)
-	BRANCH="${BRANCH}.${BETA_SUFFIX}"
+	BRANCH="${BRANCH}.${BETA_VERSION}"
 fi
 
 #----------------------------------------------------------------------------------------------
