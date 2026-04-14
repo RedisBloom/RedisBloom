@@ -22,9 +22,9 @@ runs:
         fi
         echo ::group::Activate virtual environment
         python3 -m venv venv
-        echo "source $PWD/venv/bin/activate" >> ~/.bash_profile
-        . venv/bin/activate
-        echo ". venv/bin/activate" >> $HOME/.bash_profile
+        echo "source ${GITHUB_WORKSPACE}/venv/bin/activate" >> ~/.bashrc
+        echo "source ${GITHUB_WORKSPACE}/venv/bin/activate" >> ~/.zshrc
+        . "${GITHUB_WORKSPACE}/venv/bin/activate"
         echo ::endgroup::
         echo ::group::Install python dependencies
           ./.install/common_installations.sh
