@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y build-essential make cmake autoconf aut
 
 COPY .install /workspace/.install
 
-ARG REDIS_REF=8.2
+ARG REDIS_REF=8.6
 ARG SANITIZER=
 RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
 

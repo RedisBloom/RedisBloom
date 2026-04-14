@@ -19,7 +19,7 @@ on:
       redis-ref:
         description: 'Redis ref to checkout'
         required: true
-        default: '8.2'
+        default: '8.6'
       send-slack-message:
         description: 'Send summary message to Slack channel'
         required: false
@@ -35,7 +35,7 @@ jobs:
       - name: set env
         id: set-env
         run: |
-          echo "redis-ref=${{ inputs.redis-ref || '8.2' }}" >> $GITHUB_OUTPUT  # todo change per version/tag
+          echo "redis-ref=${{ inputs.redis-ref || '8.6' }}" >> $GITHUB_OUTPUT  # todo change per version/tag
           
           # Generate unique beta version with date and GitHub run number
           # Format: YYYYMMDD.HHMMSS.RUN_NUMBER (to handle parallel runs and multiple daily runs)

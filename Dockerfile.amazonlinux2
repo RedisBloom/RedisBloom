@@ -29,7 +29,7 @@ ENV LD_LIBRARY_PATH="/opt/rh/devtoolset-11/root/usr/lib64:${LD_LIBRARY_PATH}"
 
 COPY .install /workspace/.install
 
-ARG REDIS_REF=8.2
+ARG REDIS_REF=8.6
 ARG SANITIZER=
 RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
 
