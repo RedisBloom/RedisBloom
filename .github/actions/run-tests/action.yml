@@ -25,11 +25,11 @@ runs:
         echo "source ${GITHUB_WORKSPACE}/venv/bin/activate" >> ~/.bashrc
         echo "source ${GITHUB_WORKSPACE}/venv/bin/activate" >> ~/.zshrc
         . "${GITHUB_WORKSPACE}/venv/bin/activate"
-        if [[ "$(uname -s)" == "Darwin" ]]; then
-          pip install --upgrade pip setuptools
-        fi
         echo ::endgroup::
         echo ::group::Install python dependencies
           ./.install/common_installations.sh
+          if [[ "$(uname -s)" == "Darwin" ]]; then
+            pip install "setuptools<78"
+          fi
         echo ::endgroup::
         make test VG=${{inputs.run_valgrind}} SAN=${{inputs.run_sanitizer}} REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server
