@@ -1,0 +1,6 @@
+setuptools<81
+pip
+jinja2
+ramp-packer
+RLTest == 0.7.5
+numpy<2
