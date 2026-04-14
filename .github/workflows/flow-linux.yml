@@ -18,7 +18,7 @@ on:
         required: true
         default: 'x64'
       os:
-        description: 'OS to build on (space-separated, e.g. "focal jammy rocky9")'
+        description: 'OS to build on (space-separated, e.g. "jammy noble resolute rocky10")'
         type: string
         required: false
         default: ''
@@ -46,7 +46,7 @@ on:
         type: string
         required: true
       os:
-        description: 'OS to build on (space-separated, e.g. "focal jammy rocky9")'
+        description: 'OS to build on (space-separated, e.g. "jammy noble resolute rocky10")'
         type: string
         required: false
         default: ''
@@ -99,9 +99,9 @@ jobs:
           OS="${{ inputs.os }}"
           if [ -z "${OS}" ]; then
             if [ "${{ inputs.arch }}" == "arm64" ]; then
-              OS="bionic focal jammy rocky9 azurelinux3 amazonlinux2023 alpine"
+              OS="bionic focal jammy rocky9 azurelinux3 amazonlinux2023 alpine noble resolute rocky8 rocky10 alma8 alma9 alma10 bullseye bookworm trixie mariner2"
             else
-              OS="bionic focal jammy rocky8 rocky9 bullseye amazonlinux2 amazonlinux2023 mariner2 azurelinux3 alpine"
+              OS="bionic focal jammy rocky8 rocky9 bullseye amazonlinux2 amazonlinux2023 mariner2 azurelinux3 alpine noble resolute rocky10 alma8 alma9 alma10 bookworm trixie"
             fi
           fi
           MATRIX="["
@@ -175,6 +175,8 @@ jobs:
 
       - name: Pack module
         if: ${{ !inputs.run_valgrind && !inputs.run_sanitizer }}
+        env:
+          BETA_VERSION: ${{ inputs.beta-version }}
         run: |
           docker run --rm \
             -v ${{ github.workspace }}:/workspace \
@@ -182,12 +184,14 @@ jobs:
             -e BRANCH=${{ env.BRANCH }} \
             -e VERSION=${{ env.VERSION }} \
             -e TAGGED=${{ env.TAGGED }} \
-            -e BETA_VERSION=${{ inputs.beta-version }} \
+            -e BETA_VERSION="${BETA_VERSION}" \
             ${{ env.DOCKER_IMAGE }} \
             bash -c "git config --global --add safe.directory /workspace && make pack BRANCH=${{ env.TAG_OR_BRANCH }} SHOW=1"
 
       - name: Upload artifacts to S3
         if: ${{ !inputs.run_valgrind && !inputs.run_sanitizer }}
+        env:
+          BETA_VERSION: ${{ inputs.beta-version }}
         run: |
           docker run --rm \
             -v ${{ github.workspace }}:/workspace \
@@ -195,6 +199,6 @@ jobs:
             -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
             -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
             -e GITHUB_REF=${{ github.ref }} \
-            -e BETA_VERSION=${{ inputs.beta-version }} \
+            -e BETA_VERSION="${BETA_VERSION}" \
             ${{ env.DOCKER_IMAGE }} \
             bash -c "git config --global --add safe.directory /workspace && ./sbin/upload-artifacts-s3"
