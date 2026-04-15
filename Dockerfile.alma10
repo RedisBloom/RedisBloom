@@ -1,0 +1,23 @@
+# AlmaLinux 10.x — Redis 8.8 support matrix
+FROM almalinux:10
+
+WORKDIR /workspace
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN dnf -y update
+RUN dnf install -y gcc gcc-c++ make wget git openssl openssl-devel which rsync unzip clang jq
+
+COPY .install /workspace/.install
+RUN chmod +x /workspace/.install/install_cmake.sh && /workspace/.install/install_cmake.sh
+
+ARG REDIS_REF=unstable
+ARG SANITIZER=
+RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
+
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh
+ENV PATH="/usr/local/bin:${PATH}"
+RUN uv venv --python=3.11 /opt/.venv
+ENV VIRTUAL_ENV=/opt/.venv
+ENV PATH="/opt/.venv/bin:${PATH}"
+COPY requirements_docker.txt /workspace/requirements.txt
+RUN uv pip install -r requirements.txt
