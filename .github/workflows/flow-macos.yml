@@ -76,7 +76,7 @@ jobs:
         run: |
           OS="${{ inputs.os }}"
           if [ -z "${OS}" ]; then
-            OS='["macos-13", "macos-14"]'
+            OS='["macos-14", "macos-15", "macos-26", "macos-14-large", "macos-15-intel", "macos-26-intel"]'
           else
             OS='["${OS}"]'
           fi
@@ -121,6 +121,13 @@ jobs:
           ref: ${{needs.prepare-values.outputs.redis-ref}}
           path: 'redis'
           submodules: recursive
+      - name: Setup macOS 26 SDK
+        if: startsWith(matrix.os, 'macos-26')
+        run: |
+          _SDK="$(xcrun --sdk macosx --show-sdk-path)"
+          echo "SDKROOT=$_SDK" >> $GITHUB_ENV
+          echo "CC=/usr/bin/clang" >> $GITHUB_ENV
+          echo "CXX=/usr/bin/clang++" >> $GITHUB_ENV
       - name: Setup specific
         working-directory: .install
         run: ./install_script.sh
@@ -136,8 +143,9 @@ jobs:
       - name: Pack module
         uses: ./.github/actions/pack-module
       - name: Upload artifacts to S3
-        uses: ./.github/actions/upload-artifacts-to-s3
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          github-ref: ${{ github.ref }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          GITHUB_REF: ${{ github.ref }}
+          BETA_VERSION: ${{ inputs.beta-version }}
+        run: ./sbin/upload-artifacts-s3

@@ -1,0 +1,33 @@
+FROM amazonlinux:2023
+
+WORKDIR /workspace
+
+RUN dnf install -y  --allowerasing \
+    git \
+    make \
+    gcc \
+    gcc-c++ \
+    cmake \
+    openssl-devel \
+    curl \
+    tar \
+    gzip \
+    jq \
+    automake \
+    libtool \
+    which 
+COPY .install /workspace/.install
+
+ARG REDIS_REF=unstable
+ARG SANITIZER=
+RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
+
+
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh
+ENV PATH="/usr/local/bin:${PATH}"
+RUN uv venv --python=3.11 /opt/.venv
+ENV VIRTUAL_ENV=/opt/.venv
+ENV PATH="/opt/.venv/bin:${PATH}"
+COPY requirements_docker.txt /workspace/requirements.txt
+RUN uv pip install redis
+RUN uv pip install -r requirements.txt
