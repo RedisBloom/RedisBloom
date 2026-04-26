@@ -374,3 +374,13 @@ endif
 .PHONY: docker
 
 #----------------------------------------------------------------------------------------------
+# `make setup` — install build & test prereqs for RedisBloom via the
+# upstream `sbin/setup` script (getpy3 + system-setup.py + readies).
+# Standalone-friendly.
+
+setup:
+	$(SHOW)./sbin/setup
+
+.PHONY: setup
+
+#----------------------------------------------------------------------------------------------
