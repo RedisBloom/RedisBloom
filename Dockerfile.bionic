@@ -3,6 +3,11 @@ FROM ubuntu:18.04
 WORKDIR /workspace
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Make apt resilient to transient network/CDN failures (e.g. archive.ubuntu.com /
+# deb.debian.org "Connection reset by peer" on GitHub Actions runners). See MOD-14715.
+RUN printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' \
+    > /etc/apt/apt.conf.d/80-retries
+
 RUN apt update -qq \
     && apt upgrade -yqq \
     && apt dist-upgrade -yqq \
