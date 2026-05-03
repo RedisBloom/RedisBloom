@@ -2,14 +2,14 @@ FROM mcr.microsoft.com/cbl-mariner/base/core:2.0
 
 WORKDIR /workspace
 
-RUN tdnf install --noplugins --skipsignature -y ca-certificates git build-essential wget tar openssl-devel cmake which unzip
-
+# Install build/test deps via the unified abstract installer (uses tdnf).
+COPY dependencies.yaml /workspace/dependencies.yaml
 COPY .install /workspace/.install
+RUN bash /workspace/.install/install_script.sh
 
 ARG REDIS_REF=unstable
 ARG SANITIZER=
 RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
-
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh
 ENV PATH="/usr/local/bin:${PATH}"

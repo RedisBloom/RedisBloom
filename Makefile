@@ -374,12 +374,14 @@ endif
 .PHONY: docker
 
 #----------------------------------------------------------------------------------------------
-# `setup` mirrors the .github/workflows/flow-macos.yml flow (CI is the ground
-# truth). Two phases:
-#   1. `./install_script.sh` -> sources .install/<os>.sh (brew/apt installs only)
-#   2. local `venv/` + `common_installations.sh` -> pip deps inside the venv
-# After setup, activate the venv before running tests:
-#     . src/venv/bin/activate && make test
+# `make setup` — install build & test prereqs for RedisBloom (same idea as RedisTimeSeries).
+#
+#   1. `.install/install_script.sh` — OS packages from `dependencies.yaml` (+ quirks),
+#      or legacy `.install/<distro>.sh` if the OS is not migrated yet.
+#   2. local `venv/` + `.install/common_installations.sh` — Python deps for RLTest.
+#
+# After setup: `. ./venv/bin/activate && make test`
+#
 # This avoids `sbin/setup` -> readies/getpy3 which is broken on macOS+Python>=3.13
 # (PEP 668 + missing `python3-pip`/`python3-virtualenv` brew formulas).
 #----------------------------------------------------------------------------------------------

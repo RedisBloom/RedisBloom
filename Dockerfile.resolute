@@ -1,33 +1,16 @@
-# Ubuntu 26.04 LTS (Resolute Raccoon) — Redis 8.8 support matrix
+# Ubuntu 26.04 LTS (Resolute Raccoon)
 FROM ubuntu:26.04
 
 WORKDIR /workspace
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    make \
-    gcc \
-    g++ \
-    gdb \
-    clang \
-    valgrind \
-    git \
-    jq \
-    libssl-dev \
-    autoconf \
-    automake \
-    libtool \
-    cmake \
-    curl \
-    wget \
-    libblocksruntime-dev \
-    unzip \
-    rsync
+# Install build/test deps via the unified abstract installer.
+COPY dependencies.yaml /workspace/dependencies.yaml
+COPY .install /workspace/.install
+RUN bash /workspace/.install/install_script.sh
 
 ARG REDIS_REF=unstable
 ARG SANITIZER=
-COPY .install /workspace/.install
 RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh

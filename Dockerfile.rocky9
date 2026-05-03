@@ -2,22 +2,19 @@ FROM rockylinux:9
 
 WORKDIR /workspace
 
-RUN dnf install -y git
-
-RUN yum -y install epel-release
-RUN yum -y install gcc make cmake3 wget openssl-devel bzip2-devel libffi-devel zlib-devel wget scl-utils which gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ gcc-toolset-13-libatomic-devel
-RUN yum groupinstall "Development Tools" -y
-RUN cp /opt/rh/gcc-toolset-13/enable /etc/profile.d/gcc-toolset-13.sh
+# Install build/test deps via the unified abstract installer; quirks/rocky9.sh
+# pulls gcc-toolset-13.
+COPY dependencies.yaml /workspace/dependencies.yaml
+COPY .install /workspace/.install
+RUN bash /workspace/.install/install_script.sh
+RUN chmod +x /workspace/.install/install_cmake.sh && /workspace/.install/install_cmake.sh
 
 ENV PATH="/opt/rh/gcc-toolset-13/root/usr/bin:${PATH}"
 ENV LD_LIBRARY_PATH="/opt/rh/gcc-toolset-13/root/usr/lib64:${LD_LIBRARY_PATH}"
 
-COPY .install /workspace/.install
-
 ARG REDIS_REF=unstable
 ARG SANITIZER=
 RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
-
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh
 ENV PATH="/usr/local/bin:${PATH}"

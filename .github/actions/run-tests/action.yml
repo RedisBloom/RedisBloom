@@ -4,33 +4,36 @@ inputs:
   run_valgrind:
     description: 'Run valgrind on the tests'
     type: string
-    default: ''
+    default: '0'
   run_sanitizer:
     description: 'Run sanitizer on the tests'
     type: string
     default: ''
+  use-venv:
+    type: string
+    description: 'Specify whether to use the environment or not'
+    default: '0'
 
 runs:
   using: composite
   steps:
     - name: Run tests
       shell: bash
+      env:
+        INPUT_RUN_VALGRIND: ${{ inputs.run_valgrind }}
+        INPUT_RUN_SANITIZER: ${{ inputs.run_sanitizer }}
+        INPUT_USE_VENV: ${{ inputs.use-venv }}
       run: |
         if command -v scl_source &> /dev/null
         then
             . scl_source enable devtoolset-11 || true
         fi
-        echo ::group::Activate virtual environment
-        python3 -m venv venv
-        echo "source ${GITHUB_WORKSPACE}/venv/bin/activate" >> ~/.bashrc
-        echo "source ${GITHUB_WORKSPACE}/venv/bin/activate" >> ~/.zshrc
-        . "${GITHUB_WORKSPACE}/venv/bin/activate"
-        echo ::endgroup::
-        echo ::group::Install python dependencies
-          ./.install/common_installations.sh
-        echo ::endgroup::
-        # Capture test output to file for parsing
+        if [[ "$INPUT_USE_VENV" == "1" ]]; then
+          . venv/bin/activate
+        fi
+        # Capture test output to file for parsing by capture-test-results action
         TEST_OUTPUT_FILE="$GITHUB_WORKSPACE/test_output.log"
-        make test VG=${{inputs.run_valgrind}} SAN=${{inputs.run_sanitizer}} REDIS_SERVER=$GITHUB_WORKSPACE/redis/src/redis-server 2>&1 | tee "$TEST_OUTPUT_FILE" || true
-        # Store path for later steps
+        make test VG="$INPUT_RUN_VALGRIND" SAN="$INPUT_RUN_SANITIZER" \
+          REDIS_SERVER="$GITHUB_WORKSPACE/redis/src/redis-server" 2>&1 | tee "$TEST_OUTPUT_FILE"
         echo "TEST_OUTPUT_FILE=$TEST_OUTPUT_FILE" >> $GITHUB_ENV
+        exit ${PIPESTATUS[0]}

@@ -115,7 +115,7 @@ jobs:
     steps:
       - name: Install prerequisites
         run: |
-          brew install make coreutils
+          brew install make coreutils autoconf automake pyenv-virtualenv libtool
       - name: Full checkout
         uses: actions/checkout@v4
         with:
@@ -137,10 +137,21 @@ jobs:
       - name: Setup specific
         working-directory: .install
         run: ./install_script.sh
+      - name: Install python dependencies
+        uses: ./.github/actions/install-python-deps
+        with:
+          use-venv: '1'
       - name: Build
         uses: ./.github/actions/build-module-and-redis
+        with:
+          use-venv: '1'
+          build_sanitizer: ${{ inputs.run_sanitizer && 'addr' || '' }}
       - name: Run Tests
         uses: ./.github/actions/run-tests
+        with:
+          use-venv: '1'
+          run_valgrind: ${{ inputs.run_valgrind && '1' || '0' }}
+          run_sanitizer: ${{ inputs.run_sanitizer && 'addr' || '' }}
       - name: Capture test results
         if: always()
         uses: ./.github/actions/capture-test-results
@@ -155,6 +166,7 @@ jobs:
       - name: Pack module
         uses: ./.github/actions/pack-module
         with:
+          use-venv: '1'
           beta-version: ${{ inputs.beta-version }}
       - name: Upload artifacts to S3
         env:

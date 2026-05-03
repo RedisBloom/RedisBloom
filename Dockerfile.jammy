@@ -8,31 +8,20 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' \
     > /etc/apt/apt.conf.d/80-retries
 
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    make \
-    gcc \
-    g++ \
-    gdb \
-    clang \
-    valgrind \
-    git \
-    jq \
-    libssl-dev \
-    autoconf \
-    automake \
-    libtool \
-    cmake \
-    curl \
-    libblocksruntime-dev
-
+# Install build/test deps via the unified abstract installer (see
+# dependencies.yaml). Ubuntu jammy is in `migrated_osnicks`, so this resolves
+# the abstract list against apt and runs a single apt-get install.
+COPY dependencies.yaml /workspace/dependencies.yaml
 COPY .install /workspace/.install
+RUN bash /workspace/.install/install_script.sh
 
+# Install Redis (SANITIZER can be 'address' for ASAN builds)
 ARG REDIS_REF=unstable
 ARG SANITIZER=
-RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
 
+RUN chmod +x .install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} .install/install_redis.sh
 
+# Install uv and Python environment
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh
 ENV PATH="/usr/local/bin:${PATH}"
 RUN uv venv --python=3.11 /opt/.venv
