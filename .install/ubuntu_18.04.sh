@@ -6,12 +6,13 @@ MODE=$1 # whether to install using sudo or not
 $MODE apt update -qq
 $MODE apt upgrade -yqq
 
-add-apt-repository ppa:ubuntu-toolchain-r/test -y
-apt update
-apt-get install -yqq --fix-missing build-essential make autoconf automake libtool lcov git \
-  wget zlib1g-dev lsb-release libssl-dev openssl ca-certificates curl unzip gcc-10 g++-10 \
+$MODE apt-get install -yqq software-properties-common
+$MODE add-apt-repository universe -y
+$MODE apt update
+$MODE apt-get install -yqq --fix-missing build-essential make autoconf automake libtool lcov git \
+  wget zlib1g-dev lsb-release libssl-dev openssl ca-certificates curl unzip gcc-8 g++-8 \
   binfmt-support lsb-core awscli libclang-dev clang libffi-dev
-update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 60 --slave /usr/bin/g++ g++ /usr/bin/g++-10
+$MODE update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 80 --slave /usr/bin/g++ g++ /usr/bin/g++-8
 
 wget https://cmake.org/files/v3.28/cmake-3.28.0.tar.gz
 tar -xzvf cmake-3.28.0.tar.gz
