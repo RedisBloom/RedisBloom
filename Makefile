@@ -374,3 +374,23 @@ endif
 .PHONY: docker
 
 #----------------------------------------------------------------------------------------------
+# `make setup` — install build & test prereqs for RedisBloom (same idea as RedisTimeSeries).
+#
+#   1. `.install/install_script.sh` — OS packages from `dependencies.yaml` (+ quirks),
+#      or legacy `.install/<distro>.sh` if the OS is not migrated yet.
+#   2. local `venv/` + `.install/common_installations.sh` — Python deps for RLTest.
+#
+# After setup: `. ./venv/bin/activate && make test`
+#
+# This avoids `sbin/setup` -> readies/getpy3 which is broken on macOS+Python>=3.13
+# (PEP 668 + missing `python3-pip`/`python3-virtualenv` brew formulas).
+#----------------------------------------------------------------------------------------------
+
+setup:
+	$(SHOW)cd .install && ./install_script.sh
+	$(SHOW)test -d venv || python3 -m venv venv
+	$(SHOW). ./venv/bin/activate && ./.install/common_installations.sh
+
+.PHONY: setup
+
+#----------------------------------------------------------------------------------------------

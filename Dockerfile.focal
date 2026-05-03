@@ -8,19 +8,15 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' \
     > /etc/apt/apt.conf.d/80-retries
 
-RUN apt update -qq \
-    && apt-get update \
-    && apt upgrade -yqq \
-    && apt install -yqq wget make clang-format gcc lcov git openssl libssl-dev \
-    unzip rsync build-essential gcc-10 g++-10 cargo libclang-dev clang curl cmake jq automake libtool \
-    && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 60 --slave /usr/bin/g++ g++ /usr/bin/g++-10
-
+# Install build/test deps via the unified abstract installer. focal's
+# quirks/focal.sh installs gcc-10 and switches /usr/bin/{gcc,g++} to it.
+COPY dependencies.yaml /workspace/dependencies.yaml
 COPY .install /workspace/.install
+RUN bash /workspace/.install/install_script.sh
 
 ARG REDIS_REF=unstable
 ARG SANITIZER=
 RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
-
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh
 ENV PATH="/usr/local/bin:${PATH}"

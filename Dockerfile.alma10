@@ -1,13 +1,13 @@
-# AlmaLinux 10.x — Redis 8.8 support matrix
+# AlmaLinux 10.x
 FROM almalinux:10
 
 WORKDIR /workspace
-
 ENV DEBIAN_FRONTEND=noninteractive
-RUN dnf -y update
-RUN dnf install -y gcc gcc-c++ make wget git openssl openssl-devel which rsync unzip clang jq
 
+# Install build/test deps via the unified abstract installer.
+COPY dependencies.yaml /workspace/dependencies.yaml
 COPY .install /workspace/.install
+RUN bash /workspace/.install/install_script.sh
 RUN chmod +x /workspace/.install/install_cmake.sh && /workspace/.install/install_cmake.sh
 
 ARG REDIS_REF=unstable

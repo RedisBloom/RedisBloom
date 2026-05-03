@@ -2,33 +2,14 @@ FROM mcr.microsoft.com/azurelinux/base/core:3.0
 
 WORKDIR /workspace
 
-RUN tdnf -y update && \
-    tdnf install -y \
-    git \
-    wget \
-    curl \
-    gcc \
-    g++ \
-    make \
-    cmake \
-    libffi-devel \
-    openssl-devel \
-    build-essential \
-    zlib-devel \
-    bzip2-devel \
-    readline-devel \
-    which \
-    unzip \
-    jq \
-    ca-certificates \
-    tar
-
+# Install build/test deps via the unified abstract installer (uses tdnf).
+COPY dependencies.yaml /workspace/dependencies.yaml
 COPY .install /workspace/.install
+RUN bash /workspace/.install/install_script.sh
 
 ARG REDIS_REF=unstable
 ARG SANITIZER=
 RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
-
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh
 ENV PATH="/usr/local/bin:${PATH}"

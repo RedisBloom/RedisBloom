@@ -1,0 +1,45 @@
+name: Install Python dependencies
+
+inputs:
+  call-setup:
+    description: 'whether to call ./sbin/setup or not'
+    type: string
+    required: true
+    default: '0'
+  use-venv:
+    type: string
+    description: 'Specify whether to use the environment or not'
+    default: '0'
+  extra-packages-to-install:
+    type: string
+    default: ''
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Install Python dependencies
+      shell: bash
+      run: |
+        if command -v scl_source &> /dev/null
+        then
+            . scl_source enable devtoolset-11 || true
+        fi
+        # Add /usr/local/bin to PATH for Rocky Linux Python
+        export PATH="/usr/local/bin:$PATH"
+        if [[ "${{ inputs.use-venv }}" == "1" ]]; then
+          echo ::group::Activate virtual environment
+            python3 -m venv venv
+            echo "source $PWD/venv/bin/activate" >> ~/.bash_profile
+            . venv/bin/activate
+          echo ::endgroup::
+        fi
+        echo ::group::Install python dependencies
+          ./.install/common_installations.sh
+          if [[ "${{inputs.extra-packages-to-install}}" != "" ]]; then
+            pip install ${{inputs.extra-packages-to-install}}
+          fi
+          if [[ "${{inputs.call-setup}}" == "1" ]]; then
+            ./sbin/setup
+          fi
+        echo ::endgroup::
