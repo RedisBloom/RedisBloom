@@ -27,6 +27,10 @@ RLEC_PLATFORMS = {
     'xenial': { 
         'os':  'Linux-ubuntu16.04',
         'env': 'xenial-amd64-aws' },
+    # Required whenever RLEC_VER_ENVS lists osnick 'bionic' (legacy RS trains).
+    'bionic': {
+        'os': 'Linux-ubuntu18.04',
+        'env': 'bionic-amd64-aws' },
     'centos7': {
         'os': 'Linux-rhel7',
         'env': 'rhel7.7-x86_64-aws' },
@@ -43,16 +47,17 @@ RLEC_PLATFORMS = {
 }
 
 RLEC_VER_ENVS = {
-    '6.0.8': ['xenial', 'centos7'],
-    '6.0.12': ['xenial', 'centos7'],
-    '6.0.20': ['xenial', 'centos7'],
-    '6.2.4': ['xenial', 'centos7'],
-    '6.2.8': ['xenial', 'centos7', 'rocky8'],
-    '6.2.10': ['xenial', 'centos7', 'rocky8'],
-    '6.2.12': ['xenial', 'centos7', 'rocky8'],
-    '6.2.18': ['xenial', 'centos7', 'rocky8'],
-    '6.4.2': ['xenial', 'focal', 'centos7', 'rocky8'],
-    '100.0.0': ['xenial', 'focal', 'centos7', 'rocky8']
+    '6.0.8': ['xenial', 'bionic', 'centos7'],
+    '6.0.12': ['xenial', 'bionic', 'centos7'],
+    '6.0.20': ['xenial', 'bionic', 'centos7'],
+    '6.2.4': ['xenial', 'bionic', 'centos7'],
+    '6.2.8': ['xenial', 'bionic', 'centos7', 'rocky8'],
+    '6.2.10': ['xenial', 'bionic', 'centos7', 'rocky8'],
+    '6.2.12': ['xenial', 'bionic', 'centos7', 'rocky8'],
+    '6.2.18': ['xenial', 'bionic', 'centos7', 'rocky8'],
+    '6.4.2': ['xenial', 'bionic', 'focal', 'centos7', 'rocky8'],
+    # master resolves to 100.0.0-* in RS_VERSIONS (no bionic).
+    '100.0.0': ['xenial', 'focal', 'centos7', 'rocky8'],
 }
 
 class Command1(click.Command):
@@ -144,6 +149,9 @@ class Test:
         rlec_envs = ""
         if self.rlecver_base in RLEC_VER_ENVS:
             envs = RLEC_VER_ENVS[self.rlecver_base]
+        elif self.rlecver_base.startswith('8.8.'):
+            # RS 8.8.x line: same matrix as tip (no bionic).
+            envs = ['xenial', 'focal', 'centos7', 'rocky8']
         else:
             envs = RLEC_PLATFORMS.keys()
         found_osnick = False
