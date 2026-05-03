@@ -27,9 +27,6 @@ RLEC_PLATFORMS = {
     'xenial': { 
         'os':  'Linux-ubuntu16.04',
         'env': 'xenial-amd64-aws' },
-    'bionic': {
-        'os': 'Linux-ubuntu18.04',
-        'env': 'bionic-amd64-aws' },
     'centos7': {
         'os': 'Linux-rhel7',
         'env': 'rhel7.7-x86_64-aws' },
@@ -46,16 +43,16 @@ RLEC_PLATFORMS = {
 }
 
 RLEC_VER_ENVS = {
-    '6.0.8': ['xenial', 'bionic', 'centos7'],
-    '6.0.12': ['xenial', 'bionic', 'centos7'],
-    '6.0.20': ['xenial', 'bionic', 'centos7'],
-    '6.2.4': ['xenial', 'bionic', 'centos7'],
-    '6.2.8': ['xenial', 'bionic', 'centos7', 'rocky8'],
-    '6.2.10': ['xenial', 'bionic', 'centos7', 'rocky8'],
-    '6.2.12': ['xenial', 'bionic', 'centos7', 'rocky8'],
-    '6.2.18': ['xenial', 'bionic', 'centos7', 'rocky8'],
-    '6.4.2': ['xenial', 'bionic', 'focal', 'centos7', 'rocky8'],
-    '100.0.0': ['xenial', 'bionic', 'focal', 'centos7', 'rocky8']
+    '6.0.8': ['xenial', 'centos7'],
+    '6.0.12': ['xenial', 'centos7'],
+    '6.0.20': ['xenial', 'centos7'],
+    '6.2.4': ['xenial', 'centos7'],
+    '6.2.8': ['xenial', 'centos7', 'rocky8'],
+    '6.2.10': ['xenial', 'centos7', 'rocky8'],
+    '6.2.12': ['xenial', 'centos7', 'rocky8'],
+    '6.2.18': ['xenial', 'centos7', 'rocky8'],
+    '6.4.2': ['xenial', 'focal', 'centos7', 'rocky8'],
+    '100.0.0': ['xenial', 'focal', 'centos7', 'rocky8']
 }
 
 class Command1(click.Command):
@@ -113,9 +110,9 @@ class Test:
         else:
             mod_sem_ver = modver
             try:
-                bionic_os = RLEC_PLATFORMS['bionic']['os']
-                mod_url_bionic = f"http://redismodules.s3.amazonaws.com/{mod_dir}/{mod_prefix}.{bionic_os}.{modver}.zip"
-                mod_zip = paella.wget(mod_url_bionic, tempdir=True)
+                focal_os = RLEC_PLATFORMS['focal']['os']
+                mod_url_focal = f"http://redismodules.s3.amazonaws.com/{mod_dir}/{mod_prefix}.{focal_os}.{modver}.zip"
+                mod_zip = paella.wget(mod_url_focal, tempdir=True)
                 with ZipFile(mod_zip) as zip:
                     with zip.open('module.json') as jf:
                         j = json.loads(jf.read())
