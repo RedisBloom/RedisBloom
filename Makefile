@@ -374,3 +374,21 @@ endif
 .PHONY: docker
 
 #----------------------------------------------------------------------------------------------
+# `setup` mirrors the .github/workflows/flow-macos.yml flow (CI is the ground
+# truth). Two phases:
+#   1. `./install_script.sh` -> sources .install/<os>.sh (brew/apt installs only)
+#   2. local `venv/` + `common_installations.sh` -> pip deps inside the venv
+# After setup, activate the venv before running tests:
+#     . src/venv/bin/activate && make test
+# This avoids `sbin/setup` -> readies/getpy3 which is broken on macOS+Python>=3.13
+# (PEP 668 + missing `python3-pip`/`python3-virtualenv` brew formulas).
+#----------------------------------------------------------------------------------------------
+
+setup:
+	$(SHOW)cd .install && ./install_script.sh
+	$(SHOW)test -d venv || python3 -m venv venv
+	$(SHOW). ./venv/bin/activate && ./.install/common_installations.sh
+
+.PHONY: setup
+
+#----------------------------------------------------------------------------------------------
