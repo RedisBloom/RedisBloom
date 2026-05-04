@@ -351,6 +351,10 @@ if [[ $WITH_GITSHA == 1 ]]; then
 	BRANCH="${BRANCH}-${GIT_COMMIT}"
 fi
 
+if [[ -n $BETA_VERSION ]]; then
+	BRANCH="${BRANCH}.${BETA_VERSION}"
+fi
+
 #----------------------------------------------------------------------------------------------
 
 RELEASE_ramp=${PACKAGE_NAME}.$OS-$OSNICK-$ARCH.$SEMVER${VARIANT}.zip
@@ -415,7 +419,6 @@ if [[ $RAMP == 1 ]]; then
 	MODULE=$(realpath $MODULE)
 
 	[[ $RELEASE == 1 ]] && SNAPSHOT=0 pack_ramp
-	echo "# Debug: About to call pack_ramp with SNAPSHOT=$SNAPSHOT, BRANCH='$BRANCH'"
 	[[ $SNAPSHOT == 1 ]] && pack_ramp
 
 	echo "# Done."
