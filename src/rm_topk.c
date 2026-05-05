@@ -316,18 +316,46 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
     topk->depth = LoadUnsigned_IOError(io, err, NULL);
     topk->decay = LoadDouble_IOError(io, err, NULL);
 
-    size_t dataSize, heapSize, itemSize;
-    topk->data = (Bucket *)LoadStringBuffer_IOError(io, &dataSize, err, NULL);
-    assert(dataSize == ((size_t)topk->width) * topk->depth * sizeof(Bucket));
-    topk->heap = (HeapBucket *)LoadStringBuffer_IOError(io, &heapSize, err, NULL);
-    assert(heapSize == topk->k * sizeof(HeapBucket));
+    if (topk->width == 0 || topk->depth == 0 || topk->k == 0) {
+        err = true;
+        return NULL;
+    }
 
-    for (uint32_t i = 0; i < topk->k; ++i) {
-        topk->heap[i].item = LoadStringBuffer_IOError(io, &itemSize, err, NULL);
-        if (itemSize == 1) {
-            RedisModule_Free(topk->heap[i].item);
-            topk->heap[i].item = NULL;
+    if (topk->depth > SIZE_MAX / topk->width ||
+        (size_t)topk->depth * topk->width > SIZE_MAX / sizeof(Bucket)) {
+        err = true;
+        return NULL;
+    }
+
+    size_t dataSize, heapSize, itemSize;
+    size_t expectedDataSize = ((size_t)topk->width) * topk->depth * sizeof(Bucket);
+    topk->data = (Bucket *)LoadStringBuffer_IOError(io, &dataSize, err, NULL);
+    if (dataSize != expectedDataSize) {
+        err = true;
+        return NULL;
+    }
+    if (topk->k > SIZE_MAX / sizeof(HeapBucket)) {
+        err = true;
+        return NULL;
+    }
+    size_t expectedHeapSize = topk->k * sizeof(HeapBucket);
+    topk->heap = (HeapBucket *)LoadStringBuffer_IOError(io, &heapSize, err, NULL);
+    if (heapSize != expectedHeapSize) {
+        // Zero pointers to avoid freeing stale pointers if validation fails
+        if (topk->heap) {
+            uint32_t buckets = heapSize / sizeof(HeapBucket);
+            buckets = buckets < topk->k ? buckets : topk->k;
+            for (uint32_t i = 0; i < buckets; ++i) {
+                topk->heap[i].item = NULL;
+            }
         }
+        err = true;
+        return NULL;
+    }
+
+    for (HeapBucket *bucket = topk->heap; bucket < topk->heap + topk->k; ++bucket) {
+        char *it = LoadStringBuffer_IOError(io, &heapSize, err, NULL);
+        bucket->item = heapSize == 1 ? RedisModule_Free(it), NULL : it;
     }
 
     /* Initialize lookupTable */

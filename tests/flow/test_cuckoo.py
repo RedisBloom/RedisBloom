@@ -685,6 +685,10 @@ class testCuckooNoCodec():
         self.env.expect('cf.reserve', 'cf', '100000000000000', 'BUCKETSIZE', '255', 'EXPANSION', '32768').error().contains('Insufficient memory to create filter')
         self.env.expect('cf.insert', 'cf', 'capacity', '100000000000000', 'ITEMS', 1).error().contains('Insufficient memory to create filter')
 
+    def test_rdb_load_zero_numfilters(self):
+        self.cmd('FLUSHALL')
+        rdb_payload = b'\x07\x810\x16\xe5\xa2\x89\x82\x14\x04\x02\x00\x02\x08\x02\x01\x02\x00\x02\x01\x02\x01\x02\x01\x00\xff\x0c\x00`\x07q:\xe0pL\r'
+        self.env.expect('RESTORE', "hax", 0, rdb_payload, 'REPLACE').error().contains('Bad data format')
 
 
 def test_cf_loadchunk_replicates_to_replica():
