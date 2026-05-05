@@ -22,7 +22,7 @@ runs:
         echo "name=$(echo "${{ inputs.image }} ${{ runner.arch }}, Redis ${{ inputs.redis-ref || 'unstable' }}" | \
           sed -e 's/[":\/\\<>\|*?]/_/g' -e 's/__*/_/g' -e 's/^_//' -e 's/_$//')" >> $GITHUB_OUTPUT
     - name: Upload test artifacts
-      if: inputs.image != 'amazonlinux:2' && inputs.image != 'ubuntu:bionic'
+      if: inputs.image != 'amazonlinux:2'
       uses: actions/upload-artifact@v4
       with:
         name: Test logs ${{ steps.artifact-names.outputs.name }}
