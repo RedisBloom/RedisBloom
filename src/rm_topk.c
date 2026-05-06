@@ -334,20 +334,25 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
     size_t expectedHeapSize = topk->k * sizeof(HeapBucket);
     topk->heap = (HeapBucket *)LoadStringBuffer_IOError(io, &heapSize, err, NULL);
     if (heapSize != expectedHeapSize) {
-        // Zero pointers to avoid freeing stale pointers if validation fails
         if (topk->heap) {
-            uint32_t buckets = heapSize / sizeof(HeapBucket);
-            buckets = buckets < topk->k ? buckets : topk->k;
-            for (uint32_t i = 0; i < buckets; ++i) {
-                topk->heap[i].item = NULL;
-            }
+            TOPK_FREE(topk->heap);
+            /* NULL the pointer to avoid freeing stale pointers in TopK_Destroy if validation fails
+             */
+            topk->heap = NULL;
         }
         err = true;
         return NULL;
     }
 
+    for (HeapBucket *bucket = topk->heap; bucket < topk->heap + topk->k; ++bucket)
+        bucket->item = NULL;
+
     for (HeapBucket *bucket = topk->heap; bucket < topk->heap + topk->k; ++bucket) {
         char *it = LoadStringBuffer_IOError(io, &heapSize, err, NULL);
+        if (it == NULL) {
+            err = true;
+            return NULL;
+        }
         bucket->item = heapSize == 1 ? RedisModule_Free(it), NULL : it;
     }
 
