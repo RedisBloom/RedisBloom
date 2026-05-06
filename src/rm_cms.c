@@ -316,12 +316,13 @@ void *CMSRdbLoad(RedisModuleIO *io, int encver) {
     cms->depth = LoadUnsigned_IOError(io, err, NULL);
     cms->counter = LoadUnsigned_IOError(io, err, NULL);
 
-    if (cms->width == 0 || cms->depth == 0) {
+    if (cms->width == 0 || cms->depth == 0 || cms->width > SIZE_MAX / cms->depth ||
+        cms->width * cms->depth > SIZE_MAX / sizeof(*cms->array)) {
         err = true;
         return NULL;
     }
 
-    size_t expected_length = sizeof *cms->array * cms->width * cms->depth;
+    size_t expected_length = sizeof(*cms->array) * cms->width * cms->depth;
     size_t length;
     cms->array = (uint32_t *)LoadStringBuffer_IOError(io, &length, err, NULL);
 
