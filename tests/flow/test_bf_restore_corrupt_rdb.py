@@ -287,6 +287,35 @@ class testCFRestoreCorruptRDB():
         env.cmd("CF.ADD", key, b"sanity")
 
 
+class testTopKRestoreCorruptRDB():
+    def __init__(self):
+        # We need raw bytes for DUMP/RESTORE payload manipulation
+        self.env = Env(decodeResponses=False)
+
+    def test_restore_rejects_corrupted_topk_heap(self):
+        env = self.env
+        env.cmd("FLUSHALL")
+
+        key = b"topk_poc{topk}"
+        corrupt_key = b"topk_poc_corrupt{topk}"
+
+        # k=3, width=1, depth=1 → heap buffer is 3*sizeof(HeapBucket)=72 bytes,
+        # which is larger than the data buffer (1*1*sizeof(Bucket)=8 bytes) and
+        # item strings (1 byte each). _corrupt_dump_shrink_largest_module_string
+        # will therefore target and truncate the heap buffer.
+        env.cmd("TOPK.RESERVE", key, 3, 1, 1, 0.9)
+        dump_payload = env.cmd("DUMP", key)
+        corrupted = _corrupt_dump_shrink_largest_module_string(dump_payload)
+
+        # Without the fix: TopK_Destroy is invoked via errdefer with topk->heap
+        # still pointing at the undersized buffer, iterating all k entries and
+        # reading past the end of the allocation (OOB / UB / crash).
+        # With the fix: the mismatch branch frees and NULLs topk->heap before
+        # returning, so TopK_Destroy skips the heap loop entirely.
+        with env.assertResponseError():
+            env.cmd("RESTORE", corrupt_key, 0, corrupted)
+
+
 class testTDigestRestoreCorruptRDB():
     def __init__(self):
         # We need raw bytes for DUMP/RESTORE payload manipulation
