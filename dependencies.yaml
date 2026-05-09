@@ -2,7 +2,7 @@
 #
 # This is the source of truth for what the module needs in order to build and
 # test. It is consumed by .install/install_script.sh (and indirectly by `make
-# setup` and by Dockerfile.<osnick> images). When you add or remove a
+# bootstrap` and by Dockerfile.<osnick> images). When you add or remove a
 # build-time dependency, edit this file --- not the per-OS shell scripts.
 #
 # The script picks the right concrete package per OS using `package_map`
@@ -229,7 +229,7 @@ package_map:
     # with brew's `python@3.11`, making `brew install python@3.11` fail at
     # the link step. We rely on whatever python3 is already on PATH; the
     # legacy `.install/macos.sh` did the same for years. If a user has no
-    # python3, `make setup`'s `python3 -m venv` will give a clear error.
+    # python3, `make bootstrap`'s `python3 -m venv` will give a clear error.
     apt:  [python3, python3-pip, python3-venv, python3-dev]
     dnf:  [python3, python3-pip, python3-devel]
     yum:  [python3, python3-pip, python3-devel]

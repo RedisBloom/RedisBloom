@@ -361,7 +361,7 @@ fi
 git config --global --add safe.directory '*' || true
 
 # Note: Python requirement files are listed under `python:` in
-# dependencies.yaml but are installed by `make setup` (via
+# dependencies.yaml but are installed by `make bootstrap` (via
 # .install/common_installations.sh) inside its venv, not from here. This keeps
 # install_script.sh focused on system packages and lets Docker images that
 # manage their own Python environment (uv, venv) skip the duplicate work.
