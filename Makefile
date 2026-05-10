@@ -1,6 +1,21 @@
 
 ROOT=.
 
+# Standalone `make bootstrap` with no python3 yet: skip Readies parse-time check;
+# install_script.sh installs deps from dependencies.yaml first.
+ifeq ($(MAKECMDGOALS),bootstrap)
+override ROOT:=$(shell cd $(ROOT) && pwd)
+INSTALL_SCRIPT_MODE ?= $(if $(filter Linux,$(shell uname -s)),sudo,)
+
+bootstrap:
+	@cd $(ROOT)/.install && ./install_script.sh $(INSTALL_SCRIPT_MODE)
+	@test -d $(ROOT)/venv || (cd $(ROOT) && python3 -m venv venv)
+	@cd $(ROOT) && . ./venv/bin/activate && ./.install/common_installations.sh
+
+.PHONY: bootstrap
+
+else
+
 include $(ROOT)/deps/readies/mk/main
 
 # RedisBloom only supports 64-bit architectures
@@ -386,11 +401,15 @@ endif
 # (PEP 668 + missing `python3-pip`/`python3-virtualenv` brew formulas).
 #----------------------------------------------------------------------------------------------
 
+INSTALL_SCRIPT_MODE ?= $(if $(filter Linux,$(shell uname -s)),sudo,)
+
 bootstrap:
-	$(SHOW)cd .install && ./install_script.sh
+	$(SHOW)cd .install && ./install_script.sh $(INSTALL_SCRIPT_MODE)
 	$(SHOW)test -d venv || python3 -m venv venv
 	$(SHOW). ./venv/bin/activate && ./.install/common_installations.sh
 
 .PHONY: bootstrap
+
+endif
 
 #----------------------------------------------------------------------------------------------
