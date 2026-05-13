@@ -5,7 +5,7 @@ on:
     inputs:
       redis-ref:
         description: 'Redis ref to checkout'
-        default: 'unstable'
+        default: '8.8'
       timeout-minutes:
         description: 'Timeout in minutes'
         default: '30'
@@ -17,7 +17,7 @@ on:
       redis-ref:
         description: 'Redis ref to checkout'
         type: string
-        default: 'unstable'
+        default: '8.8'
       timeout-minutes:
         description: 'Timeout in minutes'
         type: string
@@ -64,7 +64,7 @@ jobs:
         generator: [BloomGen, CuckooGen, CmsGen, TopKGen, TDigestGen]
     env:
       DOCKER_IMAGE: redisbloom-${{ needs.pick-os.outputs.os }}:latest
-      REDIS_REF: ${{ inputs.redis-ref || 'unstable' }}
+      REDIS_REF: ${{ inputs.redis-ref || '8.8' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
