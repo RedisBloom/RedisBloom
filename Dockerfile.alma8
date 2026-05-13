@@ -18,7 +18,7 @@ ENV LD_LIBRARY_PATH="/opt/rh/gcc-toolset-11/root/usr/lib64:${LD_LIBRARY_PATH}"
 COPY .install /workspace/.install
 RUN chmod +x /workspace/.install/install_cmake.sh && /workspace/.install/install_cmake.sh
 
-ARG REDIS_REF=unstable
+ARG REDIS_REF=8.8
 ARG SANITIZER=
 RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
 
