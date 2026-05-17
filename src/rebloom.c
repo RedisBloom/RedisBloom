@@ -1340,7 +1340,7 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
 
     bool err = false;
     CuckooFilter *cf = RedisModule_Calloc(1, sizeof(*cf));
-    errdefer(err, CuckooFilter_Free(cf));
+    errdefer(err, CFFree(cf));
     cf->numFilters = LoadUnsigned_IOError(io, err, NULL);
     cf->numBuckets = LoadUnsigned_IOError(io, err, NULL);
     if (cf->numFilters == 0 || cf->numBuckets == 0) {
