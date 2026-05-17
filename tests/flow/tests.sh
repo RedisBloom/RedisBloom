@@ -13,6 +13,27 @@ SAN_REDIS_VER=7.4
 
 cd $HERE
 
+# EL8/RHEL: default `python3` may be 3.6; RLTest may be installed only in venv or 3.11+.
+pick_rltest_python() {
+	local p
+	if [[ -n "${RLTEST_PYTHON:-}" ]]; then
+		echo "${RLTEST_PYTHON}"
+		return
+	fi
+	if [[ -x "$ROOT/venv/bin/python" ]] && "$ROOT/venv/bin/python" -c 'import RLTest' &>/dev/null; then
+		echo "$ROOT/venv/bin/python"
+		return
+	fi
+	for p in python3.12 python3.11 python3.10 python3.9 python3; do
+		if command -v "$p" &>/dev/null && "$p" -c 'import RLTest' &>/dev/null; then
+			command -v "$p"
+			return
+		fi
+	done
+	echo python3
+}
+RLTEST_PY="$(pick_rltest_python)"
+
 #----------------------------------------------------------------------------------------------
 
 help() {
@@ -62,6 +83,7 @@ help() {
 		RLTEST=path|'view'    Take RLTest from repo path or from local view
 		RLTEST_DEBUG=1        Show debugging printouts from tests
 		RLTEST_ARGS=args      Extra RLTest args
+		RLTEST_PYTHON=path    Python for `python -m RLTest` (default: venv or first with RLTest)
 
 		PARALLEL=1            Runs tests in parallel
 		SLOW=1                Do not test in parallel
@@ -326,9 +348,9 @@ run_tests() {
 
 	local E=0
 	if [[ $NOP != 1 ]]; then
-		{ $OP python3 -m RLTest @$rltest_config; (( E |= $? )); } || true
+		{ $OP "$RLTEST_PY" -m RLTest @$rltest_config; (( E |= $? )); } || true
 	else
-		$OP python3 -m RLTest @$rltest_config
+		$OP "$RLTEST_PY" -m RLTest @$rltest_config
 	fi
 
 	[[ $KEEP != 1 ]] && rm -f $rltest_config
