@@ -382,6 +382,7 @@ static const RedisModuleCommandInfo CF_SCANDUMP_INFO = {
     .summary = "Begins an incremental save of the bloom filter",
     .complexity = "O(n), where n is the capacity",
     .since = "1.0.0",
+    .tips = "dont-cache",
     .arity = 3,
     .key_specs = (RedisModuleCommandKeySpec *)CF_SCANDUMP_KEYSPECS,
     .args = (RedisModuleCommandArg *)CF_SCANDUMP_ARGS,
