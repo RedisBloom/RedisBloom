@@ -105,31 +105,6 @@ static const RedisModuleCommandInfo CF_DEL_INFO = {
 };
 
 // ===============================
-// CF.DEBUG key
-// ===============================
-static const RedisModuleCommandKeySpec CF_DEBUG_KEYSPECS[] = {
-    {.flags = REDISMODULE_CMD_KEY_RO,
-     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
-     .bs.index = {.pos = 1},
-     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
-     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
-    {0}};
-
-static const RedisModuleCommandArg CF_DEBUG_ARGS[] = {
-    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0}, {0}};
-
-static const RedisModuleCommandInfo CF_DEBUG_INFO = {
-    .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Returns internal debug information about a Cuckoo Filter",
-    .complexity = "O(1)",
-    .since = "1.0.0",
-    .tips = "dont-cache",
-    .arity = 2,
-    .key_specs = (RedisModuleCommandKeySpec *)CF_DEBUG_KEYSPECS,
-    .args = (RedisModuleCommandArg *)CF_DEBUG_ARGS,
-};
-
-// ===============================
 // CF.EXISTS key item
 // ===============================
 static const RedisModuleCommandKeySpec CF_EXISTS_KEYSPECS[] = {
@@ -388,36 +363,90 @@ static const RedisModuleCommandInfo CF_SCANDUMP_INFO = {
     .args = (RedisModuleCommandArg *)CF_SCANDUMP_ARGS,
 };
 
-static int register_cf_cmd_info(RedisModuleCtx *ctx, const char *name,
-                                const RedisModuleCommandInfo *info) {
-    RedisModuleCommand *cmd = RedisModule_GetCommand(ctx, name);
-    if (!cmd)
-        return REDISMODULE_ERR;
-    return RedisModule_SetCommandInfo(cmd, info);
-}
-
 int RegisterCFCommandInfos(RedisModuleCtx *ctx) {
-    const struct {
-        const char *name;
-        const RedisModuleCommandInfo *info;
-    } entries[] = {
-        {"cf.add",       &CF_ADD_INFO},
-        {"cf.addnx",     &CF_ADDNX_INFO},
-        {"cf.count",     &CF_COUNT_INFO},
-        {"cf.del",       &CF_DEL_INFO},
-        {"cf.debug",     &CF_DEBUG_INFO},
-        {"cf.exists",    &CF_EXISTS_INFO},
-        {"cf.info",      &CF_INFO_INFO},
-        {"cf.insert",    &CF_INSERT_INFO},
-        {"cf.insertnx", &CF_INSERTNX_INFO},
-        {"cf.loadchunk", &CF_LOADCHUNK_INFO},
-        {"cf.mexists",   &CF_MEXISTS_INFO},
-        {"cf.reserve",   &CF_RESERVE_INFO},
-        {"cf.scandump",  &CF_SCANDUMP_INFO},
-    };
-    for (size_t i = 0; i < sizeof(entries) / sizeof(entries[0]); ++i) {
-        if (register_cf_cmd_info(ctx, entries[i].name, entries[i].info) == REDISMODULE_ERR)
-            return REDISMODULE_ERR;
+    RedisModuleCommand *add_cmd = RedisModule_GetCommand(ctx, "cf.add");
+    if (!add_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(add_cmd, &CF_ADD_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
     }
+
+    RedisModuleCommand *addnx_cmd = RedisModule_GetCommand(ctx, "cf.addnx");
+    if (!addnx_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(addnx_cmd, &CF_ADDNX_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *count_cmd = RedisModule_GetCommand(ctx, "cf.count");
+    if (!count_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(count_cmd, &CF_COUNT_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *del_cmd = RedisModule_GetCommand(ctx, "cf.del");
+    if (!del_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(del_cmd, &CF_DEL_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *exists_cmd = RedisModule_GetCommand(ctx, "cf.exists");
+    if (!exists_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(exists_cmd, &CF_EXISTS_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *info_cmd = RedisModule_GetCommand(ctx, "cf.info");
+    if (!info_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(info_cmd, &CF_INFO_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *insert_cmd = RedisModule_GetCommand(ctx, "cf.insert");
+    if (!insert_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(insert_cmd, &CF_INSERT_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *insertnx_cmd = RedisModule_GetCommand(ctx, "cf.insertnx");
+    if (!insertnx_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(insertnx_cmd, &CF_INSERTNX_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *loadchunk_cmd = RedisModule_GetCommand(ctx, "cf.loadchunk");
+    if (!loadchunk_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(loadchunk_cmd, &CF_LOADCHUNK_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *mexists_cmd = RedisModule_GetCommand(ctx, "cf.mexists");
+    if (!mexists_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(mexists_cmd, &CF_MEXISTS_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *reserve_cmd = RedisModule_GetCommand(ctx, "cf.reserve");
+    if (!reserve_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(reserve_cmd, &CF_RESERVE_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *scandump_cmd = RedisModule_GetCommand(ctx, "cf.scandump");
+    if (!scandump_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(scandump_cmd, &CF_SCANDUMP_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
     return REDISMODULE_OK;
 }
