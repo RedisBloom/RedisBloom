@@ -105,6 +105,31 @@ static const RedisModuleCommandInfo CF_DEL_INFO = {
 };
 
 // ===============================
+// CF.DEBUG key
+// ===============================
+static const RedisModuleCommandKeySpec CF_DEBUG_KEYSPECS[] = {
+    {.flags = REDISMODULE_CMD_KEY_RO,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg CF_DEBUG_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0}, {0}};
+
+static const RedisModuleCommandInfo CF_DEBUG_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Returns internal debug information about a Cuckoo Filter",
+    .complexity = "O(1)",
+    .since = "1.0.0",
+    .tips = "nondeterministic_output",
+    .arity = 2,
+    .key_specs = (RedisModuleCommandKeySpec *)CF_DEBUG_KEYSPECS,
+    .args = (RedisModuleCommandArg *)CF_DEBUG_ARGS,
+};
+
+// ===============================
 // CF.EXISTS key item
 // ===============================
 static const RedisModuleCommandKeySpec CF_EXISTS_KEYSPECS[] = {
@@ -149,6 +174,7 @@ static const RedisModuleCommandInfo CF_INFO_INFO = {
     .summary = "Returns information about a Cuckoo Filter",
     .complexity = "O(1)",
     .since = "1.0.0",
+    .tips = "nondeterministic_output",
     .arity = 2,
     .key_specs = (RedisModuleCommandKeySpec *)CF_INFO_KEYSPECS,
     .args = (RedisModuleCommandArg *)CF_INFO_ARGS,
@@ -387,6 +413,13 @@ int RegisterCFCommandInfos(RedisModuleCtx *ctx) {
     if (!del_cmd)
         return REDISMODULE_ERR;
     if (RedisModule_SetCommandInfo(del_cmd, &CF_DEL_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *debug_cmd = RedisModule_GetCommand(ctx, "cf.debug");
+    if (!debug_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(debug_cmd, &CF_DEBUG_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
