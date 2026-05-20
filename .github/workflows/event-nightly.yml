@@ -41,26 +41,17 @@ jobs:
         id: set-env
         run: |
           # Determine redis-ref based on the module branch:
-          #   master / main  -> unstable
-          #   X.Y            -> X.Y
-          #   X.Y.Z          -> X.Y.Z
+          #   X.Y           -> X.Y
+          #   anything else -> unstable (default)
           # workflow_dispatch input overrides the auto-detection.
           INPUT_REDIS_REF="${{ inputs.redis-ref }}"
           BRANCH_REF="${{ github.ref_name }}"
           if [ -n "$INPUT_REDIS_REF" ]; then
             REDIS_REF="$INPUT_REDIS_REF"
+          elif [[ "$BRANCH_REF" =~ ^[0-9]+\.[0-9]+$ ]]; then
+            REDIS_REF="$BRANCH_REF"
           else
-            case "$BRANCH_REF" in
-              master|main)
-                REDIS_REF="unstable"
-                ;;
-              [0-9]*.[0-9]*)
-                REDIS_REF="$BRANCH_REF"
-                ;;
-              *)
-                REDIS_REF="unstable"
-                ;;
-            esac
+            REDIS_REF="unstable"
           fi
           echo "redis-ref=${REDIS_REF}" >> $GITHUB_OUTPUT
           echo "Resolved redis-ref: ${REDIS_REF} (branch=${BRANCH_REF}, input=${INPUT_REDIS_REF:-<none>})"
