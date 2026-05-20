@@ -40,7 +40,30 @@ jobs:
       - name: set env
         id: set-env
         run: |
-          echo "redis-ref=${{ inputs.redis-ref || 'unstable' }}" >> $GITHUB_OUTPUT  # todo change per version/tag
+          # Determine redis-ref based on the module branch:
+          #   master / main  -> unstable
+          #   X.Y            -> X.Y
+          #   X.Y.Z          -> X.Y.Z
+          # workflow_dispatch input overrides the auto-detection.
+          INPUT_REDIS_REF="${{ inputs.redis-ref }}"
+          BRANCH_REF="${{ github.ref_name }}"
+          if [ -n "$INPUT_REDIS_REF" ]; then
+            REDIS_REF="$INPUT_REDIS_REF"
+          else
+            case "$BRANCH_REF" in
+              master|main)
+                REDIS_REF="unstable"
+                ;;
+              [0-9]*.[0-9]*)
+                REDIS_REF="$BRANCH_REF"
+                ;;
+              *)
+                REDIS_REF="unstable"
+                ;;
+            esac
+          fi
+          echo "redis-ref=${REDIS_REF}" >> $GITHUB_OUTPUT
+          echo "Resolved redis-ref: ${REDIS_REF} (branch=${BRANCH_REF}, input=${INPUT_REDIS_REF:-<none>})"
           
           # Generate unique beta version with date and GitHub run number
           # Format: YYYYMMDD.HHMMSS.RUN_NUMBER (to handle parallel runs and multiple daily runs)
