@@ -74,7 +74,6 @@ if [[ -r /etc/os-release ]]; then
 fi
 [[ $OSNICK == trusty ]]  && OSNICK=ubuntu14.04
 [[ $OSNICK == xenial ]]  && OSNICK=ubuntu16.04
-[[ $OSNICK == bionic ]]  && OSNICK=ubuntu18.04
 [[ $OSNICK == focal ]]   && OSNICK=ubuntu20.04
 [[ $OSNICK == jammy ]]   && OSNICK=ubuntu22.04
 [[ $OSNICK == noble ]]   && OSNICK=ubuntu24.04

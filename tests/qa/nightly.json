@@ -13,7 +13,7 @@
     "cycle_environments_setup": [
       {
         "teardown": true,
-        "name": "bionic-amd64-aws",
+        "name": "focal-amd64-aws",
         "concurrency": 1
       }
     ]
