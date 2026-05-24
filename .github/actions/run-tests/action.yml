@@ -35,5 +35,6 @@ runs:
         TEST_OUTPUT_FILE="$GITHUB_WORKSPACE/test_output.log"
         make test VG="$INPUT_RUN_VALGRIND" SAN="$INPUT_RUN_SANITIZER" \
           REDIS_SERVER="$GITHUB_WORKSPACE/redis/src/redis-server" 2>&1 | tee "$TEST_OUTPUT_FILE"
+        TEST_EXIT=${PIPESTATUS[0]}
         echo "TEST_OUTPUT_FILE=$TEST_OUTPUT_FILE" >> $GITHUB_ENV
-        exit ${PIPESTATUS[0]}
+        exit $TEST_EXIT

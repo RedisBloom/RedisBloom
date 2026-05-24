@@ -20,7 +20,7 @@ RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANI
 
 # Use system Python with venv (like the old flow-alpine workflow)
 # uv's managed Python has clang-specific flags that cause build issues
-RUN python3 -m venv /opt/.venv
+RUN python3 -m venv --system-site-packages /opt/.venv
 ENV VIRTUAL_ENV=/opt/.venv
 ENV PATH="/opt/.venv/bin:${PATH}"
 
