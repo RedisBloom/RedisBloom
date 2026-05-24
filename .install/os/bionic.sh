@@ -13,8 +13,8 @@
 # not in the base image and pulling it via apt_install lets us populate the
 # apt cache in a single update pass.
 
-# shellcheck source=../lib/sets.sh
-. "$LIB/sets.sh"
+# shellcheck source=../lib/packages.sh
+. "$LIB/packages.sh"
 
 apt_install software-properties-common lsb-core binfmt-support cargo zlib1g-dev
 $SUDO add-apt-repository ppa:ubuntu-toolchain-r/test -y

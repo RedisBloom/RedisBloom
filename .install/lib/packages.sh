@@ -24,8 +24,9 @@ DEBIAN_BASE="
 "
 
 # ----------------------------------------------------------------------------
-# RHEL family (dnf / yum). EL10 base repos do not ship lcov; install from
-# EPEL inline if a particular CI lane needs it.
+# RHEL family (dnf / yum). EL8/EL9 ship lcov (EL8 via EPEL, EL9 via base);
+# EL10 does not. We list lcov here unconditionally and rely on
+# dnf_install/yum_install's --skip-broken to silently drop it on EL10.
 # ----------------------------------------------------------------------------
 RHEL_BASE="
     ca-certificates wget curl git make autoconf automake libtool
@@ -35,7 +36,7 @@ RHEL_BASE="
     tcl
     python3 python3-pip python3-devel python3-numpy
     cmake
-    unzip rsync valgrind jq tar which gdb
+    unzip rsync valgrind lcov jq tar which gdb
 "
 
 # ----------------------------------------------------------------------------

@@ -2,8 +2,8 @@
 # Ubuntu 20.04 (focal). Apt's gcc-9 on 20.04 misses C++20 features used
 # downstream; pull gcc-10/g++-10 and switch /usr/bin/{gcc,g++} to them.
 
-# shellcheck source=../lib/sets.sh
-. "$LIB/sets.sh"
+# shellcheck source=../lib/packages.sh
+. "$LIB/packages.sh"
 
 debian_default_install
 apt_install gcc-10 g++-10

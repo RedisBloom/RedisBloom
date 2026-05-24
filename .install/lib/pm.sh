@@ -10,7 +10,7 @@
 #   apt_install / dnf_install / yum_install / tdnf_install / apk_install
 #   brew_install
 #
-# Family defaults (compose lib/sets.sh + groupinstall + repo enables):
+# Family defaults (compose lib/packages.sh + groupinstall + repo enables):
 #   debian_default_install
 #   rhel_default_install   <- "Development Tools" + RHEL_BASE
 #   tdnf_default_install
@@ -95,7 +95,7 @@ brew_install() {
 }
 
 # ----------------------------------------------------------------------------
-# Family-default installers — composes lib/sets.sh + family-wide quirks
+# Family-default installers — composes lib/packages.sh + family-wide quirks
 # (groupinstall, repo enables, EL8/EL9 toolsets). Per-OS files just call
 # the matching one and add their own delta on top.
 # ----------------------------------------------------------------------------

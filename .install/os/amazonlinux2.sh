@@ -11,8 +11,8 @@
 #      Anything depending on cmake>=3 (e.g. cpu_features) would otherwise
 #      pick up the 2.8 binary first.
 
-# shellcheck source=../lib/sets.sh
-. "$LIB/sets.sh"
+# shellcheck source=../lib/packages.sh
+. "$LIB/packages.sh"
 
 $SUDO amazon-linux-extras install epel -y
 $SUDO yum -y install epel-release yum-utils
@@ -24,3 +24,8 @@ $SUDO yum -y install --nogpgcheck --skip-broken \
 
 rhel_default_install
 $SUDO ln -sf "$(command -v cmake3)" /usr/bin/cmake
+
+# Install aws-cli for uploading artifacts to s3
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+./aws/install

@@ -16,8 +16,8 @@
 #      they do on Linux. Append a profile snippet so subsequent shells
 #      pick up the new PATH.
 
-# shellcheck source=../lib/sets.sh
-. "$LIB/sets.sh"
+# shellcheck source=../lib/packages.sh
+. "$LIB/packages.sh"
 
 if ! command -v brew >/dev/null 2>&1; then
     echo "macos.sh: brew is not installed; install from https://brew.sh" >&2
