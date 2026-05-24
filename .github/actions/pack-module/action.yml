@@ -1,6 +1,10 @@
 name: Run pack module script
 
 inputs:
+  use-venv:
+    type: string
+    description: 'Specify whether to use the environment or not'
+    default: '0'
   beta-version:
     description: 'Version suffix for beta builds (YYYYMMDD.HHMMSS.RUN_NUMBER format)'
     required: false
@@ -15,10 +19,12 @@ runs:
         then
             . scl_source enable devtoolset-11 || true
         fi
-        . venv/bin/activate
+        if [[ "${{ inputs.use-venv }}" == "1" ]]; then
+          . venv/bin/activate
+        fi
         export PATH="$GITHUB_WORKSPACE/redis/src:$PATH"
         git config --global --add safe.directory $GITHUB_WORKSPACE
-          if [[ -n "${{ inputs.beta-version }}" ]]; then
-            export BETA_VERSION="${{ inputs.beta-version }}"
-          fi
+        if [[ -n "${{ inputs.beta-version }}" ]]; then
+          export BETA_VERSION="${{ inputs.beta-version }}"
+        fi
         make pack BRANCH=$TAG_OR_BRANCH SHOW=1

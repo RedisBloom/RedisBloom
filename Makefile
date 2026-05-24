@@ -1,6 +1,22 @@
 
 ROOT=.
 
+# Standalone `make bootstrap` on a host with no python3 yet: skip Readies (which
+# errors during Makefile parse) and run install_script.sh first. The
+# installer detects OSNICK, installs system packages via .install/os/<osnick>.sh,
+# then provisions uv + $(ROOT)/venv + pip deps via .install/lib/setup-python.sh.
+ifeq ($(MAKECMDGOALS),bootstrap)
+override ROOT:=$(shell cd $(ROOT) && pwd)
+INSTALL_SCRIPT_MODE ?= $(if $(filter Linux,$(shell uname -s)),sudo,)
+
+bootstrap:
+	@rm -rf $(ROOT)/venv
+	@cd $(ROOT)/.install && ./install_script.sh $(INSTALL_SCRIPT_MODE)
+
+.PHONY: bootstrap
+
+else
+
 include $(ROOT)/deps/readies/mk/main
 
 # RedisBloom only supports 64-bit architectures
@@ -21,7 +37,7 @@ include $(ROOT)/build/t-digest-c/Makefile.defs
 #----------------------------------------------------------------------------------------------
 
 define HELPTEXT
-make setup         # install packages required for build
+make bootstrap     # install packages required for build
 make fetch         # download and prepare dependant modules
 
 make build
@@ -372,5 +388,27 @@ ifeq ($(PUBLISH),1)
 endif
 
 .PHONY: docker
+
+#----------------------------------------------------------------------------------------------
+# `make bootstrap` — install build & test prereqs for RedisBloom.
+#
+# Detects the host OSNICK and runs the matching .install/os/<osnick>.sh, then
+# provisions uv + venv + pip deps via .install/lib/setup-python.sh.
+# See .install/install_script.sh for the full flow.
+#
+# INSTALL_SCRIPT_MODE: on Linux, default `sudo` so apt works for non-root
+# users; on macOS, empty (brew must not run under sudo). Override with
+# `make bootstrap INSTALL_SCRIPT_MODE=` when already root (e.g. some containers).
+#----------------------------------------------------------------------------------------------
+
+INSTALL_SCRIPT_MODE ?= $(if $(filter Linux,$(shell uname -s)),sudo,)
+
+bootstrap:
+	$(SHOW)rm -rf venv
+	$(SHOW)cd .install && ./install_script.sh $(INSTALL_SCRIPT_MODE)
+
+.PHONY: bootstrap
+
+endif
 
 #----------------------------------------------------------------------------------------------
