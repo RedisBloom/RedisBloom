@@ -8,6 +8,11 @@
 # Replaces the legacy all-in-one pip bootstrap script (now deleted): all pip
 # work lives here so `make bootstrap` is just install_script.sh + done.
 
+# Required by callers — set by install_script.sh. Fail fast if absent rather
+# than producing a confusing `uv venv ""` failure later.
+: "${ROOT:?setup-python.sh: ROOT not set (must be sourced by install_script.sh)}"
+: "${HERE:?setup-python.sh: HERE not set (must be sourced by install_script.sh)}"
+
 if ! command -v uv >/dev/null 2>&1; then
     echo "==> [redisbloom] installing uv"
     curl -LsSf https://astral.sh/uv/install.sh | sh

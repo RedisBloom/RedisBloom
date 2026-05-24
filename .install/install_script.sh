@@ -11,7 +11,7 @@
 #   ./install_script.sh [sudo]    # "sudo" wraps installs (Linux); empty
 #                                 # for macOS or already-root containers.
 
-set -eu
+set -euo pipefail
 
 MODE="${1:-}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
@@ -41,7 +41,12 @@ echo "==> [redisbloom] OSNICK=$OSNICK PM=$PM"
 # shellcheck disable=SC1090
 . "$osfile"
 
-git config --global --add safe.directory '*' || true
+# Allow git operations on the checked-out source even when its uid doesn't
+# match the current user (common in CI containers). Scoped to this repo
+# (--local), not the host's global git config.
+if [ -d "$ROOT/.git" ]; then
+    git -C "$ROOT" config --local --add safe.directory '*' || true
+fi
 
 # shellcheck source=lib/setup-python.sh
 . "$LIB/setup-python.sh"

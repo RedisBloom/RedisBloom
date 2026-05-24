@@ -2,7 +2,6 @@
 FROM almalinux:9
 
 WORKDIR /workspace
-ENV DEBIAN_FRONTEND=noninteractive
 
 # Install build/test deps via the per-OSNICK installer (.install/os/alma9.sh
 # layers gcc-toolset-13 over the RHEL base and drops a /etc/profile.d snippet).

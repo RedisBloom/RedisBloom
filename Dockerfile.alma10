@@ -2,7 +2,6 @@
 FROM almalinux:10
 
 WORKDIR /workspace
-ENV DEBIAN_FRONTEND=noninteractive
 
 # Install build/test deps via the per-OSNICK installer (.install/os/alma10.sh).
 COPY .install /workspace/.install

@@ -5,7 +5,7 @@ ROOT=.
 # errors during Makefile parse) and run install_script.sh first. The
 # installer detects OSNICK, installs system packages via .install/os/<osnick>.sh,
 # then provisions uv + $(ROOT)/venv + pip deps via .install/lib/setup-python.sh.
-ifeq ($(MAKECMDGOALS),bootstrap)
+ifneq (,$(filter bootstrap,$(MAKECMDGOALS)))
 override ROOT:=$(shell cd $(ROOT) && pwd)
 INSTALL_SCRIPT_MODE ?= $(if $(filter Linux,$(shell uname -s)),sudo,)
 
@@ -389,25 +389,8 @@ endif
 
 .PHONY: docker
 
-#----------------------------------------------------------------------------------------------
-# `make bootstrap` — install build & test prereqs for RedisBloom.
-#
-# Detects the host OSNICK and runs the matching .install/os/<osnick>.sh, then
-# provisions uv + venv + pip deps via .install/lib/setup-python.sh.
-# See .install/install_script.sh for the full flow.
-#
-# INSTALL_SCRIPT_MODE: on Linux, default `sudo` so apt works for non-root
-# users; on macOS, empty (brew must not run under sudo). Override with
-# `make bootstrap INSTALL_SCRIPT_MODE=` when already root (e.g. some containers).
-#----------------------------------------------------------------------------------------------
-
-INSTALL_SCRIPT_MODE ?= $(if $(filter Linux,$(shell uname -s)),sudo,)
-
-bootstrap:
-	$(SHOW)rm -rf venv
-	$(SHOW)cd .install && ./install_script.sh $(INSTALL_SCRIPT_MODE)
-
-.PHONY: bootstrap
+# `make bootstrap` is defined at the top of this file, inside the ifneq that
+# short-circuits the readies/Python-requiring include path.
 
 endif
 

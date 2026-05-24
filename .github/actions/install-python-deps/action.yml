@@ -37,7 +37,11 @@ runs:
               echo "::error::venv missing; install_script.sh must run before this action" >&2
               exit 1
             fi
-            echo "source $PWD/venv/bin/activate" >> ~/.bash_profile
+            # Append only if not already present — multiple invocations of
+            # this action otherwise stack duplicate `source` lines.
+            activate_line="source $PWD/venv/bin/activate"
+            touch ~/.bash_profile
+            grep -qxF "$activate_line" ~/.bash_profile || echo "$activate_line" >> ~/.bash_profile
             . venv/bin/activate
           echo ::endgroup::
         fi

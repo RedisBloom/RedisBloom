@@ -32,7 +32,9 @@ pick_rltest_python() {
 	done
 	echo python3
 }
-RLTEST_PY="$(pick_rltest_python)"
+# RLTEST_PY is computed lazily on first use (see run_tests) so callers can
+# still override RLTEST_PYTHON via env/CLI after this script's prelude runs.
+RLTEST_PY=""
 
 #----------------------------------------------------------------------------------------------
 
@@ -345,6 +347,8 @@ run_tests() {
 	fi
 
 	[[ $RLEC == 1 ]] && export RLEC_CLUSTER=1
+
+	[[ -z "$RLTEST_PY" ]] && RLTEST_PY="$(pick_rltest_python)"
 
 	local E=0
 	if [[ $NOP != 1 ]]; then
