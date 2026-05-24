@@ -165,6 +165,7 @@ static const RedisModuleCommandInfo TDIGEST_INFO_INFO = {
     .summary = "Returns information and statistics about a t-digest sketch",
     .complexity = "O(1)",
     .since = "2.4.0",
+    .tips = "dont_cache",
     .arity = 2,
     .key_specs = (RedisModuleCommandKeySpec *)TDIGEST_INFO_KEYSPECS,
     .args = (RedisModuleCommandArg *)TDIGEST_INFO_ARGS,

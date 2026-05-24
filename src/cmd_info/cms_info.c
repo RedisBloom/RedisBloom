@@ -53,6 +53,7 @@ static const RedisModuleCommandInfo CMS_INFO_INFO = {
     .summary = "Returns information about a sketch",
     .complexity = "O(1)",
     .since = "2.0.0",
+    .tips = "dont_cache",
     .arity = 2,
     .key_specs = (RedisModuleCommandKeySpec *)CMS_INFO_KEYSPECS,
     .args = (RedisModuleCommandArg *)CMS_INFO_ARGS,

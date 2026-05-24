@@ -51,6 +51,31 @@ static const RedisModuleCommandInfo BF_CARD_INFO = {
 };
 
 // ===============================
+// BF.DEBUG key
+// ===============================
+static const RedisModuleCommandKeySpec BF_DEBUG_KEYSPECS[] = {
+    {.flags = REDISMODULE_CMD_KEY_RO,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg BF_DEBUG_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0}, {0}};
+
+static const RedisModuleCommandInfo BF_DEBUG_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Returns internal debug information about a Bloom Filter",
+    .complexity = "O(n), where n is the number of sub-filters",
+    .since = "1.0.0",
+    .tips = "dont_cache",
+    .arity = 2,
+    .key_specs = (RedisModuleCommandKeySpec *)BF_DEBUG_KEYSPECS,
+    .args = (RedisModuleCommandArg *)BF_DEBUG_ARGS,
+};
+
+// ===============================
 // BF.EXISTS key item
 // ===============================
 static const RedisModuleCommandKeySpec BF_EXISTS_KEYSPECS[] = {
@@ -108,6 +133,7 @@ static const RedisModuleCommandInfo BF_INFO_INFO = {
     .summary = "Returns information about a Bloom Filter",
     .complexity = "O(1)",
     .since = "1.0.0",
+    .tips = "dont_cache",
     .arity = -2,
     .key_specs = (RedisModuleCommandKeySpec *)BF_INFO_KEYSPECS,
     .args = (RedisModuleCommandArg *)BF_INFO_ARGS,
@@ -311,6 +337,7 @@ static const RedisModuleCommandInfo BF_SCANDUMP_INFO = {
     .summary = "Begins an incremental save of the bloom filter",
     .complexity = "O(n), where n is the capacity",
     .since = "1.0.0",
+    .tips = "dont_cache",
     .arity = 3,
     .key_specs = (RedisModuleCommandKeySpec *)BF_SCANDUMP_KEYSPECS,
     .args = (RedisModuleCommandArg *)BF_SCANDUMP_ARGS,
@@ -328,6 +355,13 @@ int RegisterBFCommandInfos(RedisModuleCtx *ctx) {
     if (!cmd_card)
         return REDISMODULE_ERR;
     if (RedisModule_SetCommandInfo(cmd_card, &BF_CARD_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *cmd_debug = RedisModule_GetCommand(ctx, "bf.debug");
+    if (!cmd_debug)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(cmd_debug, &BF_DEBUG_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
