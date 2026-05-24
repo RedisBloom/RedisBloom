@@ -75,7 +75,7 @@ jobs:
       TAG_OR_BRANCH: ${{ steps.set-env.outputs.TAG }}${{ steps.set-env.outputs.BRANCH }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Set matrix
         id: set-matrix
         run: |
@@ -117,11 +117,11 @@ jobs:
         run: |
           brew install make coreutils autoconf automake pyenv-virtualenv libtool
       - name: Full checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
       - name: Checkout Redis
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: 'redis/redis'
           ref: ${{ needs.prepare-values.outputs.redis-ref }}
