@@ -20,6 +20,10 @@ runs:
   steps:
     - name: Install Python dependencies
       shell: bash
+      env:
+        INPUT_USE_VENV: ${{ inputs.use-venv }}
+        INPUT_EXTRA_PACKAGES: ${{ inputs.extra-packages-to-install }}
+        INPUT_CALL_SETUP: ${{ inputs.call-setup }}
       run: |
         if command -v scl_source &> /dev/null
         then
@@ -27,7 +31,7 @@ runs:
         fi
         # Add /usr/local/bin to PATH for Rocky Linux Python
         export PATH="/usr/local/bin:$PATH"
-        if [[ "${{ inputs.use-venv }}" == "1" ]]; then
+        if [[ "$INPUT_USE_VENV" == "1" ]]; then
           echo ::group::Activate virtual environment
             # venv was created and populated by install_script.sh's
             # lib/setup-python.sh (uv venv + pinned pip + build_package_requirements.txt
@@ -49,10 +53,10 @@ runs:
           # Base deps (build_package_requirements.txt, tests/flow/requirements.txt)
           # are already installed by install_script.sh -> lib/setup-python.sh.
           # Only add the optional extras + call ./sbin/setup if the caller asked.
-          if [[ "${{inputs.extra-packages-to-install}}" != "" ]]; then
-            pip install ${{inputs.extra-packages-to-install}}
+          if [[ -n "$INPUT_EXTRA_PACKAGES" ]]; then
+            pip install $INPUT_EXTRA_PACKAGES
           fi
-          if [[ "${{inputs.call-setup}}" == "1" ]]; then
+          if [[ "$INPUT_CALL_SETUP" == "1" ]]; then
             ./sbin/setup
           fi
         echo ::endgroup::
