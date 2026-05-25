@@ -165,7 +165,10 @@ _pm_enable_el8_extras() {
 # fail looking for Python.h that matches the wrong interpreter.
 el8_default_install() {
     $SUDO dnf -y install epel-release
-    _pm_enable_el8_extras
+    # Hard-fail: without codeready-builder, libatomic-devel (and other -devel
+    # pkgs) won't resolve in the dnf_install below, leaving a half-installed
+    # toolchain and a confusing "no package" error several steps later.
+    _pm_enable_el8_extras || exit 1
     rhel_default_install
     dnf_install \
         gcc-toolset-11-gcc gcc-toolset-11-gcc-c++ gcc-toolset-11-libatomic-devel \

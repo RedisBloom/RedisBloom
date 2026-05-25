@@ -11,7 +11,7 @@ INSTALL_SCRIPT_MODE ?= $(if $(filter Linux,$(shell uname -s)),sudo,)
 
 bootstrap:
 	@rm -rf $(ROOT)/venv
-	@cd $(ROOT)/.install && ./install_script.sh $(INSTALL_SCRIPT_MODE)
+	cd $(ROOT)/.install && ./install_script.sh $(INSTALL_SCRIPT_MODE)
 
 .PHONY: bootstrap
 

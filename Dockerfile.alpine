@@ -19,8 +19,12 @@ ARG SANITIZER=
 RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
 
 # Use system Python with venv (like the old flow-alpine workflow)
-# uv's managed Python has clang-specific flags that cause build issues
-RUN python3 -m venv --system-site-packages /opt/.venv
+# uv's managed Python has clang-specific flags that cause build issues.
+# `test -x` catches the silent-partial-success case (venv exits 0 but
+# bin/python is missing/broken) before downstream RUNs depend on it —
+# same guard install_script.sh's setup-python.sh applies for native bootstrap.
+RUN python3 -m venv --system-site-packages /opt/.venv && \
+    test -x /opt/.venv/bin/python
 ENV VIRTUAL_ENV=/opt/.venv
 ENV PATH="/opt/.venv/bin:${PATH}"
 

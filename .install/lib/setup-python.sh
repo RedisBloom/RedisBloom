@@ -7,6 +7,13 @@
 #
 # Replaces the legacy all-in-one pip bootstrap script (now deleted): all pip
 # work lives here so `make bootstrap` is just install_script.sh + done.
+#
+# Optional input: SETUP_PYTHON_VERSION (default: 3.12). Selects the interpreter
+# uv uses for `$ROOT/venv`. Currently overridden to "3.11" by pm.sh's
+# el8_default_install — EL8's base python3 is 3.6 (too old), and uv's auto-
+# downloaded 3.12 makes psutil's wheel-less aarch64 source build look for
+# Python.h against the wrong interpreter. Set this yourself before sourcing
+# the script if you need a non-default interpreter on another OS.
 
 # Required by callers — set by install_script.sh. Fail fast if absent rather
 # than producing a confusing `uv venv ""` failure later.
@@ -20,8 +27,10 @@ if ! command -v uv >/dev/null 2>&1; then
 fi
 
 if ! command -v uv >/dev/null 2>&1; then
-    echo "setup-python.sh: WARNING: uv installation failed; skipping venv setup" >&2
-    return 0 2>/dev/null || exit 0
+    echo "setup-python.sh: ERROR: uv installation failed; cannot create venv" >&2
+    # Hard-fail: continuing past this point produces a "successful" bootstrap
+    # with no venv on disk, which silently breaks every later test/flow step.
+    return 1 2>/dev/null || exit 1
 fi
 
 # A stale or partial venv (e.g. a previous `make bootstrap` aborted halfway,
