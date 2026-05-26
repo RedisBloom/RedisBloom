@@ -1,22 +1,54 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Install build/test dependencies for RedisBloom.
+#
+# Flow:
+#   1. detect canonical OSNICK (uname + /etc/os-release)
+#   2. source lib/pm.sh — exports PM, SUDO, install helpers
+#   3. source os/<osnick>.sh — installs OS packages and inlines any quirks
+#   4. source lib/setup-python.sh — uv + venv + pip deps
+#
+# Same calling convention as the legacy script:
+#   ./install_script.sh [sudo]    # "sudo" wraps installs (Linux); empty
+#                                 # for macOS or already-root containers.
 
-OS_TYPE=$(uname -s)
-MODE=$1 # whether to install using sudo or not
+set -euo pipefail
 
-if [[ $OS_TYPE = 'Darwin' ]]
-then
-    OS='macos'
-else
-    VERSION=$(grep '^VERSION_ID=' /etc/os-release | sed 's/"//g')
-    VERSION=${VERSION#"VERSION_ID="}
-    OS_NAME=$(grep '^NAME=' /etc/os-release | sed 's/"//g')
-    OS_NAME=${OS_NAME#"NAME="}
-    [[ $OS_NAME == 'Rocky Linux' ]] && VERSION=${VERSION%.*} # remove minor version for Rocky Linux
-    OS=${OS_NAME,,}_${VERSION}
-    OS=$(echo $OS | sed 's/[/ ]/_/g') # replace spaces and slashes with underscores
+MODE="${1:-}"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+ROOT="$(cd "$HERE/.." && pwd)"
+LIB="$HERE/lib"
+
+# shellcheck source=lib/detect-osnick.sh
+. "$LIB/detect-osnick.sh"
+# shellcheck source=lib/pm.sh
+. "$LIB/pm.sh"
+
+OSNICK="$(detect_osnick)"
+if [ -z "$OSNICK" ]; then
+    echo "install_script.sh: cannot detect OSNICK (uname=$(uname -s))" >&2
+    exit 1
 fi
-echo $OS
 
-source ${OS}.sh $MODE
+osfile="$HERE/os/$OSNICK.sh"
+if [ ! -f "$osfile" ]; then
+    echo "install_script.sh: unsupported OSNICK '$OSNICK' (no $osfile)" >&2
+    echo "Supported: $(ls "$HERE/os" 2>/dev/null | sed 's/\.sh$//' | xargs)" >&2
+    exit 1
+fi
 
-git config --global --add safe.directory '*'
+echo "==> [redisbloom] OSNICK=$OSNICK PM=$PM"
+
+# shellcheck disable=SC1090
+. "$osfile"
+
+# Allow git operations on the checked-out source even when its uid doesn't
+# match the current user (common in CI containers). Scoped to this repo
+# (--local), not the host's global git config.
+if [ -d "$ROOT/.git" ]; then
+    git -C "$ROOT" config --local --add safe.directory '*' || true
+fi
+
+# shellcheck source=lib/setup-python.sh
+. "$LIB/setup-python.sh"
+
+echo "==> [redisbloom] install_script.sh: done"

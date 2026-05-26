@@ -1,8 +1,9 @@
 #!/bin/bash
+set -euo pipefail
 version=3.25.1
 processor=$(uname -m)
 OS_TYPE=$(uname -s)
-MODE=$1 # whether to install using sudo or not
+MODE="${1:-}" # whether to install using sudo or not (empty when already root)
 
 if [[ $OS_TYPE = 'Darwin' ]]
 then

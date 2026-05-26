@@ -2,32 +2,22 @@ FROM amazonlinux:2023
 
 WORKDIR /workspace
 
-RUN dnf install -y  --allowerasing \
-    git \
-    make \
-    gcc \
-    gcc-c++ \
-    cmake \
-    openssl-devel \
-    curl \
-    tar \
-    gzip \
-    jq \
-    automake \
-    libtool \
-    which 
+# Install build/test deps via the per-OSNICK installer
+# (.install/os/amazonlinux2023.sh — default RHEL set, no toolset layering).
 COPY .install /workspace/.install
+RUN bash /workspace/.install/install_script.sh && dnf clean all
 
+# Install Redis (SANITIZER can be 'address' for ASAN builds)
 ARG REDIS_REF=unstable
 ARG SANITIZER=
+
 RUN chmod +x /workspace/.install/install_redis.sh && REDIS_REF=${REDIS_REF} SANITIZER=${SANITIZER} /workspace/.install/install_redis.sh
 
-
+# Install uv and Python environment
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh
 ENV PATH="/usr/local/bin:${PATH}"
 RUN uv venv --python=3.11 /opt/.venv
 ENV VIRTUAL_ENV=/opt/.venv
 ENV PATH="/opt/.venv/bin:${PATH}"
 COPY requirements_docker.txt /workspace/requirements.txt
-RUN uv pip install redis
 RUN uv pip install -r requirements.txt
