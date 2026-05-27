@@ -130,7 +130,7 @@ static void getLookupParams(CuckooHash hash, LookupParams *params) {
     // assert(getAltHash(params->fp, params->h2, numBuckets) == params->h1);
 }
 
-static uint32_t SubCF_GetIndex(const SubCF *subCF, CuckooHash hash) {
+static uint64_t SubCF_GetIndex(const SubCF *subCF, CuckooHash hash) {
     return (hash % subCF->numBuckets) * subCF->bucketSize;
 }
 
