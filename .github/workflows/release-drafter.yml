@@ -14,6 +14,5 @@ jobs:
       - uses: release-drafter/release-drafter@v7
         with:
           # (Optional) specify config name to use, relative to .github/. Default: release-drafter.yml
-           config-name: release-drafter-config.yml
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          config-name: release-drafter-config.yml
+          token: ${{ secrets.GITHUB_TOKEN }}
