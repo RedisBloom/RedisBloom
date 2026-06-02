@@ -17,9 +17,9 @@ on:
   workflow_dispatch:
     inputs:
       redis-ref:
-        description: 'Redis ref to checkout'
-        required: true
-        default: 'unstable'
+        description: 'Redis ref to checkout (leave empty to use redis_ref from pack/ramp.yml)'
+        required: false
+        default: ''
       send-slack-message:
         description: 'Send summary message to Slack channel'
         required: false
@@ -39,8 +39,14 @@ jobs:
 
       - name: set env
         id: set-env
+        env:
+          INPUT_REDIS_REF: ${{ inputs.redis-ref }}
         run: |
-          echo "redis-ref=${{ inputs.redis-ref || 'unstable' }}" >> $GITHUB_OUTPUT  # todo change per version/tag
+          REDIS_REF="${INPUT_REDIS_REF}"
+          if [ -z "$REDIS_REF" ]; then
+            REDIS_REF="$(.install/get-redis-ref.sh)"
+          fi
+          echo "redis-ref=${REDIS_REF}" >> $GITHUB_OUTPUT
           
           # Generate unique beta version with date and GitHub run number
           # Format: YYYYMMDD.HHMMSS.RUN_NUMBER (to handle parallel runs and multiple daily runs)
