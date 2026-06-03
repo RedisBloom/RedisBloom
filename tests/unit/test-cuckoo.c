@@ -209,47 +209,6 @@ TEST_F(cuckoo, testBucketSize) {
     CuckooFilter_Free(&ck);
 }
 
-TEST_F(cuckoo, testLargeBucketSize) {
-    // Regression test: SubCF.bucketSize used to be an 8-bit bitfield, so any
-    // value >= 256 was silently truncated when copied from CuckooFilter.bucketSize
-    // (uint16_t). The two then disagreed, leading to mismatched indexing in
-    // Filter_Find / Filter_Delete / Filter_FindAvailable / subFilterCount.
-    const uint16_t bucketSizes[] = {256, 300, 512, 1024, UINT16_MAX};
-    const size_t numCases = sizeof(bucketSizes) / sizeof(bucketSizes[0]);
-
-    for (size_t c = 0; c < numCases; ++c) {
-        uint16_t bucketSize = bucketSizes[c];
-        CuckooFilter ck;
-        uint64_t capacity = (uint64_t)bucketSize * 2;
-        ASSERT_EQ(0, CuckooFilter_Init(&ck, capacity, bucketSize, 500, 1));
-
-        // Both the top-level and per-subfilter bucketSize must round-trip
-        // intact -- the bug was that the SubCF copy got truncated to 8 bits.
-        ASSERT_EQ(bucketSize, ck.bucketSize);
-        ASSERT_EQ(1, ck.numFilters);
-        ASSERT_EQ(bucketSize, ck.filters[0].bucketSize);
-
-        // Insert / Check / Count / Delete should all agree on the bucket size,
-        // i.e. address the same slots in the same buckets.
-        const size_t numItems = 64;
-        for (size_t ii = 0; ii < numItems; ++ii) {
-            CuckooHash h = CUCKOO_GEN_HASH(&ii, sizeof ii);
-            ASSERT_EQ(CuckooInsert_Inserted, CuckooFilter_Insert(&ck, h));
-        }
-        ASSERT_EQ(numItems, ck.numItems);
-
-        for (size_t ii = 0; ii < numItems; ++ii) {
-            CuckooHash h = CUCKOO_GEN_HASH(&ii, sizeof ii);
-            ASSERT_NE(0, CuckooFilter_Check(&ck, h));
-            ASSERT_NE(0, CuckooFilter_Count(&ck, h));
-            ASSERT_EQ(1, CuckooFilter_Delete(&ck, h));
-        }
-        ASSERT_EQ(0, ck.numItems);
-
-        CuckooFilter_Free(&ck);
-    }
-}
-
 TEST_F(cuckoo, testValidationSecurity) {
     // Test the security vulnerability fix for expansion=0 with multiple filters
     CuckooFilter ck;

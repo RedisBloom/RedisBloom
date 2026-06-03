@@ -1365,7 +1365,7 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
 
     bool err = false;
     CuckooFilter *cf = RedisModule_Calloc(1, sizeof(*cf));
-    errdefer(err, CFFree(cf));
+    errdefer(err, CuckooFilter_Free(cf));
     const uint64_t numFilters64 = LoadUnsigned_IOError(io, err, NULL);
     const uint64_t numBuckets64 = LoadUnsigned_IOError(io, err, NULL);
     if (unlikely(numFilters64 == 0) || unlikely(numFilters64 > UINT16_MAX) ||
