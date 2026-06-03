@@ -250,6 +250,59 @@ def _corrupt_dump_shrink_largest_module_string(dump_payload: bytes) -> bytes:
     return new_value + version + struct.pack("<Q", new_crc)
 
 
+def _corrupt_dump_set_nth_uint(dump_payload: bytes, n: int, new_value: int) -> bytes:
+    # Patch the Nth MODULE_OPCODE_UINT (0-indexed) in the module payload.
+    # Used to inject malformed scalar fields (e.g. bucketSize=257) that the
+    # loader must reject.
+    if len(dump_payload) < 10:
+        raise RuntimeError("DUMP payload too small")
+    value = dump_payload[:-10]
+    version = dump_payload[-10:-8]
+
+    pos = 1
+    _, is_enc, pos, _ = _load_len(value, pos)  # module id
+    if is_enc:
+        raise RuntimeError("Unexpected encoded module-id length")
+
+    uints_seen = 0
+    while pos < len(value):
+        opcode, is_enc, pos, _ = _load_len(value, pos)
+        if is_enc:
+            raise RuntimeError(f"Unexpected encoded opcode at pos={pos}")
+        if opcode == RDB_MODULE_OPCODE_EOF:
+            break
+        if opcode == RDB_MODULE_OPCODE_UINT:
+            val_start = pos
+            _, is_enc2, pos, _ = _load_len(value, pos)
+            if is_enc2:
+                raise RuntimeError("Unexpected encoded value in MODULE_OPCODE_UINT")
+            val_end = pos
+            if uints_seen == n:
+                encoded = _encode_len(_zigzag_encode(new_value))
+                new_value_bytes = value[:val_start] + encoded + value[val_end:]
+                new_crc = _crc64_redis(new_value_bytes + version)
+                return new_value_bytes + version + struct.pack("<Q", new_crc)
+            uints_seen += 1
+            continue
+        if opcode == RDB_MODULE_OPCODE_DOUBLE:
+            pos += 8
+            continue
+        if opcode == RDB_MODULE_OPCODE_STRING:
+            slen_or_enc, is_str_enc, pos, enc = _load_len(value, pos)
+            if not is_str_enc:
+                pos += slen_or_enc
+            else:
+                if enc != RDB_ENC_LZF:
+                    raise RuntimeError(f"Unsupported encoded string type: {enc}")
+                clen, _, pos, _ = _load_len(value, pos)
+                _, _, pos, _ = _load_len(value, pos)
+                pos += clen
+            continue
+        raise RuntimeError(f"Unknown module opcode {opcode} at pos={pos}")
+
+    raise RuntimeError(f"Did not find UINT #{n} to patch")
+
+
 class testBFRestoreCorruptRDB():
     def __init__(self):
         # We need raw bytes for DUMP/RESTORE payload manipulation
@@ -293,6 +346,33 @@ class testCFRestoreCorruptRDB():
         corrupted = _corrupt_dump_shrink_largest_module_string(dump_payload)
 
         # With the fix, the module should reject the crafted payload during load.
+        with env.assertResponseError():
+            env.cmd("RESTORE", corrupt_key, 0, corrupted)
+
+        # Ensure the server/module remains healthy
+        env.cmd("CF.ADD", key, b"sanity")
+
+    def test_restore_rejects_oversized_bucketsize(self):
+        # Regression for VDP-4667 / MOD-15931: a crafted RDB with parent
+        # bucketSize >= 256 used to truncate when copied into SubCF.bucketSize
+        # (8-bit bitfield), producing a width mismatch the loader missed but
+        # Filter_KOInsert later exploited for an OOB write. After the fix,
+        # SubCF.bucketSize is 16 bits and the loader rejects the payload (either
+        # via the bucketSize > 255 integrity check or the post-load len check).
+        env = self.env
+        env.cmd("FLUSHALL")
+
+        key = b"cf_bs_poc{cf}"
+        corrupt_key = b"cf_bs_poc_corrupt{cf}"
+
+        env.cmd("CF.RESERVE", key, 1000)
+        dump_payload = env.cmd("DUMP", key)
+
+        # CF dump UINT order after module id:
+        #   [0] numFilters, [1] numBuckets, [2] numItems, [3] numDeletes,
+        #   [4] bucketSize, [5] maxIterations, [6] expansion, [7] subFilter[0].numBuckets, ...
+        corrupted = _corrupt_dump_set_nth_uint(dump_payload, 4, 257)
+
         with env.assertResponseError():
             env.cmd("RESTORE", corrupt_key, 0, corrupted)
 
