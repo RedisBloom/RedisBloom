@@ -130,7 +130,7 @@ static void getLookupParams(CuckooHash hash, LookupParams *params) {
     // assert(getAltHash(params->fp, params->h2, numBuckets) == params->h1);
 }
 
-static uint64_t SubCF_GetIndex(const SubCF *subCF, CuckooHash hash) {
+static uint32_t SubCF_GetIndex(const SubCF *subCF, CuckooHash hash) {
     return (hash % subCF->numBuckets) * subCF->bucketSize;
 }
 
@@ -144,7 +144,7 @@ static uint8_t *Bucket_Find(CuckooBucket bucket, uint16_t bucketSize, CuckooFing
 }
 
 static int Filter_Find(const SubCF *filter, const LookupParams *params) {
-    uint16_t bucketSize = filter->bucketSize;
+    uint8_t bucketSize = filter->bucketSize;
     uint64_t loc1 = SubCF_GetIndex(filter, params->h1);
     uint64_t loc2 = SubCF_GetIndex(filter, params->h2);
     return Bucket_Find(&filter->data[loc1], bucketSize, params->fp) != NULL ||
@@ -162,7 +162,7 @@ static int Bucket_Delete(CuckooBucket bucket, uint16_t bucketSize, CuckooFingerp
 }
 
 static int Filter_Delete(const SubCF *filter, const LookupParams *params) {
-    uint16_t bucketSize = filter->bucketSize;
+    uint8_t bucketSize = filter->bucketSize;
     uint64_t loc1 = SubCF_GetIndex(filter, params->h1);
     uint64_t loc2 = SubCF_GetIndex(filter, params->h2);
     return Bucket_Delete(&filter->data[loc1], bucketSize, params->fp) ||
@@ -195,7 +195,7 @@ static uint16_t bucketCount(const CuckooBucket bucket, uint16_t bucketSize, Cuck
 }
 
 static uint64_t subFilterCount(const SubCF *filter, const LookupParams *params) {
-    uint16_t bucketSize = filter->bucketSize;
+    uint8_t bucketSize = filter->bucketSize;
     uint64_t loc1 = SubCF_GetIndex(filter, params->h1);
     uint64_t loc2 = SubCF_GetIndex(filter, params->h2);
 
@@ -240,7 +240,7 @@ static uint8_t *Bucket_FindAvailable(CuckooBucket bucket, uint16_t bucketSize) {
 
 static uint8_t *Filter_FindAvailable(SubCF *filter, const LookupParams *params) {
     uint8_t *slot;
-    uint16_t bucketSize = filter->bucketSize;
+    uint8_t bucketSize = filter->bucketSize;
     uint64_t loc1 = SubCF_GetIndex(filter, params->h1);
     uint64_t loc2 = SubCF_GetIndex(filter, params->h2);
     if ((slot = Bucket_FindAvailable(&filter->data[loc1], bucketSize)) ||
