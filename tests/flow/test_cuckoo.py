@@ -1,4 +1,5 @@
 import random
+import time
 
 from common import *
 
@@ -658,3 +659,56 @@ class testCuckooNoCodec():
         self.cmd('FLUSHALL')
         rdb_payload = b'\x07\x810\x16\xe5\xa2\x89\x82\x14\x04\x02\x00\x02\x08\x02\x01\x02\x00\x02\x01\x02\x01\x02\x01\x00\xff\x0c\x00`\x07q:\xe0pL\r'
         self.env.expect('RESTORE', "hax", 0, rdb_payload, 'REPLACE').error().contains('DUMP payload version or checksum are wrong')
+
+
+def test_cf_loadchunk_replicates_to_replica():
+    # MOD-16050: CF.LOADCHUNK must replicate its data chunks, not only the header.
+    # Otherwise a replica of a CF.LOADCHUNK-restored filter has the correct
+    # metadata (CF.INFO reports the full item count) but empty buckets, and a
+    # failover silently loses all the data.
+    # freshEnv=True forces a dedicated master+replica env, so this test is not
+    # affected by env reuse from preceding (non-replicated) tests.
+    env = Env(useSlaves=True, decodeResponses=False, freshEnv=True)
+    if env.isCluster():
+        env.skip()
+
+    master = env.getConnection()
+    slave = env.getSlaveConnection()
+
+    n = 2000
+    # Build a source filter that spans several sub-filters (expansion), then
+    # serialize it with CF.SCANDUMP.
+    master.execute_command('CF.RESERVE', 'src', 100, 'EXPANSION', 2)
+    for i in range(n):
+        master.execute_command('CF.ADD', 'src', 'item%d' % i)
+
+    chunks = []
+    pos = 0
+    while True:
+        pos, data = master.execute_command('CF.SCANDUMP', 'src', pos)
+        if pos == 0:
+            break
+        chunks.append((pos, data))
+    # Must have data chunks beyond the header, otherwise this would not exercise
+    # the data-chunk replication path.
+    env.assertGreater(len(chunks), 1)
+
+    # Restore into a fresh key via CF.LOADCHUNK on the master.
+    for pos, data in chunks:
+        master.execute_command('CF.LOADCHUNK', 'cf', pos, data)
+
+    # The replica must be caught up to the master's replication offset. Poll WAIT
+    # to tolerate the replica still connecting/doing its initial sync.
+    acked = 0
+    deadline = time.time() + 15
+    while time.time() < deadline:
+        acked = master.execute_command('WAIT', 1, 1000)
+        if acked >= 1:
+            break
+    env.assertEqual(acked, 1)
+
+    # ...and must hold the actual filter data, not just the header metadata.
+    missing = [i for i in range(n)
+               if slave.execute_command('CF.EXISTS', 'cf', 'item%d' % i) != 1]
+    env.assertEqual(missing, [],
+                    message='%d/%d items missing on replica after CF.LOADCHUNK' % (len(missing), n))
