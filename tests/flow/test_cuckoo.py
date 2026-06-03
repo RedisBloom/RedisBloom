@@ -312,8 +312,7 @@ class testCuckoo():
     def test_info(self):
         self.cmd('FLUSHALL')
         self.cmd('CF.RESERVE a 1000')
-        # Size: +8 bytes after SubCF.bucketSize moved from 8-bit bitfield to uint16_t.
-        self.assertEqual(self.cmd('CF.INFO a'), ['Size', 1088,
+        self.assertEqual(self.cmd('CF.INFO a'), ['Size', 1080,
                                                  'Number of buckets', 512,
                                                  'Number of filters', 1,
                                                  'Number of items inserted', 0,
