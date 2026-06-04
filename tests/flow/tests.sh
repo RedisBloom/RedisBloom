@@ -176,12 +176,10 @@ setup_clang_sanitizer() {
 	RLTEST_SAN_ARGS="--sanitizer $SAN"
 
 	if [[ $SAN == addr || $SAN == address ]]; then
-		REDIS_SERVER=${REDIS_SERVER:-redis-server-asan-$SAN_REDIS_VER}
-		if ! command -v $REDIS_SERVER > /dev/null; then
-			echo Building Redis for clang-asan ...
-			$READIES/bin/getredis --force -v $SAN_REDIS_VER --own-openssl --no-run \
-				--suffix asan --clang-asan --clang-san-blacklist $ignorelist
-		fi
+		# Use the sanitizer-instrumented redis-server already built by
+		# .install/install_redis.sh in the CI image, instead of building an
+		# older redis from source via getredis (master's approach).
+		REDIS_SERVER=${REDIS_SERVER:-redis-server}
 
 		export ASAN_OPTIONS="detect_odr_violation=0:halt_on_error=0:detect_leaks=1"
 		export LSAN_OPTIONS="suppressions=$ROOT/tests/memcheck/asan.supp"
@@ -211,11 +209,9 @@ setup_redis_server() {
 #----------------------------------------------------------------------------------------------
 
 setup_valgrind() {
-	REDIS_SERVER=${REDIS_SERVER:-redis-server-vg}
-	if ! is_command $REDIS_SERVER; then
-		echo Building Redis for Valgrind ...
-		$READIES/bin/getredis -v $VALGRIND_REDIS_VER --valgrind --suffix vg
-	fi
+	# Use the redis-server already built by .install/install_redis.sh in the CI
+	# image; valgrind instruments it at runtime, no special build needed.
+	REDIS_SERVER=${REDIS_SERVER:-redis-server}
 
 	if [[ $VG_LEAKS == 0 ]]; then
 		VG_LEAK_CHECK=no
