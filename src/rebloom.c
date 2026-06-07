@@ -1009,6 +1009,7 @@ static int CFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     if (CF_LoadEncodedChunk(cf, pos, blob, bloblen) != REDISMODULE_OK) {
         return RedisModule_ReplyWithError(ctx, "Couldn't load chunk!");
     }
+    RedisModule_ReplicateVerbatim(ctx);
     return RedisModule_ReplyWithSimpleString(ctx, "OK");
 }
 
