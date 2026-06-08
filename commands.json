@@ -130,7 +130,10 @@
       }
     ],
     "since": "1.0.0",
-    "group": "bf"
+    "group": "bf",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "BF.MEXISTS": {
     "summary": "Checks whether one or more items exist in a Bloom Filter",
@@ -147,7 +150,10 @@
       }
     ],
     "since": "1.0.0",
-    "group": "bf"
+    "group": "bf",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "BF.SCANDUMP": {
     "summary": "Begins an incremental save of the bloom filter",
@@ -183,7 +189,10 @@
       }
     ],
     "since": "1.0.0",
-    "group": "bf"
+    "group": "bf",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "BF.INFO": {
     "summary": "Returns information about a Bloom Filter",
@@ -227,7 +236,10 @@
       }
     ],
     "since": "1.0.0",
-    "group": "bf"
+    "group": "bf",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "BF.CARD": {
     "summary": "Returns the cardinality of a Bloom filter",
@@ -239,7 +251,10 @@
       }
     ],
     "since": "2.4.4",
-    "group": "bf"
+    "group": "bf",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "CF.RESERVE": {
     "summary": "Creates a new Cuckoo Filter",
@@ -389,7 +404,10 @@
       }
     ],
     "since": "1.0.0",
-    "group": "cf"
+    "group": "cf",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "CF.MEXISTS": {
     "summary": "Checks whether one or more items exist in a Cuckoo Filter",
@@ -406,7 +424,10 @@
       }
     ],
     "since": "1.0.0",
-    "group": "cf"
+    "group": "cf",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "CF.DEL": {
     "summary": "Deletes an item from a Cuckoo Filter",
@@ -438,7 +459,10 @@
       }
     ],
     "since": "1.0.0",
-    "group": "cf"
+    "group": "cf",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "CF.SCANDUMP": {
     "summary": "Begins an incremental save of the bloom filter",
@@ -474,7 +498,10 @@
       }
     ],
     "since": "1.0.0",
-    "group": "cf"
+    "group": "cf",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "CF.INFO": {
     "summary": "Returns information about a Cuckoo Filter",
@@ -486,7 +513,10 @@
       }
     ],
     "since": "1.0.0",
-    "group": "cf"
+    "group": "cf",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "CMS.INITBYDIM": {
     "summary": "Initializes a Count-Min Sketch to dimensions specified by user",
@@ -570,7 +600,10 @@
       }
     ],
     "since": "2.0.0",
-    "group": "cms"
+    "group": "cms",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "CMS.MERGE": {
     "summary": "Merges several sketches into one sketch",
@@ -620,7 +653,10 @@
       }
     ],
     "since": "2.0.0",
-    "group": "cms"
+    "group": "cms",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "TOPK.RESERVE": {
     "summary": "Initializes a Top-K sketch with specified parameters",
@@ -716,7 +752,10 @@
       }
     ],
     "since": "2.0.0",
-    "group": "topk"
+    "group": "topk",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "TOPK.COUNT": {
     "summary": "Return the count for one or more items are in a sketch",
@@ -734,7 +773,10 @@
       }
     ],
     "since": "2.0.0",
-    "group": "topk"
+    "group": "topk",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "TOPK.LIST": {
     "summary": "Return the full list of items in Top-K sketch.",
@@ -752,7 +794,10 @@
       }
     ],
     "since": "2.0.0",
-    "group": "topk"
+    "group": "topk",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "TOPK.INFO": {
     "summary": "Returns information about a sketch",
@@ -764,7 +809,10 @@
       }
     ],
     "since": "2.0.0",
-    "group": "topk"
+    "group": "topk",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "TDIGEST.CREATE": {
     "summary": "Allocates memory and initializes a new t-digest sketch",
@@ -873,7 +921,10 @@
       }
     ],
     "since": "2.4.0",
-    "group": "tdigest"
+    "group": "tdigest",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "TDIGEST.MAX": {
     "summary": "Returns the maximum observation value from a t-digest sketch",
@@ -885,7 +936,10 @@
       }
     ],
     "since": "2.4.0",
-    "group": "tdigest"
+    "group": "tdigest",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "TDIGEST.QUANTILE": {
     "summary": "Returns, for each input fraction, an estimation of the value (floating point) that is smaller than the given fraction of observations",
@@ -902,7 +956,10 @@
       }
     ],
     "since": "2.4.0",
-    "group": "tdigest"
+    "group": "tdigest",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "TDIGEST.CDF": {
     "summary": "Returns, for each input value, an estimation of the fraction (floating-point) of (observations smaller than the given value + half the observations equal to the given value)",
@@ -919,7 +976,10 @@
       }
     ],
     "since": "2.4.0",
-    "group": "tdigest"
+    "group": "tdigest",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "TDIGEST.TRIMMED_MEAN": {
     "summary": "Returns an estimation of the mean value from the sketch, excluding observation values outside the low and high cutoff quantiles",
@@ -939,7 +999,10 @@
       }
     ],
     "since": "2.4.0",
-    "group": "tdigest"
+    "group": "tdigest",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "TDIGEST.RANK": {
     "summary": "Returns, for each input value (floating-point), the estimated rank of the value (the number of observations in the sketch that are smaller than the value + half the number of observations that are equal to the value)",
@@ -956,7 +1019,10 @@
       }
     ],
     "since": "2.4.0",
-    "group": "tdigest"
+    "group": "tdigest",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "TDIGEST.REVRANK": {
     "summary": "Returns, for each input value (floating-point), the estimated reverse rank of the value (the number of observations in the sketch that are larger than the value + half the number of observations that are equal to the value)",
@@ -973,7 +1039,10 @@
       }
     ],
     "since": "2.4.0",
-    "group": "tdigest"
+    "group": "tdigest",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "TDIGEST.BYRANK": {
     "summary": "Returns, for each input rank, an estimation of the value (floating-point) with that rank",
@@ -990,7 +1059,10 @@
       }
     ],
     "since": "2.4.0",
-    "group": "tdigest"
+    "group": "tdigest",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "TDIGEST.BYREVRANK": {
     "summary": "Returns, for each input reverse rank, an estimation of the value (floating-point) with that reverse rank",
@@ -1007,7 +1079,10 @@
       }
     ],
     "since": "2.4.0",
-    "group": "tdigest"
+    "group": "tdigest",
+    "command_flags": [
+      "readonly"
+    ]
   },
   "TDIGEST.INFO": {
     "summary": "Returns information and statistics about a t-digest sketch",
@@ -1019,6 +1094,9 @@
       }
     ],
     "since": "2.4.0",
-    "group": "tdigest"
+    "group": "tdigest",
+    "command_flags": [
+      "readonly"
+    ]
   }
 }
