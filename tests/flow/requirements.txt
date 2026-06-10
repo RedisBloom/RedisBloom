@@ -1,3 +1,3 @@
-RLTest == 0.7.5
+RLTest == 0.7.15
 numpy
 setuptools<81
