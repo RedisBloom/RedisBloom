@@ -356,7 +356,19 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
 
     for (HeapBucket *bucket = topk->heap; bucket < topk->heap + topk->k; ++bucket) {
         char *it = LoadStringBuffer_IOError(io, &heapSize, err, NULL);
-        bucket->item = heapSize == 1 ? RedisModule_Free(it), NULL : it;
+        if (heapSize == 1) {
+            // Empty bucket: only the terminating NUL was stored.
+            RedisModule_Free(it);
+            bucket->item = NULL;
+            bucket->itemlen = 0;
+        } else {
+            bucket->item = it;
+            // Keep itemlen consistent with the buffer we actually loaded. Items are
+            // stored as strlen(item) + 1 bytes, so the length is heapSize - 1. The
+            // itemlen carried in the raw heap blob is not used here, as it can be out
+            // of sync with the item buffer when the input is malformed.
+            bucket->itemlen = heapSize - 1;
+        }
     }
 
     /* Initialize lookupTable */
