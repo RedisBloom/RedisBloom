@@ -33,6 +33,9 @@
 #define REDISBLOOM_GIT_SHA "unknown"
 #endif
 
+#define BLOOM_TRYCALLOC(...)                                                                       \
+    RedisModule_TryCalloc ? RedisModule_TryCalloc(__VA_ARGS__) : RedisModule_Calloc(__VA_ARGS__)
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 /// Redis Commands                                                           ///
@@ -1233,7 +1236,16 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
         sb->growth = 2;
     }
 
-    sb->filters = RedisModule_Calloc(sb->nfilters, sizeof(*sb->filters));
+    if (sb->nfilters > SIZE_MAX / sizeof(*sb->filters)) {
+        err = true;
+        return NULL;
+    }
+
+    sb->filters = BLOOM_TRYCALLOC(sb->nfilters, sizeof(*sb->filters));
+    if (sb->filters == NULL) {
+        err = true;
+        return NULL;
+    }
     for (size_t ii = 0; ii < sb->nfilters; ++ii) {
         SBLink *lb = sb->filters + ii;
         struct bloom *bm = &lb->inner;
