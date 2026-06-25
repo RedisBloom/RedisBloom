@@ -8,6 +8,21 @@
 # with the system interpreter (see tests/flow/requirements.txt).
 #
 # Sourced by os/<osnick>.sh after lib/pm.sh. All variables here are plain
+
+# Install AWS CLI v2 from the official installer (arch-aware). Skips if
+# already present — handles pre-installed AMIs without failing.
+install_aws_cli() {
+    if command -v aws &>/dev/null; then
+        return 0
+    fi
+    local arch
+    arch=$(uname -m)
+    local url="https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+    [ "$arch" = "aarch64" ] && url="https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip"
+    curl "$url" -o "awscliv2.zip"
+    unzip awscliv2.zip
+    ./aws/install
+}
 # space-separated strings so callers can splat them with `apt_install $SET`.
 
 # ----------------------------------------------------------------------------
