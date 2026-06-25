@@ -24,6 +24,9 @@ $SUDO yum -y install --nogpgcheck --skip-broken \
 
 rhel_default_install
 $SUDO ln -sf "$(command -v cmake3)" /usr/bin/cmake
+$SUDO ln -sf /opt/rh/devtoolset-11/root/usr/bin/make /usr/local/bin/make
+$SUDO ln -sf /opt/rh/devtoolset-11/root/usr/bin/gcc /usr/local/bin/gcc
+$SUDO ln -sf /opt/rh/devtoolset-11/root/usr/bin/g++ /usr/local/bin/g++
 
 # Install aws-cli for uploading artifacts to s3
 install_aws_cli
