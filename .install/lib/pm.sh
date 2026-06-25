@@ -172,8 +172,10 @@ el8_default_install() {
     rhel_default_install
     dnf_install \
         gcc-toolset-11-gcc gcc-toolset-11-gcc-c++ gcc-toolset-11-libatomic-devel \
-        python3.11 python3.11-devel xz
+        python3.11 python3.11-devel python3.11-pip xz
     $SUDO cp /opt/rh/gcc-toolset-11/enable /etc/profile.d/gcc-toolset-11.sh 2>/dev/null || true
+    $SUDO update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 2000000
+    $SUDO update-alternatives --set python3 /usr/bin/python3.11
     export SETUP_PYTHON_VERSION="${SETUP_PYTHON_VERSION:-3.11}"
 }
 
