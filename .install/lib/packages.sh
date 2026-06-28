@@ -20,7 +20,7 @@ install_aws_cli() {
     local url="https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
     [ "$arch" = "aarch64" ] && url="https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip"
     curl "$url" -o /tmp/awscliv2.zip
-    unzip /tmp/awscliv2.zip -d /tmp/awscli-install
+    unzip -o /tmp/awscliv2.zip -d /tmp/awscli-install
     /tmp/awscli-install/aws/install
     rm -rf /tmp/awscliv2.zip /tmp/awscli-install
 }
