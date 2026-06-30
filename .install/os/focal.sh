@@ -7,5 +7,5 @@
 
 debian_default_install
 apt_install gcc-10 g++-10
-$SUDO update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 60 \
-    --slave /usr/bin/g++ g++ /usr/bin/g++-10
+$SUDO update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 60
+$SUDO update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 60
