@@ -68,3 +68,16 @@ jobs:
   linter:
     uses: ./.github/workflows/flow-linter.yml
     secrets: inherit
+  # Code coverage (instrumented build + lcov -> Codecov). Runs on PRs too, so
+  # Codecov posts a per-PR diff-coverage comment. Skipped on draft PRs; toggle
+  # off via the repo variable ENABLE_CODE_COVERAGE='false'. Uploads require the
+  # CODECOV_TOKEN repo secret.
+  coverage:
+    if: ${{ vars.ENABLE_CODE_COVERAGE != 'false' && !github.event.pull_request.draft }}
+    uses: ./.github/workflows/flow-coverage.yml
+    needs: [prepare-values]
+    with:
+      redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
+      test-config: QUICK=1
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

@@ -1,0 +1,126 @@
+name: Flow Coverage
+# Builds the module instrumented for coverage (COV=1 -> gcov), runs the flow +
+# unit tests, collects an lcov report (bin/<platform>/cov.info) and uploads it
+# to Codecov. Intended for the nightly; coverage is a slow instrumented build so
+# it is not run on the PR gate.
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      redis-ref:
+        description: 'Redis ref to checkout (empty -> pack/ramp.yml default)'
+        type: string
+        required: false
+        default: ''
+      test-config:
+        description: 'Topology selection for the coverage run (default QUICK=1 -> GEN only)'
+        type: string
+        required: false
+        default: 'QUICK=1'
+  workflow_call:
+    inputs:
+      redis-ref:
+        description: 'Redis ref to checkout'
+        type: string
+        required: true
+      test-config:
+        description: 'Topology selection for the coverage run (default QUICK=1 -> GEN only)'
+        type: string
+        required: false
+        default: 'QUICK=1'
+    secrets:
+      CODECOV_TOKEN:
+        description: 'Codecov upload token (repo secret)'
+        required: false
+
+jobs:
+  coverage:
+    name: coverage (jammy, x64)
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_IMAGE: redisbloom-jammy-cov:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: 'recursive'
+          # Full history so Codecov can resolve the PR base for accurate
+          # diff-coverage (the per-PR comment).
+          fetch-depth: 0
+
+      - name: Resolve redis-ref
+        id: redis
+        env:
+          INPUT_REDIS_REF: ${{ inputs.redis-ref }}
+        run: |
+          REF="$INPUT_REDIS_REF"
+          [ -z "$REF" ] && REF="$(.install/get-redis-ref.sh)"
+          echo "ref=$REF" >> $GITHUB_OUTPUT
+
+      - name: Build Docker Image
+        env:
+          REDIS_REF: ${{ steps.redis.outputs.ref }}
+        run: |
+          docker build -f Dockerfile.jammy --build-arg REDIS_REF="$REDIS_REF" -t "$DOCKER_IMAGE" .
+
+      - name: Run coverage
+        env:
+          TEST_CONFIG: ${{ inputs.test-config }}
+        run: |
+          # `make coverage COV=1` = build COV=1 (instrumented debug) + reset
+          # counters + run tests COV=1 + lcov collect -> bin/<platform>/cov.info.
+          # COV=1 must be set at the top level: the lcov reset/collect macros in
+          # readies/mk/coverage.defs are guarded by `ifeq ($(COV),1)`, so without
+          # it the build is instrumented but no report is produced. The test step
+          # is prefixed with `-` in the Makefile, so the report is still produced
+          # even if some tests fail.
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            --cap-add=SYS_PTRACE \
+            --security-opt seccomp=unconfined \
+            "$DOCKER_IMAGE" \
+            bash -c "make coverage COV=1 ${TEST_CONFIG} 2>&1 | tee /workspace/coverage_output.log; exit \${PIPESTATUS[0]}"
+
+      - name: Fix permissions
+        if: always()
+        run: |
+          sudo chown -R "$(id -u)":"$(id -g)" bin tests || true
+
+      - name: Locate coverage report
+        id: cov
+        if: always()
+        run: |
+          f="$(find bin -name cov.info 2>/dev/null | head -1)"
+          echo "file=$f" >> $GITHUB_OUTPUT
+          if [ -n "$f" ]; then
+            echo "Found coverage report: $f"
+            lcov --summary "$f" 2>/dev/null || true
+          else
+            echo "::warning::No cov.info produced by 'make coverage'"
+          fi
+
+      - name: Upload coverage to Codecov
+        if: ${{ always() && steps.cov.outputs.file != '' }}
+        uses: codecov/codecov-action@v5
+        with:
+          files: ${{ steps.cov.outputs.file }}
+          disable_search: true
+          flags: flow
+          # CODECOV_TOKEN is configured in the repo secrets, so treat upload
+          # failures as errors (fail the job) rather than silently passing.
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload coverage artifact
+        if: ${{ always() && steps.cov.outputs.file != '' }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: coverage-report
+          path: |
+            ${{ steps.cov.outputs.file }}
+            coverage_output.log
