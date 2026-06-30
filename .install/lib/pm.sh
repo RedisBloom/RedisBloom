@@ -102,6 +102,22 @@ brew_install() {
 
 debian_default_install() {
     apt_install $DEBIAN_BASE
+    # apt install clang on some Debian-family distros registers clang as the
+    # highest-priority alternative for cc/gcc/g++, causing the clang blocks
+    # path to be chosen in our defer/errdefer macros (requires -fblocks) and
+    # mixing LTO formats at link time. Explicitly pin all three to the highest
+    # real GCC installed by build-essential so the toolchain is consistent.
+    _GCC=$(ls /usr/bin/gcc-[0-9]* 2>/dev/null | sort -V | tail -1)
+    [ -n "$_GCC" ] || { echo "ERROR: no gcc binary found after apt install" >&2; exit 1; }
+    $SUDO update-alternatives --install /usr/bin/cc  cc  "$_GCC" 100
+    $SUDO update-alternatives --set     cc  "$_GCC"
+    $SUDO update-alternatives --install /usr/bin/gcc gcc "$_GCC" 100
+    $SUDO update-alternatives --set     gcc "$_GCC"
+    _GPP="${_GCC/gcc/g++}"
+    if [ -x "$_GPP" ]; then
+        $SUDO update-alternatives --install /usr/bin/g++ g++ "$_GPP" 100
+        $SUDO update-alternatives --set     g++ "$_GPP"
+    fi
 }
 
 rhel_default_install() {
