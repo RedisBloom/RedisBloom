@@ -10,7 +10,10 @@ export DEBIAN_FRONTEND=noninteractive
 echo 'debconf debconf/frontend select Noninteractive' | $SUDO debconf-set-selections 2>/dev/null || true
 echo 'tzdata tzdata/Areas select Etc' | $SUDO debconf-set-selections 2>/dev/null || true
 echo 'tzdata tzdata/Zones/Etc select UTC' | $SUDO debconf-set-selections 2>/dev/null || true
-$SUDO apt-get install -y --no-install-recommends gnupg wget 2>/dev/null || true
+# apt_install (not a raw apt-get call) so this runs apt-get update first —
+# on a fresh base image with no apt index yet, a raw "apt-get install"
+# here can fail silently and leave gnupg/wget missing for the next step.
+apt_install gnupg wget
 wget -qO- "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1E9377A2BA9EF27F" | $SUDO gpg --batch --no-tty --yes --dearmor -o /etc/apt/trusted.gpg.d/ubuntu-toolchain-r.gpg || true
 wget -qO- "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2C277A0A352154E5" | $SUDO gpg --batch --no-tty --yes --dearmor -o /etc/apt/trusted.gpg.d/ubuntu-toolchain-r-2.gpg || true
 echo "deb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu bionic main" | $SUDO tee /etc/apt/sources.list.d/ubuntu-toolchain-r-test.list
@@ -21,8 +24,11 @@ apt_install gcc-10 g++-10
 # may have already pinned something newer in this shared build container.
 _cur=$(gcc -dumpversion | cut -d. -f1)
 if [ "$_cur" -lt 10 ]; then
-    # g++ is registered as its own independent master by debian_default_install,
-    # not as a slave of gcc — --slave-grouping it here would conflict with that.
+    # cc/gcc/g++ are each registered as their own independent master by
+    # debian_default_install, not slaves of each other — --slave-grouping
+    # would conflict with that.
+    $SUDO update-alternatives --install /usr/bin/cc  cc  /usr/bin/gcc-10 60
+    $SUDO update-alternatives --set     cc  /usr/bin/gcc-10
     $SUDO update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 60
     $SUDO update-alternatives --set     gcc /usr/bin/gcc-10
     $SUDO update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 60
