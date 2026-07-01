@@ -8,6 +8,7 @@
 # with the system interpreter (see tests/flow/requirements.txt).
 #
 # Sourced by os/<osnick>.sh after lib/pm.sh. All variables here are plain
+# space-separated strings so callers can splat them with `apt_install $SET`.
 
 # Install AWS CLI v2 from the official installer (arch-aware). Skips if
 # already present — handles pre-installed AMIs without failing.
@@ -24,7 +25,6 @@ install_aws_cli() {
     /tmp/awscli-install/aws/install
     rm -rf /tmp/awscliv2.zip /tmp/awscli-install
 }
-# space-separated strings so callers can splat them with `apt_install $SET`.
 
 # ----------------------------------------------------------------------------
 # Debian family (apt)
