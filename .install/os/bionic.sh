@@ -13,10 +13,11 @@ echo 'tzdata tzdata/Zones/Etc select UTC' | $SUDO debconf-set-selections 2>/dev/
 # apt_install (not a raw apt-get call) so this runs apt-get update first —
 # on a fresh base image with no apt index yet, a raw "apt-get install"
 # here can fail silently and leave gnupg/wget missing for the next step.
-apt_install gnupg wget
+apt_install gnupg wget curl ca-certificates
 wget -qO- "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x1E9377A2BA9EF27F" | $SUDO gpg --batch --no-tty --yes --dearmor -o /etc/apt/trusted.gpg.d/ubuntu-toolchain-r.gpg || true
 wget -qO- "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2C277A0A352154E5" | $SUDO gpg --batch --no-tty --yes --dearmor -o /etc/apt/trusted.gpg.d/ubuntu-toolchain-r-2.gpg || true
 echo "deb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu bionic main" | $SUDO tee /etc/apt/sources.list.d/ubuntu-toolchain-r-test.list
+$SUDO apt-get update -qq
 apt_install software-properties-common lsb-core binfmt-support cargo zlib1g-dev
 debian_default_install
 apt_install gcc-10 g++-10
