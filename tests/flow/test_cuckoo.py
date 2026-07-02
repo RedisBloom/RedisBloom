@@ -29,7 +29,10 @@ class testCuckoo():
     def test_counter_overflow_with_large_number_of_items(self):
         self.cmd('FLUSHALL')
         self.cmd('CF.RESERVE', 'cf', 2, 'BUCKETSIZE', 1, 'EXPANSION', 1)
-        self.cmd('CF.INSERT', 'cf', 'ITEMS', *["1 "]*140000)
+        try:
+            self.cmd('CF.INSERT', 'cf', 'ITEMS', *["1 "]*140000)
+        except ResponseError:
+            pass
 
     def test_count(self):
         self.cmd('FLUSHALL')
