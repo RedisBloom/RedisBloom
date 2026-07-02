@@ -102,6 +102,22 @@ brew_install() {
 
 debian_default_install() {
     apt_install $DEBIAN_BASE
+    # apt install clang on some Debian-family distros registers clang as the
+    # highest-priority alternative for cc/gcc/g++, causing the clang blocks
+    # path to be chosen in our defer/errdefer macros (requires -fblocks) and
+    # mixing LTO formats at link time. Explicitly pin all three to the highest
+    # real GCC installed by build-essential so the toolchain is consistent.
+    _GCC=$(ls /usr/bin/gcc-[0-9]* 2>/dev/null | sort -V | tail -1)
+    [ -n "$_GCC" ] || { echo "ERROR: no gcc binary found after apt install" >&2; exit 1; }
+    $SUDO update-alternatives --install /usr/bin/cc  cc  "$_GCC" 100
+    $SUDO update-alternatives --set     cc  "$_GCC"
+    $SUDO update-alternatives --install /usr/bin/gcc gcc "$_GCC" 100
+    $SUDO update-alternatives --set     gcc "$_GCC"
+    _GPP="${_GCC/gcc/g++}"
+    if [ -x "$_GPP" ]; then
+        $SUDO update-alternatives --install /usr/bin/g++ g++ "$_GPP" 100
+        $SUDO update-alternatives --set     g++ "$_GPP"
+    fi
 }
 
 rhel_default_install() {
@@ -172,8 +188,15 @@ el8_default_install() {
     rhel_default_install
     dnf_install \
         gcc-toolset-11-gcc gcc-toolset-11-gcc-c++ gcc-toolset-11-libatomic-devel \
-        python3.11 python3.11-devel xz
+        python3.11 python3.11-devel python3.11-pip xz
     $SUDO cp /opt/rh/gcc-toolset-11/enable /etc/profile.d/gcc-toolset-11.sh 2>/dev/null || true
+    $SUDO ln -sf /opt/rh/gcc-toolset-11/root/usr/bin/gcc  /usr/local/bin/gcc  || true
+    $SUDO ln -sf /opt/rh/gcc-toolset-11/root/usr/bin/g++  /usr/local/bin/g++  || true
+    $SUDO ln -sf /opt/rh/gcc-toolset-11/root/usr/bin/cc   /usr/local/bin/cc   || true
+    $SUDO ln -sf /opt/rh/gcc-toolset-11/root/usr/bin/as   /usr/local/bin/as   || true
+    $SUDO ln -sf /opt/rh/gcc-toolset-11/root/usr/bin/make /usr/local/bin/make || true
+    $SUDO update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 2000000
+    $SUDO update-alternatives --set python3 /usr/bin/python3.11
     export SETUP_PYTHON_VERSION="${SETUP_PYTHON_VERSION:-3.11}"
 }
 
@@ -184,4 +207,9 @@ el9_default_install() {
     dnf_install \
         gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ gcc-toolset-13-libatomic-devel
     $SUDO cp /opt/rh/gcc-toolset-13/enable /etc/profile.d/gcc-toolset-13.sh 2>/dev/null || true
+    $SUDO ln -sf /opt/rh/gcc-toolset-13/root/usr/bin/gcc  /usr/local/bin/gcc  || true
+    $SUDO ln -sf /opt/rh/gcc-toolset-13/root/usr/bin/g++  /usr/local/bin/g++  || true
+    $SUDO ln -sf /opt/rh/gcc-toolset-13/root/usr/bin/cc   /usr/local/bin/cc   || true
+    $SUDO ln -sf /opt/rh/gcc-toolset-13/root/usr/bin/as   /usr/local/bin/as   || true
+    $SUDO ln -sf /opt/rh/gcc-toolset-13/root/usr/bin/make /usr/local/bin/make || true
 }
