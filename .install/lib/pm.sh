@@ -48,7 +48,11 @@ apt_install() {
         $SUDO apt-get update -qq
         _pm_apt_updated=1
     fi
-    $SUDO apt-get install -yqq --no-install-recommends "$@"
+    # env goes THROUGH $SUDO: sudo's env_reset strips exported variables, so a
+    # plain export upstream never reaches dpkg — debconf (e.g. tzdata on focal,
+    # which the base image doesn't preinstall) then blocks on an interactive
+    # prompt and the bootstrap hangs.
+    $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -yqq --no-install-recommends "$@"
 }
 
 # `--allowerasing` lets dnf pick our `curl` over the slimmer `curl-minimal`
@@ -102,22 +106,12 @@ brew_install() {
 
 debian_default_install() {
     apt_install $DEBIAN_BASE
-    # apt install clang on some Debian-family distros registers clang as the
-    # highest-priority alternative for cc/gcc/g++, causing the clang blocks
-    # path to be chosen in our defer/errdefer macros (requires -fblocks) and
-    # mixing LTO formats at link time. Explicitly pin all three to the highest
-    # real GCC installed by build-essential so the toolchain is consistent.
-    _GCC=$(ls /usr/bin/gcc-[0-9]* 2>/dev/null | sort -V | tail -1)
-    [ -n "$_GCC" ] || { echo "ERROR: no gcc binary found after apt install" >&2; exit 1; }
-    $SUDO update-alternatives --install /usr/bin/cc  cc  "$_GCC" 100
-    $SUDO update-alternatives --set     cc  "$_GCC"
-    $SUDO update-alternatives --install /usr/bin/gcc gcc "$_GCC" 100
-    $SUDO update-alternatives --set     gcc "$_GCC"
-    _GPP="${_GCC/gcc/g++}"
-    if [ -x "$_GPP" ]; then
-        $SUDO update-alternatives --install /usr/bin/g++ g++ "$_GPP" 100
-        $SUDO update-alternatives --set     g++ "$_GPP"
-    fi
+    # No update-alternatives here: pinning cc/gcc/g++ to "the highest gcc on
+    # the system" made the outcome depend on what OTHER checkouts' bootstraps
+    # had installed side-by-side (e.g. RediSearch's gcc-12 flipped the global
+    # default for everyone on the host). Distro defaults stay untouched; the
+    # one distro whose clang packaging hijacks cc (bullseye) restores its own
+    # fixed distro default in os/bullseye.sh.
 }
 
 rhel_default_install() {
