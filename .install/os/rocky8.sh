@@ -8,6 +8,4 @@
 el8_default_install
 
 # Install aws-cli for uploading artifacts to s3
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-./aws/install
+install_aws_cli
