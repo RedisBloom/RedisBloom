@@ -9,4 +9,4 @@ tdnf_default_install
 git config --global --add safe.directory '*' || true
 
 # Install AWS CLI for uploading to S3
-pip3 install awscli --upgrade
+install_aws_cli
