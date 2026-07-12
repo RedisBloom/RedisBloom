@@ -1,8 +1,9 @@
 name: Flow Coverage
 # Builds the module instrumented for coverage (COV=1 -> gcov), runs the flow +
 # unit tests, collects an lcov report (bin/<platform>/cov.info) and uploads it
-# to Codecov. Intended for the nightly; coverage is a slow instrumented build so
-# it is not run on the PR gate.
+# to Codecov. Runs on both the PR gate (for the Codecov diff comment) and the
+# nightly. The full topology suite is used (not QUICK=1) so replication/AOF/
+# cluster code paths are exercised and coverage is not understated.
 
 permissions:
   id-token: write
@@ -17,10 +18,10 @@ on:
         required: false
         default: ''
       test-config:
-        description: 'Topology selection for the coverage run (default QUICK=1 -> GEN only)'
+        description: 'Topology make-flags for the coverage run (default: full suite; pass QUICK=1 for a fast GEN-only manual run)'
         type: string
         required: false
-        default: 'QUICK=1'
+        default: 'GEN=1 AOF=1 SLAVES=1 CLUSTER=1'
   workflow_call:
     inputs:
       redis-ref:
@@ -28,10 +29,10 @@ on:
         type: string
         required: true
       test-config:
-        description: 'Topology selection for the coverage run (default QUICK=1 -> GEN only)'
+        description: 'Topology make-flags for the coverage run (default: full suite; pass QUICK=1 for a fast GEN-only manual run)'
         type: string
         required: false
-        default: 'QUICK=1'
+        default: 'GEN=1 AOF=1 SLAVES=1 CLUSTER=1'
     secrets:
       CODECOV_TOKEN:
         description: 'Codecov upload token (repo secret)'

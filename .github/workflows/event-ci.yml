@@ -78,6 +78,8 @@ jobs:
     needs: [prepare-values]
     with:
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
-      test-config: QUICK=1
+      # Full topology suite (not QUICK=1) so replication/AOF/cluster code paths
+      # are exercised and coverage is not understated.
+      test-config: GEN=1 AOF=1 SLAVES=1 CLUSTER=1
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
