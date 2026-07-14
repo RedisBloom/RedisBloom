@@ -664,6 +664,7 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
             }
             return REDISMODULE_OK;
         }
+        RedisModule_ReplicateVerbatim(ctx);
     } else if (status != SB_OK) {
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
