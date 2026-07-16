@@ -137,6 +137,11 @@ jobs:
       packages: write
     strategy:
       fail-fast: false
+      # Throttle the fan-out: ~36 images build at once otherwise, and the arm64
+      # subset all pull from ports.ubuntu.com (no CDN) in one synchronized burst,
+      # causing "connection timed out" during apt-get update. Cap concurrency so
+      # we trickle rather than slam the mirror. See MOD-16306.
+      max-parallel: 8
       matrix:
         image: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
     env:
@@ -198,21 +203,21 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Build Docker Image
+      - name: Build and Push Docker Image
         if: ${{ steps.check-image.outputs.exists != 'true' }}
         run: |
-          echo "Building ${DOCKER_IMAGE}"
+          echo "Building and pushing ${DOCKER_IMAGE}"
+          # Push straight from buildx (--push) instead of --load + `docker push`.
+          # The load→push round-trip through the docker daemon store intermittently
+          # fails with "unknown blob" (the loaded image references a config/layer
+          # blob the classic pusher can't find). buildx uploads a correct manifest
+          # directly to GHCR. --provenance=false keeps it a plain single-arch image.
           docker buildx build \
             --platform "${DOCKER_PLATFORM}" \
             -f "Dockerfile.${OS}" \
             --build-arg REDIS_REF="${REDIS_REF}" \
             --build-arg SANITIZER=${{ matrix.image.variant == 'sanitizer' && 'address' || '' }} \
             -t "${DOCKER_IMAGE}" \
-            --load \
+            --provenance=false \
+            --push \
             .
-
-      - name: Push Docker Image
-        if: ${{ steps.check-image.outputs.exists != 'true' }}
-        run: |
-          echo "Pushing ${DOCKER_IMAGE}"
-          docker push "${DOCKER_IMAGE}"
