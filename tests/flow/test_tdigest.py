@@ -5,6 +5,8 @@ import numpy as np
 import redis
 import math
 import random
+import struct
+import zlib
 from random import randint
 
 
@@ -15,6 +17,22 @@ def parse_tdigest_info(array_reply):
         property_value = array_reply[pos + 1]
         reply_dict[property_name] = property_value
     return reply_dict
+
+
+# Build a TDIGEST.EXTERNALMERGE v1 ("TDB1") payload.
+# Mirrors the layout documented in src/rm_tdigest.c. `centroids` is a list of
+# (mean: float, weight: int) pairs, sorted ascending by mean.
+def build_externalmerge(centroids, compression=100.0,
+                    magic=b"TDB1", version=1,
+                    override_num=None, override_crc=None):
+    n = len(centroids) if override_num is None else override_num
+    body = magic + bytes([version]) + struct.pack("<dI", compression, n)
+    for m, _ in centroids:
+        body += struct.pack("<d", m)
+    for _, w in centroids:
+        body += struct.pack("<q", w)
+    crc = zlib.crc32(body) & 0xFFFFFFFF if override_crc is None else override_crc
+    return body + struct.pack("<I", crc)
 
 
 class testTDigest:
@@ -89,6 +107,34 @@ class testTDigest:
         self.assertRaises(
            redis.exceptions.ResponseError, self.cmd, "tdigest.create", "tdigest", "compression", '100000000000000000000'
         )
+
+    def test_tdigest_create_compression_max_bound(self):
+        # TD_MAX_COMPRESSION (src/rm_tdigest.c) bounds CREATE/MERGE's
+        # COMPRESSION keyword the same way EXTERNALMERGE bounds its blob's
+        # declared compression, so no single command can force an
+        # arbitrarily large node-array allocation.
+        self.cmd('FLUSHALL')
+        max_centroids = 100000
+        max_compression = (max_centroids - 10) // 6
+
+        self.assertOk(self.cmd("tdigest.create", "atmax", "compression", max_compression))
+        info = parse_tdigest_info(self.cmd("tdigest.info", "atmax"))
+        self.assertEqual(max_compression, info["Compression"])
+        self.assertEqual(max_centroids, info["Capacity"])
+
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.create", "over",
+            "compression", max_compression + 1
+        )
+        self.assertEqual(0, self.cmd("EXISTS", "over"))
+
+        # Same bound applies to MERGE's explicit COMPRESSION keyword.
+        self.assertOk(self.cmd("tdigest.create", "src", "compression", 100))
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.merge", "dst", 1, "src",
+            "compression", max_compression + 1
+        )
+        self.assertEqual(0, self.cmd("EXISTS", "dst"))
 
     def test_tdigest_reset(self):
         self.cmd('FLUSHALL')
@@ -964,13 +1010,297 @@ class testTDigest:
         self.assertEqual(tdigest_min, self.cmd("tdigest.min", "tdigest"))
         self.assertEqual(tdigest_max, self.cmd("tdigest.max", "tdigest"))
 
+    def test_tdigest_externalmerge_happy_path(self):
+        self.cmd("FLUSHALL")
+        # Sorted, finite means; positive int64 weights.
+        centroids = [(1.0, 5), (2.5, 10), (3.7, 2), (10.0, 1)]
+        blob = build_externalmerge(centroids, compression=100.0)
+        # Create-if-missing: target key does not exist yet.
+        self.assertOk(self.cmd("tdigest.externalmerge", "dst", blob))
+        info = parse_tdigest_info(self.cmd("tdigest.info", "dst"))
+        total_weight = float(info["Merged weight"]) + float(info["Unmerged weight"])
+        self.assertEqual(sum(w for _, w in centroids), total_weight)
+
+        # A second merge accumulates rather than replaces.
+        self.assertOk(self.cmd("tdigest.externalmerge", "dst", blob))
+        info = parse_tdigest_info(self.cmd("tdigest.info", "dst"))
+        total_weight2 = float(info["Merged weight"]) + float(info["Unmerged weight"])
+        self.assertEqual(2 * sum(w for _, w in centroids), total_weight2)
+
+    def test_tdigest_externalmerge_compression_on_create_vs_existing(self):
+        # Creating a new key: the blob's declared compression governs, so a
+        # high-fidelity client-side digest isn't silently downsampled to the
+        # module default on its first flush.
+        self.cmd("FLUSHALL")
+        blob = build_externalmerge([(1.0, 1), (2.0, 1)], compression=250.0)
+        self.assertOk(self.cmd("tdigest.externalmerge", "dst", blob))
+        info = parse_tdigest_info(self.cmd("tdigest.info", "dst"))
+        self.assertEqual(250, info["Compression"])
+
+        # Merging into an existing key: the key's own compression governs,
+        # and the blob's compression field is ignored (same rule as MERGE).
+        self.assertOk(self.cmd("tdigest.create", "existing", "compression", 100))
+        blob2 = build_externalmerge([(1.0, 1), (2.0, 1)], compression=999.0)
+        self.assertOk(self.cmd("tdigest.externalmerge", "existing", blob2))
+        info2 = parse_tdigest_info(self.cmd("tdigest.info", "existing"))
+        self.assertEqual(100, info2["Compression"])
+
+    def test_tdigest_externalmerge_max_compression_bound(self):
+        # EXTERNALMERGE_MAX_COMPRESSION is derived so that the resulting
+        # digest's internal capacity (6*compression+10) never exceeds
+        # EXTERNALMERGE_MAX_CENTROIDS, matching the bound already applied to
+        # the blob's own centroid count.
+        self.cmd("FLUSHALL")
+        # Mirrors TD_MAX_CENTROIDS / TD_MAX_COMPRESSION in src/rm_tdigest.c,
+        # shared by TDIGEST.CREATE, TDIGEST.MERGE, and TDIGEST.EXTERNALMERGE.
+        max_centroids = 100000
+        max_compression = (max_centroids - 10) // 6
+
+        # Exactly at the cap: accepted, and the resulting capacity matches.
+        at_max = build_externalmerge([(1.0, 1), (2.0, 1)], compression=float(max_compression))
+        self.assertOk(self.cmd("tdigest.externalmerge", "atmax", at_max))
+        info = parse_tdigest_info(self.cmd("tdigest.info", "atmax"))
+        self.assertEqual(max_compression, info["Compression"])
+        self.assertEqual(max_centroids, info["Capacity"])
+
+        # One over the cap: rejected, no key created.
+        over = build_externalmerge([(1.0, 1), (2.0, 1)], compression=float(max_compression + 1))
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.externalmerge", "over", over
+        )
+        self.assertEqual(0, self.cmd("EXISTS", "over"))
+
+        # A tiny blob declaring an absurd compression must not be able to
+        # force a huge allocation for a brand-new key.
+        huge = build_externalmerge([(1.0, 1), (2.0, 1)], compression=1e8)
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.externalmerge", "huge", huge
+        )
+        self.assertEqual(0, self.cmd("EXISTS", "huge"))
+
+    def test_tdigest_externalmerge_overflow_leaves_no_partial_state(self):
+        # Two centroids whose weights overflow the running int64 weight
+        # accumulator on the second `td_add`. A rejected blob must fail
+        # atomically: no partially-merged digest, and no orphaned key.
+        self.cmd("FLUSHALL")
+        int64_max = 2**63 - 1
+        bad = build_externalmerge([(1.0, int64_max), (2.0, 1)])
+
+        # Destination key does not exist yet: it must not be created either.
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.externalmerge", "fresh", bad
+        )
+        self.assertEqual(0, self.cmd("EXISTS", "fresh"))
+
+        # Destination key already has data: a failed merge must not mutate it.
+        good = build_externalmerge([(5.0, 3), (6.0, 4)], compression=100.0)
+        self.assertOk(self.cmd("tdigest.externalmerge", "existing", good))
+        info_before = parse_tdigest_info(self.cmd("tdigest.info", "existing"))
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.externalmerge", "existing", bad
+        )
+        info_after = parse_tdigest_info(self.cmd("tdigest.info", "existing"))
+        self.assertEqual(info_before, info_after)
+
+    def test_tdigest_externalmerge_equivalence_to_add(self):
+        # Building a digest from centroids via EXTERNALMERGE should give the same
+        # quantile estimates as inserting weighted samples via TDIGEST.ADD.
+        self.cmd("FLUSHALL")
+        centroids = [(float(x), 100) for x in range(1, 101)]
+        blob = build_externalmerge(centroids, compression=100.0)
+        self.assertOk(self.cmd("tdigest.create", "via_add", "compression", 100))
+        for m, w in centroids:
+            # ADD has no weight knob, so simulate by adding w copies.
+            for _ in range(w):
+                self.cmd("tdigest.add", "via_add", m)
+        self.assertOk(self.cmd("tdigest.externalmerge", "via_blob", blob))
+        for q in (0.1, 0.5, 0.9):
+            a = float(self.cmd("tdigest.quantile", "via_add", q)[0])
+            b = float(self.cmd("tdigest.quantile", "via_blob", q)[0])
+            self.assertAlmostEqual(a, b, 1.0)
+
+    def test_tdigest_externalmerge_wrongtype(self):
+        self.cmd("FLUSHALL")
+        self.cmd("SET", "strkey", "B")
+        blob = build_externalmerge([(1.0, 1)])
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.externalmerge", "strkey", blob
+        )
+
+    def test_tdigest_externalmerge_arity(self):
+        self.cmd("FLUSHALL")
+        self.assertRaises(redis.exceptions.ResponseError, self.cmd, "tdigest.externalmerge")
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, "tdigest.externalmerge", "k"
+        )
+
+    def test_tdigest_externalmerge_rejects_malformed(self):
+        # Every rejection branch in _ExternalMerge_Parse, exercised individually.
+        self.cmd("FLUSHALL")
+        good = [(1.0, 1), (2.0, 2)]
+
+        # Too short.
+        self.env.expect("tdigest.externalmerge", "k", b"\x00" * 8).error()
+
+        # Bad magic.
+        bad = build_externalmerge(good, magic=b"XXXX")
+        self.env.expect("tdigest.externalmerge", "k", bad).error()
+
+        # Bad version.
+        bad = build_externalmerge(good, version=99)
+        self.env.expect("tdigest.externalmerge", "k", bad).error()
+
+        # num_centroids field claims more than the blob actually contains.
+        bad = build_externalmerge(good, override_num=len(good) + 7)
+        self.env.expect("tdigest.externalmerge", "k", bad).error()
+
+        # num_centroids over the cap (we only need the field set; total length
+        # is checked before the cap so build a header-only blob that claims a
+        # huge N — but the cap-check runs first, so length doesn't matter here).
+        header = b"TDB1" + bytes([1]) + struct.pack("<dI", 100.0, (1 << 21))
+        bad = header + b"\x00" * 4
+        self.env.expect("tdigest.externalmerge", "k", bad).error()
+
+        # Invalid compression (NaN).
+        bad = build_externalmerge(good, compression=float("nan"))
+        self.env.expect("tdigest.externalmerge", "k", bad).error()
+
+        # Invalid compression (non-positive).
+        bad = build_externalmerge(good, compression=-1.0)
+        self.env.expect("tdigest.externalmerge", "k", bad).error()
+
+        # Compression too large: a tiny blob must not be able to force a huge
+        # allocation for a brand-new key via an absurd declared compression.
+        bad = build_externalmerge(good, compression=100000000.0)
+        self.env.expect("tdigest.externalmerge", "k", bad).error()
+
+        # Non-finite mean.
+        bad = build_externalmerge([(float("inf"), 1)])
+        self.env.expect("tdigest.externalmerge", "k", bad).error()
+
+        # Non-positive weight.
+        bad = build_externalmerge([(1.0, 0)])
+        self.env.expect("tdigest.externalmerge", "k", bad).error()
+
+        # Unsorted means.
+        bad = build_externalmerge([(2.0, 1), (1.0, 1)])
+        self.env.expect("tdigest.externalmerge", "k", bad).error()
+
+        # CRC mismatch.
+        bad = build_externalmerge(good, override_crc=0xDEADBEEF)
+        self.env.expect("tdigest.externalmerge", "k", bad).error()
+
+        # None of the rejections should have left a key behind.
+        self.assertEqual(0, self.cmd("EXISTS", "k"))
+
+    def test_tdigest_externalmerge_persistence(self):
+        # EXTERNALMERGE-built digest should survive SAVE/restart like any other.
+        self.cmd("FLUSHALL")
+        blob = build_externalmerge([(float(x), 1) for x in range(1, 51)], compression=100.0)
+        self.assertOk(self.cmd("tdigest.externalmerge", "dst", blob))
+        weight_before = float(
+            parse_tdigest_info(self.cmd("tdigest.info", "dst"))["Merged weight"]
+        ) + float(
+            parse_tdigest_info(self.cmd("tdigest.info", "dst"))["Unmerged weight"]
+        )
+        self.assertEqual(True, self.cmd("SAVE"))
+        self.restart_and_reload()
+        self.assertEqual(1, self.cmd("EXISTS", "dst"))
+        weight_after = float(
+            parse_tdigest_info(self.cmd("tdigest.info", "dst"))["Merged weight"]
+        ) + float(
+            parse_tdigest_info(self.cmd("tdigest.info", "dst"))["Unmerged weight"]
+        )
+        self.assertEqual(weight_before, weight_after)
+
     def test_insufficient_memory(self):
         if os.environ.get('SANITIZER') != None:
             self.env.skip()
         self.cmd("FLUSHALL")
-        self.env.expect('tdigest.create', 'k', 'compression', 100000000000000000).error().contains('allocation failed')
+        # Absurdly large compression is now rejected proactively (bounded by
+        # TD_MAX_COMPRESSION) rather than relying on the allocator to fail.
+        self.env.expect('tdigest.create', 'k', 'compression', 100000000000000000).error().contains('exceeds maximum allowed')
 
     def test_rdb_load_oob_guard(self):
         self.cmd('FLUSHALL')
         rdb_payload = b'\x07\x81L2\x12\xf96\x0f\x10\x00\x04\x00\x00\x00\x00\x00\x00(@\x04\x00\x00\x00\x00\x00\x00\xf0?\x04\x00\x00\x00\x00\x00\x00\xf0?\x02\x01\x02@a\x02\x01\x02\x01\x04\x00\x00\x00\x00\x00\x00\xf0?\x04\x00\x00\x00\x00\x00\x00\xf0?\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04CCCCCCCC\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x04AAAAAAAA\x00\xff\x0c\x008\x9c\x969\x91:\xcc5'
         self.env.expect('RESTORE', "key", 0, rdb_payload, 'REPLACE').error().contains('Bad data format')
+
+    def test_rdb_load_cap_compression_consistency(self):
+        # TDigestRdbLoad used to trust `cap`/`merged_nodes`/`unmerged_nodes` from
+        # the wire as-is, decoupled from the buffer sizes td_new(compression)
+        # actually allocates. A crafted RESTORE payload declaring a small
+        # compression (small real buffer) but a large `cap` field passed the old
+        # bounds check (merged_nodes <= cap) while writing far past the real
+        # allocation on subsequent ADDs -- a heap buffer overflow that crashed
+        # the server. Loading must now derive cap from compression and reject
+        # any payload where the two disagree, or where compression itself is
+        # out of bounds.
+        self.cmd('FLUSHALL')
+
+        def crc64_jones(data):
+            poly = 0xad93d23594c935a9
+            rpoly = int(f'{poly:064b}'[::-1], 2)
+            crc = 0
+            for byte in data:
+                crc ^= byte
+                for _ in range(8):
+                    crc = (crc >> 1) ^ rpoly if crc & 1 else crc >> 1
+            return crc & 0xFFFFFFFFFFFFFFFF
+
+        def tamper(dump_bytes, cap_offset=None, fake_cap=None, compression_offset=None,
+                   fake_compression=None):
+            buf = bytearray(dump_bytes)
+            if fake_cap is not None:
+                buf[cap_offset] = 0x40 | (fake_cap >> 8)
+                buf[cap_offset + 1] = fake_cap & 0xFF
+            if fake_compression is not None:
+                buf[compression_offset:compression_offset + 8] = struct.pack('<d', fake_compression)
+            body = bytes(buf[:-8])
+            buf[-8:] = struct.pack('<Q', crc64_jones(body))
+            return bytes(buf)
+
+        # Layout for a freshly-created (empty) tdigest DUMP: 10-byte module
+        # header, opcode+8-byte-double compression at [10:19], min/max doubles,
+        # then opcode+14bit-length cap at [37:40].
+        self.assertOk(self.cmd('tdigest.create', 'src', 'compression', 10))
+        dump = self.cmd('DUMP', 'src')
+
+        # Sanity: the offsets above actually point at compression/cap on this
+        # build's RDB encoding, not unrelated bytes.
+        (orig_compression,) = struct.unpack('<d', dump[11:19])
+        self.assertEqual(10.0, orig_compression)
+        self.assertEqual(70, dump[39])  # cap = 6*10+10 = 70, fits in the low byte
+
+        # cap inflated far past the real 70-element buffer.
+        evil_cap = tamper(dump, cap_offset=38, fake_cap=10000)
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, 'RESTORE', 'evil_cap', 0, evil_cap
+        )
+
+        # compression beyond TD_MAX_COMPRESSION.
+        evil_compression = tamper(dump, compression_offset=11, fake_compression=1e9)
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, 'RESTORE', 'evil_compression', 0,
+            evil_compression
+        )
+
+        # negative compression.
+        evil_negative = tamper(dump, compression_offset=11, fake_compression=-5.0)
+        self.assertRaises(
+            redis.exceptions.ResponseError, self.cmd, 'RESTORE', 'evil_negative', 0, evil_negative
+        )
+
+        # Server must still be alive and the untampered key usable.
+        self.assertOk(self.cmd('tdigest.add', 'src', 1.0))
+        self.assertEqual(0, self.cmd('EXISTS', 'evil_cap'))
+        self.assertEqual(0, self.cmd('EXISTS', 'evil_compression'))
+        self.assertEqual(0, self.cmd('EXISTS', 'evil_negative'))
+
+        # An untampered DUMP must still RESTORE correctly.
+        self.cmd('DEL', 'src2')
+        clean_dump = tamper(dump)  # re-checksum only, no field changes
+        self.assertOk(self.cmd('RESTORE', 'src2', 0, clean_dump))
+        info = parse_tdigest_info(self.cmd('tdigest.info', 'src2'))
+        self.assertEqual(10, info['Compression'])
+        self.assertEqual(70, info['Capacity'])

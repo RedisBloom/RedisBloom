@@ -17,7 +17,9 @@
 #include "common.h"
 
 #include <math.h>
+#include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <strings.h>
 #include <stdbool.h>
 
@@ -32,6 +34,14 @@
     RedisModule_TryRealloc ? RedisModule_TryRealloc(__VA_ARGS__) : RedisModule_Realloc(__VA_ARGS__)
 #define td_free_ RedisModule_Free
 #define TD_DEFAULT_COMPRESSION 100
+/* Real t-digest usage never needs more than a few thousand centroids
+ * (compression of 100-1000 is the documented sweet spot). TD_MAX_CENTROIDS
+ * bounds the per-digest node-array allocation (cap = 6*compression+10, see
+ * cap_from_compression() in the t-digest lib) to a sane size regardless of
+ * how the compression value arrives: TDIGEST.CREATE, TDIGEST.MERGE's
+ * COMPRESSION keyword, or an EXTERNALMERGE blob's declared compression. */
+#define TD_MAX_CENTROIDS (100000u) /* cap*16 bytes => <= ~1.6 MiB per digest */
+#define TD_MAX_COMPRESSION ((TD_MAX_CENTROIDS - 10) / 6)
 
 #include "tdigest.h"
 #include "load_io_error.h"
@@ -68,6 +78,10 @@ static int _TDigest_ParseCompressionParameter(RedisModuleCtx *ctx, const RedisMo
     if (*compression <= 0) {
         RedisModule_ReplyWithError(
             ctx, "ERR T-Digest: compression parameter needs to be a positive integer");
+        return REDISMODULE_ERR;
+    }
+    if (*compression > TD_MAX_COMPRESSION) {
+        RedisModule_ReplyWithError(ctx, "ERR T-Digest: compression parameter exceeds maximum allowed");
         return REDISMODULE_ERR;
     }
     return REDISMODULE_OK;
@@ -368,6 +382,250 @@ cleanup:
     if (from_tdigests)
         td_free_(from_tdigests);
     return res;
+}
+
+/*
+ * TDIGEST.EXTERNALMERGE blob format v1 ("TDB1"):
+ *
+ *   offset  size       field             notes
+ *   ------  ---------  ----------------  -----------------------------------
+ *   0       4          magic             ASCII "TDB1"
+ *   4       1          version           uint8 = 1
+ *   5       8          compression       float64 LE, > 0 (used verbatim as the
+ *                                        new digest's compression if {key}
+ *                                        doesn't exist yet; ignored otherwise)
+ *   13      4          num_centroids     uint32 LE (<= EXTERNALMERGE_MAX_CENTROIDS)
+ *   17      8 * N      means             float64 LE x N, sorted ascending, finite
+ *   17+8N   8 * N      weights           int64   LE x N, > 0
+ *   17+16N  4          crc32             uint32 LE, IEEE poly over bytes [0,17+16N)
+ *
+ * Total length: exactly 21 + 16*N bytes.
+ */
+#define EXTERNALMERGE_MAGIC "TDB1"
+#define EXTERNALMERGE_VERSION 1
+#define EXTERNALMERGE_HEADER_LEN 17
+#define EXTERNALMERGE_TRAILER_LEN 4
+/* Shares TD_MAX_CENTROIDS / TD_MAX_COMPRESSION with TDIGEST.CREATE and
+ * TDIGEST.MERGE so every path that can size a digest's node arrays is bound
+ * by the same ceiling. Without the compression bound, a tiny blob could
+ * declare an arbitrarily large compression and force a huge allocation for
+ * a brand-new key, independent of the blob's own centroid count. */
+#define EXTERNALMERGE_MAX_CENTROIDS TD_MAX_CENTROIDS
+#define EXTERNALMERGE_MAX_COMPRESSION TD_MAX_COMPRESSION
+
+typedef enum {
+    EM_OK = 0,
+    EM_ERR_TOO_SHORT,
+    EM_ERR_BAD_MAGIC,
+    EM_ERR_BAD_VERSION,
+    EM_ERR_TOO_MANY,
+    EM_ERR_LENGTH_MISMATCH,
+    EM_ERR_BAD_COMPRESSION,
+    EM_ERR_COMPRESSION_TOO_LARGE,
+    EM_ERR_BAD_MEAN,
+    EM_ERR_BAD_WEIGHT,
+    EM_ERR_UNSORTED,
+    EM_ERR_CRC,
+} ExternalMergeErr;
+
+static const char *_ExternalMerge_ErrMsg(ExternalMergeErr e) {
+    switch (e) {
+    case EM_ERR_TOO_SHORT:            return "ERR T-Digest: blob too short";
+    case EM_ERR_BAD_MAGIC:            return "ERR T-Digest: blob bad magic";
+    case EM_ERR_BAD_VERSION:          return "ERR T-Digest: blob unsupported version";
+    case EM_ERR_TOO_MANY:             return "ERR T-Digest: blob has too many centroids";
+    case EM_ERR_LENGTH_MISMATCH:      return "ERR T-Digest: blob length mismatch";
+    case EM_ERR_BAD_COMPRESSION:      return "ERR T-Digest: blob has invalid compression";
+    case EM_ERR_COMPRESSION_TOO_LARGE: return "ERR T-Digest: blob compression exceeds maximum allowed";
+    case EM_ERR_BAD_MEAN:             return "ERR T-Digest: blob has non-finite mean";
+    case EM_ERR_BAD_WEIGHT:           return "ERR T-Digest: blob has non-positive weight";
+    case EM_ERR_UNSORTED:             return "ERR T-Digest: blob centroids not sorted";
+    case EM_ERR_CRC:                  return "ERR T-Digest: blob crc mismatch";
+    default:                          return "ERR T-Digest: blob parse error";
+    }
+}
+
+/* Reflected IEEE CRC-32 (zlib polynomial 0xEDB88320), bytewise. */
+static uint32_t _ExternalMerge_Crc32(const uint8_t *data, size_t len) {
+    uint32_t crc = 0xFFFFFFFFu;
+    for (size_t i = 0; i < len; i++) {
+        crc ^= data[i];
+        for (int b = 0; b < 8; b++) {
+            uint32_t mask = -(int32_t)(crc & 1u);
+            crc = (crc >> 1) ^ (0xEDB88320u & mask);
+        }
+    }
+    return crc ^ 0xFFFFFFFFu;
+}
+
+/* Little-endian readers — explicit so host endianness never sneaks in. */
+static inline uint32_t _ExternalMerge_LoadU32LE(const uint8_t *p) {
+    return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) |
+           ((uint32_t)p[3] << 24);
+}
+
+static inline int64_t _ExternalMerge_LoadI64LE(const uint8_t *p) {
+    uint64_t u = (uint64_t)p[0] | ((uint64_t)p[1] << 8) | ((uint64_t)p[2] << 16) |
+                 ((uint64_t)p[3] << 24) | ((uint64_t)p[4] << 32) | ((uint64_t)p[5] << 40) |
+                 ((uint64_t)p[6] << 48) | ((uint64_t)p[7] << 56);
+    return (int64_t)u;
+}
+
+static inline double _ExternalMerge_LoadF64LE(const uint8_t *p) {
+    uint64_t u = (uint64_t)p[0] | ((uint64_t)p[1] << 8) | ((uint64_t)p[2] << 16) |
+                 ((uint64_t)p[3] << 24) | ((uint64_t)p[4] << 32) | ((uint64_t)p[5] << 40) |
+                 ((uint64_t)p[6] << 48) | ((uint64_t)p[7] << 56);
+    double d;
+    memcpy(&d, &u, sizeof(d));
+    return d;
+}
+
+/*
+ * Parse and validate an EXTERNALMERGE blob. On success returns EM_OK with out_* populated.
+ * On error returns the specific EM_ERR_* code; out_* unchanged.
+ *
+ * The blob is bounds-checked up front: a single 4-byte field tells us the
+ * expected length, and we reject anything else. After that, all reads are
+ * inside [data, data+len) by construction.
+ */
+static ExternalMergeErr _ExternalMerge_Parse(const uint8_t *data, size_t len,
+                                              uint32_t *out_num_centroids,
+                                              const uint8_t **out_means_ptr,
+                                              const uint8_t **out_weights_ptr,
+                                              double *out_compression) {
+    if (len < EXTERNALMERGE_HEADER_LEN + EXTERNALMERGE_TRAILER_LEN) {
+        return EM_ERR_TOO_SHORT;
+    }
+    if (memcmp(data, EXTERNALMERGE_MAGIC, 4) != 0) {
+        return EM_ERR_BAD_MAGIC;
+    }
+    if (data[4] != EXTERNALMERGE_VERSION) {
+        return EM_ERR_BAD_VERSION;
+    }
+    double compression = _ExternalMerge_LoadF64LE(data + 5);
+    if (!isfinite(compression) || compression <= 0.0) {
+        return EM_ERR_BAD_COMPRESSION;
+    }
+    if (compression > (double)EXTERNALMERGE_MAX_COMPRESSION) {
+        return EM_ERR_COMPRESSION_TOO_LARGE;
+    }
+    uint32_t n = _ExternalMerge_LoadU32LE(data + 13);
+    if (n > EXTERNALMERGE_MAX_CENTROIDS) {
+        return EM_ERR_TOO_MANY;
+    }
+    size_t expected = (size_t)EXTERNALMERGE_HEADER_LEN + (size_t)n * 16u + EXTERNALMERGE_TRAILER_LEN;
+    if (expected != len) {
+        return EM_ERR_LENGTH_MISMATCH;
+    }
+    const uint8_t *means_ptr = data + EXTERNALMERGE_HEADER_LEN;
+    const uint8_t *weights_ptr = means_ptr + (size_t)n * 8u;
+    /* CRC over everything except the 4-byte trailer. */
+    uint32_t crc_stored = _ExternalMerge_LoadU32LE(data + len - EXTERNALMERGE_TRAILER_LEN);
+    uint32_t crc_calc = _ExternalMerge_Crc32(data, len - EXTERNALMERGE_TRAILER_LEN);
+    if (crc_stored != crc_calc) {
+        return EM_ERR_CRC;
+    }
+    /* Per-field validation; means must be finite + sorted, weights > 0. */
+    double prev_mean = -INFINITY;
+    for (uint32_t i = 0; i < n; i++) {
+        double m = _ExternalMerge_LoadF64LE(means_ptr + (size_t)i * 8u);
+        if (!isfinite(m)) {
+            return EM_ERR_BAD_MEAN;
+        }
+        if (m < prev_mean) {
+            return EM_ERR_UNSORTED;
+        }
+        prev_mean = m;
+        int64_t w = _ExternalMerge_LoadI64LE(weights_ptr + (size_t)i * 8u);
+        if (w <= 0) {
+            return EM_ERR_BAD_WEIGHT;
+        }
+    }
+    *out_num_centroids = n;
+    *out_means_ptr = means_ptr;
+    *out_weights_ptr = weights_ptr;
+    *out_compression = compression;
+    return EM_OK;
+}
+
+/**
+ * Command: TDIGEST.EXTERNALMERGE {key} {blob}
+ *
+ * Merges a client-side-serialized t-digest (in the TDB1 wire format above)
+ * into {key}. If {key} already exists, its compression governs storage and
+ * the blob's own `compression` field is ignored. If {key} does not exist,
+ * it is created using the blob's declared compression, so a high-fidelity
+ * client-side digest isn't silently downsampled on its first flush.
+ *
+ * Like TDIGEST.MERGE, this builds the result in a scratch digest and only
+ * installs it into {key} once every centroid has been merged successfully
+ * — a rejected/overflowing blob never partially mutates (or creates) the
+ * destination key.
+ *
+ * Reply: simple string "OK" on success, error otherwise.
+ */
+int TDigestSketch_ExternalMerge(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    if (argc != 3) {
+        return RedisModule_WrongArity(ctx);
+    }
+    size_t blob_len = 0;
+    const char *blob_raw = RedisModule_StringPtrLen(argv[2], &blob_len);
+    const uint8_t *blob = (const uint8_t *)blob_raw;
+
+    uint32_t n = 0;
+    const uint8_t *means_ptr = NULL;
+    const uint8_t *weights_ptr = NULL;
+    double blob_compression = 0.0;
+    ExternalMergeErr perr =
+        _ExternalMerge_Parse(blob, blob_len, &n, &means_ptr, &weights_ptr, &blob_compression);
+    if (perr != EM_OK) {
+        return RedisModule_ReplyWithError(ctx, _ExternalMerge_ErrMsg(perr));
+    }
+
+    RedisModuleString *keyName = argv[1];
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ);
+    td_histogram_t *tdigestStart = NULL;
+    bool to_exists = false;
+    if (RedisModule_KeyType(key) != REDISMODULE_KEYTYPE_EMPTY) {
+        if (RedisModule_ModuleTypeGetType(key) != TDigestSketchType) {
+            RedisModule_CloseKey(key);
+            return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
+        }
+        tdigestStart = RedisModule_ModuleTypeGetValue(key);
+        to_exists = true;
+    }
+    RedisModule_CloseKey(key);
+
+    double compression = to_exists ? tdigestStart->compression : blob_compression;
+    td_histogram_t *tdigest = NULL;
+    if (td_init(compression, &tdigest) != 0) {
+        return RedisModule_ReplyWithError(ctx, "ERR T-Digest: allocation failed");
+    }
+    if (to_exists && td_merge(tdigest, tdigestStart) != 0) {
+        td_free(tdigest);
+        return RedisModule_ReplyWithError(ctx, "ERR T-Digest: overflow detected");
+    }
+
+    for (uint32_t i = 0; i < n; i++) {
+        double mean = _ExternalMerge_LoadF64LE(means_ptr + (size_t)i * 8u);
+        int64_t weight = _ExternalMerge_LoadI64LE(weights_ptr + (size_t)i * 8u);
+        if (td_add(tdigest, mean, (long long)weight) != 0) {
+            td_free(tdigest);
+            return RedisModule_ReplyWithError(ctx, "ERR T-Digest: overflow detected");
+        }
+    }
+    td_compress(tdigest);
+
+    key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_WRITE);
+    if (RedisModule_ModuleTypeSetValue(key, TDigestSketchType, tdigest) != REDISMODULE_OK) {
+        td_free(tdigest);
+        RedisModule_CloseKey(key);
+        return RedisModule_ReplyWithError(ctx, "ERR T-Digest: error setting value");
+    }
+    RedisModule_CloseKey(key);
+    RedisModule_ReplicateVerbatim(ctx);
+    RedisModule_ReplyWithSimpleString(ctx, "OK");
+    return REDISMODULE_OK;
 }
 
 /**
@@ -875,19 +1133,38 @@ void *TDigestRdbLoad(RedisModuleIO *rdb, int encver) {
     /* Load the network layout. */
     bool err = false;
     const double compression = LoadDouble_IOError(rdb, err, NULL);
+    // Reject before allocating: an unvalidated compression can make td_new() return
+    // NULL (huge/negative value) or allocate an attacker-chosen size independent of
+    // the rest of this session's command-level bounds.
+    if (!isfinite(compression) || compression <= 0.0 || compression > (double)TD_MAX_COMPRESSION) {
+        return NULL;
+    }
     td_histogram_t *tdigest = td_new(compression);
+    if (!tdigest) {
+        return NULL;
+    }
     errdefer(err, td_free(tdigest));
     tdigest->min = LoadDouble_IOError(rdb, err, NULL);
     tdigest->max = LoadDouble_IOError(rdb, err, NULL);
 
-    // cap is the total size of nodes
-    tdigest->cap = LoadSigned_IOError(rdb, err, NULL);
+    // cap is fully determined by compression (see cap_from_compression() in the
+    // t-digest lib, which td_new() already applied above). It is only present on
+    // the wire for format continuity, so it must match exactly: accepting a wire
+    // value that disagrees with the real allocation is what let a crafted
+    // RESTORE/RDB payload decouple cap/merged_nodes/unmerged_nodes from the
+    // actual nodes_mean/nodes_weight buffer sizes and drive an out-of-bounds
+    // read/write on every subsequent command touching the key.
+    const int64_t wire_cap = LoadSigned_IOError(rdb, err, NULL);
+    if (wire_cap != (int64_t)tdigest->cap) {
+        err = true;
+        return NULL;
+    }
 
     // merged_nodes is the number of merged nodes at the front of nodes.
-    tdigest->merged_nodes = LoadSigned_IOError(rdb, err, NULL);
+    const int64_t merged_nodes = LoadSigned_IOError(rdb, err, NULL);
 
     // unmerged_nodes is the number of buffered nodes.
-    tdigest->unmerged_nodes = LoadSigned_IOError(rdb, err, NULL);
+    const int64_t unmerged_nodes = LoadSigned_IOError(rdb, err, NULL);
 
     // we run the merge in reverse every other merge to avoid left-to-right bias in merging
     tdigest->total_compressions = LoadSigned_IOError(rdb, err, NULL);
@@ -895,10 +1172,12 @@ void *TDigestRdbLoad(RedisModuleIO *rdb, int encver) {
     tdigest->merged_weight = LoadDouble_IOError(rdb, err, NULL);
     tdigest->unmerged_weight = LoadDouble_IOError(rdb, err, NULL);
 
-    if (tdigest->merged_nodes < 0 || tdigest->merged_nodes > tdigest->cap) {
+    if (merged_nodes < 0 || unmerged_nodes < 0 || merged_nodes + unmerged_nodes > tdigest->cap) {
         err = true;
         return NULL;
     }
+    tdigest->merged_nodes = (int)merged_nodes;
+    tdigest->unmerged_nodes = (int)unmerged_nodes;
 
     for (size_t i = 0; i < tdigest->merged_nodes; i++) {
         tdigest->nodes_mean[i] = LoadDouble_IOError(rdb, err, NULL);
@@ -954,6 +1233,7 @@ int TDigestModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc
     RegisterCommand(ctx, "tdigest.add", TDigestSketch_Add, "write deny-oom", "write");
     RegisterCommand(ctx, "tdigest.reset", TDigestSketch_Reset, "write deny-oom", "write fast");
     RegisterCommand(ctx, "tdigest.merge", TDigestSketch_Merge, "write deny-oom", "write");
+    RegisterCommand(ctx, "tdigest.externalmerge", TDigestSketch_ExternalMerge, "write deny-oom", "write");
     RegisterCommand(ctx, "tdigest.min", TDigestSketch_Min, "readonly", "read fast");
     RegisterCommand(ctx, "tdigest.max", TDigestSketch_Max, "readonly", "read fast");
     RegisterCommand(ctx, "tdigest.quantile", TDigestSketch_Quantile, "readonly", "read fast");
