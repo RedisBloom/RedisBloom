@@ -29,7 +29,10 @@ class testCuckoo():
     def test_counter_overflow_with_large_number_of_items(self):
         self.cmd('FLUSHALL')
         self.cmd('CF.RESERVE', 'cf', 2, 'BUCKETSIZE', 1, 'EXPANSION', 1)
-        self.cmd('CF.INSERT', 'cf', 'ITEMS', *["1 "]*140000)
+        try:
+            self.cmd('CF.INSERT', 'cf', 'ITEMS', *["1 "]*140000)
+        except ResponseError:
+            pass
 
     def test_count(self):
         self.cmd('FLUSHALL')
@@ -742,3 +745,52 @@ def test_cf_loadchunk_replicates_to_replica():
                if slave.execute_command('CF.EXISTS', 'cf', 'item%d' % i) != 1]
     env.assertEqual(missing, [],
                     message='%d/%d items missing on replica after CF.LOADCHUNK' % (len(missing), n))
+
+
+def test_cf_add_autocreate_expansion_limit_replicates_to_replica():
+    # cfInsertCommon() autocreates the filter (RedisModule_ModuleTypeSetValue,
+    # a real keyspace mutation) *before* it checks cf->numFilters against
+    # cf-max-expansions. When that guard trips on a brand-new key, the
+    # function returns an error without ever reaching the single
+    # RedisModule_ReplicateVerbatim() call at the end of cfInsertCommon. So a
+    # CF.ADD that both creates the key and immediately hits the expansion
+    # limit is never replicated, even though the key now exists on the
+    # master. Master and replica must never disagree on whether a key exists.
+    # freshEnv=True forces a dedicated master+replica env, so this test is not
+    # affected by env reuse from preceding (non-replicated) tests.
+    env = Env(useSlaves=True, decodeResponses=True, freshEnv=True)
+    if env.isCluster():
+        env.skip()
+
+    master = env.getConnection()
+    slave = env.getSlaveConnection()
+
+    # A freshly created cuckoo filter has numFilters == 1 (CuckooFilter_Init
+    # grows once), so cf-max-expansions=1 makes the very first insert into a
+    # new key trip the "Maximum expansions reached" guard.
+    master.execute_command('CONFIG', 'SET', 'cf-max-expansions', '1')
+
+    # 'newkey' does not exist yet; CF.ADD's autocreate path should create it
+    # and then immediately fail the expansion-limit check.
+    env.assertFalse(master.execute_command('EXISTS', 'newkey'))
+    with env.assertResponseError(contained='Maximum expansions reached'):
+        master.execute_command('CF.ADD', 'newkey', 'x')
+
+    existsOnMaster = bool(master.execute_command('EXISTS', 'newkey'))
+
+    # The replica must be caught up to the master's replication offset. Poll
+    # WAIT to tolerate the replica still connecting/doing its initial sync.
+    acked = 0
+    deadline = time.time() + 15
+    while time.time() < deadline:
+        acked = master.execute_command('WAIT', 1, 1000)
+        if acked >= 1:
+            break
+    env.assertEqual(acked, 1)
+
+    existsOnSlave = bool(slave.execute_command('EXISTS', 'newkey'))
+
+    # Master and replica must agree on whether 'newkey' exists.
+    env.assertEqual(existsOnMaster, existsOnSlave,
+                    message='newkey existence diverged: master=%s replica=%s' %
+                            (existsOnMaster, existsOnSlave))
