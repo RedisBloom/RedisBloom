@@ -1426,16 +1426,14 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
         }
 
         size_t len = 0;
-        cf->filters[ii].data =
-            (MyCuckooBucket *)LoadStringBuffer_IOError(io, &len, err, NULL);
+        cf->filters[ii].data = (MyCuckooBucket *)LoadStringBuffer_IOError(io, &len, err, NULL);
         if (unlikely(cf->filters[ii].data == NULL)) {
             err = true;
             return NULL;
         }
         if (unlikely(cf->filters[ii].bucketSize == 0) ||
             unlikely(cf->filters[ii].numBuckets == 0) ||
-            unlikely(cf->filters[ii].bucketSize >
-                     SIZE_MAX / (size_t)cf->filters[ii].numBuckets)) {
+            unlikely(cf->filters[ii].bucketSize > SIZE_MAX / (size_t)cf->filters[ii].numBuckets)) {
             err = true;
             return NULL;
         }
