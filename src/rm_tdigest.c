@@ -905,7 +905,8 @@ void *TDigestRdbLoad(RedisModuleIO *rdb, int encver) {
 
     if (tdigest->merged_nodes < 0 || tdigest->unmerged_nodes < 0 ||
         tdigest->merged_nodes > allocated_cap || tdigest->unmerged_nodes > allocated_cap ||
-        tdigest->merged_nodes + tdigest->unmerged_nodes > allocated_cap) {
+        (int64_t)tdigest->merged_nodes + (int64_t)tdigest->unmerged_nodes >
+            (int64_t)allocated_cap) {
         err = true;
         return NULL;
     }
