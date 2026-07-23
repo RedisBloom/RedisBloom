@@ -377,14 +377,19 @@ coverage:
 	$(SHOW)test_status=0; \
 		$(MAKE) test COV=1 || test_status=$$?; \
 		printf '%s\n' "$$test_status" > $(COV_DIR)/test.status
-	$(SHOW)$(COVERAGE_COLLECT_REPORT)
 	$(SHOW)test_status=$$(cat $(COV_DIR)/test.status); \
+		collect_status=0; \
+		$(MAKE) coverage-collect-report COV=1 || collect_status=$$?; \
 		if [ "$$test_status" -ne 0 ]; then \
 			echo "Coverage tests failed with status $$test_status"; \
 			exit "$$test_status"; \
-		fi
+		fi; \
+		exit "$$collect_status"
 
-.PHONY: coverage
+coverage-collect-report:
+	$(SHOW)$(COVERAGE_COLLECT_REPORT)
+
+.PHONY: coverage coverage-collect-report
 
 #----------------------------------------------------------------------------------------------
 
