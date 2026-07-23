@@ -1265,13 +1265,38 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
         }
         size_t sztmp;
         bm->bf = (unsigned char *)LoadStringBuffer_IOError(io, &sztmp, err, NULL);
-        // Validate that the buffer is at least large enough for the number of bits
-        // We need at least ceil(bits/8) bytes
-        if (sztmp < ceil(bm->bits / 8.0)) {
+        if (unlikely(bm->bf == NULL) || unlikely(sztmp == 0) ||
+            unlikely(sztmp > (UINT64_MAX / 8))) {
             err = true;
             return NULL;
         }
         bm->bytes = sztmp;
+        if (encver == 0) {
+            // Validate that the buffer is at least large enough for the number of bits.
+            // We need at least ceil(bits/8) bytes.
+            if (sztmp < ceil(bm->bits / 8.0)) {
+                err = true;
+                return NULL;
+            }
+        } else {
+            const uint64_t buf_bits = (uint64_t)sztmp * 8;
+            if (unlikely(bm->bits != buf_bits)) {
+                err = true;
+                return NULL;
+            }
+        }
+
+        if (unlikely(bm->n2 > 63)) {
+            err = true;
+            return NULL;
+        }
+        if (bm->n2 != 0) {
+            const uint64_t mod_bits = (1ULL << bm->n2);
+            if (unlikely(bm->bits < mod_bits)) {
+                err = true;
+                return NULL;
+            }
+        }
         if (bloom_validate_integrity(bm) != 0) {
             err = true;
             return NULL;
@@ -1354,12 +1379,15 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
     bool err = false;
     CuckooFilter *cf = RedisModule_Calloc(1, sizeof(*cf));
     errdefer(err, CFFree(cf));
-    cf->numFilters = LoadUnsigned_IOError(io, err, NULL);
-    cf->numBuckets = LoadUnsigned_IOError(io, err, NULL);
-    if (cf->numFilters == 0 || cf->numBuckets == 0) {
+    const uint64_t numFilters64 = LoadUnsigned_IOError(io, err, NULL);
+    const uint64_t numBuckets64 = LoadUnsigned_IOError(io, err, NULL);
+    if (unlikely(numFilters64 == 0) || unlikely(numFilters64 > UINT16_MAX) ||
+        unlikely(numBuckets64 == 0) || unlikely(numBuckets64 > CF_MAX_NUM_BUCKETS)) {
         err = true;
         return NULL;
     }
+    cf->numFilters = (uint16_t)numFilters64;
+    cf->numBuckets = numBuckets64;
     cf->numItems = LoadUnsigned_IOError(io, err, NULL);
     if (encver < CF_MIN_EXPANSION_VERSION) { // CF_ENCODING_VERSION when added
         cf->numDeletes = 0;                  // Didn't exist earlier. bug fix
@@ -1368,9 +1396,22 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
         cf->expansion = rm_config.cf_expansion_factor.value;
     } else {
         cf->numDeletes = LoadUnsigned_IOError(io, err, NULL);
-        cf->bucketSize = LoadUnsigned_IOError(io, err, NULL);
-        cf->maxIterations = LoadUnsigned_IOError(io, err, NULL);
-        cf->expansion = LoadUnsigned_IOError(io, err, NULL);
+        const uint64_t bucketSize64 = LoadUnsigned_IOError(io, err, NULL);
+        const uint64_t maxIterations64 = LoadUnsigned_IOError(io, err, NULL);
+        const uint64_t expansion64 = LoadUnsigned_IOError(io, err, NULL);
+        if (unlikely(bucketSize64 > UINT16_MAX) || unlikely(maxIterations64 > UINT16_MAX) ||
+            unlikely(expansion64 > UINT16_MAX)) {
+            err = true;
+            return NULL;
+        }
+        cf->bucketSize = (uint16_t)bucketSize64;
+        cf->maxIterations = (uint16_t)maxIterations64;
+        cf->expansion = (uint16_t)expansion64;
+    }
+
+    if (CuckooFilter_ValidateIntegrity(cf) != 0) {
+        err = true;
+        return NULL;
     }
 
     cf->filters = RedisModule_Calloc(cf->numFilters, sizeof *cf->filters);
@@ -1380,13 +1421,33 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
         if (encver < CF_MIN_EXPANSION_VERSION) {
             filter->numBuckets = cf->numBuckets;
         } else {
-            filter->numBuckets = LoadUnsigned_IOError(io, err, NULL);
+            const uint64_t subNumBuckets = LoadUnsigned_IOError(io, err, NULL);
+            // `SubCF::numBuckets` is 56 bits; reject values that would truncate.
+            if (unlikely(subNumBuckets == 0) || unlikely(subNumBuckets > CF_MAX_NUM_BUCKETS) ||
+                unlikely((subNumBuckets & (subNumBuckets - 1)) != 0)) {
+                err = true;
+                return NULL;
+            }
+            filter->numBuckets = subNumBuckets;
         }
 
         size_t len = 0;
         filter->data = (MyCuckooBucket *)LoadStringBuffer_IOError(io, &len, err, NULL);
-        assert(filter->data);
-        assert(len == sizeof *filter->data * filter->bucketSize * filter->numBuckets);
+        if (unlikely(filter->data == NULL)) {
+            err = true;
+            return NULL;
+        }
+        if (unlikely(filter->bucketSize == 0) || unlikely(filter->numBuckets == 0) ||
+            unlikely(filter->bucketSize > SIZE_MAX / (size_t)filter->numBuckets)) {
+            err = true;
+            return NULL;
+        }
+        const size_t expected_len =
+            sizeof *filter->data * (size_t)filter->bucketSize * (size_t)filter->numBuckets;
+        if (unlikely(len != expected_len)) {
+            err = true;
+            return NULL;
+        }
     }
     return cf;
 }
