@@ -105,9 +105,10 @@ jobs:
             echo "::warning::No cov.info produced by 'make coverage'"
           fi
 
+      # codecov/codecov-action v5.5.5
       - name: Upload coverage to Codecov
         if: ${{ always() && steps.cov.outputs.file != '' }}
-        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
+        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac
         with:
           files: ${{ steps.cov.outputs.file }}
           disable_search: true
