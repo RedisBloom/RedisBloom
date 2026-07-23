@@ -374,8 +374,15 @@ endif
 coverage:
 	$(SHOW)$(MAKE) build COV=1
 	$(SHOW)$(COVERAGE_RESET)
-	-$(SHOW)$(MAKE) test COV=1
+	$(SHOW)test_status=0; \
+		$(MAKE) test COV=1 || test_status=$$?; \
+		printf '%s\n' "$$test_status" > $(COV_DIR)/test.status
 	$(SHOW)$(COVERAGE_COLLECT_REPORT)
+	$(SHOW)test_status=$$(cat $(COV_DIR)/test.status); \
+		if [ "$$test_status" -ne 0 ]; then \
+			echo "Coverage tests failed with status $$test_status"; \
+			exit "$$test_status"; \
+		fi
 
 .PHONY: coverage
 

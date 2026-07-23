@@ -77,8 +77,8 @@ jobs:
           # COV=1 must be set at the top level: the lcov reset/collect macros in
           # readies/mk/coverage.defs are guarded by `ifeq ($(COV),1)`, so without
           # it the build is instrumented but no report is produced. The test step
-          # is prefixed with `-` in the Makefile, so the report is still produced
-          # even if some tests fail.
+          # records its status in the Makefile so the report is still produced
+          # when tests fail, then `make coverage` returns that failing status.
           docker run --rm \
             -v ${{ github.workspace }}:/workspace \
             -w /workspace \
@@ -107,7 +107,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: ${{ always() && steps.cov.outputs.file != '' }}
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
         with:
           files: ${{ steps.cov.outputs.file }}
           disable_search: true
