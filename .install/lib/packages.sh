@@ -79,7 +79,6 @@ RHEL_BASE="
     openssl openssl-devel bzip2-devel libffi-devel zlib-devel
     clang clang-devel
     tcl
-    python3 python3-pip python3-devel python3-numpy
     cmake
     unzip rsync valgrind lcov jq tar which gdb
 "
