@@ -53,7 +53,7 @@ fi
 . "$LIB/setup-python.sh"
 
 if [ "${DRY_RUN:-0}" = 1 ]; then
-    _dry_line "==> [redisbloom] dry-run complete — commands above are what bootstrap would run for missing deps (nothing installed)"
+    _dry_head "==> [redisbloom] dry-run complete — commands above are what bootstrap would run for missing deps (nothing installed)"
     exit 0
 fi
 

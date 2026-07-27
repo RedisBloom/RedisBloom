@@ -86,16 +86,16 @@ if [ "$CHECK_DEPS" = 1 ] || [ "$DRY_RUN" = 1 ]; then
     SUDO=":"                # neutralize privileged side-commands (no mutation)
 fi
 
-# dry-run output is blue on a real terminal, plain when piped (CI logs).
-if [ "$DRY_RUN" = 1 ] && [ -t 1 ]; then _DRY_C="$(printf '\033[1;34m')"; _DRY_R="$(printf '\033[0m')"; else _DRY_C=""; _DRY_R=""; fi
-_dry_line() { printf '%s%s%s\n' "$_DRY_C" "$*" "$_DRY_R"; }
+# dry-run colors (on a real terminal; plain when piped, e.g. CI logs):
+#   commands  -> blue     headlines (==> lines) -> cyan, so they're distinct.
+if [ "$DRY_RUN" = 1 ] && [ -t 1 ]; then
+    _DRY_C="$(printf '\033[0;34m')"; _DRY_H="$(printf '\033[1;36m')"; _DRY_R="$(printf '\033[0m')"
+else _DRY_C=""; _DRY_H=""; _DRY_R=""; fi
+_dry_line() { printf '%s%s%s\n' "$_DRY_C" "$*" "$_DRY_R"; }   # a command  (blue)
+_dry_head() { printf '%s%s%s\n' "$_DRY_H" "$*" "$_DRY_R"; }   # a headline (cyan)
 
-# _run CMD... — one wrapper for every "would-install" command, so callers
-# never branch on the mode:
-#   install  -> execute it (with the real sudo prefix)
-#   dry-run  -> print it (blue), don't execute
-#   list     -> skip it (a check neither installs nor prints)
-# The printed and the executed command are literally the same line.
+# _run CMD... — install: execute (real sudo prefix); dry-run: print (blue);
+# list: skip. Callers pre-filter to missing.
 _run() {
     if [ "$CHECK_DEPS" = 1 ]; then return 0
     elif [ "$DRY_RUN" = 1 ]; then _dry_line "${_SUDO_DISPLAY:+$_SUDO_DISPLAY }$*"
@@ -146,7 +146,6 @@ _pm_apt_updated=0
 apt_install() {
     [ "$#" -gt 0 ] || return 0
     if [ "$CHECK_DEPS" = 1 ]; then _check_pkgs "$@"; return 0; fi
-    if [ "$DRY_RUN" = 1 ]; then set -- $(_missing_only "$@"); [ "$#" -gt 0 ] || return 0; fi
     # Acquire::Retries: ports.ubuntu.com (arm64 mirror) intermittently drops
     # connections mid-build; without retries a single dropped fetch fails the
     # whole docker build (exit 100). Retry each download before giving up.
