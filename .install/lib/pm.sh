@@ -35,6 +35,61 @@ else
 fi
 
 # ----------------------------------------------------------------------------
+# check-deps mode: when CHECK_DEPS=1 the install primitives below do NOT
+# install — they query whether each package is already present and record it
+# into DEPS_OK / DEPS_MISSING (printed as a summary by install_script.sh).
+# SUDO is neutralised to a no-op so stray privileged side-commands
+# (groupinstall, repo enables, ln/cp/update-alternatives) can't mutate the
+# system during a check.
+# ----------------------------------------------------------------------------
+CHECK_DEPS="${CHECK_DEPS:-0}"
+DEPS_OK=""
+DEPS_MISSING=""
+
+# DRY_RUN=1: install nothing — print the package-install command each
+# primitive WOULD run, in a clear, copy-pasteable form. Like check-deps it
+# neutralises SUDO so no privileged side-command mutates the system.
+DRY_RUN="${DRY_RUN:-0}"
+
+if [ "$CHECK_DEPS" = 1 ] || [ "$DRY_RUN" = 1 ]; then
+    _SUDO_DISPLAY="$SUDO"   # remember the intended sudo prefix for dry-run output
+    SUDO=":"                # ':' is the shell no-op builtin; it ignores its arguments
+fi
+
+# Colors for dry-run output: bold blue "DRY-RUN [tag]" headline, blue command.
+# Only on a real terminal (plain text when piped, e.g. CI logs).
+if [ "$DRY_RUN" = 1 ] && [ -t 1 ]; then
+    DRY_HL="$(printf '\033[1;34m')"; DRY_C="$(printf '\033[34m')"; DRY_RST="$(printf '\033[0m')"
+else
+    DRY_HL=""; DRY_C=""; DRY_RST=""
+fi
+
+# _dry_line <tag> <text...> — print one colored dry-run line with a bold
+# headline. _dry uses the active PM as the tag and adds the sudo prefix.
+_dry_line() { _t="$1"; shift; echo "${DRY_HL}DRY-RUN [$_t]${DRY_RST}  ${DRY_C}$*${DRY_RST}"; }
+_dry() { _dry_line "$PM" "${_SUDO_DISPLAY:+$_SUDO_DISPLAY }$*"; }
+
+# Read-only "is this package installed?" probe, per package manager.
+_pkg_installed() {
+    case "$PM" in
+        apt)          dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q 'ok installed' ;;
+        dnf|yum|tdnf) rpm -q "$1" >/dev/null 2>&1 ;;
+        apk)          apk info -e "$1" >/dev/null 2>&1 ;;
+        # Judge by stdout, not exit code: brew often prints unrelated
+        # warnings to stderr and returns non-zero even when the formula is
+        # installed. A non-empty "<name> <version>" line means installed.
+        brew)         [ -n "$(brew list --versions "$1" 2>/dev/null)" ] ;;
+        *)            return 1 ;;
+    esac
+}
+
+_check_pkgs() {
+    for _p in "$@"; do
+        if _pkg_installed "$_p"; then DEPS_OK="$DEPS_OK $_p"; else DEPS_MISSING="$DEPS_MISSING $_p"; fi
+    done
+}
+
+# ----------------------------------------------------------------------------
 # Per-PM install primitives
 # ----------------------------------------------------------------------------
 
@@ -43,6 +98,12 @@ fi
 _pm_apt_updated=0
 apt_install() {
     [ "$#" -gt 0 ] || return 0
+    if [ "$CHECK_DEPS" = 1 ]; then _check_pkgs "$@"; return 0; fi
+    if [ "$DRY_RUN" = 1 ]; then
+        [ "$_pm_apt_updated" = 0 ] && { _dry "apt-get update"; _pm_apt_updated=1; }
+        _dry "apt-get install -y --no-install-recommends $*"
+        return 0
+    fi
     # Acquire::Retries: ports.ubuntu.com (arm64 mirror) intermittently drops
     # connections mid-build; without retries a single dropped fetch fails the
     # whole docker build (exit 100). Retry each download before giving up.
@@ -63,11 +124,15 @@ apt_install() {
 # preinstalled on amazon linux 2023 / EL10 base images.
 dnf_install() {
     [ "$#" -gt 0 ] || return 0
+    if [ "$CHECK_DEPS" = 1 ]; then _check_pkgs "$@"; return 0; fi
+    if [ "$DRY_RUN" = 1 ]; then _dry "dnf -y install --allowerasing --skip-broken $*"; return 0; fi
     $SUDO dnf -y install --allowerasing --skip-broken "$@"
 }
 
 yum_install() {
     [ "$#" -gt 0 ] || return 0
+    if [ "$CHECK_DEPS" = 1 ]; then _check_pkgs "$@"; return 0; fi
+    if [ "$DRY_RUN" = 1 ]; then _dry "yum -y install --skip-broken $*"; return 0; fi
     $SUDO yum -y install --skip-broken "$@"
 }
 
@@ -77,6 +142,12 @@ yum_install() {
 # becomes a warning rather than a build failure.
 tdnf_install() {
     [ "$#" -gt 0 ] || return 0
+    if [ "$CHECK_DEPS" = 1 ]; then _check_pkgs "$@"; return 0; fi
+    if [ "$DRY_RUN" = 1 ]; then
+        local p
+        for p in "$@"; do _dry "tdnf -y install $p"; done
+        return 0
+    fi
     local pkg
     for pkg in "$@"; do
         if ! $SUDO tdnf -y install "$pkg" >/dev/null 2>&1; then
@@ -87,6 +158,8 @@ tdnf_install() {
 
 apk_install() {
     [ "$#" -gt 0 ] || return 0
+    if [ "$CHECK_DEPS" = 1 ]; then _check_pkgs "$@"; return 0; fi
+    if [ "$DRY_RUN" = 1 ]; then _dry "apk add --no-cache $*"; return 0; fi
     $SUDO apk add --no-cache "$@"
 }
 
@@ -95,6 +168,8 @@ apk_install() {
 # checks (compiler probes, `command -v`, ...).
 brew_install() {
     [ "$#" -gt 0 ] || return 0
+    if [ "$CHECK_DEPS" = 1 ]; then _check_pkgs "$@"; return 0; fi
+    if [ "$DRY_RUN" = 1 ]; then _dry "brew install $*"; return 0; fi
     if ! command -v brew >/dev/null 2>&1; then
         echo "pm.sh: brew not installed; install from https://brew.sh" >&2
         exit 1
