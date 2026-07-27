@@ -44,7 +44,7 @@ echo "==> [redisbloom] OSNICK=$OSNICK PM=$PM"
 # Allow git operations on the checked-out source even when its uid doesn't
 # match the current user (common in CI containers). Scoped to this repo
 # (--local), not the host's global git config.
-# Skipped in check-deps mode — it may not mutate anything.
+# Skipped in list mode — it may not mutate anything.
 if [ "${CHECK_DEPS:-0}" != 1 ] && [ -d "$ROOT/.git" ]; then
     git -C "$ROOT" config --local --add safe.directory '*' || true
 fi

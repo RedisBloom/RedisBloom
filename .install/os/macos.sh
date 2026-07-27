@@ -27,7 +27,7 @@ fi
 brew_default_install
 
 # python@3.11 only when the host has no python3 (see header). Skip under
-# check-deps.
+# list.
 if ! command -v python3 >/dev/null 2>&1; then
     if [ "${CHECK_DEPS:-0}" != 1 ]; then
         echo "==> [redisbloom] python3 not on PATH; installing brew python@3.11"
@@ -52,7 +52,7 @@ update_profile() {
 }
 
 # PATH munging writes to the user's shell profiles — a mutation. It must NOT
-# run in check-deps mode.
+# run in list mode.
 if [ "${CHECK_DEPS:-0}" = 1 ]; then
     :   # read-only check: leave shell profiles untouched
 else
