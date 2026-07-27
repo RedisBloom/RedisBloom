@@ -14,21 +14,38 @@
 # shellcheck source=../lib/packages.sh
 . "$LIB/packages.sh"
 
-$SUDO amazon-linux-extras install epel -y
-$SUDO yum -y install epel-release yum-utils
-$SUDO yum-config-manager --add-repo http://vault.centos.org/centos/7/sclo/x86_64/rh/
+# EPEL (jq, lcov, …) — enable only if epel-release isn't already installed.
+rpm -q epel-release >/dev/null 2>&1 || _run amazon-linux-extras install epel -y
+yum_install epel-release yum-utils
+# autogen + cmake3 are arch-independent (base / EPEL, incl. aarch64).
+yum_install autogen cmake3
 
-yum_install autogen centos-release-scl scl-utils cmake3
-$SUDO yum -y install --nogpgcheck --skip-broken \
-    devtoolset-11-gcc devtoolset-11-gcc-c++ devtoolset-11-make || true
+# SCL / devtoolset-11 provide a modern gcc — but the CentOS Vault SCL repo is
+# x86_64-only, so on aarch64 there is no devtoolset (the base gcc is used).
+# Gate the whole SCL path on x86_64 so it isn't listed as a forever-unresolvable
+# step on arm (where centos-release-scl / devtoolset-11 can never install).
+if [ "$(uname -m)" = "x86_64" ]; then
+    ls /etc/yum.repos.d/*sclo*.repo >/dev/null 2>&1 || _run yum-config-manager --add-repo http://vault.centos.org/centos/7/sclo/x86_64/rh/
+    # centos-release-scl is a CentOS package (absent from Amazon Linux 2 repos,
+    # and CentOS 7's SCL vault is EOL) — and redundant here: the SCL repo is
+    # added directly above and devtoolset installs with --nogpgcheck. Only
+    # scl-utils is needed (present in amzn2 base).
+    yum_install scl-utils
+    [ -d /opt/rh/devtoolset-11 ] || _run yum -y install --nogpgcheck --skip-broken \
+        devtoolset-11-gcc devtoolset-11-gcc-c++ devtoolset-11-make || true
+fi
 
 rhel_default_install
-$SUDO ln -sf "$(command -v cmake3)" /usr/bin/cmake
-if [ -f /opt/rh/devtoolset-11/root/usr/bin/gcc ]; then
-    $SUDO ln -sf /opt/rh/devtoolset-11/root/usr/bin/make /usr/local/bin/make
-    $SUDO ln -sf /opt/rh/devtoolset-11/root/usr/bin/gcc /usr/local/bin/gcc
-    $SUDO ln -sf /opt/rh/devtoolset-11/root/usr/bin/g++ /usr/local/bin/g++
-    $SUDO ln -sf /opt/rh/devtoolset-11/root/usr/bin/cc /usr/local/bin/cc
+# Point /usr/bin/cmake at cmake3 (EPEL) unless cmake is already >= 3. The path
+# is resolved at run time, so print the literal $(command -v …) via _sh.
+cmake --version 2>/dev/null | grep -qE 'version 3\.' || _sh 'sudo ln -sf "$(command -v cmake3)" /usr/bin/cmake'
+# devtoolset present but not yet symlinked into /usr/local/bin — skip once done.
+if [ -f /opt/rh/devtoolset-11/root/usr/bin/gcc ] && \
+   [ "$(readlink -f /usr/local/bin/gcc 2>/dev/null)" != /opt/rh/devtoolset-11/root/usr/bin/gcc ]; then
+    _run ln -sf /opt/rh/devtoolset-11/root/usr/bin/make /usr/local/bin/make
+    _run ln -sf /opt/rh/devtoolset-11/root/usr/bin/gcc /usr/local/bin/gcc
+    _run ln -sf /opt/rh/devtoolset-11/root/usr/bin/g++ /usr/local/bin/g++
+    _run ln -sf /opt/rh/devtoolset-11/root/usr/bin/cc /usr/local/bin/cc
 fi
 
 # Install aws-cli for uploading artifacts to s3
