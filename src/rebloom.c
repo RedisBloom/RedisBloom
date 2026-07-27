@@ -651,6 +651,7 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keystr, REDISMODULE_READ | REDISMODULE_WRITE);
     CuckooFilter *cf = NULL;
     int status = cfGetFilter(key, &cf);
+    bool autocreated = false;
 
     if (status == SB_EMPTY && options->autocreate) {
         int err = CUCKOO_OK;
@@ -664,6 +665,7 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
             }
             return REDISMODULE_OK;
         }
+        autocreated = true;
     } else if (status != SB_OK) {
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
@@ -672,6 +674,12 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
         // Ensure that adding new elements does not cause heavy expansion.
         // We might want to find a way to better distinguish legitimate from malicious
         // additions.
+        // The autocreate above is a real keyspace mutation; replicate it even though
+        // this guard stops us short of the ReplicateVerbatim() call at the end of
+        // this function.
+        if (autocreated) {
+            RedisModule_ReplicateVerbatim(ctx);
+        }
         return RedisModule_ReplyWithError(ctx, "Maximum expansions reached");
     }
 
@@ -711,6 +719,9 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
             break;
         case CuckooInsert_NoSpace:
             if (!options->is_multi) {
+                if (autocreated) {
+                    RedisModule_ReplicateVerbatim(ctx);
+                }
                 return RedisModule_ReplyWithError(ctx, "Filter is full");
             } else {
                 if (_is_resp3(ctx) && !options->is_nx) {
@@ -724,6 +735,9 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
             break;
         case CuckooInsert_MemAllocFailed:
             if (!options->is_multi) {
+                if (autocreated) {
+                    RedisModule_ReplicateVerbatim(ctx);
+                }
                 return RedisModule_ReplyWithError(ctx, "ERR Insufficient memory");
             } else {
                 if (_is_resp3(ctx) && !options->is_nx) {
