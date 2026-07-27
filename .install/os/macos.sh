@@ -45,21 +45,24 @@ BREW_PREFIX="$(brew --prefix)"
 GNUBIN="$BREW_PREFIX/opt/make/libexec/gnubin"
 LLVM="$BREW_PREFIX/opt/llvm@$LLVM_VERSION/bin"
 COREUTILS="$BREW_PREFIX/opt/coreutils/libexec/gnubin"
-NEWPATH="export PATH=$COREUTILS:$LLVM:$GNUBIN:\$PATH"
-
 update_profile() {
     local profile_path=$1
-    grep -qxF "$NEWPATH" "$profile_path" 2>/dev/null \
-        || printf '%s\n' "$NEWPATH" >> "$profile_path"
-    if [ -n "${GITHUB_PATH:-}" ]; then
-        printf '%s\n' "$NEWPATH" >> "$GITHUB_PATH"
-    fi
+    local newpath="export PATH=$COREUTILS:$LLVM:$GNUBIN:\$PATH"
+    grep -qxF "$newpath" "$profile_path" 2>/dev/null \
+        || printf '%s\n' "$newpath" >> "$profile_path"
 }
 
-# PATH munging writes to the user's shell profiles — a mutation. Skip it in
-# list/dry-run mode.
+# PATH munging writes to the user's shell profiles / $GITHUB_PATH — mutations.
+# Skip entirely in list/dry-run mode: neither may modify anything.
 if [ "${CHECK_DEPS:-0}" != 1 ] && [ "${DRY_RUN:-0}" != 1 ]; then
     [ -f "$HOME/.bash_profile" ] && update_profile "$HOME/.bash_profile"
     [ -f "$HOME/.zshrc" ]        && update_profile "$HOME/.zshrc"
+
+    # GitHub Actions: $GITHUB_PATH expects one directory per line (not an export
+    # statement). Writing the full `export PATH=...` line would add a single
+    # garbage entry to PATH instead of prepending the three directories.
+    if [ -n "${GITHUB_PATH:-}" ]; then
+        printf '%s\n%s\n%s\n' "$COREUTILS" "$LLVM" "$GNUBIN" >> "$GITHUB_PATH"
+    fi
 fi
 true
