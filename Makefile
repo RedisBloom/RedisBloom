@@ -12,8 +12,6 @@ INSTALL_SCRIPT_MODE ?= $(if $(filter Linux,$(shell uname -s)),sudo,)
 bootstrap:
 ifeq ($(CHECK_DEPS),1)
 	@cd $(ROOT)/.install && CHECK_DEPS=1 ./install_script.sh $(INSTALL_SCRIPT_MODE)
-else ifeq ($(DRY_RUN),1)
-	@cd $(ROOT)/.install && DRY_RUN=1 ./install_script.sh $(INSTALL_SCRIPT_MODE)
 else
 	@rm -rf $(ROOT)/venv
 	cd $(ROOT)/.install && ./install_script.sh $(INSTALL_SCRIPT_MODE)

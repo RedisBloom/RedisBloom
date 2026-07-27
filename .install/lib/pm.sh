@@ -46,28 +46,9 @@ CHECK_DEPS="${CHECK_DEPS:-0}"
 DEPS_OK=""
 DEPS_MISSING=""
 
-# DRY_RUN=1: install nothing — print the package-install command each
-# primitive WOULD run, in a clear, copy-pasteable form. Like check-deps it
-# neutralises SUDO so no privileged side-command mutates the system.
-DRY_RUN="${DRY_RUN:-0}"
-
-if [ "$CHECK_DEPS" = 1 ] || [ "$DRY_RUN" = 1 ]; then
-    _SUDO_DISPLAY="$SUDO"   # remember the intended sudo prefix for dry-run output
+if [ "$CHECK_DEPS" = 1 ]; then
     SUDO=":"                # ':' is the shell no-op builtin; it ignores its arguments
 fi
-
-# Colors for dry-run output: bold blue "DRY-RUN [tag]" headline, blue command.
-# Only on a real terminal (plain text when piped, e.g. CI logs).
-if [ "$DRY_RUN" = 1 ] && [ -t 1 ]; then
-    DRY_HL="$(printf '\033[1;34m')"; DRY_C="$(printf '\033[34m')"; DRY_RST="$(printf '\033[0m')"
-else
-    DRY_HL=""; DRY_C=""; DRY_RST=""
-fi
-
-# _dry_line <tag> <text...> — print one colored dry-run line with a bold
-# headline. _dry uses the active PM as the tag and adds the sudo prefix.
-_dry_line() { _t="$1"; shift; echo "${DRY_HL}DRY-RUN [$_t]${DRY_RST}  ${DRY_C}$*${DRY_RST}"; }
-_dry() { _dry_line "$PM" "${_SUDO_DISPLAY:+$_SUDO_DISPLAY }$*"; }
 
 # Read-only "is this package installed?" probe, per package manager.
 _pkg_installed() {
@@ -99,11 +80,6 @@ _pm_apt_updated=0
 apt_install() {
     [ "$#" -gt 0 ] || return 0
     if [ "$CHECK_DEPS" = 1 ]; then _check_pkgs "$@"; return 0; fi
-    if [ "$DRY_RUN" = 1 ]; then
-        [ "$_pm_apt_updated" = 0 ] && { _dry "apt-get update"; _pm_apt_updated=1; }
-        _dry "apt-get install -y --no-install-recommends $*"
-        return 0
-    fi
     # Acquire::Retries: ports.ubuntu.com (arm64 mirror) intermittently drops
     # connections mid-build; without retries a single dropped fetch fails the
     # whole docker build (exit 100). Retry each download before giving up.
@@ -125,14 +101,12 @@ apt_install() {
 dnf_install() {
     [ "$#" -gt 0 ] || return 0
     if [ "$CHECK_DEPS" = 1 ]; then _check_pkgs "$@"; return 0; fi
-    if [ "$DRY_RUN" = 1 ]; then _dry "dnf -y install --allowerasing --skip-broken $*"; return 0; fi
     $SUDO dnf -y install --allowerasing --skip-broken "$@"
 }
 
 yum_install() {
     [ "$#" -gt 0 ] || return 0
     if [ "$CHECK_DEPS" = 1 ]; then _check_pkgs "$@"; return 0; fi
-    if [ "$DRY_RUN" = 1 ]; then _dry "yum -y install --skip-broken $*"; return 0; fi
     $SUDO yum -y install --skip-broken "$@"
 }
 
@@ -143,11 +117,6 @@ yum_install() {
 tdnf_install() {
     [ "$#" -gt 0 ] || return 0
     if [ "$CHECK_DEPS" = 1 ]; then _check_pkgs "$@"; return 0; fi
-    if [ "$DRY_RUN" = 1 ]; then
-        local p
-        for p in "$@"; do _dry "tdnf -y install $p"; done
-        return 0
-    fi
     local pkg
     for pkg in "$@"; do
         if ! $SUDO tdnf -y install "$pkg" >/dev/null 2>&1; then
@@ -159,7 +128,6 @@ tdnf_install() {
 apk_install() {
     [ "$#" -gt 0 ] || return 0
     if [ "$CHECK_DEPS" = 1 ]; then _check_pkgs "$@"; return 0; fi
-    if [ "$DRY_RUN" = 1 ]; then _dry "apk add --no-cache $*"; return 0; fi
     $SUDO apk add --no-cache "$@"
 }
 
@@ -169,7 +137,6 @@ apk_install() {
 brew_install() {
     [ "$#" -gt 0 ] || return 0
     if [ "$CHECK_DEPS" = 1 ]; then _check_pkgs "$@"; return 0; fi
-    if [ "$DRY_RUN" = 1 ]; then _dry "brew install $*"; return 0; fi
     if ! command -v brew >/dev/null 2>&1; then
         echo "pm.sh: brew not installed; install from https://brew.sh" >&2
         exit 1

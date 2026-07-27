@@ -26,12 +26,10 @@ fi
 
 brew_default_install
 
-# python@3.11 only when the host has no python3 (see header). Honor the
-# non-installing modes: print under dry-run, skip under check-deps.
+# python@3.11 only when the host has no python3 (see header). Skip under
+# check-deps.
 if ! command -v python3 >/dev/null 2>&1; then
-    if [ "${DRY_RUN:-0}" = 1 ]; then
-        _dry "brew install python@3.11"
-    elif [ "${CHECK_DEPS:-0}" != 1 ]; then
+    if [ "${CHECK_DEPS:-0}" != 1 ]; then
         echo "==> [redisbloom] python3 not on PATH; installing brew python@3.11"
         HOMEBREW_NO_AUTO_UPDATE=1 brew install python@3.11
     fi
@@ -54,11 +52,9 @@ update_profile() {
 }
 
 # PATH munging writes to the user's shell profiles — a mutation. It must NOT
-# run in check-deps mode, and must only be PRINTED (not run) under dry-run.
+# run in check-deps mode.
 if [ "${CHECK_DEPS:-0}" = 1 ]; then
     :   # read-only check: leave shell profiles untouched
-elif [ "${DRY_RUN:-0}" = 1 ]; then
-    _dry_line macos "append to ~/.bash_profile and ~/.zshrc:  $NEWPATH"
 else
     [ -f "$HOME/.bash_profile" ] && update_profile "$HOME/.bash_profile"
     [ -f "$HOME/.zshrc" ]        && update_profile "$HOME/.zshrc"

@@ -44,20 +44,13 @@ echo "==> [redisbloom] OSNICK=$OSNICK PM=$PM"
 # Allow git operations on the checked-out source even when its uid doesn't
 # match the current user (common in CI containers). Scoped to this repo
 # (--local), not the host's global git config.
-# Skipped in check-deps and dry-run modes — neither may mutate anything.
-if [ "${CHECK_DEPS:-0}" != 1 ] && [ "${DRY_RUN:-0}" != 1 ] && [ -d "$ROOT/.git" ]; then
+# Skipped in check-deps mode — it may not mutate anything.
+if [ "${CHECK_DEPS:-0}" != 1 ] && [ -d "$ROOT/.git" ]; then
     git -C "$ROOT" config --local --add safe.directory '*' || true
 fi
 
 # shellcheck source=lib/setup-python.sh
 . "$LIB/setup-python.sh"
-
-if [ "${DRY_RUN:-0}" = 1 ]; then
-    echo
-    echo "==> [redisbloom] dry-run complete (OSNICK=$OSNICK, PM=$PM) — nothing was installed"
-    echo "    (lines above are the commands bootstrap would run)"
-    exit 0
-fi
 
 if [ "${CHECK_DEPS:-0}" = 1 ]; then
     n_ok=$(set -- $DEPS_OK; echo $#)
