@@ -45,12 +45,17 @@ echo "==> [redisbloom] OSNICK=$OSNICK PM=$PM"
 # match the current user (common in CI containers). Scoped to this repo
 # (--local), not the host's global git config.
 # Skipped in list mode — it may not mutate anything.
-if [ "${CHECK_DEPS:-0}" != 1 ] && [ -d "$ROOT/.git" ]; then
+if [ "${CHECK_DEPS:-0}" != 1 ] && [ "${DRY_RUN:-0}" != 1 ] && [ -d "$ROOT/.git" ]; then
     git -C "$ROOT" config --local --add safe.directory '*' || true
 fi
 
 # shellcheck source=lib/setup-python.sh
 . "$LIB/setup-python.sh"
+
+if [ "${DRY_RUN:-0}" = 1 ]; then
+    _dry_line "==> [redisbloom] dry-run complete — commands above are what bootstrap would run for missing deps (nothing installed)"
+    exit 0
+fi
 
 if [ "${CHECK_DEPS:-0}" = 1 ]; then
     n_ok=$(set -- $DEPS_OK; echo $#)

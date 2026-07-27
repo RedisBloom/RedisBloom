@@ -26,13 +26,10 @@ fi
 
 brew_default_install
 
-# python@3.11 only when the host has no python3 (see header). Skip under
-# list.
+# python@3.11 only when the host has no python3 (see header). Skip under list;
+# print (don't run) under dry-run.
 if ! command -v python3 >/dev/null 2>&1; then
-    if [ "${CHECK_DEPS:-0}" != 1 ]; then
-        echo "==> [redisbloom] python3 not on PATH; installing brew python@3.11"
-        HOMEBREW_NO_AUTO_UPDATE=1 brew install python@3.11
-    fi
+    HOMEBREW_NO_AUTO_UPDATE=1 _run brew install python@3.11
 fi
 
 LLVM_VERSION="18"
@@ -51,11 +48,9 @@ update_profile() {
     fi
 }
 
-# PATH munging writes to the user's shell profiles — a mutation. It must NOT
-# run in list mode.
-if [ "${CHECK_DEPS:-0}" = 1 ]; then
-    :   # read-only check: leave shell profiles untouched
-else
+# PATH munging writes to the user's shell profiles — a mutation. Skip it in
+# list/dry-run mode.
+if [ "${CHECK_DEPS:-0}" != 1 ] && [ "${DRY_RUN:-0}" != 1 ]; then
     [ -f "$HOME/.bash_profile" ] && update_profile "$HOME/.bash_profile"
     [ -f "$HOME/.zshrc" ]        && update_profile "$HOME/.zshrc"
 fi

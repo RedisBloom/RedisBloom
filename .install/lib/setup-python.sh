@@ -32,6 +32,13 @@ if [ "${CHECK_DEPS:-0}" = 1 ]; then
     return 0 2>/dev/null || exit 0
 fi
 
+# dry-run: print the uv install command only if uv is missing; never touch the
+# venv/pip (creating it would be a real mutation).
+if [ "${DRY_RUN:-0}" = 1 ]; then
+    command -v uv >/dev/null 2>&1 || _dry_line "curl -LsSf https://astral.sh/uv/install.sh | sh   # uv (then: uv venv + uv pip install -r ...)"
+    return 0 2>/dev/null || exit 0
+fi
+
 if ! command -v uv >/dev/null 2>&1; then
     echo "==> [redisbloom] installing uv"
     curl -LsSf https://astral.sh/uv/install.sh | sh
