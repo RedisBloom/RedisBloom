@@ -146,6 +146,7 @@ _pm_apt_updated=0
 apt_install() {
     [ "$#" -gt 0 ] || return 0
     if [ "$CHECK_DEPS" = 1 ]; then _check_pkgs "$@"; return 0; fi
+    if [ "$DRY_RUN" = 1 ]; then set -- $(_missing_only "$@"); [ "$#" -gt 0 ] || return 0; fi
     # Acquire::Retries: ports.ubuntu.com (arm64 mirror) intermittently drops
     # connections mid-build; without retries a single dropped fetch fails the
     # whole docker build (exit 100). Retry each download before giving up.
