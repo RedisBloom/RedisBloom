@@ -56,6 +56,8 @@ if [ "$CHECK_DEPS" != 1 ] && [ "$DRY_RUN" != 1 ]; then
     fi
     pip3 install dataclasses
 elif [ "$DRY_RUN" = 1 ]; then
-    _dry_line "build cmake 3.28 from source (if cmake < 3.28), then \$SUDO make install"
+    if ! cmake --version 2>/dev/null | grep -qE 'cmake version 3\.(2[89]|[3-9][0-9])'; then
+        _dry_line "build cmake 3.28 from source, then \$SUDO make install"
+    fi
     _dry_line "pip3 install dataclasses"
 fi
