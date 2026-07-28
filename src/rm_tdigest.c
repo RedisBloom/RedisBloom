@@ -872,19 +872,35 @@ void TDigestRdbSave(RedisModuleIO *rdb, void *value) {
     }
 }
 
+static bool TDigestRdbLoadWeight(double serialized, long long *weight) {
+    // LLONG_MAX rounds up when converted to double on common 64-bit targets, so use a strict
+    // upper bound. Serialized weights originate from integers and must remain integral.
+    if (!isfinite(serialized) || serialized < 0 || serialized >= (double)LLONG_MAX ||
+        trunc(serialized) != serialized) {
+        return false;
+    }
+    *weight = (long long)serialized;
+    return true;
+}
+
 void *TDigestRdbLoad(RedisModuleIO *rdb, int encver) {
     /* Load the network layout. */
     bool err = false;
     const double compression = LoadDouble_IOError(rdb, err, NULL);
     td_histogram_t *tdigest = td_new(compression);
-    errdefer(err, td_free(tdigest));
     if (tdigest == NULL) {
+        return NULL;
+    }
+    errdefer(err, td_free(tdigest));
+    const int allocated_cap = tdigest->cap;
+    const double min = LoadDouble_IOError(rdb, err, NULL);
+    const double max = LoadDouble_IOError(rdb, err, NULL);
+    if (!isfinite(min) || !isfinite(max)) {
         err = true;
         return NULL;
     }
-    const int allocated_cap = tdigest->cap;
-    tdigest->min = LoadDouble_IOError(rdb, err, NULL);
-    tdigest->max = LoadDouble_IOError(rdb, err, NULL);
+    tdigest->min = min;
+    tdigest->max = max;
 
     // cap is the total size of nodes
     const int64_t loaded_cap64 = LoadSigned_IOError(rdb, err, NULL);
@@ -900,31 +916,58 @@ void *TDigestRdbLoad(RedisModuleIO *rdb, int encver) {
         return NULL;
     }
 
-    // merged_nodes is the number of merged nodes at the front of nodes.
-    tdigest->merged_nodes = LoadSigned_IOError(rdb, err, NULL);
-
-    // unmerged_nodes is the number of buffered nodes.
-    tdigest->unmerged_nodes = LoadSigned_IOError(rdb, err, NULL);
+    // Validate serialized node counts before narrowing them to the int fields used by t-digest.
+    const int64_t merged_nodes64 = LoadSigned_IOError(rdb, err, NULL);
+    const int64_t unmerged_nodes64 = LoadSigned_IOError(rdb, err, NULL);
+    if (merged_nodes64 < 0 || merged_nodes64 > INT_MAX || unmerged_nodes64 < 0 ||
+        unmerged_nodes64 > INT_MAX || merged_nodes64 > allocated_cap ||
+        unmerged_nodes64 > (int64_t)allocated_cap - merged_nodes64) {
+        err = true;
+        return NULL;
+    }
+    tdigest->merged_nodes = (int)merged_nodes64;
+    tdigest->unmerged_nodes = (int)unmerged_nodes64;
 
     // we run the merge in reverse every other merge to avoid left-to-right bias in merging
-    tdigest->total_compressions = LoadSigned_IOError(rdb, err, NULL);
+    const int64_t total_compressions = LoadSigned_IOError(rdb, err, NULL);
+    if (total_compressions < 0 || total_compressions >= LLONG_MAX) {
+        err = true;
+        return NULL;
+    }
+    tdigest->total_compressions = (long long)total_compressions;
 
-    tdigest->merged_weight = LoadDouble_IOError(rdb, err, NULL);
-    tdigest->unmerged_weight = LoadDouble_IOError(rdb, err, NULL);
-
-    if (tdigest->merged_nodes < 0 || tdigest->unmerged_nodes < 0 ||
-        tdigest->merged_nodes > allocated_cap || tdigest->unmerged_nodes > allocated_cap ||
-        (int64_t)tdigest->merged_nodes + (int64_t)tdigest->unmerged_nodes >
-            (int64_t)allocated_cap) {
+    const double serialized_merged_weight = LoadDouble_IOError(rdb, err, NULL);
+    const double serialized_unmerged_weight = LoadDouble_IOError(rdb, err, NULL);
+    if (!TDigestRdbLoadWeight(serialized_merged_weight, &tdigest->merged_weight) ||
+        !TDigestRdbLoadWeight(serialized_unmerged_weight, &tdigest->unmerged_weight) ||
+        tdigest->unmerged_nodes != 0 || tdigest->unmerged_weight != 0) {
         err = true;
         return NULL;
     }
 
     for (size_t i = 0; i < tdigest->merged_nodes; i++) {
-        tdigest->nodes_mean[i] = LoadDouble_IOError(rdb, err, NULL);
+        const double mean = LoadDouble_IOError(rdb, err, NULL);
+        if (!isfinite(mean)) {
+            err = true;
+            return NULL;
+        }
+        tdigest->nodes_mean[i] = mean;
     }
+    long long centroid_weight_sum = 0;
     for (size_t i = 0; i < tdigest->merged_nodes; i++) {
-        tdigest->nodes_weight[i] = LoadDouble_IOError(rdb, err, NULL);
+        const double serialized_weight = LoadDouble_IOError(rdb, err, NULL);
+        long long weight = 0;
+        if (!TDigestRdbLoadWeight(serialized_weight, &weight) || weight == 0 ||
+            weight > LLONG_MAX - centroid_weight_sum) {
+            err = true;
+            return NULL;
+        }
+        centroid_weight_sum += weight;
+        tdigest->nodes_weight[i] = weight;
+    }
+    if (centroid_weight_sum != tdigest->merged_weight) {
+        err = true;
+        return NULL;
     }
     return tdigest;
 }

@@ -95,13 +95,19 @@ int SBChain_Add(SBChain *sb, const void *data, size_t len) {
         if (sb->options & BLOOM_OPT_NO_SCALING) {
             return -2;
         }
+        if (sb->growth == 0 || cur->inner.entries > UINT64_MAX / sb->growth) {
+            return -1;
+        }
         double error = cur->inner.error * ERROR_TIGHTENING_RATIO;
-        if (SBChain_AddLink(sb, cur->inner.entries * (size_t)sb->growth, error) != 0) {
+        if (SBChain_AddLink(sb, cur->inner.entries * (uint64_t)sb->growth, error) != 0) {
             return -1;
         }
         cur = CUR_FILTER(sb);
     }
 
+    if (cur->size == SIZE_MAX || sb->size == SIZE_MAX) {
+        return -1;
+    }
     int rv = SBChain_AddToLink(cur, h);
     if (rv) {
         sb->size++;
