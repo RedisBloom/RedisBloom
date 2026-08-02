@@ -169,6 +169,7 @@ jobs:
           use-venv: '1'
           beta-version: ${{ inputs.beta-version }}
       - name: Upload artifacts to S3
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

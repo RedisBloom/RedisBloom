@@ -227,7 +227,7 @@ jobs:
             bash -c "git config --global --add safe.directory /workspace && make pack BRANCH=${{ env.TAG_OR_BRANCH }} SHOW=1"
 
       - name: Upload artifacts to S3
-        if: ${{ !inputs.run_valgrind && !inputs.run_sanitizer }}
+        if: ${{ !inputs.run_valgrind && !inputs.run_sanitizer && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) }}
         env:
           BETA_VERSION: ${{ inputs.beta-version }}
         run: |
