@@ -533,6 +533,24 @@ class testTDigest:
                 expected[i], float(res[i]), 0.01
             )
 
+    def test_tdigest_single_observation(self):
+        # https://github.com/RedisBloom/RedisBloom/issues/870
+        # a sketch holding a single observation replied nan to
+        # TDIGEST.QUANTILE, TDIGEST.CDF and TDIGEST.TRIMMED_MEAN
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd("tdigest.create", "tdigest"))
+        self.assertOk(self.cmd("tdigest.add", "tdigest", 123))
+        for q in ["0", "0.5", "0.9", "1"]:
+            self.assertEqual(
+                123.0, float(self.cmd("tdigest.quantile", "tdigest", q)[0])
+            )
+        self.assertEqual(0.0, float(self.cmd("tdigest.cdf", "tdigest", 100)[0]))
+        self.assertEqual(0.5, float(self.cmd("tdigest.cdf", "tdigest", 123)[0]))
+        self.assertEqual(1.0, float(self.cmd("tdigest.cdf", "tdigest", 200)[0]))
+        self.assertEqual(
+            123.0, float(self.cmd("tdigest.trimmed_mean", "tdigest", 0.1, 0.9))
+        )
+
     def test_negative_tdigest_quantile(self):
         self.cmd('FLUSHALL')
         self.cmd("SET", "tdigest", "B")
