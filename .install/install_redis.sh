@@ -17,7 +17,15 @@ cd redis
 git fetch origin ${REDIS_REF}
 git checkout ${REDIS_REF}
 git submodule update --init --recursive
-make SANITIZER=${SANITIZER:-} -j$(nproc)
+if [ -n "${SANITIZER}" ]; then
+    echo "Building Redis with SANITIZER=${SANITIZER} (manual flags for Redis < 7.0)"
+    make MALLOC=libc \
+         CFLAGS="-fsanitize=${SANITIZER} -fno-omit-frame-pointer -fno-sanitize-recover=all" \
+         LDFLAGS="-fsanitize=${SANITIZER}" \
+         -j"$(nproc)"
+else
+    make -j"$(nproc)"
+fi
 make install
 cd ..
 
