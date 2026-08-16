@@ -56,13 +56,14 @@ sanitizer_check() {
 
 sanitizer_summary() {
 	local logdir="$ROOT/tests/$DIR/logs"
-	if ! TYPE="leaks" sanitizer_check "Direct leak"; then
-		TYPE="leaks" sanitizer_check "detected memory leaks"
-	fi
-	TYPE="buffer overflow" sanitizer_check "dynamic-stack-buffer-overflow"
-	TYPE="memory errors" sanitizer_check "memcpy-param-overlap"
-	TYPE="stack use after scope" sanitizer_check "stack-use-after-scope"
-	TYPE="use after free" sanitizer_check "heap-use-after-free"
+	# Every sanitizer report is headed by "<ERROR|WARNING>: <Tool>Sanitizer: <what>", so one
+	# pattern covers all of them. The previous explicit list missed heap-buffer-overflow,
+	# global-buffer-overflow, stack-buffer-overflow, use-after-poison and alloc-dealloc-mismatch
+	# -- and since the module is built with -fsanitize-recover=all and tests.sh sets
+	# halt_on_error=0, this summary is the only thing that fails the job on those.
+	# The trailing ": " matters: it keeps out "WARNING: AddressSanitizer failed to allocate",
+	# which the oversized-allocation hardening tests provoke on purpose.
+	TYPE="errors" sanitizer_check ": [A-Za-z]*Sanitizer: "
 }
 
 #----------------------------------------------------------------------------------------------
@@ -74,7 +75,7 @@ DIRS=
 #	DIRS+=" ctests cpptests"
 #fi
 if [[ $FLOW == 1 ]]; then
-	DIRS+=" pytests"
+	DIRS+=" flow"
 fi
 
 if [[ $VG == 1 ]]; then

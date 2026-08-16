@@ -8,9 +8,6 @@ READIES=$ROOT/deps/readies
 
 export PYTHONUNBUFFERED=1
 
-VALGRIND_REDIS_VER=6.2
-SAN_REDIS_VER=6.2
-
 cd $HERE
 
 #----------------------------------------------------------------------------------------------
@@ -159,42 +156,16 @@ setup_rltest() {
 
 #----------------------------------------------------------------------------------------------
 
-setup_clang_sanitizer() {
-	local ignorelist=$ROOT/tests/memcheck/redis.san-ignorelist
-	if ! grep THPIsEnabled $ignorelist &> /dev/null; then
-		echo "fun:THPIsEnabled" >> $ignorelist
-	fi
-
-	# for RediSearch module
-	export RS_GLOBAL_DTORS=1
-
+setup_sanitizer() {
 	# for RLTest
 	export SANITIZER="$SAN"
 	export SHORT_READ_BYTES_DELTA=512
-	
+
+	# halt_on_error=0 keeps the run going past the first report so every finding lands in
+	# logs/*.asan.log; sbin/memcheck-summary then scans them and fails the job.
+	export ASAN_OPTIONS="detect_odr_violation=0:halt_on_error=0:detect_leaks=1:allocator_may_return_null=1"
 	# --no-output-catch --exit-on-failure --check-exitcode
 	RLTEST_SAN_ARGS="--sanitizer $SAN"
-
-	if [[ $SAN == addr || $SAN == address ]]; then
-		REDIS_SERVER=${REDIS_SERVER:-redis-server-asan-$SAN_REDIS_VER}
-		if ! command -v $REDIS_SERVER > /dev/null; then
-			echo Building Redis for clang-asan ...
-			$READIES/bin/getredis --force -v $SAN_REDIS_VER --own-openssl --no-run \
-				--suffix asan --clang-asan --clang-san-blacklist $ignorelist
-		fi
-
-		export ASAN_OPTIONS="detect_odr_violation=0:halt_on_error=0:detect_leaks=1"
-		export LSAN_OPTIONS="suppressions=$ROOT/tests/memcheck/asan.supp"
-
-	elif [[ $SAN == mem || $SAN == memory ]]; then
-		REDIS_SERVER=${REDIS_SERVER:-redis-server-msan-$SAN_REDIS_VER}
-		if ! command -v $REDIS_SERVER > /dev/null; then
-			echo Building Redis for clang-msan ...
-			$READIES/bin/getredis --force -v $SAN_REDIS_VER  --no-run --own-openssl \
-				--suffix msan --clang-msan --llvm-dir /opt/llvm-project/build-msan \
-				--clang-san-blacklist $ignorelist
-		fi
-	fi
 }
 
 #----------------------------------------------------------------------------------------------
@@ -211,12 +182,6 @@ setup_redis_server() {
 #----------------------------------------------------------------------------------------------
 
 setup_valgrind() {
-	REDIS_SERVER=${REDIS_SERVER:-redis-server-vg}
-	if ! is_command $REDIS_SERVER; then
-		echo Building Redis for Valgrind ...
-		$READIES/bin/getredis -v $VALGRIND_REDIS_VER --valgrind --suffix vg
-	fi
-
 	if [[ $VG_LEAKS == 0 ]]; then
 		VG_LEAK_CHECK=no
 		RLTEST_VG_NOLEAKS="--vg-no-leakcheck"
@@ -232,7 +197,7 @@ setup_valgrind() {
 		--track-origins=yes \
 		--show-possibly-lost=no"
 
-	VALGRIND_SUPRESSIONS=$ROOT/tests/memcheck/valgrind.supp
+	VALGRIND_SUPRESSIONS=$ROOT/tests/memcheck/redis_valgrind.sup
 
 	RLTEST_VG_ARGS+="\
 		--use-valgrind \
@@ -401,16 +366,17 @@ OS=$($READIES/bin/platform --os)
 
 #---------------------------------------------------------------------------------- Tests scope
 
+# the Makefile exports OSS_CLUSTER, not CLUSTER, so accept both names
 if [[ $QUICK == 1 ]]; then
 	GEN=${GEN:-1}
 	SLAVES=${SLAVES:-0}
 	AOF=${AOF:-0}
-	CLUSTER=${CLUSTER:-0}
+	CLUSTER=${CLUSTER:-${OSS_CLUSTER:-0}}
 else
 	GEN=${GEN:-1}
 	SLAVES=${SLAVES:-1}
 	AOF=${AOF:-1}
-	CLUSTER=${CLUSTER:-1}
+	CLUSTER=${CLUSTER:-${OSS_CLUSTER:-1}}
 fi
 
 RLEC=${RLEC:-0}
@@ -526,7 +492,7 @@ fi
 setup_rltest
 
 if [[ -n $SAN ]]; then
-	setup_clang_sanitizer
+	setup_sanitizer
 fi
 
 if [[ $VG == 1 ]]; then
@@ -565,7 +531,7 @@ if [[ $NO_SUMMARY == 1 ]]; then
 	exit 0
 fi
 
-if [[ $NOP != 1 && -n $SAN ]]; then
+if [[ $NOP != 1 ]]; then
 	if [[ -n $SAN || $VG == 1 ]]; then
 		{ FLOW=1 $ROOT/sbin/memcheck-summary; (( E |= $? )); } || true
 	fi
