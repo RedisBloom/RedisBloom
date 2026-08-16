@@ -29,7 +29,7 @@ class testCMS():
         self.assertEqual(['width', 2000, 'depth', 7, 'count', 5],
                          self.cmd('cms.info', 'cms2'))
         yield 1
-        self.env.dumpAndReload()
+        dump_and_reload(self.env)
         yield 2
         if not VALGRIND:
             if server_version_at_least(self.env, '7.0.0'):

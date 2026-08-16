@@ -944,6 +944,7 @@ class testTDigest:
         # insert datapoints into sketch
         for _ in range(1, 101):
             self.assertOk(self.cmd("tdigest.add", "tdigest", 1.0))
+        wait_for_no_bgsave(self.env)
         self.assertEqual(True, self.cmd("SAVE"))
         mem_usage_prior_restart = self.cmd("MEMORY", "USAGE", "tdigest")
         tdigest_min = self.cmd("tdigest.min", "tdigest")

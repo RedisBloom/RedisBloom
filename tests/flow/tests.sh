@@ -8,7 +8,6 @@ READIES=$ROOT/deps/readies
 
 cd $HERE
 
-VALGRIND_REDIS_VER=6
 
 #----------------------------------------------------------------------------------------------
 
@@ -43,39 +42,20 @@ help() {
 
 setup_redis_server() {
 	if [[ -n $SAN ]]; then
-		if [[ $SAN == addr || $SAN == address ]]; then
-			REDIS_SERVER=${REDIS_SERVER:-redis-server-asan-6.2}
-			if ! command -v $REDIS_SERVER > /dev/null; then
-				echo Building Redis for clang-asan ...
-				$READIES/bin/getredis --force -v $VALGRIND_REDIS_VER --own-openssl --no-run \
-					--suffix asan --clang-asan --clang-san-blacklist /build/redis.blacklist
-			fi
-
-			export ASAN_OPTIONS=detect_odr_violation=0
-			# :detect_leaks=0
-			# for RLTest
-			export SANITIZER="$SAN"
-
-		elif [[ $SAN == mem || $SAN == memory ]]; then
-			REDIS_SERVER=${REDIS_SERVER:-redis-server-msan-6.2}
-			if ! command -v $REDIS_SERVER > /dev/null; then
-				echo Building Redis for clang-msan ...
-				$READIES/bin/getredis --force -v $VALGRIND_REDIS_VER --no-run --own-openssl \
-					--suffix msan --clang-msan --llvm-dir /opt/llvm-project/build-msan \
-					--clang-san-blacklist /build/redis.blacklist
-			fi
-		fi
-
-	elif [[ $VALGRIND == 1 ]]; then
-		REDIS_SERVER=${REDIS_SERVER:-redis-server-vg}
-		if ! is_command $REDIS_SERVER; then
-			echo Building Redis for Valgrind ...
-			$READIES/bin/getredis -v $VALGRIND_REDIS_VER --valgrind --suffix vg
-		fi
-
-	else
-		REDIS_SERVER=${REDIS_SERVER:-redis-server}
+		# No halt_on_error=0 here: this branch has no ASan log scanner (sbin/memcheck-summary
+		# does not exist on 2.4), so aborting the server on the first report is the only thing
+		# that can turn a module-side finding into a job failure. allocator_may_return_null=1
+		# still keeps the oversized-allocation hardening tests running -- those get NULL back
+		# instead of an ASan report.
+		export ASAN_OPTIONS="detect_odr_violation=0:detect_leaks=1:allocator_may_return_null=1"
+		# tells RLTest to redirect the ASan output into logs/*.asan.log, which the failure
+		# artifact upload collects
+		SAN_ARGS="--sanitizer $SAN"
+		# for RLTest
+		export SANITIZER="$SAN"
 	fi
+
+	REDIS_SERVER=${REDIS_SERVER:-redis-server}
 
 	if ! is_command $REDIS_SERVER; then
 		echo "Cannot find $REDIS_SERVER. Aborting."
@@ -206,18 +186,18 @@ OP=""
 [[ $VG == 1 ]] && VALGRIND=1
 [[ $SAN == addr ]] && SAN=address
 [[ $SAN == mem ]] && SAN=memory
-[[ -n $SAN ]] && QUICK=1
 
+# the Makefile exports OSS_CLUSTER, not CLUSTER, so accept both names
 if [[ $QUICK == 1 ]]; then
 	GEN=${GEN:-1}
 	SLAVES=${SLAVES:-0}
 	AOF=${AOF:-0}
-	CLUSTER=${CLUSTER:-0}
+	CLUSTER=${CLUSTER:-${OSS_CLUSTER:-0}}
 else
 	GEN=${GEN:-1}
 	SLAVES=${SLAVES:-1}
 	AOF=${AOF:-1}
-	CLUSTER=${CLUSTER:-1}
+	CLUSTER=${CLUSTER:-${OSS_CLUSTER:-1}}
 fi
 
 MODULE=${MODULE:-$1}
