@@ -76,19 +76,6 @@ double _halfRoundDown(double f) {
     return int_part >= 0.0 ? int_part + 1.0 : int_part - 1.0;
 }
 
-// Counterpart of _halfRoundDown. Not expressed with round(), whose tie behaviour is
-// libc/platform dependent -- under Valgrind on aarch64 an exact .5 rounds to even
-// instead of away from zero, which silently shifts TDIGEST.REVRANK results.
-double _halfRoundUp(double f) {
-    double int_part;
-    double frac_part = modf(f, &int_part);
-
-    if (fabs(frac_part) < 0.5)
-        return int_part;
-
-    return int_part >= 0.0 ? int_part + 1.0 : int_part - 1.0;
-}
-
 /**
  * Command: TDIGEST.CREATE {key} [{compression}]
  *
@@ -492,7 +479,7 @@ static int _TDigest_Rank(RedisModuleCtx *ctx, RedisModuleString *const *argv, in
             const double cdf_val = td_cdf(tdigest, vals[i]);
             const double cdf_val_prior_round = cdf_val * size;
             const double cdf_to_absolute =
-                reverse ? _halfRoundUp(cdf_val_prior_round) : _halfRoundDown(cdf_val_prior_round);
+                reverse ? round(cdf_val_prior_round) : _halfRoundDown(cdf_val_prior_round);
             ranks[i] = reverse ? round(size - cdf_to_absolute) : cdf_to_absolute;
         }
     }
