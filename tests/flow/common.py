@@ -1,5 +1,6 @@
 
 import sys
+import time
 import os
 from RLTest import Env, Defaults
 from redis import ResponseError
@@ -55,3 +56,15 @@ def server_version_at_least(env, ver):
 
 def server_version_less_than(env, ver):
     return not server_version_at_least(env, ver)
+
+def wait_for_no_bgsave(env, timeout=60):
+    # Redis < 7 defaults repl-diskless-sync to no, so attaching a replica triggers a
+    # disk-backed BGSAVE. While that fork is alive, SAVE and DEBUG RELOAD fail with
+    # "Background save already in progress" -- and under a sanitizer the fork is slow
+    # enough that tests reliably race it.
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if env.execute_command('INFO', 'persistence')['rdb_bgsave_in_progress'] == 0:
+            return
+        time.sleep(0.1)
+    raise Exception('timed out waiting for BGSAVE to finish')

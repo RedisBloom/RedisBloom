@@ -8,7 +8,6 @@ READIES=$ROOT/deps/readies
 
 cd $HERE
 
-VALGRIND_REDIS_VER=6
 
 #----------------------------------------------------------------------------------------------
 
@@ -43,39 +42,12 @@ help() {
 
 setup_redis_server() {
 	if [[ -n $SAN ]]; then
-		if [[ $SAN == addr || $SAN == address ]]; then
-			REDIS_SERVER=${REDIS_SERVER:-redis-server-asan-6.2}
-			if ! command -v $REDIS_SERVER > /dev/null; then
-				echo Building Redis for clang-asan ...
-				$READIES/bin/getredis --force -v $VALGRIND_REDIS_VER --own-openssl --no-run \
-					--suffix asan --clang-asan --clang-san-blacklist /build/redis.blacklist
-			fi
-
-			export ASAN_OPTIONS=detect_odr_violation=0
-			# :detect_leaks=0
-			# for RLTest
-			export SANITIZER="$SAN"
-
-		elif [[ $SAN == mem || $SAN == memory ]]; then
-			REDIS_SERVER=${REDIS_SERVER:-redis-server-msan-6.2}
-			if ! command -v $REDIS_SERVER > /dev/null; then
-				echo Building Redis for clang-msan ...
-				$READIES/bin/getredis --force -v $VALGRIND_REDIS_VER --no-run --own-openssl \
-					--suffix msan --clang-msan --llvm-dir /opt/llvm-project/build-msan \
-					--clang-san-blacklist /build/redis.blacklist
-			fi
-		fi
-
-	elif [[ $VALGRIND == 1 ]]; then
-		REDIS_SERVER=${REDIS_SERVER:-redis-server-vg}
-		if ! is_command $REDIS_SERVER; then
-			echo Building Redis for Valgrind ...
-			$READIES/bin/getredis -v $VALGRIND_REDIS_VER --valgrind --suffix vg
-		fi
-
-	else
-		REDIS_SERVER=${REDIS_SERVER:-redis-server}
+		export ASAN_OPTIONS="detect_odr_violation=0:halt_on_error=0:detect_leaks=1:allocator_may_return_null=1"
+		# for RLTest
+		export SANITIZER="$SAN"
 	fi
+
+	REDIS_SERVER=${REDIS_SERVER:-redis-server}
 
 	if ! is_command $REDIS_SERVER; then
 		echo "Cannot find $REDIS_SERVER. Aborting."
@@ -206,7 +178,6 @@ OP=""
 [[ $VG == 1 ]] && VALGRIND=1
 [[ $SAN == addr ]] && SAN=address
 [[ $SAN == mem ]] && SAN=memory
-[[ -n $SAN ]] && QUICK=1
 
 if [[ $QUICK == 1 ]]; then
 	GEN=${GEN:-1}
