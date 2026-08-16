@@ -161,6 +161,8 @@ setup_sanitizer() {
 	export SANITIZER="$SAN"
 	export SHORT_READ_BYTES_DELTA=512
 
+	# halt_on_error=0 keeps the run going past the first report so every finding lands in
+	# logs/*.asan.log; sbin/memcheck-summary then scans them and fails the job.
 	export ASAN_OPTIONS="detect_odr_violation=0:halt_on_error=0:detect_leaks=1:allocator_may_return_null=1"
 	# --no-output-catch --exit-on-failure --check-exitcode
 	RLTEST_SAN_ARGS="--sanitizer $SAN"
@@ -364,16 +366,17 @@ OS=$($READIES/bin/platform --os)
 
 #---------------------------------------------------------------------------------- Tests scope
 
+# the Makefile exports OSS_CLUSTER, not CLUSTER, so accept both names
 if [[ $QUICK == 1 ]]; then
 	GEN=${GEN:-1}
 	SLAVES=${SLAVES:-0}
 	AOF=${AOF:-0}
-	CLUSTER=${CLUSTER:-0}
+	CLUSTER=${CLUSTER:-${OSS_CLUSTER:-0}}
 else
 	GEN=${GEN:-1}
 	SLAVES=${SLAVES:-1}
 	AOF=${AOF:-1}
-	CLUSTER=${CLUSTER:-1}
+	CLUSTER=${CLUSTER:-${OSS_CLUSTER:-1}}
 fi
 
 RLEC=${RLEC:-0}
