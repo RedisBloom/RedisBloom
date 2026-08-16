@@ -74,7 +74,7 @@ DIRS=
 #	DIRS+=" ctests cpptests"
 #fi
 if [[ $FLOW == 1 ]]; then
-	DIRS+=" pytests"
+	DIRS+=" flow"
 fi
 
 if [[ $VG == 1 ]]; then
