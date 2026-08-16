@@ -20,8 +20,11 @@ git submodule update --init --recursive
 MAKE_ARGS=()
 if [ -n "${SANITIZER}" ]; then
     # The module is instrumented by clang (readies clang-sanitizer.defs) and a clang-built
-    # shared object links no ASan runtime of its own, so redis must be instrumented by clang
-    # too -- against gcc's libasan the module reports bogus global-buffer-overflows in RM_GetApi.
+    # shared object links no ASan runtime of its own, so it resolves its __asan_* symbols
+    # against whatever runtime redis already loaded. Build redis with clang too, so both sides
+    # use the same one -- with redis 6.2 built by gcc on jammy, module load aborted with a
+    # global-buffer-overflow in RM_GetApi. (8.x/master pair a gcc-built redis 7.2 with the same
+    # clang module and are green, so this is not a general gcc/clang incompatibility.)
     MAKE_ARGS+=(CC=clang LD=clang)
     if grep -q '^ifdef SANITIZER' src/Makefile; then
         MAKE_ARGS+=("SANITIZER=${SANITIZER}")

@@ -163,7 +163,7 @@ class testCuckoo():
         self.cmd('FLUSHALL')
         self.cmd('CF.RESERVE', 'cf', '1000')
         yield 1
-        self.env.dumpAndReload()
+        dump_and_reload(self.env)
         yield 2
         if not VALGRIND:
             self.assertEqual(1112, self.cmd('MEMORY USAGE', 'cf'))
@@ -192,7 +192,7 @@ class testCuckoo():
         self.cmd('cf.add', 'nums', 'Redis')
         self.cmd('cf.del', 'nums', 'Redis')
         d1 = self.cmd('cf.debug', 'nums')
-        self.env.dumpAndReload()
+        dump_and_reload(self.env)
         # for _ in self.client.retry_with_rdb_reload():
         #     self.cmd('ping')
         d2 = self.cmd('cf.debug', 'nums')

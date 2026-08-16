@@ -68,3 +68,10 @@ def wait_for_no_bgsave(env, timeout=60):
             return
         time.sleep(0.1)
     raise Exception('timed out waiting for BGSAVE to finish')
+
+def dump_and_reload(env, **kwargs):
+    # RLTest's dumpAndReload() issues SAVE before DEBUG RELOAD NOSAVE, so every call site is
+    # exposed to the BGSAVE race above. Route them all through here rather than guarding the
+    # ones that happen to lose it.
+    wait_for_no_bgsave(env)
+    env.dumpAndReload(**kwargs)

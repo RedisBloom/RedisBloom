@@ -97,7 +97,7 @@ class testRedisBloom():
         env.cmd('FLUSHALL')
         env.assertEqual(1, env.cmd('bf.add', 'test', 'foo'))
         yield 1
-        self.env.dumpAndReload()
+        dump_and_reload(self.env)
         yield 2
         env.assertEqual(1, env.cmd('bf.exists', 'test', 'foo'))
         env.assertEqual(0, env.cmd('bf.exists', 'test', 'bar'))
@@ -218,7 +218,7 @@ class testRedisBloom():
         env.cmd('FLUSHALL')
         env.assertOk(env.cmd('bf.reserve', 'bf', '0.05', '1000'))
         yield 1
-        self.env.dumpAndReload()
+        dump_and_reload(self.env)
         yield 2
         if not VALGRIND:
             if server_version_at_least(self.env, '7.0.0'):
@@ -782,7 +782,7 @@ class testRedisBloomNoCodec():
         env.cmd('FLUSHALL')
         env.cmd('bf.reserve', 'poc', 0.0001, 1, 'EXPANSION', 1)
         env.cmd('bf.madd', 'poc', 'items', *[str(i) for i in range(10000, 15000)])
-        env.dumpAndReload()
+        dump_and_reload(env)
     
     def test_rdb_load_guards(self):
         env = self.env
@@ -801,4 +801,4 @@ class testRedisBloomNoCodec():
         env.cmd('FLUSHALL')
         env.cmd('bf.reserve', 'poc', 0.0001, 1, 'EXPANSION', 1)
         env.cmd('bf.madd', 'poc', 'items', *[str(i) for i in range(10000, 15000)])
-        env.dumpAndReload()
+        dump_and_reload(env)
