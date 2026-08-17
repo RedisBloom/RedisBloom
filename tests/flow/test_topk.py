@@ -232,6 +232,21 @@ class testTopK():
                 self.env.cmd('TOPK.ADD', 'topkmyk1', '%d' % i)
             results.append(self.env.cmd('TOPK.LIST', 'topkmyk1'))
         self.env.assertEqual(results[0], results[1])
+
+    def test_reload_after_incrby_zero(self):
+        # TOPK.INCRBY with increment 0 stores an item whose count is still 0. That is a
+        # valid key, so DUMP/RESTORE and RDB reload must both accept it.
+        self.cmd('FLUSHALL')
+        self.env.cmd('TOPK.RESERVE', 'topk_zero', '3')
+        self.env.cmd('TOPK.INCRBY', 'topk_zero', 'myitem', '0')
+
+        dump = self.env.cmd('DUMP', 'topk_zero')
+        self.env.cmd('RESTORE', 'topk_zero_copy', '0', dump)
+        self.env.assertEqual(self.env.cmd('EXISTS', 'topk_zero_copy'), 1)
+
+        self.env.dumpAndReload()
+        self.env.assertEqual(self.env.cmd('EXISTS', 'topk_zero'), 1)
+
     def test_insufficient_memory(self):
         self.env.skipOnVersionSmaller('7.4')
         self.cmd('FLUSHALL')
