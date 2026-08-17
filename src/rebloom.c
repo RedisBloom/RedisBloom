@@ -28,6 +28,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <inttypes.h>
+#include <limits.h>
 
 #ifndef REDISBLOOM_GIT_SHA
 #define REDISBLOOM_GIT_SHA "unknown"
@@ -1235,22 +1236,38 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
     bool err = false;
     errdefer(err, SBChain_Free(sb));
 
-    sb->size = LoadUnsigned_IOError(io, err, NULL);
-    sb->nfilters = LoadUnsigned_IOError(io, err, NULL);
-    if (sb->nfilters <= 0) {
-        RedisModule_Free(sb);
+    const uint64_t size64 = LoadUnsigned_IOError(io, err, NULL);
+    const uint64_t nfilters64 = LoadUnsigned_IOError(io, err, NULL);
+    if (size64 > SIZE_MAX || nfilters64 == 0 || nfilters64 > INT_MAX ||
+        nfilters64 > SIZE_MAX / sizeof(*sb->filters)) {
+        err = true;
         return NULL;
     }
+    sb->size = (size_t)size64;
+    sb->nfilters = (size_t)nfilters64;
     if (encver >= BF_MIN_OPTIONS_ENC) {
-        sb->options = LoadUnsigned_IOError(io, err, NULL);
+        const uint64_t options64 = LoadUnsigned_IOError(io, err, NULL);
+        if (options64 > UINT_MAX) {
+            err = true;
+            return NULL;
+        }
+        sb->options = (unsigned)options64;
     }
     if (encver >= BF_MIN_GROWTH_ENC) {
-        sb->growth = LoadUnsigned_IOError(io, err, NULL);
+        const uint64_t growth64 = LoadUnsigned_IOError(io, err, NULL);
+        if (growth64 > UINT_MAX) {
+            err = true;
+            return NULL;
+        }
+        sb->growth = (unsigned)growth64;
     } else {
         sb->growth = 2;
     }
 
-    if (sb->nfilters > SIZE_MAX / sizeof(*sb->filters)) {
+    const unsigned valid_options =
+        BLOOM_OPT_NOROUND | BLOOM_OPT_ENTS_IS_BITS | BLOOM_OPT_FORCE64 | BLOOM_OPT_NO_SCALING;
+    if ((sb->options & ~valid_options) != 0 ||
+        (!(sb->options & BLOOM_OPT_NO_SCALING) && sb->growth == 0)) {
         err = true;
         return NULL;
     }
@@ -1266,13 +1283,30 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
 
         bm->entries = LoadUnsigned_IOError(io, err, NULL);
         bm->error = LoadDouble_IOError(io, err, NULL);
-        bm->hashes = LoadUnsigned_IOError(io, err, NULL);
+        const uint64_t hashes64 = LoadUnsigned_IOError(io, err, NULL);
         bm->bpe = LoadDouble_IOError(io, err, NULL);
+        if (hashes64 > UINT32_MAX || !isfinite(bm->error) || !isfinite(bm->bpe) || bm->error <= 0 ||
+            bm->error >= 1.0 || bm->bpe <= 0) {
+            err = true;
+            return NULL;
+        }
+        bm->hashes = (uint32_t)hashes64;
         if (encver == 0) {
-            bm->bits = (double)bm->entries * bm->bpe;
+            const double serialized_bits = (double)bm->entries * bm->bpe;
+            if (!isfinite(serialized_bits) || serialized_bits <= 0 ||
+                serialized_bits >= (double)UINT64_MAX) {
+                err = true;
+                return NULL;
+            }
+            bm->bits = (uint64_t)serialized_bits;
         } else {
             bm->bits = LoadUnsigned_IOError(io, err, NULL);
-            bm->n2 = LoadUnsigned_IOError(io, err, NULL);
+            const uint64_t n2 = LoadUnsigned_IOError(io, err, NULL);
+            if (n2 > 63) {
+                err = true;
+                return NULL;
+            }
+            bm->n2 = (uint8_t)n2;
         }
         if (sb->options & BLOOM_OPT_FORCE64) {
             bm->force64 = 1;
@@ -1300,10 +1334,6 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
             }
         }
 
-        if (unlikely(bm->n2 > 63)) {
-            err = true;
-            return NULL;
-        }
         if (bm->n2 != 0) {
             const uint64_t mod_bits = (1ULL << bm->n2);
             if (unlikely(bm->bits < mod_bits)) {
@@ -1315,7 +1345,22 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
             err = true;
             return NULL;
         }
-        lb->size = LoadUnsigned_IOError(io, err, NULL);
+        const uint64_t link_size64 = LoadUnsigned_IOError(io, err, NULL);
+        if (link_size64 > SIZE_MAX || link_size64 > bm->entries) {
+            err = true;
+            return NULL;
+        }
+        lb->size = (size_t)link_size64;
+    }
+
+    if (SB_ValidateIntegrity(sb) != 0) {
+        err = true;
+        return NULL;
+    }
+    const SBLink *last = sb->filters + sb->nfilters - 1;
+    if (!(sb->options & BLOOM_OPT_NO_SCALING) && last->inner.entries > UINT64_MAX / sb->growth) {
+        err = true;
+        return NULL;
     }
 
     return sb;

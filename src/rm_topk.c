@@ -342,21 +342,35 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
     size_t expectedHeapSize = topk->k * sizeof(HeapBucket);
     topk->heap = (HeapBucket *)LoadStringBuffer_IOError(io, &heapSize, err, NULL);
     if (heapSize != expectedHeapSize) {
-        // Zero pointers to avoid freeing stale pointers if validation fails
         if (topk->heap) {
-            uint32_t buckets = heapSize / sizeof(HeapBucket);
-            buckets = buckets < topk->k ? buckets : topk->k;
-            for (uint32_t i = 0; i < buckets; ++i) {
-                topk->heap[i].item = NULL;
-            }
+            TOPK_FREE(topk->heap);
+            /* NULL the pointer to avoid freeing stale pointers in TopK_Destroy if validation fails
+             */
+            topk->heap = NULL;
         }
         err = true;
         return NULL;
     }
 
+    for (HeapBucket *bucket = topk->heap; bucket < topk->heap + topk->k; ++bucket)
+        bucket->item = NULL;
+
     for (HeapBucket *bucket = topk->heap; bucket < topk->heap + topk->k; ++bucket) {
         char *it = LoadStringBuffer_IOError(io, &heapSize, err, NULL);
-        if (heapSize == 1) {
+        if (it == NULL) {
+            err = true;
+            return NULL;
+        }
+        if (heapSize == 0 || heapSize - 1 > UINT32_MAX || it[heapSize - 1] != '\0') {
+            RedisModule_Free(it);
+            err = true;
+            return NULL;
+        }
+        // A non-empty buffer is always a real item, whatever `count` says: TOPK.INCRBY with
+        // increment 0 legitimately stores an item whose count is still 0.
+        // For a single NUL the encoding is ambiguous, as TopKRdbSave writes one NUL both for an
+        // unused slot and for an empty-string item, so `count` is the only discriminator left.
+        if (heapSize == 1 && bucket->count == 0) {
             // Empty bucket: only the terminating NUL was stored.
             RedisModule_Free(it);
             bucket->item = NULL;
@@ -367,7 +381,7 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
             // stored as strlen(item) + 1 bytes, so the length is heapSize - 1. The
             // itemlen carried in the raw heap blob is not used here, as it can be out
             // of sync with the item buffer when the input is malformed.
-            bucket->itemlen = heapSize - 1;
+            bucket->itemlen = (uint32_t)(heapSize - 1);
         }
     }
 
