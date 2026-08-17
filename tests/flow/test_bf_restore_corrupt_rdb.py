@@ -300,6 +300,35 @@ class testCFRestoreCorruptRDB():
         env.cmd("CF.ADD", key, b"sanity")
 
 
+class testTopKRestoreCorruptRDB():
+    def __init__(self):
+        # We need raw bytes for DUMP/RESTORE payload manipulation
+        self.env = Env(decodeResponses=False)
+
+    def test_restore_rejects_corrupted_topk_heap(self):
+        env = self.env
+        env.cmd("FLUSHALL")
+
+        key = b"topk_poc{topk}"
+        corrupt_key = b"topk_poc_corrupt{topk}"
+
+        # k=3, width=1, depth=1 → heap buffer is 3*sizeof(HeapBucket)=72 bytes,
+        # which is larger than the data buffer (1*1*sizeof(Bucket)=8 bytes) and
+        # item strings (1 byte each). _corrupt_dump_shrink_largest_module_string
+        # will therefore target and truncate the heap buffer.
+        env.cmd("TOPK.RESERVE", key, 3, 1, 1, 0.9)
+        dump_payload = env.cmd("DUMP", key)
+        corrupted = _corrupt_dump_shrink_largest_module_string(dump_payload)
+
+        # Without the fix: TopK_Destroy is invoked via errdefer with topk->heap
+        # still pointing at the undersized buffer, iterating all k entries and
+        # reading past the end of the allocation (OOB / UB / crash).
+        # With the fix: the mismatch branch frees and NULLs topk->heap before
+        # returning, so TopK_Destroy skips the heap loop entirely.
+        with env.assertResponseError():
+            env.cmd("RESTORE", corrupt_key, 0, corrupted)
+
+
 class testTDigestRestoreCorruptRDB():
     def __init__(self):
         # We need raw bytes for DUMP/RESTORE payload manipulation
@@ -324,3 +353,18 @@ class testTDigestRestoreCorruptRDB():
 
         # Ensure the server/module remains healthy
         env.cmd("tdigest.add", key, 2.0)
+
+class testCMSRestoreCorruptRDB():
+    def __init__(self):
+        # We need raw bytes for DUMP/RESTORE payload manipulation
+        self.env = Env(decodeResponses=False)
+
+    def test_restore_rejects_corrupted_cms_width_depth(self):
+        env = self.env
+        env.cmd("FLUSHALL")
+
+        key = b"cms_poc{cms}"
+        corrupt_key = b"cms_poc_corrupt{cms}"
+        corrupted = b'\x07\x81\x08\xc4\xa4\xf96\x0f\x10\x00\x02\x81@\x00\x00\x00\x00\x00\x00\xaf\x02\x01\x02\x00\x05B\xbcXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\x00\xff\x0c\x00\xdf\xf7\xa1w\xbf\x95\xb9\x14'
+        with env.assertResponseError():
+            env.cmd("RESTORE", corrupt_key, 0, corrupted)
