@@ -361,12 +361,15 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
             err = true;
             return NULL;
         }
-        if (heapSize == 0 || heapSize - 1 > UINT32_MAX || it[heapSize - 1] != '\0' ||
-            (heapSize > 1 && bucket->count == 0)) {
+        if (heapSize == 0 || heapSize - 1 > UINT32_MAX || it[heapSize - 1] != '\0') {
             RedisModule_Free(it);
             err = true;
             return NULL;
         }
+        // A non-empty buffer is always a real item, whatever `count` says: TOPK.INCRBY with
+        // increment 0 legitimately stores an item whose count is still 0.
+        // For a single NUL the encoding is ambiguous, as TopKRdbSave writes one NUL both for an
+        // unused slot and for an empty-string item, so `count` is the only discriminator left.
         if (heapSize == 1 && bucket->count == 0) {
             // Empty bucket: only the terminating NUL was stored.
             RedisModule_Free(it);
