@@ -11,7 +11,6 @@
 
 #include <assert.h>
 #include <fcntl.h>
-#include <limits.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -238,16 +237,9 @@ const char *bloom_version() { return MAKESTRING(BLOOM_VERSION); }
 
 // Returns 0 on success
 int bloom_validate_integrity(struct bloom *bloom) {
-    if (!bloom || !isfinite(bloom->error) || bloom->error <= 0 || bloom->error >= 1.0 ||
-        !isfinite(bloom->bpe) || bloom->bpe <= 0 || bloom->bytes > UINT64_MAX / 8 ||
-        (bloom->n2 > 63) || (bloom->n2 != 0 && bloom->bits < (1ULL << bloom->n2)) ||
-        bloom->bits == 0 || bloom->bits != bloom->bytes * 8) {
-        return 1;
-    }
-
-    const double expected_hashes = ceil(LN2 * bloom->bpe);
-    if (!isfinite(expected_hashes) || expected_hashes < 1 || expected_hashes > INT_MAX ||
-        bloom->hashes != (uint32_t)expected_hashes) {
+    if (bloom->error <= 0 || bloom->error >= 1.0 || (bloom->n2 > 63) ||
+        (bloom->n2 != 0 && bloom->bits < (1ULL << bloom->n2)) || bloom->bits == 0 ||
+        bloom->bits != bloom->bytes * 8 || bloom->hashes != (int)ceil(LN2 * bloom->bpe)) {
         return 1;
     }
 

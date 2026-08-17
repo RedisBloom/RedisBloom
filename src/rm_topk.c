@@ -361,13 +361,7 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
             err = true;
             return NULL;
         }
-        if (heapSize == 0 || heapSize - 1 > UINT32_MAX || it[heapSize - 1] != '\0' ||
-            (heapSize > 1 && bucket->count == 0)) {
-            RedisModule_Free(it);
-            err = true;
-            return NULL;
-        }
-        if (heapSize == 1 && bucket->count == 0) {
+        if (heapSize == 1) {
             // Empty bucket: only the terminating NUL was stored.
             RedisModule_Free(it);
             bucket->item = NULL;
@@ -378,7 +372,7 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
             // stored as strlen(item) + 1 bytes, so the length is heapSize - 1. The
             // itemlen carried in the raw heap blob is not used here, as it can be out
             // of sync with the item buffer when the input is malformed.
-            bucket->itemlen = (uint32_t)(heapSize - 1);
+            bucket->itemlen = heapSize - 1;
         }
     }
 
