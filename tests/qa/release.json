@@ -19,11 +19,6 @@
       },
       {
         "teardown": true,
-        "name": "bionic-amd64-aws",
-        "concurrency": 1
-      },
-      {
-        "teardown": true,
         "name": "rhel7.7-x86_64-aws",
         "concurrency": 1
       },
