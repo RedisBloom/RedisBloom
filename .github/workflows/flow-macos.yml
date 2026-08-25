@@ -147,11 +147,10 @@ jobs:
           use-venv: '1'
           build_sanitizer: ${{ inputs.run_sanitizer && 'addr' || '' }}
       - name: Run Tests
-        uses: ./.github/actions/run-tests
-        with:
-          use-venv: '1'
-          run_valgrind: ${{ inputs.run_valgrind && '1' || '0' }}
-          run_sanitizer: ${{ inputs.run_sanitizer && 'addr' || '' }}
+        continue-on-error: true
+        run: |
+          echo "::error::Temporary forced test failure to expose S3 upload paths quickly."
+          exit 1
       - name: Capture test results
         if: always()
         uses: ./.github/actions/capture-test-results

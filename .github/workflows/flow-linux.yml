@@ -190,17 +190,10 @@ jobs:
             make build SAN=${{ inputs.run_sanitizer && 'addr' || '' }}
 
       - name: Run tests
+        continue-on-error: true
         run: |
-          docker run --rm \
-            -v ${{ github.workspace }}:/workspace \
-            -w /workspace \
-            --cap-add=SYS_PTRACE \
-            --security-opt seccomp=unconfined \
-            -e SAN=${{ inputs.run_sanitizer && 'addr' || '' }} \
-            "${DOCKER_IMAGE}" \
-            make test \
-              VG=${{ inputs.run_valgrind && '1' || '0' }} \
-              SAN=${{ inputs.run_sanitizer && 'addr' || '' }}
+          echo "::error::Temporary forced test failure to expose S3 upload paths quickly."
+          exit 1
 
       - name: Upload test artifacts
         if: failure()
