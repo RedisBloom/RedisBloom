@@ -147,6 +147,19 @@ class testCMS():
         self.assertRaises(ResponseError, self.cmd, 'cms.merge', 'small_3{1}', 2,
                           'small_2{1}', 'large_5{1}')
 
+    def test_merge_crossslot(self):
+        if not self.env.isCluster():
+            self.env.skip()
+
+        self.assertOk(self.cmd('cms.initbydim', 'dst', '100', '5'))
+        self.assertOk(self.cmd('cms.initbydim', 's1', '100', '5'))
+        self.assertOk(self.cmd('cms.initbydim', 's2', '100', '5'))
+        self.assertEqual([5], self.cmd('cms.incrby', 's1', 'x', '5'))
+        self.assertEqual([2], self.cmd('cms.incrby', 's2', 'x', '2'))
+        res = self.env.expect('cms.merge', 'dst', 2, 's1', 's2').error()
+        res.contains("Keys in request don't hash to the same slot")
+        res.notContains('CMS: key does not exist')
+
     def test_errors(self):
         self.cmd('FLUSHALL')
         self.cmd('SET', 'A', '2000')
