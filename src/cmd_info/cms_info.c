@@ -122,12 +122,20 @@ static const RedisModuleCommandKeySpec CMS_MERGE_KEYSPECS[] = {
      .bs.index = {.pos = 1},
      .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
      .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {.flags = REDISMODULE_CMD_KEY_RO,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 2},
+     .find_keys_type = REDISMODULE_KSPEC_FK_KEYNUM,
+     .fk.keynum = {.keynumidx = 0, .firstkey = 1, .keystep = 1}},
     {0}};
 
 static const RedisModuleCommandArg CMS_MERGE_ARGS[] = {
     {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
     {.name = "numKeys", .type = REDISMODULE_ARG_TYPE_INTEGER},
-    {.name = "source", .type = REDISMODULE_ARG_TYPE_KEY, .flags = REDISMODULE_CMD_ARG_MULTIPLE},
+    {.name = "source",
+     .type = REDISMODULE_ARG_TYPE_KEY,
+     .key_spec_index = 1,
+     .flags = REDISMODULE_CMD_ARG_MULTIPLE},
     {
         .name = "weights",
         .type = REDISMODULE_ARG_TYPE_BLOCK,
