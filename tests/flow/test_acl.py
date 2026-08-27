@@ -116,16 +116,17 @@ class testACL():
       env = self.env
       env.cmd('FLUSHALL')
 
-      env.expect('CMS.INITBYDIM acl_dst 100 5').ok()
-      env.expect('CMS.INITBYDIM acl_s1 100 5').ok()
-      env.expect('CMS.INITBYDIM acl_s2 100 5').ok()
-      env.expect('CMS.INCRBY acl_s1 x 5').equal([5])
-      env.expect('CMS.INCRBY acl_s2 x 2').equal([2])
+      env.expect('CMS.INITBYDIM', '{acl}dst', '100', '5').ok()
+      env.expect('CMS.INITBYDIM', '{acl}s1', '100', '5').ok()
+      env.expect('CMS.INITBYDIM', '{acl}s2', '100', '5').ok()
+      env.expect('CMS.INCRBY', '{acl}s1', 'x', '5').equal([5])
+      env.expect('CMS.INCRBY', '{acl}s2', 'x', '2').equal([2])
 
-      env.expect('ACL SETUSER cmsmerge reset on >123 +@cms resetkeys ~acl_dst ~acl_s1').true()
-      env.expect('AUTH cmsmerge 123').true()
-      res = env.expect('CMS.MERGE acl_dst 2 acl_s1 acl_s2').error()
+      env.expect('ACL', 'SETUSER', 'cmsmerge', 'reset', 'on', '>123', '+@cms',
+                 'resetkeys', '~{acl}dst', '~{acl}s1').true()
+      env.expect('AUTH', 'cmsmerge', '123').true()
+      res = env.expect('CMS.MERGE', '{acl}dst', 2, '{acl}s1', '{acl}s2').error()
       res.contains('No permissions to access a key')
       res.notContains('CMS: key does not exist')
-      env.expect('AUTH default ""').true()
-      env.expect('ACL DELUSER cmsmerge').equal(1)
+      env.expect('AUTH', 'default', '').true()
+      env.expect('ACL', 'DELUSER', 'cmsmerge').equal(1)
