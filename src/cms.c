@@ -161,6 +161,29 @@ uint64_t CMS_Query(CMSketch *cms, const char *item, size_t itemlen) {
     return minCount;
 }
 
+int CMS_ValidateLoaded(const CMSketch *cms) {
+    assert(cms);
+
+    // The total count is replied as a RESP integer, and CMS_IncrBy computes its
+    // headroom as INT64_MAX - counter, which wraps if counter is already above it.
+    if (cms->counter > (uint64_t)INT64_MAX) {
+        return -1;
+    }
+
+    // Only 8-byte cells can hold more than their maximum: the narrower widths
+    // cannot physically represent a value above CMS_CELL_MAX.
+    if (cms->cellSize == 8) {
+        const uint64_t cellMax = CMS_CELL_MAX(cms->cellSize);
+        for (size_t i = 0; i < cms->width * cms->depth; ++i) {
+            if (cellGet(cms, i) > cellMax) {
+                return -1;
+            }
+        }
+    }
+
+    return 0;
+}
+
 static int checkOverflow(CMSketch *dest, size_t quantity, const CMSketch **src,
                          const long long *weights) {
     int64_t itemCount = 0;

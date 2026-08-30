@@ -74,6 +74,13 @@ CMSStatus CMS_IncrBy(CMSketch *cms, const char *item, size_t strlen, int64_t val
 /* Returns an estimate counter for item */
 uint64_t CMS_Query(CMSketch *cms, const char *item, size_t strlen);
 
+/*  Checks a deserialized sketch for values no command could have produced: a cell
+    or a total count above what the cell size allows. RESTORE payloads are caller
+    controlled, and the headroom arithmetic in CMS_IncrBy relies on both bounds.
+
+    Returns non-zero if the sketch must be rejected. */
+int CMS_ValidateLoaded(const CMSketch *cms);
+
 /*  Merges multiple CMSketches into a single one.
     All sketches must have identical width, depth and cell size.
     dest must be already initialized.

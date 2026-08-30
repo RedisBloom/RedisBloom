@@ -385,6 +385,11 @@ void *CMSRdbLoad(RedisModuleIO *io, int encver) {
         return NULL;
     }
 
+    if (CMS_ValidateLoaded(cms) != 0) {
+        err = true;
+        return NULL;
+    }
+
     return cms;
 }
 

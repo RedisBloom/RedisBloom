@@ -1,6 +1,7 @@
 
 from common import *
-from rdb_corruption_utils import rewrite_module_uint
+from rdb_corruption_utils import rewrite_module_uint, rewrite_largest_module_string
+import struct
 from random import randint
 import redis
 
@@ -653,6 +654,39 @@ class testCMS():
         self.assertEqual([0], self.cmd('cms.query', 'cms', other))
         self.assertEqual(['width', 100, 'depth', 1, 'count', maximum, 'cell size', 8],
                          self.cmd('cms.info', 'cms'))
+
+    def _raw_connection(self):
+        # DUMP payloads are binary, so they need a connection that does not decode
+        kwargs = dict(self.env.getConnection().connection_pool.connection_kwargs)
+        kwargs['decode_responses'] = False
+        return redis.Redis(**kwargs)
+
+    def test_rdb_load_rejects_out_of_range_counter(self):
+        # A total count above INT64_MAX cannot be produced by any command. Loading one
+        # would wrap the `INT64_MAX - counter` headroom check in CMS_IncrBy, letting
+        # the total escape the RESP integer range that check exists to protect.
+        self.cmd('FLUSHALL')
+        raw = self._raw_connection()
+        self.assertOk(self.cmd('cms.initbydim', 'src', '20', '5'))
+        self.assertEqual([7], self.cmd('cms.incrby', 'src', 'a', '7'))
+
+        bad = rewrite_module_uint(raw.execute_command('DUMP', 'src'), 2, 2 ** 63)
+        self.env.expect('RESTORE', 'bad', 0, bad).error().contains('Bad data format')
+
+    def test_rdb_load_rejects_out_of_range_cell(self):
+        # Only CELL_SIZE 8 can store a cell above its maximum, since CMS_CELL_MAX(8) is
+        # INT64_MAX while the slot holds a full uint64. Such a cell would wrap the
+        # `cellMax - cell` headroom check and make CMS.QUERY reply a negative count.
+        self.cmd('FLUSHALL')
+        raw = self._raw_connection()
+        self.assertOk(self.cmd('cms.initbydim', 'src', '20', '5', 'CELL_SIZE', '8'))
+        self.assertEqual([7], self.cmd('cms.incrby', 'src', 'a', '7'))
+
+        cell_count = 20 * 5
+        cells = struct.pack('<%dQ' % cell_count, *([2 ** 63] * cell_count))
+        bad = rewrite_largest_module_string(raw.execute_command('DUMP', 'src'),
+                                           lambda _old: cells, require_same_length=True)
+        self.env.expect('RESTORE', 'bad', 0, bad).error().contains('Bad data format')
 
     def test_incrby_underflow_corrupt_counter(self):
         # A sketch whose total count disagrees with its cell array cannot be reached by
