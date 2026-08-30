@@ -121,7 +121,7 @@ class testResp3():
         env.assertEqual(env.cmd('cms.initbyprob', 'cms2', '0.001', '0.01'), b'OK')
         env.assertEqual([5], env.cmd('cms.incrby', 'cms2', 'a', '5'))
         env.assertEqual([5], env.cmd('cms.query', 'cms2', 'a'))
-        env.assertEqual({b'width': 2000, b'depth': 7, b'count': 5},
+        env.assertEqual({b'width': 2000, b'depth': 7, b'count': 5, b'cell size': 4},
                             env.cmd('cms.info', 'cms2'))
 
         env.assertEqual(env.cmd("tdigest.create", "tdigest"), b'OK')

@@ -20,11 +20,47 @@
 #define BIT64 64
 #define CMS_HASH(item, itemlen, i) MurmurHash2(item, itemlen, i)
 
-CMSketch *NewCMSketch(size_t width, size_t depth) {
+static inline uint64_t cellGet(const CMSketch *cms, size_t loc) {
+    switch (cms->cellSize) {
+    case 1:
+        return ((const uint8_t *)cms->array)[loc];
+    case 2:
+        return ((const uint16_t *)cms->array)[loc];
+    case 4:
+        return ((const uint32_t *)cms->array)[loc];
+    case 8:
+        return ((const uint64_t *)cms->array)[loc];
+    default:
+        assert(0); // unreachable
+        return 0;
+    }
+}
+
+static inline void cellSet(CMSketch *cms, size_t loc, uint64_t value) {
+    switch (cms->cellSize) {
+    case 1:
+        ((uint8_t *)cms->array)[loc] = (uint8_t)value;
+        break;
+    case 2:
+        ((uint16_t *)cms->array)[loc] = (uint16_t)value;
+        break;
+    case 4:
+        ((uint32_t *)cms->array)[loc] = (uint32_t)value;
+        break;
+    case 8:
+        ((uint64_t *)cms->array)[loc] = value;
+        break;
+    default:
+        assert(0); // unreachable
+    }
+}
+
+CMSketch *NewCMSketch(size_t width, size_t depth, uint8_t cellSize) {
     assert(width > 0);
     assert(depth > 0);
+    assert(CMS_IS_VALID_CELL_SIZE(cellSize));
 
-    if (width > SIZE_MAX / depth || width * depth > SIZE_MAX / sizeof(uint32_t)) {
+    if (width > SIZE_MAX / depth || width * depth > SIZE_MAX / cellSize) {
         return NULL;
     }
 
@@ -33,7 +69,8 @@ CMSketch *NewCMSketch(size_t width, size_t depth) {
     cms->width = width;
     cms->depth = depth;
     cms->counter = 0;
-    cms->array = CMS_TRYCALLOC(width * depth, sizeof(uint32_t));
+    cms->cellSize = cellSize;
+    cms->array = CMS_TRYCALLOC(width * depth, cellSize);
     if (!cms->array) {
         CMS_FREE(cms);
         return NULL;
@@ -63,34 +100,63 @@ void CMS_Destroy(CMSketch *cms) {
     CMS_FREE(cms);
 }
 
-size_t CMS_IncrBy(CMSketch *cms, const char *item, size_t itemlen, size_t value) {
+CMSStatus CMS_IncrBy(CMSketch *cms, const char *item, size_t itemlen, int64_t value,
+                     uint64_t *count) {
     assert(cms);
     assert(item);
+    assert(count);
 
-    size_t minCount = (size_t)-1;
+    const uint64_t cellMax = CMS_CELL_MAX(cms->cellSize);
+    const uint64_t magnitude = (value < 0) ? -(uint64_t)value : (uint64_t)value;
 
+    // First pass validates the whole operation, so that a rejected increment
+    // leaves the sketch untouched.
+    for (size_t i = 0; i < cms->depth; ++i) {
+        uint32_t hash = CMS_HASH(item, itemlen, i);
+        const uint64_t cell = cellGet(cms, (hash % cms->width) + (i * cms->width));
+        if (value > 0 && magnitude > cellMax - cell) {
+            return CMS_STATUS_OVERFLOW;
+        }
+        if (value < 0 && magnitude > cell) {
+            return CMS_STATUS_UNDERFLOW;
+        }
+    }
+    // The total count is replied as a RESP integer, so it is capped the same way
+    // a cell is: a row holds `width` cells, so it could otherwise exceed INT64_MAX.
+    if (value > 0 && magnitude > (uint64_t)INT64_MAX - cms->counter) {
+        return CMS_STATUS_OVERFLOW;
+    }
+    // No sequence of commands can make counter smaller than a row's cells, but a
+    // RESTORE payload can: the load path validates the dimensions and the buffer
+    // length, never counter against the array. Without this, counter would wrap.
+    if (value < 0 && magnitude > cms->counter) {
+        return CMS_STATUS_UNDERFLOW;
+    }
+
+    uint64_t minCount = UINT64_MAX;
     for (size_t i = 0; i < cms->depth; ++i) {
         uint32_t hash = CMS_HASH(item, itemlen, i);
         size_t loc = (hash % cms->width) + (i * cms->width);
-        cms->array[loc] += value;
-        if (cms->array[loc] < value) {
-            cms->array[loc] = UINT32_MAX;
-        }
-        minCount = min(minCount, cms->array[loc]);
+        const uint64_t updated =
+            (value < 0) ? cellGet(cms, loc) - magnitude : cellGet(cms, loc) + magnitude;
+        cellSet(cms, loc, updated);
+        minCount = min(minCount, updated);
     }
-    cms->counter += value;
-    return minCount;
+    cms->counter = (value < 0) ? cms->counter - magnitude : cms->counter + magnitude;
+
+    *count = minCount;
+    return CMS_STATUS_OK;
 }
 
-size_t CMS_Query(CMSketch *cms, const char *item, size_t itemlen) {
+uint64_t CMS_Query(CMSketch *cms, const char *item, size_t itemlen) {
     assert(cms);
     assert(item);
 
-    size_t minCount = (size_t)-1;
+    uint64_t minCount = UINT64_MAX;
 
     for (size_t i = 0; i < cms->depth; ++i) {
         uint32_t hash = CMS_HASH(item, itemlen, i);
-        minCount = min(minCount, cms->array[(hash % cms->width) + (i * cms->width)]);
+        minCount = min(minCount, cellGet(cms, (hash % cms->width) + (i * cms->width)));
     }
     return minCount;
 }
@@ -101,6 +167,7 @@ static int checkOverflow(CMSketch *dest, size_t quantity, const CMSketch **src,
     int64_t cmsCount = 0;
     size_t width = dest->width;
     size_t depth = dest->depth;
+    const int64_t cellMax = (int64_t)CMS_CELL_MAX(dest->cellSize);
 
     for (size_t i = 0; i < depth; ++i) {
         for (size_t j = 0; j < width; ++j) {
@@ -112,14 +179,15 @@ static int checkOverflow(CMSketch *dest, size_t quantity, const CMSketch **src,
                 int64_t mul = 0;
 
                 // Validation for:
-                //   itemCount += src[k]->array[(i * width) + j] * weights[k];
-                if (__builtin_mul_overflow(src[k]->array[(i * width) + j], weights[k], &mul) ||
+                //   itemCount += cellGet(src[k], (i * width) + j) * weights[k];
+                if (__builtin_mul_overflow((int64_t)cellGet(src[k], (i * width) + j), weights[k],
+                                           &mul) ||
                     (__builtin_add_overflow(itemCount, mul, &itemCount))) {
                     return -1;
                 }
             }
 
-            if (itemCount < 0 || itemCount > UINT32_MAX) {
+            if (itemCount < 0 || itemCount > cellMax) {
                 return -1;
             }
         }
@@ -160,9 +228,9 @@ int CMS_Merge(CMSketch *dest, size_t quantity, const CMSketch **src, const long 
         for (size_t j = 0; j < width; ++j) {
             itemCount = 0;
             for (size_t k = 0; k < quantity; ++k) {
-                itemCount += (int64_t)src[k]->array[(i * width) + j] * weights[k];
+                itemCount += (int64_t)cellGet(src[k], (i * width) + j) * weights[k];
             }
-            dest->array[(i * width) + j] = itemCount;
+            cellSet(dest, (i * width) + j, (uint64_t)itemCount);
         }
     }
 

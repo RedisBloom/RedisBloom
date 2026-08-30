@@ -22,11 +22,20 @@
 // #define CMS_FREE(ptr) free(ptr)
 #endif
 
+#define CMS_DEFAULT_CELL_SIZE 4
+
+#define CMS_IS_VALID_CELL_SIZE(cellSize)                                                           \
+    ((cellSize) == 1 || (cellSize) == 2 || (cellSize) == 4 || (cellSize) == 8)
+
+#define CMS_CELL_MAX(cellSize)                                                                     \
+    ((cellSize) == 8 ? (uint64_t)INT64_MAX : ((UINT64_C(1) << (8 * (uint64_t)(cellSize))) - 1))
+
 typedef struct CMS {
     size_t width;
     size_t depth;
-    uint32_t *array;
+    void *array;
     size_t counter;
+    uint8_t cellSize; // bytes per cell: 1, 2, 4 or 8
 } CMSketch;
 
 typedef struct {
@@ -36,8 +45,15 @@ typedef struct {
     long long *weights;
 } mergeParams;
 
-/* Creates a new Count-Min Sketch with dimensions of width * depth */
-CMSketch *NewCMSketch(size_t width, size_t depth);
+typedef enum {
+    CMS_STATUS_OK = 0,
+    CMS_STATUS_OVERFLOW,
+    CMS_STATUS_UNDERFLOW,
+} CMSStatus;
+
+/*  Creates a new Count-Min Sketch with dimensions of width * depth,
+    with cellSize bytes per cell */
+CMSketch *NewCMSketch(size_t width, size_t depth, uint8_t cellSize);
 
 /*  Recommends width & depth for expected n different items,
     with probability of an error  - prob and over estimation
@@ -46,15 +62,20 @@ void CMS_DimFromProb(double overEst, double prob, size_t *width, size_t *depth);
 
 void CMS_Destroy(CMSketch *cms);
 
-/*  Increases item count in value.
-    Value must be a non negative number */
-size_t CMS_IncrBy(CMSketch *cms, const char *item, size_t strlen, size_t value);
+/*  Changes item count by value. A negative value decrements the count.
+
+    On success returns CMS_STATUS_OK and stores the new estimate in count.
+    If the change would take any of the item's cells above the maximum value a
+    cell can hold, or below zero, the sketch is left untouched and
+    CMS_STATUS_OVERFLOW / CMS_STATUS_UNDERFLOW is returned. */
+CMSStatus CMS_IncrBy(CMSketch *cms, const char *item, size_t strlen, int64_t value,
+                     uint64_t *count);
 
 /* Returns an estimate counter for item */
-size_t CMS_Query(CMSketch *cms, const char *item, size_t strlen);
+uint64_t CMS_Query(CMSketch *cms, const char *item, size_t strlen);
 
 /*  Merges multiple CMSketches into a single one.
-    All sketches must have identical width and depth.
+    All sketches must have identical width, depth and cell size.
     dest must be already initialized.
 
     Returns non-zero if overflow validation fails. In this case,

@@ -49,8 +49,31 @@ static int GetCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName, CMSketch *
     return REDISMODULE_OK;
 }
 
+static int parseCellSize(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
+                         uint8_t *cellSize) {
+    *cellSize = CMS_DEFAULT_CELL_SIZE;
+    if (argc == 4) {
+        return REDISMODULE_OK;
+    }
+
+    size_t tokenlen;
+    const char *token = RedisModule_StringPtrLen(argv[4], &tokenlen);
+    if (strcasecmp(token, "CELL_SIZE") != 0) {
+        INNER_ERROR("CMS: unknown argument");
+    }
+
+    long long value = 0;
+    if (RedisModule_StringToLongLong(argv[5], &value) != REDISMODULE_OK ||
+        !CMS_IS_VALID_CELL_SIZE(value)) {
+        INNER_ERROR("CMS: CELL_SIZE must be 1, 2, 4 or 8");
+    }
+    *cellSize = (uint8_t)value;
+
+    return REDISMODULE_OK;
+}
+
 static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
-                           long long *width, long long *depth) {
+                           long long *width, long long *depth, uint8_t *cellSize) {
 
     size_t cmdlen;
     const char *cmd = RedisModule_StringPtrLen(argv[0], &cmdlen);
@@ -78,17 +101,18 @@ static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         INNER_ERROR("CMS: invalid init arguments");
     }
 
-    return REDISMODULE_OK;
+    return parseCellSize(ctx, argv, argc, cellSize);
 }
 
 int CMSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    if (argc != 4) {
+    if (argc != 4 && argc != 6) {
         return RedisModule_WrongArity(ctx);
     }
 
     CMSketch *cms = NULL;
     long long width = 0, depth = 0;
+    uint8_t cellSize = CMS_DEFAULT_CELL_SIZE;
     RedisModuleString *keyName = argv[1];
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ | REDISMODULE_WRITE);
 
@@ -97,10 +121,10 @@ int CMSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return RedisModule_ReplyWithError(ctx, "CMS: key already exists");
     }
 
-    if (parseCreateArgs(ctx, argv, argc, &width, &depth) != REDISMODULE_OK)
+    if (parseCreateArgs(ctx, argv, argc, &width, &depth, &cellSize) != REDISMODULE_OK)
         return REDISMODULE_OK;
 
-    cms = NewCMSketch(width, depth);
+    cms = NewCMSketch(width, depth, cellSize);
     if (!cms) {
         RedisModule_CloseKey(key);
         RedisModule_ReplyWithError(ctx, "CMS: Insufficient memory to create the key");
@@ -123,8 +147,9 @@ static int parseIncrByArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
             REDISMODULE_OK) {
             INNER_ERROR("CMS: Cannot parse number");
         }
-        if ((*pairs)[i].value < 0) {
-            INNER_ERROR("CMS: Number cannot be negative");
+        // Negating LLONG_MIN is undefined, and no cell can hold its magnitude.
+        if ((*pairs)[i].value == LLONG_MIN) {
+            INNER_ERROR("CMS: invalid increment");
         }
     }
     return REDISMODULE_OK;
@@ -159,11 +184,18 @@ int CMSketch_IncrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     }
     RedisModule_ReplyWithArray(ctx, pairCount);
     for (int i = 0; i < pairCount; ++i) {
-        size_t count = CMS_IncrBy(cms, pairArray[i].key, pairArray[i].keylen, pairArray[i].value);
-        if (count != UINT32_MAX) {
+        uint64_t count = 0;
+        switch (
+            CMS_IncrBy(cms, pairArray[i].key, pairArray[i].keylen, pairArray[i].value, &count)) {
+        case CMS_STATUS_OK:
             RedisModule_ReplyWithLongLong(ctx, (long long)count);
-        } else {
+            break;
+        case CMS_STATUS_OVERFLOW:
             RedisModule_ReplyWithError(ctx, "CMS: INCRBY overflow");
+            break;
+        case CMS_STATUS_UNDERFLOW:
+            RedisModule_ReplyWithError(ctx, "CMS: INCRBY underflow");
+            break;
         }
     }
     RedisModule_ReplicateVerbatim(ctx);
@@ -191,7 +223,7 @@ int CMSketch_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_ReplyWithArray(ctx, itemCount);
     for (int i = 0; i < itemCount; ++i) {
         const char *str = RedisModule_StringPtrLen(argv[2 + i], &length);
-        RedisModule_ReplyWithLongLong(ctx, CMS_Query(cms, str, length));
+        RedisModule_ReplyWithLongLong(ctx, (long long)CMS_Query(cms, str, length));
     }
 
     return REDISMODULE_OK;
@@ -220,6 +252,7 @@ static int parseMergeArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
 
     size_t width = params->dest->width;
     size_t depth = params->dest->depth;
+    uint8_t cellSize = params->dest->cellSize;
 
     for (int i = 0; i < numKeys; ++i) {
         if (pos == -1) {
@@ -233,6 +266,9 @@ static int parseMergeArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
         }
         if (params->cmsArray[i]->width != width || params->cmsArray[i]->depth != depth) {
             INNER_ERROR("CMS: width/depth is not equal");
+        }
+        if (params->cmsArray[i]->cellSize != cellSize) {
+            INNER_ERROR("CMS: cell size is not equal");
         }
     }
 
@@ -286,13 +322,15 @@ int CMSKetch_Info(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_OK;
     }
 
-    RedisModule_ReplyWithMapOrArray(ctx, 3 * 2, true);
+    RedisModule_ReplyWithMapOrArray(ctx, 4 * 2, true);
     RedisModule_ReplyWithSimpleString(ctx, "width");
     RedisModule_ReplyWithLongLong(ctx, cms->width);
     RedisModule_ReplyWithSimpleString(ctx, "depth");
     RedisModule_ReplyWithLongLong(ctx, cms->depth);
     RedisModule_ReplyWithSimpleString(ctx, "count");
     RedisModule_ReplyWithLongLong(ctx, cms->counter);
+    RedisModule_ReplyWithSimpleString(ctx, "cell size");
+    RedisModule_ReplyWithLongLong(ctx, cms->cellSize);
 
     return REDISMODULE_OK;
 }
@@ -302,8 +340,9 @@ void CMSRdbSave(RedisModuleIO *io, void *obj) {
     RedisModule_SaveUnsigned(io, cms->width);
     RedisModule_SaveUnsigned(io, cms->depth);
     RedisModule_SaveUnsigned(io, cms->counter);
+    RedisModule_SaveUnsigned(io, cms->cellSize);
     RedisModule_SaveStringBuffer(io, (const char *)cms->array,
-                                 sizeof *cms->array * cms->width * cms->depth);
+                                 cms->cellSize * cms->width * cms->depth);
 }
 
 void CMSFree(void *value) { CMS_Destroy(value); }
@@ -319,16 +358,27 @@ void *CMSRdbLoad(RedisModuleIO *io, int encver) {
     cms->width = LoadUnsigned_IOError(io, err, NULL);
     cms->depth = LoadUnsigned_IOError(io, err, NULL);
     cms->counter = LoadUnsigned_IOError(io, err, NULL);
+    // Sketches saved before CMS_ENC_VER 1 always used 4-byte cells.
+    uint64_t cellSize = CMS_DEFAULT_CELL_SIZE;
+    if (encver >= 1) {
+        cellSize = LoadUnsigned_IOError(io, err, NULL);
+    }
+
+    if (!CMS_IS_VALID_CELL_SIZE(cellSize)) {
+        err = true;
+        return NULL;
+    }
+    cms->cellSize = (uint8_t)cellSize;
 
     if (cms->width == 0 || cms->depth == 0 || cms->width > SIZE_MAX / cms->depth ||
-        cms->width * cms->depth > SIZE_MAX / sizeof(*cms->array)) {
+        cms->width * cms->depth > SIZE_MAX / cms->cellSize) {
         err = true;
         return NULL;
     }
 
-    size_t expected_length = sizeof(*cms->array) * cms->width * cms->depth;
+    size_t expected_length = cms->cellSize * cms->width * cms->depth;
     size_t length;
-    cms->array = (uint32_t *)LoadStringBuffer_IOError(io, &length, err, NULL);
+    cms->array = LoadStringBuffer_IOError(io, &length, err, NULL);
 
     if (length != expected_length) {
         err = true;
@@ -347,7 +397,7 @@ static int CMSDefrag(RedisModuleDefragCtx *ctx, RedisModuleString *key, void **v
 size_t CMSMemUsage(const void *value) {
     const CMSketch *cms = value;
     size_t size = sizeof *cms;
-    size += sizeof *cms->array * cms->width * cms->depth;
+    size += cms->cellSize * cms->width * cms->depth;
     return size;
 }
 
