@@ -1,5 +1,6 @@
 
 from common import *
+from rdb_corruption_utils import rewrite_module_uint
 from random import randint
 import redis
 
@@ -652,6 +653,39 @@ class testCMS():
         self.assertEqual([0], self.cmd('cms.query', 'cms', other))
         self.assertEqual(['width', 100, 'depth', 1, 'count', maximum, 'cell size', 8],
                          self.cmd('cms.info', 'cms'))
+
+    def test_incrby_underflow_corrupt_counter(self):
+        # A sketch whose total count disagrees with its cell array cannot be reached by
+        # any sequence of commands - only by a crafted RESTORE, since the load path
+        # validates the dimensions and the buffer length but never counter against the
+        # array. Decrementing such a sketch must be refused, not wrap the counter.
+        self.cmd('FLUSHALL')
+        kwargs = dict(self.env.getConnection().connection_pool.connection_kwargs)
+        kwargs['decode_responses'] = False
+        raw = redis.Redis(**kwargs)
+
+        self.assertOk(self.cmd('cms.initbydim', 'honest', '20', '5'))
+        self.assertEqual([7], self.cmd('cms.incrby', 'honest', 'a', '7'))
+
+        # CMSRdbSave writes width, depth, counter, cellSize -> counter is UINT #2
+        bad = rewrite_module_uint(raw.execute_command('DUMP', 'honest'), 2, 0)
+        raw.execute_command('RESTORE', 'bad', 0, bad)
+
+        # the cells still hold 7 while the total count claims 0
+        self.assertEqual(['width', 20, 'depth', 5, 'count', 0, 'cell size', 4],
+                         self.cmd('cms.info', 'bad'))
+        self.assertEqual([7], self.cmd('cms.query', 'bad', 'a'))
+
+        # every cell has exactly enough for this decrement, so only the counter check
+        # can reject it - this is what pins the counter guard in CMS_IncrBy
+        res = self.cmd('cms.incrby', 'bad', 'a', '-7')
+        self.env.assertResponseError(res[0], contained='CMS: INCRBY underflow')
+        self.assertEqual([7], self.cmd('cms.query', 'bad', 'a'))
+        self.assertEqual(['width', 20, 'depth', 5, 'count', 0, 'cell size', 4],
+                         self.cmd('cms.info', 'bad'))
+
+        # the honest sketch is unaffected and still decrements normally
+        self.assertEqual([0], self.cmd('cms.incrby', 'honest', 'a', '-7'))
 
     def test_rdb_load_encver_0(self):
         # A CMS.INITBYDIM 20 5 sketch with 'a' incremented by 7 and 'b' by 3,
