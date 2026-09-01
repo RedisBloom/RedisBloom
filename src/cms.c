@@ -100,6 +100,10 @@ void CMS_Destroy(CMSketch *cms) {
     CMS_FREE(cms);
 }
 
+// 64 is the deepest sketch CMS_DimFromProb yields above a ~1e-19 error probability,
+// and costs only 512 B of stack.
+#define CMS_LOC_SCRATCH 64
+
 CMSStatus CMS_IncrBy(CMSketch *cms, const char *item, size_t itemlen, int64_t value,
                      uint64_t *count) {
     assert(cms);
@@ -109,11 +113,16 @@ CMSStatus CMS_IncrBy(CMSketch *cms, const char *item, size_t itemlen, int64_t va
     const uint64_t cellMax = CMS_CELL_MAX(cms->cellSize);
     const uint64_t magnitude = (value < 0) ? -(uint64_t)value : (uint64_t)value;
 
+    size_t scratch[CMS_LOC_SCRATCH];
+
     // First pass validates the whole operation, so that a rejected increment
     // leaves the sketch untouched.
     for (size_t i = 0; i < cms->depth; ++i) {
-        uint32_t hash = CMS_HASH(item, itemlen, i);
-        const uint64_t cell = cellGet(cms, (hash % cms->width) + (i * cms->width));
+        const size_t loc = (CMS_HASH(item, itemlen, i) % cms->width) + (i * cms->width);
+        if (i < CMS_LOC_SCRATCH) {
+            scratch[i] = loc;
+        }
+        const uint64_t cell = cellGet(cms, loc);
         if (value > 0 && magnitude > cellMax - cell) {
             return CMS_STATUS_OVERFLOW;
         }
@@ -135,8 +144,9 @@ CMSStatus CMS_IncrBy(CMSketch *cms, const char *item, size_t itemlen, int64_t va
 
     uint64_t minCount = UINT64_MAX;
     for (size_t i = 0; i < cms->depth; ++i) {
-        uint32_t hash = CMS_HASH(item, itemlen, i);
-        size_t loc = (hash % cms->width) + (i * cms->width);
+        const size_t loc = (i < CMS_LOC_SCRATCH)
+                               ? scratch[i]
+                               : (CMS_HASH(item, itemlen, i) % cms->width) + (i * cms->width);
         const uint64_t updated =
             (value < 0) ? cellGet(cms, loc) - magnitude : cellGet(cms, loc) + magnitude;
         cellSet(cms, loc, updated);

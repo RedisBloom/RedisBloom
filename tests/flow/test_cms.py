@@ -688,6 +688,33 @@ class testCMS():
                                            lambda _old: cells, require_same_length=True)
         self.env.expect('RESTORE', 'bad', 0, bad).error().contains('Bad data format')
 
+    def test_incrby_across_loc_scratch_boundary(self):
+        # CMS_IncrBy caches one cell location per row in a fixed stack buffer
+        # (CMS_LOC_SCRATCH == 64) so its second pass skips the hash and the modulo.
+        # Above that depth the cache is disabled and the second pass recomputes, so
+        # both sides of the boundary must behave identically.
+        for depth in (63, 64, 65, 130):
+            self.cmd('FLUSHALL')
+            key = 'd{}'.format(depth)
+            self.assertOk(self.cmd('cms.initbydim', key, '50', depth))
+            self.assertEqual([10], self.cmd('cms.incrby', key, 'a', '10'))
+            self.assertEqual([10], self.cmd('cms.query', key, 'a'))
+
+            # decrement, then a rejected decrement must leave everything untouched
+            self.assertEqual([4], self.cmd('cms.incrby', key, 'a', '-6'))
+            res = self.cmd('cms.incrby', key, 'a', '-5')
+            self.env.assertResponseError(res[0], contained='CMS: INCRBY underflow')
+            self.assertEqual([4], self.cmd('cms.query', key, 'a'))
+            self.assertEqual(['width', 50, 'depth', depth, 'count', 4, 'cell size', 4],
+                             self.cmd('cms.info', key))
+
+            # a rejected overflow must leave everything untouched too
+            self.assertOk(self.cmd('cms.initbydim', 'small', '50', depth, 'CELL_SIZE', '1'))
+            self.assertEqual([255], self.cmd('cms.incrby', 'small', 'b', '255'))
+            res = self.cmd('cms.incrby', 'small', 'b', '1')
+            self.env.assertResponseError(res[0], contained='CMS: INCRBY overflow')
+            self.assertEqual([255], self.cmd('cms.query', 'small', 'b'))
+
     def test_incrby_underflow_corrupt_counter(self):
         # A sketch whose total count disagrees with its cell array cannot be reached by
         # any sequence of commands - only by a crafted RESTORE, since the load path
