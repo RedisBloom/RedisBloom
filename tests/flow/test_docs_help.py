@@ -270,7 +270,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'cms.incrby',
-            summary='Changes the count of one or more items by increment, which may be negative',
+            summary='Increases the count of one or more items by increment, which may be negative',
             complexity='O(n) where n is the number of items',
             arity=-4,
             since='2.0.0',

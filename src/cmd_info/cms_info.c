@@ -26,7 +26,7 @@ static const RedisModuleCommandArg CMS_INCRBY_ARGS[] = {
 
 static const RedisModuleCommandInfo CMS_INCRBY_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Changes the count of one or more items by increment, which may be negative",
+    .summary = "Increases the count of one or more items by increment, which may be negative",
     .complexity = "O(n) where n is the number of items",
     .since = "2.0.0",
     .arity = -4,

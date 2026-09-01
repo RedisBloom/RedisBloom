@@ -198,31 +198,31 @@
         "type": "oneof",
         "optional": true,
         "arguments": [
-            {
-              "name": "capacity",
-              "type": "pure-token",
-              "token": "CAPACITY"
-            },
-            {
-              "name": "size",
-              "type": "pure-token",
-              "token": "SIZE"
-            },
-            {
-              "name": "filters",
-              "type": "pure-token",
-              "token": "FILTERS"
-            },
-            {
-              "name": "items",
-              "type": "pure-token",
-              "token": "ITEMS"
-            },
-            {
-              "name": "expansion",
-              "type": "pure-token",
-              "token": "EXPANSION"
-            }
+          {
+            "name": "capacity",
+            "type": "pure-token",
+            "token": "CAPACITY"
+          },
+          {
+            "name": "size",
+            "type": "pure-token",
+            "token": "SIZE"
+          },
+          {
+            "name": "filters",
+            "type": "pure-token",
+            "token": "FILTERS"
+          },
+          {
+            "name": "items",
+            "type": "pure-token",
+            "token": "ITEMS"
+          },
+          {
+            "name": "expansion",
+            "type": "pure-token",
+            "token": "EXPANSION"
+          }
         ]
       }
     ],
@@ -561,7 +561,7 @@
     "group": "cms"
   },
   "CMS.INCRBY": {
-    "summary": "Changes the count of one or more items by increment, which may be negative",
+    "summary": "Increases the count of one or more items by increment, which may be negative",
     "complexity": "O(n) where n is the number of items",
     "arguments": [
       {
@@ -858,8 +858,7 @@
       {
         "name": "destination-key",
         "type": "key"
-      }
-      ,
+      },
       {
         "name": "numkeys",
         "type": "integer"
