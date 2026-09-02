@@ -688,11 +688,28 @@ class testCMS():
                                            lambda _old: cells, require_same_length=True)
         self.env.expect('RESTORE', 'bad', 0, bad).error().contains('Bad data format')
 
-    def test_incrby_across_loc_scratch_boundary(self):
-        # CMS_IncrBy caches one cell location per row in a fixed stack buffer
-        # (CMS_LOC_SCRATCH == 64) so its second pass skips the hash and the modulo.
-        # Above that depth the cache is disabled and the second pass recomputes, so
-        # both sides of the boundary must behave identically.
+    def test_incrby_rejection_undoes_partial_writes(self):
+        self.cmd('FLUSHALL')
+        self.assertOk(self.cmd('cms.initbydim', 'cms', '2', '4', 'CELL_SIZE', '1'))
+        self.assertEqual([200], self.cmd('cms.incrby', 'cms', 'filler', '200'))
+
+        before_a = self.cmd('cms.query', 'cms', 'a')
+        before_filler = self.cmd('cms.query', 'cms', 'filler')
+
+        res = self.cmd('cms.incrby', 'cms', 'a', '100')
+        self.env.assertResponseError(res[0], contained='CMS: INCRBY overflow')
+
+        self.assertEqual(before_a, self.cmd('cms.query', 'cms', 'a'))
+        self.assertEqual(before_filler, self.cmd('cms.query', 'cms', 'filler'))
+        self.assertEqual(['width', 2, 'depth', 4, 'count', 200, 'cell size', 1],
+                         self.cmd('cms.info', 'cms'))
+
+        # the sketch is still fully usable afterwards
+        self.assertEqual([201], self.cmd('cms.incrby', 'cms', 'filler', '1'))
+
+    def test_incrby_deep_sketches(self):
+        # Deep sketches walk many rows per operation; increments, decrements and
+        # rejected operations must behave the same at any depth.
         for depth in (63, 64, 65, 130):
             self.cmd('FLUSHALL')
             key = 'd{}'.format(depth)

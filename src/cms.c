@@ -100,10 +100,6 @@ void CMS_Destroy(CMSketch *cms) {
     CMS_FREE(cms);
 }
 
-// 64 is the deepest sketch CMS_DimFromProb yields above a ~1e-19 error probability,
-// and costs only 512 B of stack.
-#define CMS_LOC_SCRATCH 64
-
 CMSStatus CMS_IncrBy(CMSketch *cms, const char *item, size_t itemlen, int64_t value,
                      uint64_t *count) {
     assert(cms);
@@ -113,42 +109,30 @@ CMSStatus CMS_IncrBy(CMSketch *cms, const char *item, size_t itemlen, int64_t va
     const uint64_t cellMax = CMS_CELL_MAX(cms->cellSize);
     const uint64_t magnitude = (value < 0) ? -(uint64_t)value : (uint64_t)value;
 
-    size_t scratch[CMS_LOC_SCRATCH];
-
-    // First pass validates the whole operation, so that a rejected increment
-    // leaves the sketch untouched.
-    for (size_t i = 0; i < cms->depth; ++i) {
-        const size_t loc = (CMS_HASH(item, itemlen, i) % cms->width) + (i * cms->width);
-        if (i < CMS_LOC_SCRATCH) {
-            scratch[i] = loc;
-        }
-        const uint64_t cell = cellGet(cms, loc);
-        if (value > 0 && magnitude > cellMax - cell) {
-            return CMS_STATUS_OVERFLOW;
-        }
-        if (value < 0 && magnitude > cell) {
-            return CMS_STATUS_UNDERFLOW;
-        }
-    }
-    // The total count is replied as a RESP integer, so it is capped the same way
-    // a cell is: a row holds `width` cells, so it could otherwise exceed INT64_MAX.
     if (value > 0 && magnitude > (uint64_t)INT64_MAX - cms->counter) {
         return CMS_STATUS_OVERFLOW;
     }
-    // No sequence of commands can make counter smaller than a row's cells, but a
-    // RESTORE payload can: the load path validates the dimensions and the buffer
-    // length, never counter against the array. Without this, counter would wrap.
     if (value < 0 && magnitude > cms->counter) {
         return CMS_STATUS_UNDERFLOW;
     }
 
     uint64_t minCount = UINT64_MAX;
     for (size_t i = 0; i < cms->depth; ++i) {
-        const size_t loc = (i < CMS_LOC_SCRATCH)
-                               ? scratch[i]
-                               : (CMS_HASH(item, itemlen, i) % cms->width) + (i * cms->width);
-        const uint64_t updated =
-            (value < 0) ? cellGet(cms, loc) - magnitude : cellGet(cms, loc) + magnitude;
+        const size_t loc = (CMS_HASH(item, itemlen, i) % cms->width) + (i * cms->width);
+        const uint64_t cell = cellGet(cms, loc);
+
+        // On error path, undo changes and return the error
+        if ((value > 0 && magnitude > cellMax - cell) || (value < 0 && magnitude > cell)) {
+            for (size_t j = 0; j < i; ++j) { // undo the rows already applied
+                const size_t undo = (CMS_HASH(item, itemlen, j) % cms->width) + (j * cms->width);
+                cellSet(cms, undo,
+                        (value < 0) ? cellGet(cms, undo) + magnitude
+                                    : cellGet(cms, undo) - magnitude);
+            }
+            return (value > 0) ? CMS_STATUS_OVERFLOW : CMS_STATUS_UNDERFLOW;
+        }
+
+        const uint64_t updated = (value < 0) ? cell - magnitude : cell + magnitude;
         cellSet(cms, loc, updated);
         minCount = min(minCount, updated);
     }
