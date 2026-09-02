@@ -55,6 +55,15 @@ static inline void cellSet(CMSketch *cms, size_t loc, uint64_t value) {
     }
 }
 
+static void cmsUndoIncrByRows(CMSketch *cms, const char *item, size_t itemlen, size_t rowsApplied,
+                              int64_t value, uint64_t magnitude) {
+    for (size_t j = 0; j < rowsApplied; ++j) { // undo the rows already applied
+        const size_t undo = (CMS_HASH(item, itemlen, j) % cms->width) + (j * cms->width);
+        cellSet(cms, undo,
+                (value < 0) ? cellGet(cms, undo) + magnitude : cellGet(cms, undo) - magnitude);
+    }
+}
+
 CMSketch *NewCMSketch(size_t width, size_t depth, uint8_t cellSize) {
     assert(width > 0);
     assert(depth > 0);
@@ -123,12 +132,7 @@ CMSStatus CMS_IncrBy(CMSketch *cms, const char *item, size_t itemlen, int64_t va
 
         // On error path, undo changes and return the error
         if ((value > 0 && magnitude > cellMax - cell) || (value < 0 && magnitude > cell)) {
-            for (size_t j = 0; j < i; ++j) { // undo the rows already applied
-                const size_t undo = (CMS_HASH(item, itemlen, j) % cms->width) + (j * cms->width);
-                cellSet(cms, undo,
-                        (value < 0) ? cellGet(cms, undo) + magnitude
-                                    : cellGet(cms, undo) - magnitude);
-            }
+            cmsUndoIncrByRows(cms, item, itemlen, i, value, magnitude);
             return (value > 0) ? CMS_STATUS_OVERFLOW : CMS_STATUS_UNDERFLOW;
         }
 
