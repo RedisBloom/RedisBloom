@@ -72,7 +72,8 @@ int statisticsTest(double width, int depth) {
     int *srcArray = calloc(AMOUNT, sizeof(int));
     int *errArray = calloc(AMOUNT, sizeof(int));
     double resArray[AMOUNT / STAT_SIZE][2];
-    CMSketch *cms = NewCMSketch(AMOUNT * width, depth);
+    CMSketch *cms = NewCMSketch(AMOUNT * width, depth, CMS_DEFAULT_CELL_SIZE);
+    uint64_t count = 0;
 
     srand(0);
     for (int i = 0; i < AMOUNT; ++i) {
@@ -85,7 +86,7 @@ int statisticsTest(double width, int depth) {
         for (j = 0; j < STAT_SIZE; ++j) {
             idx = STAT_SIZE * i + j;
             sprintf(str, "%d", idx);
-            CMS_IncrBy(cms, str, strlen(str), srcArray[idx]);
+            CMS_IncrBy(cms, str, strlen(str), srcArray[idx], &count);
         }
 
         /*for (k = 0, errIdx = 0; k < idx; ++k) {
