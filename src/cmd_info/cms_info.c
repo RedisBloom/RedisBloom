@@ -26,7 +26,7 @@ static const RedisModuleCommandArg CMS_INCRBY_ARGS[] = {
 
 static const RedisModuleCommandInfo CMS_INCRBY_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
-    .summary = "Increases the count of one or more items by increment",
+    .summary = "Increases the count of one or more items by increment, which may be negative",
     .complexity = "O(n) where n is the number of items",
     .since = "2.0.0",
     .arity = -4,
@@ -60,7 +60,7 @@ static const RedisModuleCommandInfo CMS_INFO_INFO = {
 };
 
 // ===============================
-// CMS.INITBYDIM key width depth
+// CMS.INITBYDIM key width depth [CELL_SIZE 1|2|4|8]
 // ===============================
 static const RedisModuleCommandKeySpec CMS_INITBYDIM_KEYSPECS[] = {
     {.flags = REDISMODULE_CMD_KEY_RW,
@@ -74,6 +74,16 @@ static const RedisModuleCommandArg CMS_INITBYDIM_ARGS[] = {
     {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
     {.name = "width", .type = REDISMODULE_ARG_TYPE_INTEGER},
     {.name = "depth", .type = REDISMODULE_ARG_TYPE_INTEGER},
+    {
+        .name = "cellsize",
+        .type = REDISMODULE_ARG_TYPE_BLOCK,
+        .flags = REDISMODULE_CMD_ARG_OPTIONAL,
+        .subargs = (RedisModuleCommandArg[]){{.name = "cell_size",
+                                              .type = REDISMODULE_ARG_TYPE_PURE_TOKEN,
+                                              .token = "CELL_SIZE"},
+                                             {.name = "size", .type = REDISMODULE_ARG_TYPE_INTEGER},
+                                             {0}},
+    },
     {0}};
 
 static const RedisModuleCommandInfo CMS_INITBYDIM_INFO = {
@@ -81,13 +91,13 @@ static const RedisModuleCommandInfo CMS_INITBYDIM_INFO = {
     .summary = "Initializes a Count-Min Sketch to dimensions specified by user",
     .complexity = "O(1)",
     .since = "2.0.0",
-    .arity = 4,
+    .arity = -4,
     .key_specs = (RedisModuleCommandKeySpec *)CMS_INITBYDIM_KEYSPECS,
     .args = (RedisModuleCommandArg *)CMS_INITBYDIM_ARGS,
 };
 
 // ===============================
-// CMS.INITBYPROB key error probability
+// CMS.INITBYPROB key error probability [CELL_SIZE 1|2|4|8]
 // ===============================
 static const RedisModuleCommandKeySpec CMS_INITBYPROB_KEYSPECS[] = {
     {.flags = REDISMODULE_CMD_KEY_RW,
@@ -101,6 +111,16 @@ static const RedisModuleCommandArg CMS_INITBYPROB_ARGS[] = {
     {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0},
     {.name = "error", .type = REDISMODULE_ARG_TYPE_DOUBLE},
     {.name = "probability", .type = REDISMODULE_ARG_TYPE_DOUBLE},
+    {
+        .name = "cellsize",
+        .type = REDISMODULE_ARG_TYPE_BLOCK,
+        .flags = REDISMODULE_CMD_ARG_OPTIONAL,
+        .subargs = (RedisModuleCommandArg[]){{.name = "cell_size",
+                                              .type = REDISMODULE_ARG_TYPE_PURE_TOKEN,
+                                              .token = "CELL_SIZE"},
+                                             {.name = "size", .type = REDISMODULE_ARG_TYPE_INTEGER},
+                                             {0}},
+    },
     {0}};
 
 static const RedisModuleCommandInfo CMS_INITBYPROB_INFO = {
@@ -108,7 +128,7 @@ static const RedisModuleCommandInfo CMS_INITBYPROB_INFO = {
     .summary = "Initializes a Count-Min Sketch to accommodate requested tolerances.",
     .complexity = "O(1)",
     .since = "2.0.0",
-    .arity = 4,
+    .arity = -4,
     .key_specs = (RedisModuleCommandKeySpec *)CMS_INITBYPROB_KEYSPECS,
     .args = (RedisModuleCommandArg *)CMS_INITBYPROB_ARGS,
 };

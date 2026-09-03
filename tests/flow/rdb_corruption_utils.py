@@ -162,3 +162,77 @@ def rewrite_largest_module_string(dump_payload: bytes, transform_fn, require_sam
     )
     new_crc = crc64_redis(new_value + version)
     return new_value + version + struct.pack("<Q", new_crc)
+
+
+def rewrite_module_uint(dump_payload: bytes, index: int, new_value: int) -> bytes:
+    """Rewrite the index-th MODULE_OPCODE_UINT field and update the DUMP payload CRC.
+
+    Lets a test build a payload whose scalar fields disagree with the rest of the
+    value - a state no sequence of commands can reach, but a crafted RESTORE can.
+    """
+    if len(dump_payload) < 10:
+        raise RuntimeError("DUMP payload too small")
+    value = dump_payload[:-10]
+    version = dump_payload[-10:-8]
+
+    pos = 1
+    _, is_enc, pos, _ = load_len(value, pos)  # module id
+    if is_enc:
+        raise RuntimeError("Unexpected encoded module-id length")
+
+    out = bytearray(value[:pos])
+    seen = 0
+    rewritten = False
+    while pos < len(value):
+        op_start = pos
+        opcode, is_enc, pos, _ = load_len(value, pos)
+        if is_enc:
+            raise RuntimeError(f"Unexpected encoded opcode at pos={pos}")
+        after_opcode = pos
+
+        if opcode == RDB_MODULE_OPCODE_EOF:
+            out += value[op_start:]
+            break
+
+        if opcode == RDB_MODULE_OPCODE_UINT:
+            _, is_enc2, pos, _ = load_len(value, pos)
+            if is_enc2:
+                raise RuntimeError("Unexpected encoded value in MODULE_OPCODE_UINT")
+            if seen == index:
+                out += value[op_start:after_opcode] + encode_len(new_value)
+                rewritten = True
+            else:
+                out += value[op_start:pos]
+            seen += 1
+            continue
+
+        if opcode == RDB_MODULE_OPCODE_DOUBLE:
+            pos += 8
+            out += value[op_start:pos]
+            continue
+
+        if opcode == RDB_MODULE_OPCODE_STRING:
+            slen_or_enc, is_str_enc, pos, enc = load_len(value, pos)
+            if not is_str_enc:
+                pos += slen_or_enc
+            else:
+                if enc != RDB_ENC_LZF:
+                    raise RuntimeError(f"Unsupported encoded string type: {enc}")
+                clen, is_enc3, pos, _ = load_len(value, pos)
+                _, is_enc4, pos, _ = load_len(value, pos)  # uncompressed length
+                if is_enc3 or is_enc4:
+                    raise RuntimeError("Unexpected encoded compressed/uncompressed length")
+                pos += clen
+            if pos > len(value):
+                raise RuntimeError("String overruns buffer while parsing")
+            out += value[op_start:pos]
+            continue
+
+        raise RuntimeError(f"Unknown module opcode {opcode} at pos={pos}")
+
+    if not rewritten:
+        raise RuntimeError(f"No MODULE_OPCODE_UINT at index {index}")
+
+    new_body = bytes(out)
+    new_crc = crc64_redis(new_body + version)
+    return new_body + version + struct.pack("<Q", new_crc)
