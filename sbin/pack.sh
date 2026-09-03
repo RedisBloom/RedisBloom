@@ -219,14 +219,10 @@ pack_ramp() {
 		fi
 	fi
 
-	# For nightly builds, create files in both beta and snapshots directories
+	# For nightly builds, create versioned files in the beta directory
 	echo "# Debug: SNAPSHOT=$SNAPSHOT, BETA_VERSION=$BETA_VERSION"
 	if [[ $SNAPSHOT == 1 && -n $BETA_VERSION ]]; then
-		echo "# Creating beta and branch files for beta build..."
-		# Get the original branch name (without beta version)
-		local original_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "master")
-		original_branch=${original_branch//[^A-Za-z0-9._-]/_}
-		
+		echo "# Creating beta files for beta build..."
 		# Create beta directory for versioned files
 		mkdir -p $ARTDIR/beta
 		
@@ -242,19 +238,6 @@ pack_ramp() {
 		if [[ -f $ARTDIR/$packdir/$fq_package_debug ]]; then
 			runn cp $ARTDIR/$packdir/$fq_package_debug $ARTDIR/beta/$versioned_package_debug
 			echo "# Created beta debug version $(realpath $ARTDIR/beta/$versioned_package_debug)"
-		fi
-		
-		# Create branch-named files in snapshots directory (overwrite the versioned ones)
-		local branch_package=$stem.${original_branch}${VARIANT}.zip
-		local branch_package_debug=$stem_debug.${original_branch}${VARIANT}.zip
-		
-		if [[ -f $ARTDIR/$packdir/$fq_package ]]; then
-			runn cp $ARTDIR/$packdir/$fq_package $ARTDIR/$packdir/$branch_package
-			echo "# Created branch snapshot $(realpath $ARTDIR/$packdir/$branch_package)"
-		fi
-		if [[ -f $ARTDIR/$packdir/$fq_package_debug ]]; then
-			runn cp $ARTDIR/$packdir/$fq_package_debug $ARTDIR/$packdir/$branch_package_debug
-			echo "# Created branch debug snapshot $(realpath $ARTDIR/$packdir/$branch_package_debug)"
 		fi
 	fi
 
