@@ -24,20 +24,21 @@ int main() {
 }
 
 int visualTest() {
-    CMSketch *a = NewCMSketch(20, 5);
-    CMSketch *b = NewCMSketch(20, 5);
+    uint64_t count = 0;
+    CMSketch *a = NewCMSketch(20, 5, CMS_DEFAULT_CELL_SIZE);
+    CMSketch *b = NewCMSketch(20, 5, CMS_DEFAULT_CELL_SIZE);
 
-    CMS_IncrBy(a, "C", 1, 1);
+    CMS_IncrBy(a, "C", 1, 1, &count);
     CMS_Print(a);
-    CMS_IncrBy(a, "C", 1, 15);
+    CMS_IncrBy(a, "C", 1, 15, &count);
     CMS_Print(a);
-    CMS_IncrBy(b, "C", 1, 100);
+    CMS_IncrBy(b, "C", 1, 100, &count);
     CMS_Print(b);
-    CMS_IncrBy(b, "M", 1, 35);
+    CMS_IncrBy(b, "M", 1, 35, &count);
     CMS_Print(b);
-    CMS_IncrBy(b, "S", 1, 87);
+    CMS_IncrBy(b, "S", 1, 87, &count);
     CMS_Print(b);
-    CMS_IncrBy(b, "CMS", 3, 12);
+    CMS_IncrBy(b, "CMS", 3, 12, &count);
     CMS_Print(b);
 
     printf("C count at a is %lu\n", CMS_Query(a, "C", 1));
@@ -46,7 +47,7 @@ int visualTest() {
     printf("S count at b is %lu\n", CMS_Query(b, "S", 1));
     printf("CMS count at b is %lu\n", CMS_Query(b, "CMS", 3));
 
-    CMSketch *c = NewCMSketch(20, 5);
+    CMSketch *c = NewCMSketch(20, 5, CMS_DEFAULT_CELL_SIZE);
     const CMSketch *list[2] = {a, b};
     long long weight[2] = {3, 2};
     CMS_Merge(c, 2, list, weight);
@@ -62,7 +63,8 @@ int visualTest() {
 }
 
 int massiveTest() {
-    CMSketch *cms = NewCMSketch(AMOUNT * 2.7, 5);
+    CMSketch *cms = NewCMSketch(AMOUNT * 2.7, 5, CMS_DEFAULT_CELL_SIZE);
+    uint64_t count = 0;
     int original[AMOUNT] = {0};
     int result[AMOUNT] = {0};
     int totalErr = 0;
@@ -77,7 +79,7 @@ int massiveTest() {
     for (int i = 0; i < AMOUNT; ++i) {
         sprintf(str, "%d", i);
         for (int j = 0; j < original[i]; ++j) {
-            CMS_IncrBy(cms, str, strlen(str), 1);
+            CMS_IncrBy(cms, str, strlen(str), 1, &count);
         }
     }
     clock_t end = clock();

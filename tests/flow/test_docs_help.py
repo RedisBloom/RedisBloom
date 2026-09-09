@@ -270,7 +270,7 @@ class testCommandDocsAndHelp():
             env.skip()
         assert_docs(
             env, 'cms.incrby',
-            summary='Increases the count of one or more items by increment',
+            summary='Increases the count of one or more items by increment, which may be negative',
             complexity='O(n) where n is the number of items',
             arity=-4,
             since='2.0.0',
@@ -300,9 +300,10 @@ class testCommandDocsAndHelp():
             env, 'cms.initbydim',
             summary='Initializes a Count-Min Sketch to dimensions specified by user',
             complexity='O(1)',
-            arity=4,
+            arity=-4,
             since='2.0.0',
-            args=[('key', 'key'), ('width', 'integer'), ('depth', 'integer')],
+            args=[('key', 'key'), ('width', 'integer'), ('depth', 'integer'),
+                  ('cellsize', 'block')],
             key_pos=1,
         )
 
@@ -314,9 +315,10 @@ class testCommandDocsAndHelp():
             env, 'cms.initbyprob',
             summary='Initializes a Count-Min Sketch to accommodate requested tolerances.',
             complexity='O(1)',
-            arity=4,
+            arity=-4,
             since='2.0.0',
-            args=[('key', 'key'), ('error', 'double'), ('probability', 'double')],
+            args=[('key', 'key'), ('error', 'double'), ('probability', 'double'),
+                  ('cellsize', 'block')],
             key_pos=1,
         )
 
