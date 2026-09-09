@@ -15,7 +15,7 @@
 #define DEFAULT_WIDTH 2.7
 #define DEFAULT_DEPTH 5
 
-// Version 1 added the per-sketch cell size to the serialized form.
+// Version 1 added the per-sketch cell_size to the serialized form.
 #define CMS_ENC_VER 1
 
 static inline bool _is_resp3(RedisModuleCtx *ctx) {
