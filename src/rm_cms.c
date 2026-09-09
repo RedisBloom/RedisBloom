@@ -329,7 +329,7 @@ int CMSKetch_Info(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_ReplyWithLongLong(ctx, cms->depth);
     RedisModule_ReplyWithSimpleString(ctx, "count");
     RedisModule_ReplyWithLongLong(ctx, cms->counter);
-    RedisModule_ReplyWithSimpleString(ctx, "cell size");
+    RedisModule_ReplyWithSimpleString(ctx, "cell_size");
     RedisModule_ReplyWithLongLong(ctx, cms->cellSize);
 
     return REDISMODULE_OK;

@@ -22,13 +22,13 @@ class testCMS():
         self.assertOk(self.cmd('cms.initbydim', 'cms1', '20', '5'))
         self.assertEqual([5], self.cmd('cms.incrby', 'cms1', 'a', '5'))
         self.assertEqual([5], self.cmd('cms.query', 'cms1', 'a'))
-        self.assertEqual(['width', 20, 'depth', 5, 'count', 5, 'cell size', 4],
+        self.assertEqual(['width', 20, 'depth', 5, 'count', 5, 'cell_size', 4],
                          self.cmd('cms.info', 'cms1'))
 
         self.assertOk(self.cmd('cms.initbyprob', 'cms2', '0.001', '0.01'))
         self.assertEqual([5], self.cmd('cms.incrby', 'cms2', 'a', '5'))
         self.assertEqual([5], self.cmd('cms.query', 'cms2', 'a'))
-        self.assertEqual(['width', 2000, 'depth', 7, 'count', 5, 'cell size', 4],
+        self.assertEqual(['width', 2000, 'depth', 7, 'count', 5, 'cell_size', 4],
                          self.cmd('cms.info', 'cms2'))
         yield 1
         self.env.dumpAndReload()
@@ -125,12 +125,12 @@ class testCMS():
 
         # empty small batch
         self.assertOk(self.cmd('cms.merge', 'small_3{1}', 2, 'small_1{1}', 'small_2{1}'))
-        self.assertEqual(['width', 20, 'depth', 5, 'count', 0, 'cell size', 4],
+        self.assertEqual(['width', 20, 'depth', 5, 'count', 0, 'cell_size', 4],
                          self.cmd('cms.info', 'small_3{1}'))
 
         # empty large batch
         self.assertOk(self.cmd('cms.merge', 'large_6{1}', 2, 'large_4{1}', 'large_5{1}'))
-        self.assertEqual(['width', 2000, 'depth', 10, 'count', 0, 'cell size', 4],
+        self.assertEqual(['width', 2000, 'depth', 10, 'count', 0, 'cell_size', 4],
                          self.cmd('cms.info', 'large_6{1}'))
 
         # non-empty small batch
@@ -232,7 +232,7 @@ class testCMS():
         self.assertOk(self.cmd('cms.initbydim', 'cms1', '2', '2'))
         self.assertEqual([10, 42], self.cmd('cms.incrby', 'cms1', 'foo', '10', 'bar', '42'))
         self.assertEqual([10, 42], self.cmd('cms.query', 'cms1', 'foo', 'bar'))
-        self.assertEqual(['width', 2, 'depth', 2, 'count', 52, 'cell size', 4],
+        self.assertEqual(['width', 2, 'depth', 2, 'count', 52, 'cell_size', 4],
                          self.cmd('cms.info', 'cms1'))
         self.assertEqual([10, 42], self.cmd('cms.incrby', 'cms1', 'foo', '0', 'bar', '0'))
 
@@ -269,7 +269,7 @@ class testCMS():
 
         # Delete cms3{t} from cms5{t} and store in cms6{t}
         self.env.expect('cms.merge', 'cms6{t}', 2, 'cms5{t}', 'cms3{t}', 'weights', '1', '-1').ok()
-        self.assertEqual(['width', 1000, 'depth', 5, 'count', 200, 'cell size', 4], self.cmd('cms.info', 'cms6{t}'))
+        self.assertEqual(['width', 1000, 'depth', 5, 'count', 200, 'cell_size', 4], self.cmd('cms.info', 'cms6{t}'))
         # Validate cms6{t} has cms1{t} and cms2{t} only.
         for i in range(0, 100):
             self.assertEqual([1], self.cmd('cms.query', 'cms6{t}', 'foo' + str(i)))
@@ -278,7 +278,7 @@ class testCMS():
 
         # Same test as above, negative weight first.
         self.env.expect('cms.merge', 'cms6{t}', 2, 'cms3{t}', 'cms5{t}', 'weights', '-1', '1').ok()
-        self.assertEqual(['width', 1000, 'depth', 5, 'count', 200, 'cell size', 4], self.cmd('cms.info', 'cms6{t}'))
+        self.assertEqual(['width', 1000, 'depth', 5, 'count', 200, 'cell_size', 4], self.cmd('cms.info', 'cms6{t}'))
         # Validate cms6{t} has cms1{t} and cms2{t} only.
         for i in range(0, 100):
             self.assertEqual([1], self.cmd('cms.query', 'cms6{t}', 'foo' + str(i)))
@@ -306,7 +306,7 @@ class testCMS():
 
         self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms2{t}',
                         'weights', '1', '-1').ok()
-        self.assertEqual(['width', 3000, 'depth', 30, 'count', 0, 'cell size', 4],
+        self.assertEqual(['width', 3000, 'depth', 30, 'count', 0, 'cell_size', 4],
                          self.cmd('cms.info', 'cms1{t}'))
 
         for i in range(0, 1000):
@@ -314,7 +314,7 @@ class testCMS():
 
         self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms2{t}',
                         'weights', '1', '2').ok()
-        self.assertEqual(['width', 3000, 'depth', 30, 'count', 2000, 'cell size', 4],
+        self.assertEqual(['width', 3000, 'depth', 30, 'count', 2000, 'cell_size', 4],
                          self.cmd('cms.info', 'cms1{t}'))
 
         for i in range(0, 1000):
@@ -322,7 +322,7 @@ class testCMS():
 
         self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms2{t}',
                         'weights', '1', '-1').ok()
-        self.assertEqual(['width', 3000, 'depth', 30, 'count', 1000, 'cell size', 4],
+        self.assertEqual(['width', 3000, 'depth', 30, 'count', 1000, 'cell_size', 4],
                          self.cmd('cms.info', 'cms1{t}'))
         for i in range(0, 1000):
             self.assertEqual([1], self.cmd('cms.query', 'cms1{t}', 'foo' + str(i)))
@@ -372,9 +372,9 @@ class testCMS():
                         'weights', '-1', '-1').error().contains('CMS: MERGE overflow')
 
         # Validate keys did not change
-        self.assertEqual(['width', 2, 'depth', 2, 'count', 4000000000, 'cell size', 4],
+        self.assertEqual(['width', 2, 'depth', 2, 'count', 4000000000, 'cell_size', 4],
                          self.cmd('cms.info', 'cms1{t}'))
-        self.assertEqual(['width', 2, 'depth', 2, 'count', 4000000000, 'cell size', 4],
+        self.assertEqual(['width', 2, 'depth', 2, 'count', 4000000000, 'cell_size', 4],
                          self.cmd('cms.info', 'cms2{t}'))
         self.assertEqual([4000000000], self.cmd('cms.query', 'cms1{t}', 'foo'))
         self.assertEqual([4000000000], self.cmd('cms.query', 'cms2{t}', 'foo'))
@@ -402,15 +402,15 @@ class testCMS():
                         'weights', '-5', '-4').error().contains('CMS: MERGE overflow')
 
         # Validate keys did not change
-        self.assertEqual(['width', 2, 'depth', 2, 'count', 4, 'cell size', 4], self.cmd('cms.info', 'cms1{t}'))
-        self.assertEqual(['width', 2, 'depth', 2, 'count', 4, 'cell size', 4], self.cmd('cms.info', 'cms2{t}'))
+        self.assertEqual(['width', 2, 'depth', 2, 'count', 4, 'cell_size', 4], self.cmd('cms.info', 'cms1{t}'))
+        self.assertEqual(['width', 2, 'depth', 2, 'count', 4, 'cell_size', 4], self.cmd('cms.info', 'cms2{t}'))
         self.assertEqual([4], self.cmd('cms.query', 'cms1{t}', 'foo'))
         self.assertEqual([4], self.cmd('cms.query', 'cms2{t}', 'foo'))
 
         # An extreme test for a success scenario
         self.env.expect('cms.merge', 'cms1{t}', 2, 'cms1{t}', 'cms2{t}',
                         'weights', '-922337203685477500', '922337203685477502').ok()
-        self.assertEqual(['width', 2, 'depth', 2, 'count', 8, 'cell size', 4], self.cmd('cms.info', 'cms1{t}'))
+        self.assertEqual(['width', 2, 'depth', 2, 'count', 8, 'cell_size', 4], self.cmd('cms.info', 'cms1{t}'))
         self.assertEqual([8], self.cmd('cms.query', 'cms1{t}', 'foo'))
 
     def test_watch(self):
@@ -442,17 +442,17 @@ class testCMS():
         for cell_size, width, depth in ((1, 20, 5), (2, 20, 5), (4, 20, 5), (8, 20, 5)):
             key = 'dim{}'.format(cell_size)
             self.assertOk(self.cmd('cms.initbydim', key, width, depth, 'CELL_SIZE', cell_size))
-            self.assertEqual(['width', width, 'depth', depth, 'count', 0, 'cell size', cell_size],
+            self.assertEqual(['width', width, 'depth', depth, 'count', 0, 'cell_size', cell_size],
                              self.cmd('cms.info', key))
 
             key = 'prob{}'.format(cell_size)
             self.assertOk(self.cmd('cms.initbyprob', key, '0.001', '0.01', 'cell_size', cell_size))
-            self.assertEqual(['width', 2000, 'depth', 7, 'count', 0, 'cell size', cell_size],
+            self.assertEqual(['width', 2000, 'depth', 7, 'count', 0, 'cell_size', cell_size],
                              self.cmd('cms.info', key))
 
         # no CELL_SIZE keeps the historical 4-byte cells
         self.assertOk(self.cmd('cms.initbydim', 'default', '20', '5'))
-        self.assertEqual(['width', 20, 'depth', 5, 'count', 0, 'cell size', 4],
+        self.assertEqual(['width', 20, 'depth', 5, 'count', 0, 'cell_size', 4],
                          self.cmd('cms.info', 'default'))
 
     def test_cell_size_validation(self):
@@ -493,7 +493,7 @@ class testCMS():
             res = self.cmd('cms.incrby', 'cms', 'a', 1)
             self.env.assertResponseError(res[0], contained='CMS: INCRBY overflow')
             self.assertEqual([maximum], self.cmd('cms.query', 'cms', 'a'))
-            self.assertEqual(['width', 1, 'depth', 1, 'count', maximum, 'cell size', cell_size],
+            self.assertEqual(['width', 1, 'depth', 1, 'count', maximum, 'cell_size', cell_size],
                              self.cmd('cms.info', 'cms'))
 
     def test_cell_size_overflow_in_one_shot(self):
@@ -503,7 +503,7 @@ class testCMS():
         res = self.cmd('cms.incrby', 'cms', 'a', 256)
         self.env.assertResponseError(res[0], contained='CMS: INCRBY overflow')
         self.assertEqual([0], self.cmd('cms.query', 'cms', 'a'))
-        self.assertEqual(['width', 20, 'depth', 5, 'count', 0, 'cell size', 1],
+        self.assertEqual(['width', 20, 'depth', 5, 'count', 0, 'cell_size', 1],
                          self.cmd('cms.info', 'cms'))
 
     def test_cell_size_persistence(self):
@@ -517,7 +517,7 @@ class testCMS():
 
         for cell_size in (1, 2, 4, 8):
             key = 'cms{}'.format(cell_size)
-            self.assertEqual(['width', 20, 'depth', 5, 'count', 7, 'cell size', cell_size],
+            self.assertEqual(['width', 20, 'depth', 5, 'count', 7, 'cell_size', cell_size],
                              self.cmd('cms.info', key))
             self.assertEqual([7], self.cmd('cms.query', key, 'a'))
 
@@ -533,7 +533,7 @@ class testCMS():
             self.assertEqual([7], self.cmd('cms.incrby', key, 'a', '7'))
             payload = raw.execute_command('DUMP', key)
             raw.execute_command('RESTORE', key + '_copy', 0, payload)
-            self.assertEqual(['width', 20, 'depth', 5, 'count', 7, 'cell size', cell_size],
+            self.assertEqual(['width', 20, 'depth', 5, 'count', 7, 'cell_size', cell_size],
                              self.cmd('cms.info', key + '_copy'))
             self.assertEqual([7], self.cmd('cms.query', key + '_copy', 'a'))
 
@@ -557,13 +557,13 @@ class testCMS():
         self.assertEqual([100], self.cmd('cms.incrby', 'cms', 'a', '100'))
         self.assertEqual([60], self.cmd('cms.incrby', 'cms', 'a', '-40'))
         self.assertEqual([60], self.cmd('cms.query', 'cms', 'a'))
-        self.assertEqual(['width', 1000, 'depth', 5, 'count', 60, 'cell size', 4],
+        self.assertEqual(['width', 1000, 'depth', 5, 'count', 60, 'cell_size', 4],
                          self.cmd('cms.info', 'cms'))
 
         # all the way down to zero
         self.assertEqual([0], self.cmd('cms.incrby', 'cms', 'a', '-60'))
         self.assertEqual([0], self.cmd('cms.query', 'cms', 'a'))
-        self.assertEqual(['width', 1000, 'depth', 5, 'count', 0, 'cell size', 4],
+        self.assertEqual(['width', 1000, 'depth', 5, 'count', 0, 'cell_size', 4],
                          self.cmd('cms.info', 'cms'))
 
         # a zero increment is a no-op that reports the current estimate
@@ -578,7 +578,7 @@ class testCMS():
         res = self.cmd('cms.incrby', 'cms', 'a', '-11')
         self.env.assertResponseError(res[0], contained='CMS: INCRBY underflow')
         self.assertEqual([10], self.cmd('cms.query', 'cms', 'a'))
-        self.assertEqual(['width', 1000, 'depth', 5, 'count', 10, 'cell size', 4],
+        self.assertEqual(['width', 1000, 'depth', 5, 'count', 10, 'cell_size', 4],
                          self.cmd('cms.info', 'cms'))
 
         # an item that was never added
@@ -591,7 +591,7 @@ class testCMS():
         self.env.assertResponseError(res[0], contained='CMS: INCRBY underflow')
         self.assertEqual(res[1:], [3, 6])
         self.assertEqual([6, 3], self.cmd('cms.query', 'cms', 'a', 'b'))
-        self.assertEqual(['width', 1000, 'depth', 5, 'count', 9, 'cell size', 4],
+        self.assertEqual(['width', 1000, 'depth', 5, 'count', 9, 'cell_size', 4],
                          self.cmd('cms.info', 'cms'))
 
     def test_decrby_cell_sizes(self):
@@ -621,7 +621,7 @@ class testCMS():
         self.assertEqual([7], self.cmd('cms.incrby', 'b{t}', 'x', '7'))
         self.assertOk(self.cmd('cms.merge', 'dest{t}', '2', 'a{t}', 'b{t}'))
         self.assertEqual([17], self.cmd('cms.query', 'dest{t}', 'x'))
-        self.assertEqual(['width', 20, 'depth', 5, 'count', 17, 'cell size', 2],
+        self.assertEqual(['width', 20, 'depth', 5, 'count', 17, 'cell_size', 2],
                          self.cmd('cms.info', 'dest{t}'))
 
         # merging past the destination cell maximum is rejected
@@ -652,7 +652,7 @@ class testCMS():
         res = self.cmd('cms.incrby', 'cms', other, '1')
         self.env.assertResponseError(res[0], contained='CMS: INCRBY overflow')
         self.assertEqual([0], self.cmd('cms.query', 'cms', other))
-        self.assertEqual(['width', 100, 'depth', 1, 'count', maximum, 'cell size', 8],
+        self.assertEqual(['width', 100, 'depth', 1, 'count', maximum, 'cell_size', 8],
                          self.cmd('cms.info', 'cms'))
 
     def _raw_connection(self):
@@ -701,7 +701,7 @@ class testCMS():
 
         self.assertEqual(before_a, self.cmd('cms.query', 'cms', 'a'))
         self.assertEqual(before_filler, self.cmd('cms.query', 'cms', 'filler'))
-        self.assertEqual(['width', 2, 'depth', 4, 'count', 200, 'cell size', 1],
+        self.assertEqual(['width', 2, 'depth', 4, 'count', 200, 'cell_size', 1],
                          self.cmd('cms.info', 'cms'))
 
         # the sketch is still fully usable afterwards
@@ -722,7 +722,7 @@ class testCMS():
             res = self.cmd('cms.incrby', key, 'a', '-5')
             self.env.assertResponseError(res[0], contained='CMS: INCRBY underflow')
             self.assertEqual([4], self.cmd('cms.query', key, 'a'))
-            self.assertEqual(['width', 50, 'depth', depth, 'count', 4, 'cell size', 4],
+            self.assertEqual(['width', 50, 'depth', depth, 'count', 4, 'cell_size', 4],
                              self.cmd('cms.info', key))
 
             # a rejected overflow must leave everything untouched too
@@ -750,7 +750,7 @@ class testCMS():
         raw.execute_command('RESTORE', 'bad', 0, bad)
 
         # the cells still hold 7 while the total count claims 0
-        self.assertEqual(['width', 20, 'depth', 5, 'count', 0, 'cell size', 4],
+        self.assertEqual(['width', 20, 'depth', 5, 'count', 0, 'cell_size', 4],
                          self.cmd('cms.info', 'bad'))
         self.assertEqual([7], self.cmd('cms.query', 'bad', 'a'))
 
@@ -759,7 +759,7 @@ class testCMS():
         res = self.cmd('cms.incrby', 'bad', 'a', '-7')
         self.env.assertResponseError(res[0], contained='CMS: INCRBY underflow')
         self.assertEqual([7], self.cmd('cms.query', 'bad', 'a'))
-        self.assertEqual(['width', 20, 'depth', 5, 'count', 0, 'cell size', 4],
+        self.assertEqual(['width', 20, 'depth', 5, 'count', 0, 'cell_size', 4],
                          self.cmd('cms.info', 'bad'))
 
         # the honest sketch is unaffected and still decrements normally
@@ -772,7 +772,7 @@ class testCMS():
         self.cmd('FLUSHALL')
         rdb_payload = b"\x07\x81\x08\xc4\xa4\xf96\x0f\x10\x00\x02\x14\x02\x05\x02\n\x05\xc34A\x90\x01\x00\x00\xe0-\x00\x00\x07\xa06\x00\x03\xa0\x07\xe0\x03\x00\xe0\x03\x13\xc0'\xe03\x00\xe0\x03C\xe0\x03[\xe0c\x00\xc0w\xe0\x03\x8b\xe0+\x00\xc0G\xe0\x07\x00\x80W\x01\x00\x00\x00\x0f\x00\xf8\xb3|^\xc6\xb6\xadO"
         self.env.getConnection().execute_command('RESTORE', 'legacy', 0, rdb_payload)
-        self.assertEqual(['width', 20, 'depth', 5, 'count', 10, 'cell size', 4],
+        self.assertEqual(['width', 20, 'depth', 5, 'count', 10, 'cell_size', 4],
                          self.cmd('cms.info', 'legacy'))
         self.assertEqual([7, 3], self.cmd('cms.query', 'legacy', 'a', 'b'))
         # and it takes part in the new operations
