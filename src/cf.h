@@ -26,6 +26,8 @@ typedef struct __attribute__((packed)) {
 } CFHeader;
 
 CuckooFilter *CFHeader_Load(const CFHeader *header);
+size_t CFHeader_Encode(const CuckooFilter *cf, unsigned char *out);
+CuckooFilter *CFHeader_Decode(const char *data, size_t len);
 CFHeader fillCFHeader(const CuckooFilter *cf);
 
 #endif

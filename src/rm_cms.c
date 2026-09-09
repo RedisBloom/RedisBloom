@@ -132,6 +132,7 @@ int CMSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     }
 
     RedisModule_ModuleTypeSetValue(key, CMSketchType, cms);
+    RBHash_PropagateConfig(ctx, argv[1]);
 
     RedisModule_CloseKey(key);
     RedisModule_ReplicateVerbatim(ctx);
@@ -264,6 +265,9 @@ static int parseMergeArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
         if (GetCMSKey(ctx, argv[i], &(params->cmsArray[i]), REDISMODULE_READ) != REDISMODULE_OK) {
             return REDISMODULE_ERR;
         }
+        if (!RBHash_Compatible(&params->cmsArray[i]->hash_config, &params->dest->hash_config)) {
+            INNER_ERROR("CMS: incompatible hash configuration");
+        }
         if (params->cmsArray[i]->width != width || params->cmsArray[i]->depth != depth) {
             INNER_ERROR("CMS: width/depth is not equal");
         }
@@ -343,6 +347,7 @@ void CMSRdbSave(RedisModuleIO *io, void *obj) {
     RedisModule_SaveUnsigned(io, cms->cellSize);
     RedisModule_SaveStringBuffer(io, (const char *)cms->array,
                                  cms->cellSize * cms->width * cms->depth);
+    RBHash_Save(io, &cms->hash_config);
 }
 
 void CMSFree(void *value) { CMS_Destroy(value); }
@@ -390,6 +395,10 @@ void *CMSRdbLoad(RedisModuleIO *io, int encver) {
         return NULL;
     }
 
+    if (RBHash_Load(io, &cms->hash_config, encver >= 2) != REDISMODULE_OK) {
+        err = true;
+        return NULL;
+    }
     return cms;
 }
 

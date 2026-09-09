@@ -9,6 +9,7 @@
 
 #include <strings.h>
 #include "config.h"
+#include "hash_config.h"
 
 // Default configuration values.
 RM_Config rm_config = {
@@ -147,6 +148,8 @@ static RedisModuleString *getIntegerValue(const char *name, void *privdata) {
     } while (0)
 
 int RM_RegisterConfigs(RedisModuleCtx *ctx) {
+    if (RBHash_RegisterConfig(ctx) != REDISMODULE_OK)
+        return REDISMODULE_ERR;
     RedisModule_Log(ctx, "notice", "Registering configuration options: [");
     registerConfigVar(bf_error_rate);
     registerConfigVar(bf_initial_size);

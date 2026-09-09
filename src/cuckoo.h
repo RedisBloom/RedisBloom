@@ -8,6 +8,7 @@
  */
 
 #pragma once
+#include "hash_config.h"
 
 #include "murmur2/murmurhash2.h"
 
@@ -43,10 +44,14 @@ typedef struct {
     uint16_t bucketSize;
     uint16_t maxIterations;
     uint16_t expansion;
+    RBHashConfig hash_config;
     SubCF *filters;
 } CuckooFilter;
 
 #define CUCKOO_GEN_HASH(s, n) MurmurHash64A_Bloom(s, n, 0)
+static inline CuckooHash CuckooFilter_Hash(const CuckooFilter *cf, const void *s, size_t n) {
+    return cf->hash_config.version ? RBHash_Hash(&cf->hash_config, s, n, 0) : CUCKOO_GEN_HASH(s, n);
+}
 
 /*
 #define CUCKOO_GEN_HASH(s, n)                       \

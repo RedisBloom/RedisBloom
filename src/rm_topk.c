@@ -105,6 +105,7 @@ static int TopK_Create_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         goto final;
     }
 
+    RBHash_PropagateConfig(ctx, argv[1]);
     RedisModule_ReplicateVerbatim(ctx);
     RedisModule_ReplyWithSimpleString(ctx, "OK");
 final:
@@ -303,6 +304,7 @@ static void TopKRdbSave(RedisModuleIO *io, void *obj) {
             RedisModule_SaveStringBuffer(io, "", 1);
         }
     }
+    RBHash_Save(io, &topk->hash_config);
 }
 
 static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
@@ -390,6 +392,10 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
         topk->lookupTable[i] = i == 0 ? 1 : topk->lookupTable[i - 1] * topk->decay;
     }
 
+    if (RBHash_Load(io, &topk->hash_config, encver >= 1) != REDISMODULE_OK) {
+        err = true;
+        return NULL;
+    }
     return topk;
 }
 

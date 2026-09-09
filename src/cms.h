@@ -8,6 +8,7 @@
  */
 
 #pragma once
+#include "hash_config.h"
 
 #include <stdint.h> // uint32_t
 
@@ -35,6 +36,7 @@ typedef struct CMS {
     size_t depth;
     void *array;
     size_t counter;
+    RBHashConfig hash_config;
     uint8_t cellSize; // bytes per cell: 1, 2, 4 or 8
 } CMSketch;
 

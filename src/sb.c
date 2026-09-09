@@ -73,6 +73,10 @@ static int SBChain_AddToLink(SBLink *lb, bloom_hashval hash) {
 }
 
 static bloom_hashval SBChain_GetHash(const SBChain *chain, const void *buf, size_t len) {
+    if (chain->hash_config.version) {
+        return (bloom_hashval){RBHash_Hash(&chain->hash_config, buf, len, 0),
+                               RBHash_Hash(&chain->hash_config, buf, len, 1)};
+    }
     if (chain->options & BLOOM_OPT_FORCE64) {
         return bloom_calc_hash64(buf, len);
     } else {
@@ -132,6 +136,7 @@ SBChain *SB_NewChain(uint64_t initsize, double error_rate, unsigned options, uns
         return NULL;
     }
     SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
+    sb->hash_config = RBHash_Default;
     sb->growth = growth;
     sb->options = options;
     double tightening = (options & BLOOM_OPT_NO_SCALING) ? 1 : ERROR_TIGHTENING_RATIO;
@@ -224,7 +229,8 @@ const char *SBChain_GetEncodedChunk(const SBChain *sb, long long *curIter, size_
 }
 
 char *SBChain_GetEncodedHeader(const SBChain *sb, size_t *hdrlen) {
-    *hdrlen = sizeof(dumpedChainHeader) + (sizeof(dumpedChainLink) * sb->nfilters);
+    *hdrlen = sizeof(dumpedChainHeader) + (sizeof(dumpedChainLink) * sb->nfilters) +
+              (sb->hash_config.version ? 16 : 0);
     dumpedChainHeader *hdr = RedisModule_Calloc(1, *hdrlen);
     hdr->size = sb->size;
     hdr->nfilters = sb->nfilters;
@@ -239,6 +245,8 @@ char *SBChain_GetEncodedHeader(const SBChain *sb, size_t *hdrlen) {
         X_ENCODED_LINK(X, dstlink, srclink)
 #undef X
     }
+    if (sb->hash_config.version)
+        RBHash_Encode((unsigned char *)hdr + *hdrlen - 16, &sb->hash_config);
     return (char *)hdr;
 }
 
@@ -278,12 +286,18 @@ SBChain *SB_NewChainFromHeader(const char *buf, size_t bufLen, const char **errm
         goto err;
     }
 
-    if (bufLen != sizeof(*header) + (sizeof(header->links[0]) * header->nfilters)) {
+    size_t legacy_len = sizeof(*header) + sizeof(header->links[0]) * (size_t)header->nfilters;
+    RBHashConfig config = {0};
+    if (bufLen == legacy_len + 16) {
+        if (RBHash_Decode((const unsigned char *)buf + legacy_len, &config) != REDISMODULE_OK)
+            goto err;
+    } else if (bufLen != legacy_len || !RBHash_Compatible(&config, &RBHash_Default)) {
         goto err;
     }
 
     sb = RedisModule_Calloc(1, sizeof(*sb));
     sb->filters = RedisModule_Calloc(header->nfilters, sizeof(*sb->filters));
+    sb->hash_config = config;
     sb->nfilters = header->nfilters;
     sb->options = header->options;
     sb->size = header->size;

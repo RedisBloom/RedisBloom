@@ -293,7 +293,7 @@ class testRedisBloom():
         env.cmd('FLUSHALL')
         env.assertOk(env.cmd('bf.reserve', 'bf', '0.001', '100'))
         env.assertEqual(env.cmd('bf.info bf'), ['Capacity', 100,
-                                                  'Size', 296,
+                                                  'Size', 312,
                                                   'Number of filters', 1,
                                                   'Number of items inserted', 0,
                                                   'Expansion rate', 2])
@@ -313,7 +313,7 @@ class testRedisBloom():
         env = self.env
         env.cmd('FLUSHALL')
         env.assertOk(env.cmd('bf.reserve', 'bf', '0.001', '100'))
-        env.assertEqual(env.cmd('bf.info bf size'), [296])
+        env.assertEqual(env.cmd('bf.info bf size'), [312])
 
     def test_info_filters(self):
         env = self.env
@@ -403,7 +403,7 @@ class testRedisBloom():
         env.assertEqual([0, 0, 0, ], resp[:3])
         env.assertEqual('non scaling filter is full', str(resp[3]))
         info_actual = env.cmd('BF.INFO nonscaling_err')
-        info_expected = ['Capacity', 3, 'Size', 104, 'Number of filters', 1,
+        info_expected = ['Capacity', 3, 'Size', 120, 'Number of filters', 1,
                          'Number of items inserted', 3, 'Expansion rate', None]
         env.assertEqual(info_actual, info_expected)
 
@@ -420,7 +420,7 @@ class testRedisBloom():
         env.assertOk(env.cmd('bf.reserve bf', error_rate, capacity))
         info = ConvertInfo(env.cmd('bf.info bf'))
         env.assertEqual(info["Capacity"], 300000000)
-        env.assertEqual(info["Size"], 1132420232)
+        env.assertEqual(info["Size"], 1132420248)
 
     def test_very_high_error_rate(self):
         env = self.env

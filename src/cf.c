@@ -172,3 +172,26 @@ CFHeader fillCFHeader(const CuckooFilter *cf) {
         .expansion = cf->expansion,
     };
 }
+
+size_t CFHeader_Encode(const CuckooFilter *cf, unsigned char *out) {
+    CFHeader header = fillCFHeader(cf);
+    memcpy(out, &header, sizeof(header));
+    if (cf->hash_config.version)
+        RBHash_Encode(out + sizeof(header), &cf->hash_config);
+    return sizeof(header) + (cf->hash_config.version ? 16 : 0);
+}
+
+CuckooFilter *CFHeader_Decode(const char *data, size_t len) {
+    RBHashConfig config = {0};
+    if (len == sizeof(CFHeader) + 16) {
+        if (RBHash_Decode((const unsigned char *)data + sizeof(CFHeader), &config) !=
+            REDISMODULE_OK)
+            return NULL;
+    } else if (len != sizeof(CFHeader) || !RBHash_Compatible(&config, &RBHash_Default)) {
+        return NULL;
+    }
+    CuckooFilter *cf = CFHeader_Load((const CFHeader *)data);
+    if (cf)
+        cf->hash_config = config;
+    return cf;
+}

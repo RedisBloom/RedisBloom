@@ -172,7 +172,8 @@ _SOURCES=\
 	src/topk.c \
 	src/rm_cms.c \
 	src/cms.c \
-	src/config.c
+	src/config.c \
+	src/hash_config.c
 
 ifeq ($(DEBUG),1)
 _SOURCES += deps/readies/cetara/diag/gdb.c

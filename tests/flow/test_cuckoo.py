@@ -316,7 +316,7 @@ class testCuckoo():
     def test_info(self):
         self.cmd('FLUSHALL')
         self.cmd('CF.RESERVE a 1000')
-        self.assertEqual(self.cmd('CF.INFO a'), ['Size', 1080,
+        self.assertEqual(self.cmd('CF.INFO a'), ['Size', 1096,
                                                  'Number of buckets', 512,
                                                  'Number of filters', 1,
                                                  'Number of items inserted', 0,

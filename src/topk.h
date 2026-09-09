@@ -11,6 +11,7 @@
  */
 
 #pragma once
+#include "hash_config.h"
 
 #include <stdint.h>
 #include <stddef.h>
@@ -50,6 +51,7 @@ typedef struct topk {
     uint32_t k;
     uint32_t width;
     uint32_t depth;
+    RBHashConfig hash_config;
     double decay;
 
     Bucket *data;

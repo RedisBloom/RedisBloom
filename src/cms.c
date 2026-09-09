@@ -18,7 +18,9 @@
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 
 #define BIT64 64
-#define CMS_HASH(item, itemlen, i) MurmurHash2(item, itemlen, i)
+#define CMS_HASH(item, itemlen, i)                                                                 \
+    (cms->hash_config.version ? (uint32_t)RBHash_Hash(&cms->hash_config, item, itemlen, i)         \
+                              : MurmurHash2(item, itemlen, i))
 
 static inline uint64_t cellGet(const CMSketch *cms, size_t loc) {
     switch (cms->cellSize) {
@@ -75,6 +77,7 @@ CMSketch *NewCMSketch(size_t width, size_t depth, uint8_t cellSize) {
 
     CMSketch *cms = CMS_CALLOC(1, sizeof(CMSketch));
 
+    cms->hash_config = RBHash_Default;
     cms->width = width;
     cms->depth = depth;
     cms->counter = 0;
@@ -235,6 +238,11 @@ int CMS_Merge(CMSketch *dest, size_t quantity, const CMSketch **src, const long 
     assert(dest);
     assert(src);
     assert(weights);
+
+    for (size_t i = 0; i < quantity; i++) {
+        if (!RBHash_Compatible(&dest->hash_config, &src[i]->hash_config))
+            return -1;
+    }
 
     int64_t itemCount = 0;
     int64_t cmsCount = 0;

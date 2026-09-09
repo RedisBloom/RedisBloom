@@ -8,6 +8,7 @@
  */
 
 #pragma once
+#include "hash_config.h"
 
 #include "bloom/bloom.h"
 #include <stdlib.h>
@@ -29,6 +30,7 @@ typedef struct SBChain {
     size_t nfilters;  //< Number of links in chain
     unsigned options; //< Options passed directly to bloom_init
     unsigned growth;
+    RBHashConfig hash_config;
 } SBChain;
 
 enum sb_rc {

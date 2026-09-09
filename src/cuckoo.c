@@ -47,6 +47,7 @@ int CuckooFilter_Init(CuckooFilter *filter, uint64_t capacity, uint16_t bucketSi
     filter->expansion = getNextN2(expansion);
     filter->bucketSize = bucketSize;
     filter->maxIterations = maxIterations;
+    filter->hash_config = RBHash_Default;
     filter->numBuckets = getNextN2(capacity / bucketSize);
     if (filter->numBuckets == 0) {
         filter->numBuckets = 1;
@@ -430,7 +431,7 @@ void CuckooFilter_GetInfo(const CuckooFilter *cf, CuckooHash hash, CuckooKey *ou
 
 // Returns 0 on success
 int CuckooFilter_ValidateIntegrity(const CuckooFilter *cf) {
-    return !cf ||!isConfigValid(cf->bucketSize, rm_config.cf_bucket_size) ||
+    return !cf || !isConfigValid(cf->bucketSize, rm_config.cf_bucket_size) ||
            !isConfigValid(cf->numFilters, rm_config.cf_max_expansions) ||
            !isConfigValid(cf->maxIterations, rm_config.cf_max_iterations) ||
            !isConfigValid(cf->expansion, rm_config.cf_expansion_factor) ||

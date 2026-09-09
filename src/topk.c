@@ -19,7 +19,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define TOPK_HASH(item, itemlen, i) MurmurHash2(item, itemlen, i)
+#define TOPK_HASH(item, itemlen, i)                                                                \
+    (topk->hash_config.version ? (uint32_t)RBHash_Hash(&topk->hash_config, item, itemlen, i)       \
+                               : MurmurHash2(item, itemlen, i))
 #define GA 1919
 
 static inline uint32_t max(uint32_t a, uint32_t b) { return a > b ? a : b; }
@@ -76,6 +78,7 @@ TopK *TopK_Create(uint32_t k, uint32_t width, uint32_t depth, double decay) {
     }
 
     TopK *topk = (TopK *)TOPK_CALLOC(1, sizeof(TopK));
+    topk->hash_config = RBHash_Default;
     topk->k = k;
     topk->width = width;
     topk->depth = depth;
