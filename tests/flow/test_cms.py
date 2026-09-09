@@ -634,9 +634,9 @@ class testCMS():
         self.assertOk(self.cmd('cms.initbydim', 'small{t}', '20', '5', 'CELL_SIZE', '1'))
         self.assertOk(self.cmd('cms.initbydim', 'large{t}', '20', '5', 'CELL_SIZE', '4'))
         self.env.expect('cms.merge', 'large{t}', '1', 'small{t}') \
-            .error().contains('CMS: cell_size is not equal')
+            .error().contains('CMS: cell size is not equal')
         self.env.expect('cms.merge', 'small{t}', '1', 'large{t}') \
-            .error().contains('CMS: cell_size is not equal')
+            .error().contains('CMS: cell size is not equal')
 
     def test_total_count_overflow(self):
         # the total count is a RESP integer too, so it is capped at INT64_MAX even
