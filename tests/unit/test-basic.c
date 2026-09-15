@@ -40,6 +40,23 @@ TEST_F(basic, bloomValidationRejectsExcessiveHashes) {
     ASSERT_NE(0, bloom_validate_integrity(&bloom));
 }
 
+TEST_F(basic, bloomValidationEnforcesHashLimit) {
+    struct bloom bloom = {
+        .error = 0.01,
+        .bytes = 1,
+        .bits = 8,
+    };
+
+    // Keep the calculated value away from a ceil boundary.
+    bloom.bpe = ((double)BLOOM_MAX_HASHES - 0.5) / log(2.0);
+    bloom.hashes = BLOOM_MAX_HASHES;
+    ASSERT_EQ(0, bloom_validate_integrity(&bloom));
+
+    bloom.bpe = ((double)BLOOM_MAX_HASHES + 0.5) / log(2.0);
+    bloom.hashes = BLOOM_MAX_HASHES + 1;
+    ASSERT_NE(0, bloom_validate_integrity(&bloom));
+}
+
 TEST_F(basic, sbBasic) {
     int err;
     SBChain *chain = SB_NewChain(100, 0.01, 0, BF_DEFAULT_GROWTH, &err);
