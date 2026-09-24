@@ -1,3 +1,8 @@
 RLTest == 0.7.29
+# Capped below redis-py 6: from 6 on the client adds connection kwargs (himport_registry)
+# that Redis.__init__ does not take, and tests that rebuild a client from a pool's
+# connection_kwargs then fail with a TypeError (MOD-18341). RLTest's own requirement on
+# the client is uncapped, so pip picks the newest unless we cap it here.
+redis ~= 5.0.8
 numpy<2
 setuptools<81
