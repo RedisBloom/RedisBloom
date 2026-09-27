@@ -1,12 +1,9 @@
 from common import Env
+from rdb_corruption_utils import crc64_redis, encode_len, load_len
 
 
 def test_reserve_seed():
     env = Env(decodeResponses=False)
-    if env.useSlaves:
-        # Exercise command propagation; seeded RDB/full-sync support is a later step.
-        env.cmd('SET', 'seed-test-sync', 'ready')
-        env.assertEqual(1, env.cmd('WAIT', 1, 10000))
     items = [str(i) for i in range(100)]
 
     # Equal decimal and hex seeds must produce identical filter contents.
@@ -70,3 +67,54 @@ def test_reserve_legacy_arguments():
     with env.assertResponseError():
         env.cmd('BF.RESERVE', 'too-many-args', 0.001, 100, 'a', 'b', 'c', 'd')
     env.assertEqual(0, env.cmd('EXISTS', 'too-many-args'))
+
+
+def test_seed_rdb_roundtrip():
+    env = Env(decodeResponses=False)
+    items = [str(i) for i in range(100)]
+    dumps = {}
+    for key, options in [('default', []), ('zero', ['SEED', 0]),
+                         ('maximum', ['SEED', '0xffffffffffffffff']),
+                         ('random', ['SEED', 'random'])]:
+        env.cmd('BF.RESERVE', key, 0.000001, 4, *options)
+        env.cmd('BF.MADD', key, *items)
+        dumps[key] = env.cmd('DUMP', key)
+        env.cmd('RESTORE', key + '-copy', 0, dumps[key])
+        env.assertEqual(dumps[key], env.cmd('DUMP', key + '-copy'))
+        env.assertEqual([1] * len(items), env.cmd('BF.MEXISTS', key + '-copy', *items))
+
+    env.dumpAndReload(restart=True)
+    for key, payload in dumps.items():
+        env.assertEqual(payload, env.cmd('DUMP', key))
+        env.assertEqual([1] * len(items), env.cmd('BF.MEXISTS', key, *items))
+        # New writes and expansion must continue using the restored seed.
+        more = [str(i) for i in range(100, 300)]
+        env.cmd('BF.MADD', key, *more)
+        env.assertEqual([1] * 300, env.cmd('BF.MEXISTS', key, *(items + more)))
+
+
+def test_seed_legacy_rdb():
+    env = Env(decodeResponses=False)
+    env.cmd('BF.RESERVE', 'source', 0.001, 100)
+    env.cmd('BF.ADD', 'source', 'apple')
+    payload = env.cmd('DUMP', 'source')
+    module_id, _, start, _ = load_len(payload, 1)
+    env.assertEqual(5, module_id & 1023)
+    seed_field = bytes([2]) + encode_len(0xc6a4a7935bd1e995)
+    env.assertEqual(seed_field + bytes([0]), payload[-10-len(seed_field)-1:-10])
+
+    # Version 4 has exactly the same fields, without the trailing seed.
+    value = payload[:1] + encode_len((module_id & ~1023) | 4)
+    value += payload[start:-10-len(seed_field)-1] + bytes([0])
+    body = value + payload[-10:-8]
+    legacy = body + crc64_redis(body).to_bytes(8, 'little')
+    env.cmd('RESTORE', 'legacy-restored', 0, legacy)
+    env.assertEqual(1, env.cmd('BF.EXISTS', 'legacy-restored', 'apple'))
+    env.assertEqual(payload, env.cmd('DUMP', 'legacy-restored'))
+
+    # A version 5 payload missing its seed must fail instead of defaulting.
+    body = payload[:start] + payload[start:-10-len(seed_field)-1] + bytes([0]) + payload[-10:-8]
+    truncated = body + crc64_redis(body).to_bytes(8, 'little')
+    with env.assertResponseError():
+        env.cmd('RESTORE', 'missing-seed', 0, truncated)
+    env.assertEqual(0, env.cmd('EXISTS', 'missing-seed'))

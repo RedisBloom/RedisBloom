@@ -1212,6 +1212,8 @@ static int CFDebug_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
 #define BF_MIN_OPTIONS_ENC 2
 #define BF_ENCODING_VERSION 3
 #define BF_MIN_GROWTH_ENC 4
+#define BF_MIN_SEED_ENC 5
+#define BF_RDB_VERSION 5
 
 #define CF_MIN_EXPANSION_VERSION 4
 
@@ -1239,10 +1241,11 @@ static void BFRdbSave(RedisModuleIO *io, void *obj) {
         // Save the number of actual entries stored thus far.
         RedisModule_SaveUnsigned(io, lb->size);
     }
+    RedisModule_SaveUnsigned(io, sb->seed);
 }
 
 static void *BFRdbLoad(RedisModuleIO *io, int encver) {
-    if (encver > BF_MIN_GROWTH_ENC) {
+    if (encver > BF_RDB_VERSION) {
         return NULL;
     }
 
@@ -1367,6 +1370,14 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
             return NULL;
         }
         lb->size = (size_t)link_size64;
+    }
+
+    if (encver >= BF_MIN_SEED_ENC) {
+        sb->seed = LoadUnsigned_IOError(io, err, NULL);
+        if (!(sb->options & BLOOM_OPT_FORCE64) && sb->seed > UINT32_MAX) {
+            err = true;
+            return NULL;
+        }
     }
 
     if (SB_ValidateIntegrity(sb) != 0) {
@@ -1735,7 +1746,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         .mem_usage = BFMemUsage,
         .defrag = BFDefrag,
     };
-    BFType = RedisModule_CreateDataType(ctx, "MBbloom--", BF_MIN_GROWTH_ENC, &typeprocs);
+    BFType = RedisModule_CreateDataType(ctx, "MBbloom--", BF_RDB_VERSION, &typeprocs);
     if (BFType == NULL) {
         return REDISMODULE_ERR;
     }
