@@ -1,3 +1,5 @@
+import struct
+
 from common import Env
 from rdb_corruption_utils import crc64_redis, encode_len, load_len, rewrite_module_uint
 
@@ -98,3 +100,106 @@ def test_seed_invalid_rdb():
         with env.assertResponseError():
             env.cmd('RESTORE', 'invalid', 0, body + crc64_redis(body).to_bytes(8, 'little'))
         env.assertEqual(0, env.cmd('EXISTS', 'invalid'))
+
+
+def test_seed_scandump_roundtrip():
+    env = Env(decodeResponses=False)
+    env.cmd('CF.RESERVE', 'template', 4, 'EXPANSION', 2)
+    template = env.cmd('DUMP', 'template')
+    for seed in (0, 123, 0x100000000, 0xffffffffffffffff):
+        for count in (0, 100):
+            key = f'cf-{seed}-{count}'
+            env.cmd('RESTORE', key, 0, rewrite_module_uint(template, 8, seed))
+            items = [str(i) for i in range(count)]
+            if items:
+                env.cmd('CF.INSERT', key, 'ITEMS', *items)
+            if seed == 0 and count == 0:
+                # Preserve the existing empty/default-filter SCANDUMP response.
+                env.assertEqual([0, None], env.cmd('CF.SCANDUMP', key, 0))
+                continue
+            chunks = []
+            cursor = 0
+            while True:
+                cursor, chunk = env.cmd('CF.SCANDUMP', key, cursor)
+                if cursor == 0:
+                    break
+                chunks.append((cursor, chunk))
+                env.cmd('CF.LOADCHUNK', key + '-copy', cursor, chunk)
+            env.assertGreater(len(chunks), 2 if count else 1)
+            header = chunks[0][1]
+            env.assertEqual(seed, struct.unpack_from('=Q', header, 38)[0])
+            env.assertEqual(len(chunks) - 1, struct.unpack_from('=Q', header, 24)[0])
+            targets = [key, key + '-copy']
+            if seed == 0:
+                # Generate the old header in memory: it ends before the seed.
+                env.cmd('CF.LOADCHUNK', key + '-legacy', 1, header[:-8])
+                for cursor, chunk in chunks[1:]:
+                    env.cmd('CF.LOADCHUNK', key + '-legacy', cursor, chunk)
+                targets.append(key + '-legacy')
+            payload = env.cmd('DUMP', key)
+            more = [str(i) for i in range(100, 300)]
+            for target in targets:
+                env.assertEqual(payload, env.cmd('DUMP', target))
+                env.cmd('CF.INSERT', target, 'ITEMS', *more)
+                env.assertEqual([1] * len(items + more),
+                                env.cmd('CF.MEXISTS', target, *(items + more)))
+                env.assertEqual(1, env.cmd('CF.DEL', target, more[0]))
+                env.assertEqual([1] * len(items + more[1:]),
+                                env.cmd('CF.MEXISTS', target, *(items + more[1:])))
+            for target in targets:
+                env.assertEqual(env.cmd('DUMP', key), env.cmd('DUMP', target))
+
+
+def test_seed_invalid_scandump():
+    env = Env(decodeResponses=False)
+    env.cmd('CF.RESERVE', 'source', 4)
+    env.cmd('CF.ADD', 'source', 'item')
+    _, header = env.cmd('CF.SCANDUMP', 'source', 0)
+    env.assertEqual(46, len(header))
+    overflow = bytearray(header)
+    struct.pack_into('=Q', overflow, 24, 65537)
+    zero_filters = bytearray(header)
+    struct.pack_into('=Q', zero_filters, 24, 0)
+    for invalid in (header[:24], header[:37], header[:39], header[:-1], header + b'\x00',
+                    bytes(overflow), bytes(zero_filters)):
+        with env.assertResponseError():
+            env.cmd('CF.LOADCHUNK', 'invalid', 1, invalid)
+        env.assertEqual(0, env.cmd('EXISTS', 'invalid'))
+
+
+def test_seed_aof_roundtrip():
+    env = Env(decodeResponses=False, useAof=True, useRdbPreamble=False, freshEnv=True)
+    env.skipOnCluster()
+    env.cmd('CF.RESERVE', 'template', 4, 'EXPANSION', 2)
+    template = env.cmd('DUMP', 'template')
+    dumps = {}
+    for seed in (0, 123, 0x100000000, 0xffffffffffffffff):
+        for count in (0, 100):
+            key = f'cf-{seed}-{count}'
+            env.cmd('RESTORE', key, 0, rewrite_module_uint(template, 8, seed))
+            items = [str(i) for i in range(count)]
+            if items:
+                env.cmd('CF.INSERT', key, 'ITEMS', *items)
+            dumps[key] = (env.cmd('DUMP', key), items)
+    for rewrite in (False, True):
+        if rewrite:
+            # With no RDB preamble, this exercises CFAofRewrite / CF.LOADCHUNK.
+            env.dumpAndReload(restart=True)
+            env.assertEqual('ok', env.cmd('INFO', 'persistence')['aof_last_bgrewrite_status'])
+        else:
+            env.stop()
+            env.start()
+        for key, (payload, items) in dumps.items():
+            env.assertEqual(payload, env.cmd('DUMP', key))
+            if items:
+                env.assertEqual([1] * len(items), env.cmd('CF.MEXISTS', key, *items))
+            else:
+                env.assertEqual(0, env.cmd('CF.EXISTS', key, 'absent'))
+            if rewrite:
+                more = [str(i) for i in range(100, 300)]
+                env.cmd('RESTORE', key + '-reference', 0, payload)
+                for target in (key, key + '-reference'):
+                    env.cmd('CF.INSERT', target, 'ITEMS', *more)
+                    env.assertEqual([1] * len(items + more),
+                                    env.cmd('CF.MEXISTS', target, *(items + more)))
+                env.assertEqual(env.cmd('DUMP', key), env.cmd('DUMP', key + '-reference'))

@@ -10,6 +10,7 @@
 #ifndef CF_H
 #define CF_H
 #include "cuckoo.h"
+#include <stddef.h>
 
 const char *CF_GetEncodedChunk(const CuckooFilter *cf, long long *pos, size_t *buflen,
                                size_t bytelimit);
@@ -23,9 +24,10 @@ typedef struct __attribute__((packed)) {
     uint16_t bucketSize;
     uint16_t maxIterations;
     uint16_t expansion;
+    uint64_t seed;
 } CFHeader;
 
-CuckooFilter *CFHeader_Load(const CFHeader *header);
+CuckooFilter *CFHeader_Load(const CFHeader *header, size_t len);
 CFHeader fillCFHeader(const CuckooFilter *cf);
 
 #endif

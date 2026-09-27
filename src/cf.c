@@ -118,10 +118,20 @@ int CF_LoadEncodedChunk(const CuckooFilter *cf, long long pos, const char *data,
     return REDISMODULE_OK;
 }
 
-CuckooFilter *CFHeader_Load(const CFHeader *header) {
+CuckooFilter *CFHeader_Load(const CFHeader *header, size_t len) {
+    /* Legacy dump headers have no version field and end before seed. Use the exact
+     * header length to recognize them and retain their default seed of zero.
+     * A new header truncated by exactly sizeof(seed) is indistinguishable from legacy. */
+    if (len != offsetof(CFHeader, seed) && len != sizeof(*header)) {
+        return NULL;
+    }
+    if (header->numFilters == 0 || header->numFilters > UINT16_MAX) {
+        return NULL;
+    }
     CuckooFilter *filter = RedisModule_Calloc(1, sizeof *filter);
     filter->numBuckets = header->numBuckets;
     filter->numFilters = header->numFilters;
+    filter->seed = len == sizeof(*header) ? header->seed : 0;
     filter->numItems = header->numItems;
     filter->numDeletes = header->numDeletes;
     filter->bucketSize = header->bucketSize;
@@ -170,5 +180,6 @@ CFHeader fillCFHeader(const CuckooFilter *cf) {
         .bucketSize = cf->bucketSize,
         .maxIterations = cf->maxIterations,
         .expansion = cf->expansion,
+        .seed = cf->seed,
     };
 }

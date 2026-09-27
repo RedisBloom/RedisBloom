@@ -975,7 +975,8 @@ static int CFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
     }
 
     RedisModule_ReplyWithArray(ctx, 2);
-    if (!cf->numItems) {
+    /* Preserve the legacy empty response, but do not discard a nonzero seed. */
+    if (!cf->numItems && !cf->seed) {
         RedisModule_ReplyWithLongLong(ctx, 0);
         RedisModule_ReplyWithNull(ctx);
         return REDISMODULE_OK;
@@ -1023,11 +1024,11 @@ static int CFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     if (pos == 1) {
         if (status != SB_EMPTY) {
             return RedisModule_ReplyWithError(ctx, statusStrerror(status));
-        } else if (bloblen != sizeof(CFHeader)) {
+        } else if (bloblen != sizeof(CFHeader) && bloblen != offsetof(CFHeader, seed)) {
             return RedisModule_ReplyWithError(ctx, "Invalid header");
         }
 
-        cf = CFHeader_Load((CFHeader *)blob);
+        cf = CFHeader_Load((const CFHeader *)blob, bloblen);
         if (cf == NULL) {
             return RedisModule_ReplyWithError(ctx, "Couldn't create filter!");
         }
