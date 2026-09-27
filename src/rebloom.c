@@ -707,7 +707,7 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
     for (size_t ii = 0; ii < nitems; ++ii) {
         size_t elemlen;
         const char *elem = RedisModule_StringPtrLen(items[ii], &elemlen);
-        CuckooHash hash = CUCKOO_GEN_HASH(elem, elemlen);
+        CuckooHash hash = CUCKOO_GEN_HASH(elem, elemlen, cf->seed);
         CuckooInsertStatus insStatus;
         if (options->is_nx) {
             insStatus = CuckooFilter_InsertUnique(cf, hash);
@@ -896,7 +896,7 @@ static int CFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
         } else {
             size_t n;
             const char *s = RedisModule_StringPtrLen(argv[ii], &n);
-            CuckooHash hash = CUCKOO_GEN_HASH(s, n);
+            CuckooHash hash = CUCKOO_GEN_HASH(s, n, cf->seed);
             long long rv;
             if (is_count) {
                 rv = CuckooFilter_Count(cf, hash);
@@ -931,7 +931,7 @@ static int CFDel_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
 
     size_t elemlen;
     const char *elem = RedisModule_StringPtrLen(argv[2], &elemlen);
-    CuckooHash hash = CUCKOO_GEN_HASH(elem, elemlen);
+    CuckooHash hash = CUCKOO_GEN_HASH(elem, elemlen, cf->seed);
     int rv = CuckooFilter_Delete(cf, hash);
     return _is_resp3(ctx) ? RedisModule_ReplyWithBool(ctx, !!rv)
                           : RedisModule_ReplyWithLongLong(ctx, rv);
