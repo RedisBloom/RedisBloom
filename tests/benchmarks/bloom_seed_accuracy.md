@@ -85,3 +85,52 @@ Adjust the module path for the platform/build. Default results are deterministic
 
 This test does not measure attack resistance, secrecy of seeds, throughput, or XXH3. It also does not exhaust all possible seeds, filter sizes, or input distributions.
 
+## Follow-up: manual boundary seeds and lifecycle checks
+
+The test now also exercises manual seeds 0, 0x100000000 (a bit above the
+32-bit range), and UINT64_MAX in every configuration. The expanded run
+passed: 378 filters, 37.8 million absent-item queries, and zero false negatives
+across 2.142 million present-item checks.
+
+| Mode | False positives / absent queries | Absent-item accuracy |
+| --- | ---: | ---: |
+| Default | 6,281 / 2,700,000 | 99.767370% |
+| Random (new seeds in this run) | 63,440 / 27,000,000 | 99.765037% |
+| Manual 0 | 6,417 / 2,700,000 | 99.762333% |
+| Manual 0x100000000 | 6,367 / 2,700,000 | 99.764185% |
+| Manual UINT64_MAX | 6,456 / 2,700,000 | 99.760889% |
+
+The original per-case table above remains a record of the first run.
+These follow-up results likewise do not establish a universal ranking of seeds.
+
+All 13 tests in `test_bloom_seed` passed with the normal build and the
+AddressSanitizer-instrumented module. The subsequently extended empty-filter
+AOF test also passed under AddressSanitizer. Sanitized unit tests passed.
+ASan checked memory access; leak detection was disabled for the macOS flow run.
+This was not a UBSan, MSan, or all-platform validation.
+
+Coverage added: explicit SAVE/BGSAVE with AOF disabled and shutdown saving
+disabled, empty and populated filters, binary/empty/long inputs, ADD/INSERT
+and automatic creation, replica reconnect/full resynchronization/promotion,
+and legacy-format RDB/SCANDUMP payloads generated in memory. The genuine
+pre-seed fixture check was run successfully using commit
+`a89aac8e75da4a1fbbb59a307ea2f3b4ae87870d`, then the fixture files were removed.
+The maintained tests now cover empty, single-link, and expanded legacy RDB
+payloads plus empty and expanded legacy SCANDUMP payloads, without fixture
+files. Generated payloads exercise the legacy loader but are not an independent
+old-writer compatibility check.
+After removing the fixture test, all 12 maintained lifecycle tests passed;
+the three changed legacy/restore tests also passed under AddressSanitizer.
+
+On this macOS host, the ASan build needed a command-line linker override
+because BlocksRuntime is provided by the system rather than a separate library:
+
+```sh
+gmake build SAN=address 'LD_LIBS=bin/macos-arm64v8-debug-asan/t-digest-c/src/libtdigest_static.a -lm -ldl -lc'
+gmake -C tests/unit SAN=address "LD_LIBS=$PWD/bin/macos-arm64v8-debug-asan/redisbloom.so -lm -ldl -lc" all test
+```
+
+For the flow run, set DYLD_INSERT_LIBRARIES to the installed Clang ASan runtime
+in Python's os.environ before invoking RLTest, so the Redis child receives it.
+Use ASAN_OPTIONS=detect_leaks=0:halt_on_error=1, the ASan module path,
+and RLTest --sanitizer address --test test_bloom_seed.

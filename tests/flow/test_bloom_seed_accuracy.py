@@ -1,4 +1,4 @@
-"""Compare seed accuracy on ordinary, non-adversarial inputs.
+"""Compare default, random, and boundary manual seeds on non-adversarial inputs.
 
 Run with RLTest --test test_bloom_seed_accuracy. Dataset generation is deterministic;
 random filter seeds are printed so individual trials can be replayed with SEED <value>.
@@ -19,7 +19,11 @@ def test_bloom_seed_accuracy():
     random_trials = 10
     capacity = 2_000
     batch_size = 5_000
-    totals = {'default': [0, 0, 0, 0], 'random': [0, 0, 0, 0]}
+    trials = [('default', [])] + [('random', ['SEED', 'random'])] * random_trials
+    trials += [('manual-zero', ['SEED', '0']),
+               ('manual-high-bit', ['SEED', '0x100000000']),
+               ('manual-maximum', ['SEED', '0xffffffffffffffff'])]
+    totals = {mode: [0, 0, 0, 0] for mode, _ in trials}
     datasets = {
         'sequential': lambda i: str(i).encode(),
         'common-prefix': lambda i: b'user:tenant:0000000000000000:' + str(i).encode(),
@@ -46,23 +50,27 @@ def test_bloom_seed_accuracy():
             for scenario, count, options in scenarios:
                 false_positives = []
                 seeds = []
-                for trial in range(random_trials + 1):
-                    mode = 'default' if trial == 0 else 'random'
+                for mode, seed_option in trials:
                     key = 'seed-accuracy'
                     env.cmd('DEL', key)
-                    seed_option = [] if trial == 0 else ['SEED', 'random']
                     env.cmd('BF.RESERVE', key, error, capacity, *options, *seed_option)
                     _, header = env.cmd('BF.SCANDUMP', key, 0)
                     seed = struct.unpack('=Q', header[-8:])[0]
-                    if trial == 0:
+                    if mode == 'default':
                         env.assertEqual(0xc6a4a7935bd1e995, seed)
-                    seeds.append(seed)
                     count_positive('BF.MADD', key, inserted[:count])
                     expected_filters = 3 if scenario == 'expanded' else 1
                     env.assertEqual([expected_filters], env.cmd('BF.INFO', key, 'FILTERS'))
                     fn = count - count_positive('BF.MEXISTS', key, inserted[:count])
                     fp = count_positive('BF.MEXISTS', key, absent)
-                    false_positives.append(fp)
+                    if mode in ('default', 'random'):
+                        seeds.append(seed)
+                        false_positives.append(fp)
+                    else:
+                        env.assertEqual(int(seed_option[1], 0), seed)
+                        print(f'MANUAL_ACCURACY {error},{dataset},{scenario},{mode},'
+                              f'seed={seed},fp={fp}/{queries},'
+                              f'absent_accuracy={100 * (1 - fp / queries):.6f}%', flush=True)
                     totals[mode][0] += fp
                     totals[mode][1] += queries
                     totals[mode][2] += fn
