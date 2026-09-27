@@ -36,6 +36,7 @@ typedef struct CMS {
     void *array;
     size_t counter;
     uint8_t cellSize; // bytes per cell: 1, 2, 4 or 8
+    uint32_t seed;    // Zero preserves legacy row seeds. Fixed for the sketch's lifetime.
 } CMSketch;
 
 typedef struct {

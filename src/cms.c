@@ -18,7 +18,9 @@
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 
 #define BIT64 64
-#define CMS_HASH(item, itemlen, i) MurmurHash2(item, itemlen, i)
+/* Add the row modulo 2^32; seed zero preserves the original row-number hashing. */
+#define CMS_HASH(cms, item, itemlen, row)                                                            \
+    MurmurHash2(item, itemlen, (uint32_t)((cms)->seed + (uint32_t)(row)))
 
 static inline uint64_t cellGet(const CMSketch *cms, size_t loc) {
     switch (cms->cellSize) {
@@ -58,7 +60,7 @@ static inline void cellSet(CMSketch *cms, size_t loc, uint64_t value) {
 static void cmsUndoIncrByRows(CMSketch *cms, const char *item, size_t itemlen, size_t rowsApplied,
                               int64_t value, uint64_t magnitude) {
     for (size_t j = 0; j < rowsApplied; ++j) { // undo the rows already applied
-        const size_t undo = (CMS_HASH(item, itemlen, j) % cms->width) + (j * cms->width);
+        const size_t undo = (CMS_HASH(cms, item, itemlen, j) % cms->width) + (j * cms->width);
         cellSet(cms, undo,
                 (value < 0) ? cellGet(cms, undo) + magnitude : cellGet(cms, undo) - magnitude);
     }
@@ -127,7 +129,7 @@ CMSStatus CMS_IncrBy(CMSketch *cms, const char *item, size_t itemlen, int64_t va
 
     uint64_t minCount = UINT64_MAX;
     for (size_t i = 0; i < cms->depth; ++i) {
-        const size_t loc = (CMS_HASH(item, itemlen, i) % cms->width) + (i * cms->width);
+        const size_t loc = (CMS_HASH(cms, item, itemlen, i) % cms->width) + (i * cms->width);
         const uint64_t cell = cellGet(cms, loc);
 
         // On error path, undo changes and return the error
@@ -153,7 +155,7 @@ uint64_t CMS_Query(CMSketch *cms, const char *item, size_t itemlen) {
     uint64_t minCount = UINT64_MAX;
 
     for (size_t i = 0; i < cms->depth; ++i) {
-        uint32_t hash = CMS_HASH(item, itemlen, i);
+        uint32_t hash = CMS_HASH(cms, item, itemlen, i);
         minCount = min(minCount, cellGet(cms, (hash % cms->width) + (i * cms->width)));
     }
     return minCount;
