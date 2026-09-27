@@ -1,15 +1,9 @@
-/* Run from the repository root:
- * cc -std=c99 -Wall -Wextra -Werror -Isrc -Ideps/RedisModulesSDK tests/unit/test-seed.c -o /tmp/test-seed
- * /tmp/test-seed
- */
+/* Run from the repository root: gmake unit-tests */
 /* Keep checks active in release unit-test builds too. */
 #undef NDEBUG
 #include <assert.h>
 #include <string.h>
 #include "seed.h"
-
-/* Standalone test supplies the module API pointer normally initialized by Redis. */
-void (*RedisModule_GetRandomBytes)(unsigned char *dst, size_t len);
 
 static uint64_t random_value;
 static unsigned random_calls;

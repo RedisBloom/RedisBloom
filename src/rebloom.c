@@ -11,6 +11,7 @@
 #include "redismodule.h"
 
 #include "sb.h"
+#include "seed.h"
 #include "cf.h"
 #include "rm_cms.h"
 #include "rm_topk.h"
@@ -134,12 +135,12 @@ static CuckooFilter *cfCreate(RedisModuleKey *key, size_t capacity, uint16_t buc
 
 /**
  * Reserves a new empty filter with custom parameters:
- * BF.RESERVE <KEY> <ERROR_RATE (double)> <INITIAL_CAPACITY (int)> [NONSCALING]
+ * BF.RESERVE <KEY> <ERROR_RATE (double)> <INITIAL_CAPACITY (int)> [NONSCALING] [SEED value]
  */
 static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
-    if (argc < 4 || argc > 7) {
+    if (argc < 4 || argc > 9) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -191,6 +192,17 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         }
     }
 
+    uint64_t seed = BLOOM_DEFAULT_SEED64;
+    int seedIndex = RMUtil_ArgIndex("SEED", argv + 4, argc - 4);
+    if (seedIndex != -1) {
+        seedIndex += 4;
+        if (Seed_ParseOption(ctx, argv, argc, seedIndex, &seed) != REDISMODULE_OK) {
+            return REDISMODULE_OK;
+        }
+    } else if (argc > 7) {
+        return RedisModule_WrongArity(ctx);
+    }
+
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
     SBChain *sb;
     int status = bfGetChain(key, &sb);
@@ -199,7 +211,8 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     }
 
     int err = SB_SUCCESS;
-    if (bfCreateChain(key, error_rate, capacity, expansion, nonScaling, &err) == NULL) {
+    sb = bfCreateChain(key, error_rate, capacity, expansion, nonScaling, &err);
+    if (sb == NULL) {
         if (err == SB_OOM) {
             RedisModule_ReplyWithError(ctx, "ERR Insufficient memory to create filter");
         } else {
@@ -208,8 +221,10 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         return REDISMODULE_OK;
     }
 
+    sb->seed = seed;
     RedisModule_ReplyWithSimpleString(ctx, "OK");
-    RedisModule_ReplicateVerbatim(ctx);
+    /* Propagate the resolved seed so replicas and AOF replay don't generate a different one. */
+    Seed_Replicate(ctx, "BF.RESERVE", argv, argc, seedIndex, seed);
     return REDISMODULE_OK;
 }
 

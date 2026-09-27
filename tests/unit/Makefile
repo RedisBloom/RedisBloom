@@ -88,9 +88,9 @@ $(BINDIR)/test-perf: $(BINDIR)/test-perf.o
 	@echo Creating $@...
 	$(SHOW)$(CC) $(LD_FLAGS) -o $@ $< $(LD_LIBS)
 
-$(BINDIR)/test-seed: $(BINDIR)/test-seed.o
+$(BINDIR)/test-seed: $(BINDIR)/test-seed.o $(MODULE_SO)
 	@echo Creating $@...
-	$(SHOW)$(CC) $(LD_FLAGS) -o $@ $<
+	$(SHOW)$(CC) $(LD_FLAGS) -o $@ $< $(LD_LIBS)
 
 clean:
 ifeq ($(ALL),1)
