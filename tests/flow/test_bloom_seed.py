@@ -1,3 +1,5 @@
+import struct
+
 from common import Env
 from rdb_corruption_utils import crc64_redis, encode_len, load_len
 
@@ -118,3 +120,57 @@ def test_seed_legacy_rdb():
     with env.assertResponseError():
         env.cmd('RESTORE', 'missing-seed', 0, truncated)
     env.assertEqual(0, env.cmd('EXISTS', 'missing-seed'))
+
+
+def test_seed_scandump_roundtrip():
+    env = Env(decodeResponses=False)
+    items = [str(i) for i in range(100)]
+    for key, options in [('default', []), ('zero', ['SEED', 0]),
+                         ('maximum', ['SEED', '0xffffffffffffffff']),
+                         ('random', ['SEED', 'random'])]:
+        env.cmd('BF.RESERVE', key, 0.000001, 4, *options)
+        env.cmd('BF.MADD', key, *items)
+        cursor = 0
+        chunks = []
+        while True:
+            cursor, data = env.cmd('BF.SCANDUMP', key, cursor)
+            if cursor == 0:
+                break
+            chunks.append((cursor, data))
+            env.cmd('BF.LOADCHUNK', key + '-copy', cursor, data)
+        env.assertTrue(len(chunks) > 2)  # Includes multiple expanded filters.
+        env.assertEqual(env.cmd('DUMP', key), env.cmd('DUMP', key + '-copy'))
+        env.assertEqual([1] * len(items), env.cmd('BF.MEXISTS', key + '-copy', *items))
+
+        more = [str(i) for i in range(100, 300)]
+        env.cmd('BF.MADD', key, *more)
+        env.cmd('BF.MADD', key + '-copy', *more)
+        env.assertEqual(env.cmd('DUMP', key), env.cmd('DUMP', key + '-copy'))
+
+        if key == 'default':
+            # Old dumps omit the trailing seed and its dump-only flag.
+            header = bytearray(chunks[0][1][:-8])
+            flags = struct.unpack_from('=I', header, 12)[0]
+            struct.pack_into('=I', header, 12, flags & ~(1 << 31))
+            env.cmd('BF.LOADCHUNK', 'old-dump', 1, bytes(header))
+            for pos, data in chunks[1:]:
+                env.cmd('BF.LOADCHUNK', 'old-dump', pos, data)
+            env.assertEqual([1] * len(items), env.cmd('BF.MEXISTS', 'old-dump', *items))
+
+        if env.useSlaves:
+            env.assertEqual(1, env.cmd('WAIT', 1, 10000))
+            env.assertEqual([1] * 300, env.getSlaveConnection().execute_command(
+                'BF.MEXISTS', key + '-copy', *(items + more)))
+
+
+def test_seed_scandump_invalid_header():
+    env = Env(decodeResponses=False)
+    env.cmd('BF.RESERVE', 'source', 0.001, 100)
+    _, header = env.cmd('BF.SCANDUMP', 'source', 0)
+    narrow = bytearray(header)
+    flags = struct.unpack_from('=I', narrow, 12)[0]
+    struct.pack_into('=I', narrow, 12, flags & ~4)  # 32-bit filter, 64-bit seed.
+    for invalid in (header[:-1], header[:-8], header + b'\0', bytes(narrow)):
+        with env.assertResponseError():
+            env.cmd('BF.LOADCHUNK', 'invalid-dump', 1, invalid)
+        env.assertEqual(0, env.cmd('EXISTS', 'invalid-dump'))

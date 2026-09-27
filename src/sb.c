@@ -172,6 +172,9 @@ typedef struct __attribute__((packed)) {
     dumpedChainLink links[];
 } dumpedChainHeader;
 
+/* Dump-only flag: an eight-byte seed follows the link headers. */
+#define SB_DUMP_HAS_SEED (UINT32_C(1) << 31)
+
 static SBLink *getLinkPos(const SBChain *sb, long long curIter, size_t *offset) {
     if (curIter < 1) {
         return NULL;
@@ -223,11 +226,11 @@ const char *SBChain_GetEncodedChunk(const SBChain *sb, long long *curIter, size_
 }
 
 char *SBChain_GetEncodedHeader(const SBChain *sb, size_t *hdrlen) {
-    *hdrlen = sizeof(dumpedChainHeader) + (sizeof(dumpedChainLink) * sb->nfilters);
+    *hdrlen = sizeof(dumpedChainHeader) + (sizeof(dumpedChainLink) * sb->nfilters) + sizeof(sb->seed);
     dumpedChainHeader *hdr = RedisModule_Calloc(1, *hdrlen);
     hdr->size = sb->size;
     hdr->nfilters = sb->nfilters;
-    hdr->options = sb->options;
+    hdr->options = sb->options | SB_DUMP_HAS_SEED;
     hdr->growth = sb->growth;
 
     for (size_t ii = 0; ii < sb->nfilters; ++ii) {
@@ -238,6 +241,7 @@ char *SBChain_GetEncodedHeader(const SBChain *sb, size_t *hdrlen) {
         X_ENCODED_LINK(X, dstlink, srclink)
 #undef X
     }
+    memcpy((char *)hdr + *hdrlen - sizeof(sb->seed), &sb->seed, sizeof(sb->seed));
     return (char *)hdr;
 }
 
@@ -277,15 +281,23 @@ SBChain *SB_NewChainFromHeader(const char *buf, size_t bufLen, const char **errm
         goto err;
     }
 
-    if (bufLen != sizeof(*header) + (sizeof(header->links[0]) * header->nfilters)) {
+    int hasSeed = (header->options & SB_DUMP_HAS_SEED) != 0;
+    size_t seedSize = hasSeed ? sizeof(uint64_t) : 0;
+    if (bufLen != sizeof(*header) + (sizeof(header->links[0]) * header->nfilters) + seedSize) {
         goto err;
     }
 
     sb = RedisModule_Calloc(1, sizeof(*sb));
     sb->filters = RedisModule_Calloc(header->nfilters, sizeof(*sb->filters));
     sb->nfilters = header->nfilters;
-    sb->options = header->options;
+    sb->options = header->options & ~SB_DUMP_HAS_SEED;
     sb->seed = SB_DefaultSeed(sb->options);
+    if (hasSeed) {
+        memcpy(&sb->seed, buf + bufLen - seedSize, seedSize);
+        if (!(sb->options & BLOOM_OPT_FORCE64) && sb->seed > UINT32_MAX) {
+            goto err;
+        }
+    }
     sb->size = header->size;
     sb->growth = header->growth;
 
