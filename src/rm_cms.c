@@ -270,6 +270,9 @@ static int parseMergeArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
         if (params->cmsArray[i]->cellSize != cellSize) {
             INNER_ERROR("CMS: cell size is not equal");
         }
+        if (params->cmsArray[i]->seed != params->dest->seed) {
+            INNER_ERROR("CMS: seed is not equal");
+        }
     }
 
     return REDISMODULE_OK;
@@ -343,6 +346,7 @@ void CMSRdbSave(RedisModuleIO *io, void *obj) {
     RedisModule_SaveUnsigned(io, cms->cellSize);
     RedisModule_SaveStringBuffer(io, (const char *)cms->array,
                                  cms->cellSize * cms->width * cms->depth);
+    RedisModule_SaveUnsigned(io, cms->seed);
 }
 
 void CMSFree(void *value) { CMS_Destroy(value); }
@@ -383,6 +387,16 @@ void *CMSRdbLoad(RedisModuleIO *io, int encver) {
     if (length != expected_length) {
         err = true;
         return NULL;
+    }
+
+    /* Versions 0 and 1 have no seed; calloc retains legacy row-number hashing. */
+    if (encver >= 2) {
+        uint64_t seed = LoadUnsigned_IOError(io, err, NULL);
+        if (seed > UINT32_MAX) {
+            err = true;
+            return NULL;
+        }
+        cms->seed = (uint32_t)seed;
     }
 
     if (CMS_ValidateLoaded(cms) != 0) {

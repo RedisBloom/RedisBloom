@@ -83,7 +83,7 @@ uint64_t CMS_Query(CMSketch *cms, const char *item, size_t strlen);
 int CMS_ValidateLoaded(const CMSketch *cms);
 
 /*  Merges multiple CMSketches into a single one.
-    All sketches must have identical width, depth and cell size.
+    All sketches must have identical width, depth, cell size and seed.
     dest must be already initialized.
 
     Returns non-zero if overflow validation fails. In this case,
