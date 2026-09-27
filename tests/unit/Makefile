@@ -32,7 +32,8 @@ include $(MK)/defs
 _SOURCES=\
 	test-basic.c \
 	test-cuckoo.c \
-	test-perf.c
+	test-perf.c \
+	test-seed.c
 
 SOURCES=$(addprefix $(SRCDIR)/,$(_SOURCES))
 OBJECTS=$(patsubst $(SRCDIR)/%.c,$(BINDIR)/%.o,$(SOURCES))
@@ -71,7 +72,7 @@ $(BINDIR)/%.o: $(SRCDIR)/%.c
 	@echo Compiling $<...
 	$(SHOW)$(CC) $(CC_FLAGS) -c $< -o $@
 
-TARGETS=$(addprefix $(BINDIR)/test-,basic cuckoo perf)
+TARGETS=$(addprefix $(BINDIR)/test-,basic cuckoo perf seed)
 
 $(TARGET): $(TARGETS) 
 
@@ -87,6 +88,10 @@ $(BINDIR)/test-perf: $(BINDIR)/test-perf.o
 	@echo Creating $@...
 	$(SHOW)$(CC) $(LD_FLAGS) -o $@ $< $(LD_LIBS)
 
+$(BINDIR)/test-seed: $(BINDIR)/test-seed.o
+	@echo Creating $@...
+	$(SHOW)$(CC) $(LD_FLAGS) -o $@ $<
+
 clean:
 ifeq ($(ALL),1)
 	$(SHOW)rm -rf $(BINDIR) $(TARGETS)
@@ -100,6 +105,7 @@ endif
 test:
 	@$(BINDIR)/test-basic
 	@$(BINDIR)/test-cuckoo
+	@$(BINDIR)/test-seed
 
 perf:
 	@$(BINDIR)/test-perf
