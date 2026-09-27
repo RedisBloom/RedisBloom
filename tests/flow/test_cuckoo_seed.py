@@ -4,6 +4,60 @@ from common import Env
 from rdb_corruption_utils import crc64_redis, encode_len, load_len, rewrite_module_uint
 
 
+def test_reserve_seed():
+    env = Env(decodeResponses=False)
+    env.cmd('CF.RESERVE', 'template', 4)
+    template = env.cmd('DUMP', 'template')
+    items = [str(i) for i in range(100)]
+    keys = []
+    for key, options, seed in (
+        ('default', [], 0),
+        ('zero', ['SEED', 0], 0),
+        ('decimal', ['SEED', '123', 'EXPANSION', 2], 123),
+        ('hex', ['EXPANSION', 2, 'seed', '0x7b'], 123),
+        ('upper', ['SEED', '0x100000000'], 0x100000000),
+        ('maximum', ['SEED', '18446744073709551615'], 0xffffffffffffffff),
+        ('random', ['SEED', 'RaNdOm'], None),
+        ('SEED', [], 0),  # The key name is not an option.
+    ):
+        env.assertEqual(b'OK', env.cmd('CF.RESERVE', key, 4, *options))
+        if seed is None:
+            _, header = env.cmd('CF.SCANDUMP', key, 0)
+            # A generated zero seed retains the legacy empty response.
+            seed = struct.unpack_from('=Q', header, 38)[0] if header else 0
+        expected = rewrite_module_uint(template, 8, seed)
+        if key in ('decimal', 'hex'):
+            expected = rewrite_module_uint(expected, 6, 2)  # Explicit EXPANSION.
+        env.assertEqual(expected, env.cmd('DUMP', key))
+        env.cmd('CF.INSERT', key, 'ITEMS', *items)
+        env.assertEqual([1] * len(items), env.cmd('CF.MEXISTS', key, *items))
+        keys.append(key)
+    env.assertEqual(env.cmd('DUMP', 'default'), env.cmd('DUMP', 'zero'))
+    env.assertEqual(env.cmd('DUMP', 'decimal'), env.cmd('DUMP', 'hex'))
+    before = env.cmd('DUMP', 'decimal')
+    with env.assertResponseError():
+        env.cmd('CF.RESERVE', 'decimal', 4, 'SEED', 456)
+    env.assertEqual(before, env.cmd('DUMP', 'decimal'))
+    if env.useSlaves:
+        env.assertEqual(1, env.cmd('WAIT', 1, 10000))
+        replica = env.getSlaveConnection()
+        for key in keys:
+            env.assertEqual(env.cmd('DUMP', key), replica.execute_command('DUMP', key))
+
+
+def test_reserve_invalid_seed():
+    env = Env()
+    for options in (
+        ['SEED'], ['SEED', ''], ['SEED', '-1'], ['SEED', '+1'],
+        ['SEED', '0x'], ['SEED', 'abc'], ['SEED', '18446744073709551616'],
+        ['SEED', '0x10000000000000000'], ['SEED', '1\x00'], ['SEED', ' 1'],
+        ['SEED', 1, 'SEED', 2], ['SEED', 1, 'EXPANSION'],
+    ):
+        with env.assertResponseError():
+            env.cmd('CF.RESERVE', 'invalid', 4, *options)
+        env.assertEqual(0, env.cmd('EXISTS', 'invalid'))
+
+
 def test_seed_rdb_roundtrip():
     env = Env(decodeResponses=False, freshEnv=True)
     env.skipOnCluster()
@@ -16,7 +70,7 @@ def test_seed_rdb_roundtrip():
     env.assertEqual(b'\x02\x00\x00', template[-13:-10])  # UINT seed=0, EOF.
     dumps = {}
     for seed in (0, 123, 0x100000000, 0xffffffffffffffff):
-        # Until CF.RESERVE SEED is exposed, seed an EMPTY filter through RESTORE.
+        # Seed an EMPTY filter through RESTORE to exercise the RDB loader directly.
         # Seven header integers + one subfilter bucket count precede the seed.
         seeded = rewrite_module_uint(template, 8, seed)
         for count in (0, 100):

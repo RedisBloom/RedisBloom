@@ -577,7 +577,7 @@ static int BFLoadChunk_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **arg
     }
 }
 
-/** CF.RESERVE <KEY> <CAPACITY> [BUCKETSIZE] [MAXITERATIONS] [EXPANSION] */
+/** CF.RESERVE <KEY> <CAPACITY> [BUCKETSIZE] [MAXITERATIONS] [EXPANSION] [SEED value] */
 static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
@@ -627,6 +627,15 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         }
     }
 
+    uint64_t seed = 0;
+    int seedIndex = RMUtil_ArgIndex("SEED", argv + 3, argc - 3);
+    if (seedIndex != -1) {
+        seedIndex += 3;
+        if (Seed_ParseOption(ctx, argv, argc, seedIndex, &seed) != REDISMODULE_OK) {
+            return REDISMODULE_OK;
+        }
+    }
+
     if (bucketSize * 2 > capacity || capacity > rm_config.cf_initial_size.max) {
         return RedisModule_ReplyWithErrorFormat(
             ctx, "Capacity must be in the range [2 * BUCKETSIZE, %lld]",
@@ -650,7 +659,9 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         }
         return REDISMODULE_OK;
     } else {
-        RedisModule_ReplicateVerbatim(ctx);
+        cf->seed = seed;
+        /* Propagate the resolved seed so replicas and AOF replay use the same value. */
+        Seed_Replicate(ctx, "CF.RESERVE", argv, argc, seedIndex, seed);
         return RedisModule_ReplyWithSimpleString(ctx, "OK");
     }
 }
