@@ -174,3 +174,37 @@ def test_seed_scandump_invalid_header():
         with env.assertResponseError():
             env.cmd('BF.LOADCHUNK', 'invalid-dump', 1, invalid)
         env.assertEqual(0, env.cmd('EXISTS', 'invalid-dump'))
+
+
+def test_seed_aof_roundtrip():
+    # Disable the RDB preamble so rewrite exercises BFAofRewrite / BF.LOADCHUNK.
+    env = Env(decodeResponses=False, useAof=True, useRdbPreamble=False, freshEnv=True)
+    env.skipOnCluster()
+    items = [str(i) for i in range(100)]
+    dumps = {}
+    for key, options in [('default', []), ('zero', ['SEED', 0]),
+                         ('manual', ['SEED', 123]),
+                         ('maximum', ['SEED', '0xffffffffffffffff']),
+                         ('random', ['SEED', 'random'])]:
+        env.cmd('BF.RESERVE', key, 0.000001, 4, *options)
+        env.cmd('BF.MADD', key, *items)
+        dumps[key] = env.cmd('DUMP', key)
+
+    for rewrite in (False, True):
+        if rewrite:
+            env.dumpAndReload(restart=True)
+            env.assertEqual('ok', env.cmd('INFO', 'persistence')['aof_last_bgrewrite_status'])
+        else:
+            # Restart without rewriting: replay BF.RESERVE with its concrete seed.
+            env.stop()
+            env.start()
+
+        more = [str(i) for i in range(len(items), len(items) + 200)]
+        for key, payload in dumps.items():
+            # Byte equality checks the seed as well as the filter contents.
+            env.assertEqual(payload, env.cmd('DUMP', key))
+            env.assertEqual([1] * len(items), env.cmd('BF.MEXISTS', key, *items))
+            env.cmd('BF.MADD', key, *more)
+            env.assertEqual([1] * len(more), env.cmd('BF.MEXISTS', key, *more))
+            dumps[key] = env.cmd('DUMP', key)
+        items += more
