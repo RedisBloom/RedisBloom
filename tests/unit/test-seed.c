@@ -1,0 +1,39 @@
+/* Run from the repository root:
+ * cc -std=c99 -Wall -Wextra -Werror -Isrc tests/unit/test-seed.c -o /tmp/test-seed
+ * /tmp/test-seed
+ */
+#include <assert.h>
+#include <string.h>
+#include "seed.h"
+
+int main(void) {
+    uint64_t value = 42;
+    assert(Seed_Parse("0", 1, &value) == SEED_INPUT_MANUAL && value == 0);
+    assert(Seed_Parse("123", 3, &value) == SEED_INPUT_MANUAL && value == 123);
+    assert(Seed_Parse("0123", 4, &value) == SEED_INPUT_MANUAL && value == 123);
+    assert(Seed_Parse("0xaBcDeF", 8, &value) == SEED_INPUT_MANUAL && value == 0xabcdef);
+    assert(Seed_Parse("0XFFFFFFFFFFFFFFFF", 18, &value) == SEED_INPUT_MANUAL &&
+           value == UINT64_MAX);
+    assert(Seed_Parse("18446744073709551615", 20, &value) == SEED_INPUT_MANUAL &&
+           value == UINT64_MAX);
+    assert(Seed_Parse("0000000000000000", 16, &value) == SEED_INPUT_MANUAL && value == 0);
+    const char raw[] = {'1', '7', '1'};
+    assert(Seed_Parse(raw, sizeof(raw), &value) == SEED_INPUT_MANUAL && value == 0xab);
+
+    const char *random_inputs[] = {"random", "RANDOM", "RaNdOm"};
+    for (size_t i = 0; i < sizeof(random_inputs) / sizeof(*random_inputs); ++i) {
+        assert(Seed_Parse(random_inputs[i], strlen(random_inputs[i]), &value) == SEED_INPUT_RANDOM);
+        assert(value == 0xab);
+    }
+    const char *invalid[] = {"", "0x", "0xg", "abc", "+1", "-1", " 1", "1 ", "a b",
+                             "g", "randomx", "18446744073709551616", "0x10000000000000000",
+                             "000000000000000000000", "1\n", "0b10", "0x-1", "0x 1"};
+    for (size_t i = 0; i < sizeof(invalid) / sizeof(*invalid); ++i) {
+        assert(Seed_Parse(invalid[i], strlen(invalid[i]), &value) == SEED_INPUT_INVALID);
+        assert(value == 0xab);
+    }
+    assert(Seed_Parse("a\0b", 3, &value) == SEED_INPUT_INVALID && value == 0xab);
+    assert(Seed_Parse(NULL, 1, &value) == SEED_INPUT_INVALID);
+    assert(Seed_Parse("a", 1, NULL) == SEED_INPUT_INVALID);
+    return 0;
+}
