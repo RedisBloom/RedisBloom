@@ -1216,6 +1216,8 @@ static int CFDebug_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
 #define BF_RDB_VERSION 5
 
 #define CF_MIN_EXPANSION_VERSION 4
+#define CF_MIN_SEED_ENC 5
+#define CF_RDB_VERSION 5
 
 static void BFRdbSave(RedisModuleIO *io, void *obj) {
     // Save the setting!
@@ -1446,10 +1448,11 @@ static void CFRdbSave(RedisModuleIO *io, void *obj) {
                                      cf->filters[ii].bucketSize * cf->filters[ii].numBuckets *
                                          sizeof(*cf->filters[ii].data));
     }
+    RedisModule_SaveUnsigned(io, cf->seed);
 }
 
 static void *CFRdbLoad(RedisModuleIO *io, int encver) {
-    if (encver > CF_MIN_EXPANSION_VERSION) {
+    if (encver > CF_RDB_VERSION) {
         return NULL;
     }
     /* RDBCF
@@ -1534,6 +1537,9 @@ static void *CFRdbLoad(RedisModuleIO *io, int encver) {
             err = true;
             return NULL;
         }
+    }
+    if (encver >= CF_MIN_SEED_ENC) {
+        cf->seed = LoadUnsigned_IOError(io, err, NULL);
     }
     return cf;
 }
@@ -1760,7 +1766,7 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         .mem_usage = CFMemUsage,
         .defrag = CFDefrag,
     };
-    CFType = RedisModule_CreateDataType(ctx, "MBbloomCF", CF_MIN_EXPANSION_VERSION, &cfTypeProcs);
+    CFType = RedisModule_CreateDataType(ctx, "MBbloomCF", CF_RDB_VERSION, &cfTypeProcs);
     if (CFType == NULL) {
         return REDISMODULE_ERR;
     }
