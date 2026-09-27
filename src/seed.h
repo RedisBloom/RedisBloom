@@ -15,12 +15,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include "redismodule.h"
 
 typedef enum {
     SEED_INPUT_INVALID,
     SEED_INPUT_MANUAL,
     SEED_INPUT_RANDOM
 } SeedInput;
+
+/* Call once when creating a randomly seeded key, after module API initialization.
+ * Persist and replicate the returned value, not another request for randomness.
+ */
+static inline uint64_t Seed_Generate(void) {
+    uint64_t seed;
+    RedisModule_GetRandomBytes((unsigned char *)&seed, sizeof(seed));
+    return seed;
+}
 
 /* Parse the value following SEED: case-insensitive "random", unsigned decimal,
  * or 0x-prefixed hexadecimal. Accept at most 20 characters, with no sign or
