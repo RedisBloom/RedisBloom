@@ -1253,6 +1253,7 @@ static void *BFRdbLoad(RedisModuleIO *io, int encver) {
         }
         sb->options = (unsigned)options64;
     }
+    sb->seed = SB_DefaultSeed(sb->options);
     if (encver >= BF_MIN_GROWTH_ENC) {
         const uint64_t growth64 = LoadUnsigned_IOError(io, err, NULL);
         if (growth64 > UINT_MAX) {

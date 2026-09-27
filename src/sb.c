@@ -19,8 +19,6 @@
 
 #include <string.h>
 
-bloom_hashval bloom_calc_hash64(const void *buffer, int len);
-
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 /// Core                                                                     ///
@@ -74,9 +72,9 @@ static int SBChain_AddToLink(SBLink *lb, bloom_hashval hash) {
 
 static bloom_hashval SBChain_GetHash(const SBChain *chain, const void *buf, size_t len) {
     if (chain->options & BLOOM_OPT_FORCE64) {
-        return bloom_calc_hash64(buf, len);
+        return bloom_calc_hash64_seed(buf, len, chain->seed);
     } else {
-        return bloom_calc_hash(buf, len);
+        return bloom_calc_hash_seed(buf, len, (uint32_t)chain->seed);
     }
 }
 
@@ -134,6 +132,7 @@ SBChain *SB_NewChain(uint64_t initsize, double error_rate, unsigned options, uns
     SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
     sb->growth = growth;
     sb->options = options;
+    sb->seed = SB_DefaultSeed(options);
     double tightening = (options & BLOOM_OPT_NO_SCALING) ? 1 : ERROR_TIGHTENING_RATIO;
     *err = SBChain_AddLink(sb, initsize, error_rate * tightening);
     if (*err != SB_SUCCESS) {
@@ -286,6 +285,7 @@ SBChain *SB_NewChainFromHeader(const char *buf, size_t bufLen, const char **errm
     sb->filters = RedisModule_Calloc(header->nfilters, sizeof(*sb->filters));
     sb->nfilters = header->nfilters;
     sb->options = header->options;
+    sb->seed = SB_DefaultSeed(sb->options);
     sb->size = header->size;
     sb->growth = header->growth;
 

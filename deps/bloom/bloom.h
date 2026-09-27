@@ -76,6 +76,9 @@ struct bloom {
 // Disable auto-scaling. Saves memory
 #define BLOOM_OPT_NO_SCALING 8
 
+#define BLOOM_DEFAULT_SEED32 UINT32_C(0x9747b28c)
+#define BLOOM_DEFAULT_SEED64 UINT64_C(0xc6a4a7935bd1e995)
+
 // For binary doubles, the smallest positive value is
 // 2^(DBL_MIN_EXP - DBL_MANT_DIG). Therefore, the largest hash count derived
 // from an error rate is DBL_MANT_DIG - DBL_MIN_EXP, plus one for ceil rounding
@@ -96,6 +99,9 @@ typedef struct {
 } bloom_hashval;
 
 bloom_hashval bloom_calc_hash(const void *buffer, int len);
+bloom_hashval bloom_calc_hash64(const void *buffer, int len);
+bloom_hashval bloom_calc_hash_seed(const void *buffer, int len, uint32_t seed);
+bloom_hashval bloom_calc_hash64_seed(const void *buffer, int len, uint64_t seed);
 
 /** ***************************************************************************
  * Check if the given element is in the bloom filter. Remember this may
