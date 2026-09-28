@@ -702,6 +702,12 @@
             "type": "double"
           }
         ]
+      },
+      {
+        "name": "seed",
+        "type": "string",
+        "token": "SEED",
+        "optional": true
       }
     ],
     "since": "2.0.0",

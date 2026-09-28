@@ -172,7 +172,7 @@ static const RedisModuleCommandInfo TOPK_QUERY_INFO = {
 };
 
 // ===============================
-// TOPK.RESERVE key topk [width depth decay]
+// TOPK.RESERVE key topk [width depth decay] [SEED seed]
 // ===============================
 static const RedisModuleCommandKeySpec TOPK_RESERVE_KEYSPECS[] = {
     {.flags = REDISMODULE_CMD_KEY_RW,
@@ -192,6 +192,8 @@ static const RedisModuleCommandArg TOPK_RESERVE_ARGS[] = {
                                           {.name = "depth", .type = REDISMODULE_ARG_TYPE_INTEGER},
                                           {.name = "decay", .type = REDISMODULE_ARG_TYPE_DOUBLE},
                                           {0}}},
+    {.name = "seed", .type = REDISMODULE_ARG_TYPE_STRING, .token = "SEED",
+     .flags = REDISMODULE_CMD_ARG_OPTIONAL},
     {0}};
 
 static const RedisModuleCommandInfo TOPK_RESERVE_INFO = {

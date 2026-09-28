@@ -1,5 +1,86 @@
 from common import Env
 from rdb_corruption_utils import crc64_redis, encode_len, load_len, rewrite_module_uint
+from test_bloom_seed import wait_until
+
+
+def test_reserve_seed():
+    env = Env(decodeResponses=False, useSlaves=True, freshEnv=True)
+    env.skipOnCluster()
+    dumps = {}
+    for params in ([], [64, 5, 0.9]):
+        env.cmd('DEL', 'template')
+        env.cmd('TOPK.RESERVE', 'template', 3, *params)
+        template = env.cmd('DUMP', 'template')
+        for name, value, seed in (('default', None, 0), ('zero', '0', 0),
+                                  ('decimal', '123', 123), ('hex', '0x7b', 123),
+                                  ('upper', '0x80000000', 0x80000000),
+                                  ('max', '4294967295', 0xffffffff),
+                                  ('zero-fp', '4294965377', 4294965377),
+                                  ('random', 'RaNdOm', None)):
+            key = f'{len(params)}-{name}'
+            options = [] if value is None else ['sEeD', value]
+            env.assertEqual(b'OK', env.cmd('TOPK.RESERVE', key, 3, *params, *options))
+            payload = env.cmd('DUMP', key)
+            if seed is not None:
+                env.assertEqual(rewrite_module_uint(template, 3, seed), payload)
+            dumps[key] = payload
+            with env.assertResponseError(contained='key already exists'):
+                env.cmd('TOPK.RESERVE', key, 3, 'SEED', 'random')
+            env.assertEqual(payload, env.cmd('DUMP', key))
+    wait_until(env, lambda: env.cmd('WAIT', 1, 1000) == 1)
+    replica = env.getSlaveConnection()
+    for key, payload in dumps.items():
+        # Empty heaps have no pointers, so their serialized bytes are comparable.
+        env.assertEqual(payload, replica.execute_command('DUMP', key))
+        env.cmd('TOPK.INCRBY', key, '', 7)
+        env.assertEqual([7], env.cmd('TOPK.COUNT', key, ''))
+        env.assertEqual([1], env.cmd('TOPK.QUERY', key, ''))
+    wait_until(env, lambda: env.cmd('WAIT', 1, 1000) == 1)
+    for key in dumps:
+        env.assertEqual([7], replica.execute_command('TOPK.COUNT', key, ''))
+        env.assertEqual([1], replica.execute_command('TOPK.QUERY', key, ''))
+
+
+def test_reserve_invalid_seed():
+    env = Env(decodeResponses=False)
+    for params in ([], [64, 5, 0.9]):
+        for options in (['SEED'], ['SEED', ''], ['SEED', '-1'], ['SEED', '+1'],
+                        ['SEED', '0x'], ['SEED', 'abc'], ['SEED', '4294967296'],
+                        ['SEED', '0x100000000'], ['SEED', '18446744073709551615'],
+                        ['SEED', '1\x00'], ['SEED', ' 1'], ['SEED\x00', 1],
+                        ['SEED', 1, 'SEED', 2], ['SEED', 'SEED'], ['UNKNOWN', 1],
+                        ['SEED', 1, 'UNKNOWN', 2]):
+            with env.assertResponseError():
+                env.cmd('TOPK.RESERVE', 'invalid', 3, *params, *options)
+            env.assertEqual(0, env.cmd('EXISTS', 'invalid'))
+    for args in ([3, 'SEED', 1, 64, 5, 0.9], [3, 64, 'SEED', 1],
+                 [3, 0, 5, 0.9, 'SEED', 1], [3, 64, 0, 0.9, 'SEED', 1],
+                 [3, 64, 5, 0, 'SEED', 1], [0, 'SEED', 1]):
+        with env.assertResponseError():
+            env.cmd('TOPK.RESERVE', 'invalid', *args)
+        env.assertEqual(0, env.cmd('EXISTS', 'invalid'))
+    env.assertEqual(b'OK', env.cmd('TOPK.RESERVE', 'SEED', 3, 'SEED', 1))
+
+
+def test_reserve_seed_aof_replay():
+    env = Env(decodeResponses=False, useAof=True, useRdbPreamble=False, freshEnv=True)
+    env.skipOnCluster()
+    dumps = {}
+    for params in ([], [64, 5, 0.9]):
+        for value in (None, 'random', '0xffffffff'):
+            key = f'{len(params)}-{value}'
+            options = [] if value is None else ['SEED', value]
+            env.cmd('TOPK.RESERVE', key, 3, *params, *options)
+            dumps[key] = env.cmd('DUMP', key)
+    env.stop()
+    env.start()
+    for key, payload in dumps.items():
+        env.assertEqual(payload, env.cmd('DUMP', key))
+        env.cmd('TOPK.INCRBY', key, 'item', 7)
+    env.dumpAndReload(restart=True)
+    for key in dumps:
+        env.assertEqual([7], env.cmd('TOPK.COUNT', key, 'item'))
+        env.assertEqual([1], env.cmd('TOPK.QUERY', key, 'item'))
 
 
 def check_seed_reload(env):
@@ -8,11 +89,10 @@ def check_seed_reload(env):
     env.assertEqual(1, load_len(template, 1)[0] & 1023)
     cases = []
     for seed in (0, 123, 0x80000000, 0xffffffff, 0xffffffff - 1918):
-        # Until RESERVE accepts SEED, seed only EMPTY sketches through RESTORE.
-        payload = rewrite_module_uint(template, 3, seed)
         for empty in (False, True):
             key = f'{seed}-{empty}'
-            env.cmd('RESTORE', key, 0, payload)
+            env.cmd('TOPK.RESERVE', key, 3, 64, 5, 0.9, 'SEED', seed)
+            env.assertEqual(rewrite_module_uint(template, 3, seed), env.cmd('DUMP', key))
             if not empty:
                 env.cmd('TOPK.INCRBY', key, '', 7)
             env.cmd('RESTORE', key + '-copy', 0, env.cmd('DUMP', key))

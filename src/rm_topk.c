@@ -15,6 +15,7 @@
 #include "cmd_info/command_info.h"
 #include "topk.h"
 #include "rm_topk.h"
+#include "seed.h"
 #include "rm_cms.h"
 #include "common.h"
 #include <math.h>
@@ -87,7 +88,8 @@ static int createTopK(RedisModuleCtx *ctx, RedisModuleString **argv, int argc, T
 }
 
 static int TopK_Create_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    if (argc != 3 && argc != 6) {
+    RedisModule_AutoMemory(ctx);
+    if (argc != 3 && argc != 5 && argc != 6 && argc != 8) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -97,15 +99,29 @@ static int TopK_Create_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         goto final;
     }
 
+    uint64_t seed = 0;
+    int seedIndex = -1;
+    if (argc == 5 || argc == 8) {
+        seedIndex = argc - 2;
+        if (RMUtil_ArgIndex("SEED", argv + seedIndex, 1) == -1) {
+            RedisModule_ReplyWithError(ctx, "TopK: expected SEED value");
+            goto final;
+        }
+        if (Seed_ParseOption(ctx, argv, argc, seedIndex, &seed, UINT32_MAX) != REDISMODULE_OK)
+            goto final;
+    }
+
     TopK *topk = NULL;
-    if (createTopK(ctx, argv, argc, &topk) != REDISMODULE_OK)
+    if (createTopK(ctx, argv, seedIndex == -1 ? argc : seedIndex, &topk) != REDISMODULE_OK)
         goto final;
+    topk->seed = (uint32_t)seed;
 
     if (RedisModule_ModuleTypeSetValue(key, TopKType, topk) == REDISMODULE_ERR) {
         goto final;
     }
 
-    RedisModule_ReplicateVerbatim(ctx);
+    /* Replicate the resolved seed so replicas/AOF replay never rerandomize it. */
+    Seed_Replicate(ctx, "TOPK.RESERVE", argv, argc, seedIndex, seed);
     RedisModule_ReplyWithSimpleString(ctx, "OK");
 final:
     RedisModule_CloseKey(key);
