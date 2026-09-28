@@ -60,7 +60,7 @@ static const RedisModuleCommandInfo CMS_INFO_INFO = {
 };
 
 // ===============================
-// CMS.INITBYDIM key width depth [CELL_SIZE 1|2|4|8]
+// CMS.INITBYDIM key width depth [CELL_SIZE 1|2|4|8] [SEED seed]
 // ===============================
 static const RedisModuleCommandKeySpec CMS_INITBYDIM_KEYSPECS[] = {
     {.flags = REDISMODULE_CMD_KEY_RW,
@@ -84,6 +84,8 @@ static const RedisModuleCommandArg CMS_INITBYDIM_ARGS[] = {
                                              {.name = "size", .type = REDISMODULE_ARG_TYPE_INTEGER},
                                              {0}},
     },
+    {.name = "seed", .type = REDISMODULE_ARG_TYPE_STRING, .token = "SEED",
+     .flags = REDISMODULE_CMD_ARG_OPTIONAL},
     {0}};
 
 static const RedisModuleCommandInfo CMS_INITBYDIM_INFO = {
@@ -97,7 +99,7 @@ static const RedisModuleCommandInfo CMS_INITBYDIM_INFO = {
 };
 
 // ===============================
-// CMS.INITBYPROB key error probability [CELL_SIZE 1|2|4|8]
+// CMS.INITBYPROB key error probability [CELL_SIZE 1|2|4|8] [SEED seed]
 // ===============================
 static const RedisModuleCommandKeySpec CMS_INITBYPROB_KEYSPECS[] = {
     {.flags = REDISMODULE_CMD_KEY_RW,
@@ -121,6 +123,8 @@ static const RedisModuleCommandArg CMS_INITBYPROB_ARGS[] = {
                                              {.name = "size", .type = REDISMODULE_ARG_TYPE_INTEGER},
                                              {0}},
     },
+    {.name = "seed", .type = REDISMODULE_ARG_TYPE_STRING, .token = "SEED",
+     .flags = REDISMODULE_CMD_ARG_OPTIONAL},
     {0}};
 
 static const RedisModuleCommandInfo CMS_INITBYPROB_INFO = {

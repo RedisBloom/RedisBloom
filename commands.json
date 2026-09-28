@@ -26,6 +26,12 @@
         "type": "pure-token",
         "token": "NONSCALING",
         "optional": true
+      },
+      {
+        "name": "seed",
+        "type": "string",
+        "token": "SEED",
+        "optional": true
       }
     ],
     "since": "1.0.0",
