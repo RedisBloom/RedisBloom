@@ -34,7 +34,8 @@ _SOURCES=\
 	test-cuckoo.c \
 	test-perf.c \
 	test-seed.c \
-	test-cms.c
+	test-cms.c \
+	test-topk.c
 
 SOURCES=$(addprefix $(SRCDIR)/,$(_SOURCES))
 OBJECTS=$(patsubst $(SRCDIR)/%.c,$(BINDIR)/%.o,$(SOURCES))
@@ -73,7 +74,7 @@ $(BINDIR)/%.o: $(SRCDIR)/%.c
 	@echo Compiling $<...
 	$(SHOW)$(CC) $(CC_FLAGS) -c $< -o $@
 
-TARGETS=$(addprefix $(BINDIR)/test-,basic cuckoo perf seed cms)
+TARGETS=$(addprefix $(BINDIR)/test-,basic cuckoo perf seed cms topk)
 
 $(TARGET): $(TARGETS) 
 
@@ -97,6 +98,10 @@ $(BINDIR)/test-cms: $(BINDIR)/test-cms.o $(MODULE_SO)
 	@echo Creating $@...
 	$(SHOW)$(CC) $(LD_FLAGS) -o $@ $< $(LD_LIBS)
 
+$(BINDIR)/test-topk: $(BINDIR)/test-topk.o $(MODULE_SO)
+	@echo Creating $@...
+	$(SHOW)$(CC) $(LD_FLAGS) -o $@ $< $(LD_LIBS)
+
 clean:
 ifeq ($(ALL),1)
 	$(SHOW)rm -rf $(BINDIR) $(TARGETS)
@@ -112,6 +117,7 @@ test:
 	@$(BINDIR)/test-cuckoo
 	@$(BINDIR)/test-seed
 	@$(BINDIR)/test-cms
+	@$(BINDIR)/test-topk
 
 perf:
 	@$(BINDIR)/test-perf

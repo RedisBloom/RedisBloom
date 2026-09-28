@@ -19,7 +19,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define TOPK_HASH(item, itemlen, i) MurmurHash2(item, itemlen, i)
+/* Add the hash offset modulo 2^32; seed zero preserves legacy hashing. */
+#define TOPK_HASH(topk, item, itemlen, i) \
+    MurmurHash2(item, itemlen, (uint32_t)((topk)->seed + (uint32_t)(i)))
 #define GA 1919
 
 static inline uint32_t max(uint32_t a, uint32_t b) { return a > b ? a : b; }
@@ -124,11 +126,12 @@ void TopK_Destroy(TopK *topk) {
 
 // Complexity O(k + strlen)
 static HeapBucket *checkExistInHeap(TopK *topk, const char *item, size_t itemlen) {
-    uint32_t fp = TOPK_HASH(item, itemlen, GA);
+    uint32_t fp = TOPK_HASH(topk, item, itemlen, GA);
     HeapBucket *runner = topk->heap;
 
+    /* A valid seeded fingerprint can be zero; unused slots are not items. */
     for (int32_t i = topk->k - 1; i >= 0; --i)
-        if (fp == (runner + i)->fp && itemlen == (runner + i)->itemlen &&
+        if ((runner + i)->item != NULL && fp == (runner + i)->fp && itemlen == (runner + i)->itemlen &&
             memcmp((runner + i)->item, item, itemlen) == 0) {
             return runner + i;
         }
@@ -142,13 +145,13 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
     Bucket *runner;
     counter_t *countPtr;
     counter_t maxCount = 0;
-    uint32_t fp = TOPK_HASH(item, itemlen, GA);
+    uint32_t fp = TOPK_HASH(topk, item, itemlen, GA);
 
     counter_t heapMin = topk->heap->count;
 
     // get max item count
     for (uint32_t i = 0; i < topk->depth; ++i) {
-        uint32_t loc = TOPK_HASH(item, itemlen, i) % topk->width;
+        uint32_t loc = TOPK_HASH(topk, item, itemlen, i) % topk->width;
         runner = topk->data + i * topk->width + loc;
         countPtr = &runner->count;
         if (*countPtr == 0) {
@@ -214,14 +217,14 @@ size_t TopK_Count(TopK *topk, const char *item, size_t itemlen) {
     assert(item);
 
     Bucket *runner = NULL;
-    uint32_t fp = TOPK_HASH(item, itemlen, GA);
+    uint32_t fp = TOPK_HASH(topk, item, itemlen, GA);
     // TODO: The optimization of >heapMin should be revisited for performance
     counter_t heapMin = topk->heap->count;
     HeapBucket *heapPtr = checkExistInHeap(topk, item, itemlen);
     counter_t res = 0;
 
     for (uint32_t i = 0; i < topk->depth; ++i) {
-        uint32_t loc = TOPK_HASH(item, itemlen, i) % topk->width;
+        uint32_t loc = TOPK_HASH(topk, item, itemlen, i) % topk->width;
         runner = topk->data + i * topk->width + loc;
         if (runner->fp == fp && (heapPtr == NULL || runner->count >= heapMin)) {
             res = max(res, runner->count);
