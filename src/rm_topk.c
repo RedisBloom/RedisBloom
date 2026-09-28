@@ -303,6 +303,7 @@ static void TopKRdbSave(RedisModuleIO *io, void *obj) {
             RedisModule_SaveStringBuffer(io, "", 1);
         }
     }
+    RedisModule_SaveUnsigned(io, topk->seed);
 }
 
 static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
@@ -383,6 +384,16 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
             // of sync with the item buffer when the input is malformed.
             bucket->itemlen = (uint32_t)(heapSize - 1);
         }
+    }
+
+    /* Version 0 has no seed; calloc preserves its legacy seed of zero. */
+    if (encver >= 1) {
+        uint64_t seed = LoadUnsigned_IOError(io, err, NULL);
+        if (seed > UINT32_MAX) {
+            err = true;
+            return NULL;
+        }
+        topk->seed = (uint32_t)seed;
     }
 
     /* Initialize lookupTable */
