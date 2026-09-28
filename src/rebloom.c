@@ -196,7 +196,7 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     int seedIndex = RMUtil_ArgIndex("SEED", argv + 4, argc - 4);
     if (seedIndex != -1) {
         seedIndex += 4;
-        if (Seed_ParseOption(ctx, argv, argc, seedIndex, &seed) != REDISMODULE_OK) {
+        if (Seed_ParseOption(ctx, argv, argc, seedIndex, &seed, UINT64_MAX) != REDISMODULE_OK) {
             return REDISMODULE_OK;
         }
     } else if (argc > 7) {
@@ -631,7 +631,7 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     int seedIndex = RMUtil_ArgIndex("SEED", argv + 3, argc - 3);
     if (seedIndex != -1) {
         seedIndex += 3;
-        if (Seed_ParseOption(ctx, argv, argc, seedIndex, &seed) != REDISMODULE_OK) {
+        if (Seed_ParseOption(ctx, argv, argc, seedIndex, &seed, UINT64_MAX) != REDISMODULE_OK) {
             return REDISMODULE_OK;
         }
     }

@@ -9,6 +9,7 @@
 
 #include "cms.h"
 #include "rm_cms.h"
+#include "seed.h"
 
 #include "rmutil/util.h"
 #include "version.h"
@@ -52,18 +53,15 @@ static int GetCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName, CMSketch *
 static int parseCellSize(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
                          uint8_t *cellSize) {
     *cellSize = CMS_DEFAULT_CELL_SIZE;
-    if (argc == 4) {
+    int index = RMUtil_ArgIndex("CELL_SIZE", argv + 4, argc - 4);
+    if (index == -1) {
         return REDISMODULE_OK;
     }
-
-    size_t tokenlen;
-    const char *token = RedisModule_StringPtrLen(argv[4], &tokenlen);
-    if (strcasecmp(token, "CELL_SIZE") != 0) {
-        INNER_ERROR("CMS: unknown argument");
-    }
+    index += 4;
 
     long long value = 0;
-    if (RedisModule_StringToLongLong(argv[5], &value) != REDISMODULE_OK ||
+    if (index + 1 == argc ||
+        RedisModule_StringToLongLong(argv[index + 1], &value) != REDISMODULE_OK ||
         !CMS_IS_VALID_CELL_SIZE(value)) {
         INNER_ERROR("CMS: CELL_SIZE must be 1, 2, 4 or 8");
     }
@@ -106,13 +104,14 @@ static int parseCreateArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 
 int CMSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
-    if (argc != 4 && argc != 6) {
+    if (argc != 4 && argc != 6 && argc != 8) {
         return RedisModule_WrongArity(ctx);
     }
 
     CMSketch *cms = NULL;
     long long width = 0, depth = 0;
     uint8_t cellSize = CMS_DEFAULT_CELL_SIZE;
+    uint64_t seed = 0;
     RedisModuleString *keyName = argv[1];
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_READ | REDISMODULE_WRITE);
 
@@ -124,6 +123,23 @@ int CMSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (parseCreateArgs(ctx, argv, argc, &width, &depth, &cellSize) != REDISMODULE_OK)
         return REDISMODULE_OK;
 
+    int seedIndex = RMUtil_ArgIndex("SEED", argv + 4, argc - 4);
+    if (seedIndex != -1) {
+        seedIndex += 4;
+        if (Seed_ParseOption(ctx, argv, argc, seedIndex, &seed, UINT32_MAX) != REDISMODULE_OK) {
+            return REDISMODULE_OK;
+        }
+    }
+
+    /* Each validated option consumes one name/value pair. Reject any remaining
+     * arguments (unknown or duplicate options), regardless of option order. */
+    int expectedArgc = 4;
+    if (RMUtil_ArgIndex("CELL_SIZE", argv + 4, argc - 4) != -1) expectedArgc += 2;
+    if (seedIndex != -1) expectedArgc += 2;
+    if (argc != expectedArgc) {
+        return RedisModule_ReplyWithError(ctx, "CMS: unknown argument");
+    }
+
     cms = NewCMSketch(width, depth, cellSize);
     if (!cms) {
         RedisModule_CloseKey(key);
@@ -131,10 +147,12 @@ int CMSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_OK;
     }
 
+    cms->seed = (uint32_t)seed;
     RedisModule_ModuleTypeSetValue(key, CMSketchType, cms);
 
     RedisModule_CloseKey(key);
-    RedisModule_ReplicateVerbatim(ctx);
+    /* Replay the concrete seed, never a new request for randomness. */
+    Seed_Replicate(ctx, RedisModule_StringPtrLen(argv[0], NULL), argv, argc, seedIndex, seed);
     RedisModule_ReplyWithSimpleString(ctx, "OK");
     return REDISMODULE_OK;
 }

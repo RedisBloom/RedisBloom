@@ -58,7 +58,7 @@ SeedInput Seed_Parse(const char *input, size_t len, uint64_t *value) {
 
 /* index points to SEED. Resolve its value and reply on invalid input. */
 int Seed_ParseOption(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
-                                  int index, uint64_t *seed) {
+                                  int index, uint64_t *seed, uint64_t maxSeed) {
     if (index + 1 == argc ||
         RMUtil_ArgIndex("SEED", argv + index + 1, argc - index - 1) != -1) {
         RedisModule_ReplyWithError(ctx, "ERR expected one SEED value");
@@ -72,7 +72,12 @@ int Seed_ParseOption(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
             ctx, "ERR invalid seed: expected random, unsigned decimal or 0x hexadecimal");
         return REDISMODULE_ERR;
     }
-    if (kind == SEED_INPUT_RANDOM) *seed = Seed_Generate();
+    if (kind == SEED_INPUT_RANDOM) {
+        *seed = Seed_Generate() & maxSeed;
+    } else if (*seed > maxSeed) {
+        RedisModule_ReplyWithErrorFormat(ctx, "ERR seed must be between 0 and %" PRIu64, maxSeed);
+        return REDISMODULE_ERR;
+    }
     return REDISMODULE_OK;
 }
 

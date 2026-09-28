@@ -525,6 +525,12 @@
             "type": "integer"
           }
         ]
+      },
+      {
+        "name": "seed",
+        "type": "string",
+        "token": "SEED",
+        "optional": true
       }
     ],
     "since": "2.0.0",
@@ -561,6 +567,12 @@
             "type": "integer"
           }
         ]
+      },
+      {
+        "name": "seed",
+        "type": "string",
+        "token": "SEED",
+        "optional": true
       }
     ],
     "since": "2.0.0",

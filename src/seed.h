@@ -27,9 +27,10 @@ uint64_t Seed_Generate(void);
  */
 SeedInput Seed_Parse(const char *input, size_t len, uint64_t *value);
 
-/* index points to SEED. Resolve its value and reply on invalid input. */
+/* index points to SEED. maxSeed must be UINT32_MAX or UINT64_MAX.
+ * Resolve its value and reply on invalid input. */
 int Seed_ParseOption(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
-                     int index, uint64_t *seed);
+                     int index, uint64_t *seed, uint64_t maxSeed);
 
 /* Propagate a concrete seed. index points to SEED, or is -1 if omitted.
  * Caller uses RedisModule_AutoMemory for the temporary numeric string.

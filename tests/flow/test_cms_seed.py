@@ -3,6 +3,93 @@ from rdb_corruption_utils import crc64_redis, encode_len, load_len, rewrite_modu
 from test_bloom_seed import wait_until
 
 
+INIT_COMMANDS = [('CMS.INITBYDIM', [64, 5]), ('CMS.INITBYPROB', [0.03125, 0.03125])]
+
+
+def test_init_seed():
+    env = Env(decodeResponses=False)
+    keys = []
+    for size in (1, 2, 4, 8):
+        template = f'template-{size}'
+        env.cmd('CMS.INITBYDIM', template, 64, 5, 'CELL_SIZE', size)
+        payload = env.cmd('DUMP', template)
+        for command, dimensions in INIT_COMMANDS:
+            for name, value, seed in (('default', None, 0), ('zero', '0', 0),
+                                      ('decimal', '123', 123), ('hex', '0x7b', 123),
+                                      ('upper', '0x80000000', 0x80000000),
+                                      ('maximum', '4294967295', 0xffffffff),
+                                      ('random', 'RaNdOm', None)):
+                key = f'{command}-{size}-{name}'
+                options = [] if value is None else ['sEeD', value]
+                # Exercise both option orders and the omitted CELL_SIZE path.
+                if size != 4:
+                    options = (['CELL_SIZE', size] + options if size == 1 else
+                               options + ['CELL_SIZE', size])
+                env.assertEqual(b'OK', env.cmd(command, key, *dimensions, *options))
+                if seed is not None:
+                    env.assertEqual(rewrite_module_uint(payload, 4, seed), env.cmd('DUMP', key))
+                before = env.cmd('DUMP', key)
+                env.cmd('RESTORE', key + '-copy', 0, before)
+                with env.assertResponseError(contained='key already exists'):
+                    env.cmd(command, key, *dimensions, 'SEED', 'random')
+                env.assertEqual(before, env.cmd('DUMP', key))
+                for target in (key, key + '-copy'):
+                    env.assertEqual([7, 3], env.cmd('CMS.INCRBY', target, b'a\0b', 7, b'', 3))
+                    env.assertEqual([7, 3], env.cmd('CMS.QUERY', target, b'a\0b', b''))
+                env.assertEqual(env.cmd('DUMP', key), env.cmd('DUMP', key + '-copy'))
+                keys.append(key)
+    if env.useSlaves:
+        wait_until(env, lambda: env.cmd('WAIT', 1, 1000) == 1)
+        replica = env.getSlaveConnection()
+        for key in keys:
+            env.assertEqual(env.cmd('DUMP', key), replica.execute_command('DUMP', key))
+
+
+def test_init_invalid_seed():
+    env = Env(decodeResponses=False)
+    for command, dimensions in INIT_COMMANDS:
+        for options in (['SEED'], ['SEED', ''], ['SEED', '-1'], ['SEED', '+1'],
+                        ['SEED', '0x'], ['SEED', 'abc'], ['SEED', '4294967296'],
+                        ['SEED', '0x100000000'], ['SEED', '18446744073709551615'],
+                        ['SEED', '1\x00'], ['SEED', ' 1'], ['SEED\x00', 1],
+                        ['SEED', 1, 'SEED', 2], ['CELL_SIZE', 1, 'CELL_SIZE', 2],
+                        ['SEED', 1, 'CELL_SIZE'], ['SEED', 1, 'CELL_SIZE', 3],
+                        ['SEED', 'CELL_SIZE'], ['CELL_SIZE', 'SEED'],
+                        ['CELL_SIZE', 1, 'UNKNOWN', 2], ['CELL_SIZE\x00', 1],
+                        ['UNKNOWN', 1, 'SEED', 2], ['SEED', 1, 'UNKNOWN', 2],
+                        ['UNKNOWN', 'CELL_SIZE', 1, 2], ['UNKNOWN', 'SEED', 1, 2]):
+            with env.assertResponseError():
+                env.cmd(command, 'invalid', *dimensions, *options)
+            env.assertEqual(0, env.cmd('EXISTS', 'invalid'))
+        # Required argument/key values must not be mistaken for option tokens.
+        env.cmd('DEL', 'SEED')
+        env.assertEqual(b'OK', env.cmd(command, 'SEED', *dimensions))
+
+
+def test_init_seed_aof():
+    env = Env(decodeResponses=False, useAof=True, useRdbPreamble=False, freshEnv=True)
+    env.skipOnCluster()
+    dumps = {}
+    for command, dimensions in INIT_COMMANDS:
+        for seed in ('random', '0xffffffff'):
+            for empty in (False, True):
+                key = f'{command}-{seed}-{empty}'
+                env.cmd(command, key, *dimensions, 'SEED', seed)
+                if not empty:
+                    env.cmd('CMS.INCRBY', key, 'item', 7)
+                dumps[key] = (env.cmd('DUMP', key), empty)
+    for rewrite in (False, True):
+        if rewrite:
+            env.dumpAndReload(restart=True)
+            env.assertEqual('ok', env.cmd('INFO', 'persistence')['aof_last_bgrewrite_status'])
+        else:
+            env.stop()
+            env.start()
+        for key, (payload, empty) in dumps.items():
+            env.assertEqual(payload, env.cmd('DUMP', key))
+            env.assertEqual([0 if empty else 7], env.cmd('CMS.QUERY', key, 'item'))
+
+
 def test_seed_rdb_roundtrip():
     env = Env(decodeResponses=False, freshEnv=True)
     env.skipOnCluster()
