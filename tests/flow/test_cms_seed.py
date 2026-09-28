@@ -4,6 +4,9 @@ from test_bloom_seed import wait_until
 
 
 INIT_COMMANDS = [('CMS.INITBYDIM', [64, 5]), ('CMS.INITBYPROB', [0.03125, 0.03125])]
+SEED_CASES = [('default', []), ('zero', ['SEED', 0]), ('manual', ['SEED', 123]),
+              ('upper', ['SEED', '0x80000000']), ('maximum', ['SEED', '0xffffffff']),
+              ('random', ['SEED', 'random'])]
 
 
 def test_init_seed():
@@ -71,13 +74,14 @@ def test_init_seed_aof():
     env.skipOnCluster()
     dumps = {}
     for command, dimensions in INIT_COMMANDS:
-        for seed in ('random', '0xffffffff'):
-            for empty in (False, True):
-                key = f'{command}-{seed}-{empty}'
-                env.cmd(command, key, *dimensions, 'SEED', seed)
-                if not empty:
-                    env.cmd('CMS.INCRBY', key, 'item', 7)
-                dumps[key] = (env.cmd('DUMP', key), empty)
+        for size in (1, 2, 4, 8):
+            for name, options in SEED_CASES:
+                for empty in (False, True):
+                    key = f'{command}-{size}-{name}-{empty}'
+                    env.cmd(command, key, *dimensions, 'CELL_SIZE', size, *options)
+                    if not empty:
+                        env.cmd('CMS.INCRBY', key, 'item', 7)
+                    dumps[key] = (env.cmd('DUMP', key), empty)
     for rewrite in (False, True):
         if rewrite:
             env.dumpAndReload(restart=True)
@@ -88,6 +92,12 @@ def test_init_seed_aof():
         for key, (payload, empty) in dumps.items():
             env.assertEqual(payload, env.cmd('DUMP', key))
             env.assertEqual([0 if empty else 7], env.cmd('CMS.QUERY', key, 'item'))
+            if rewrite:
+                env.cmd('RESTORE', 'reference', 0, payload, 'REPLACE')
+                for target in (key, 'reference'):
+                    env.cmd('CMS.INCRBY', target, 'item', 2, b'\xff\0', 3)
+                    env.cmd('CMS.INCRBY', target, 'item', -1)
+                env.assertEqual(env.cmd('DUMP', 'reference'), env.cmd('DUMP', key))
 
 
 def test_seed_rdb_roundtrip():
@@ -95,22 +105,16 @@ def test_seed_rdb_roundtrip():
     env.skipOnCluster()
     env.skipOnAOF()
     dumps = {}
-    for size in (1, 2, 4, 8):
-        template = f'template-{size}'
-        env.cmd('CMS.INITBYDIM', template, 64, 5, 'CELL_SIZE', size)
-        payload = env.cmd('DUMP', template)
-        env.assertEqual(2, load_len(payload, 1)[0] & 1023)
-        for seed in (0, 123, 0x80000000, 0xffffffff):
-            # Only seed empty sketches: changing the seed of populated cells is invalid.
-            seeded = rewrite_module_uint(payload, 4, seed)
-            for empty in (False, True):
-                key = f'{size}-{seed}-{empty}'
-                env.cmd('RESTORE', key, 0, seeded)
-                env.assertEqual(seeded, env.cmd('DUMP', key))
-                if not empty:
-                    env.assertEqual([7, 3], env.cmd('CMS.INCRBY', key, b'a\0b', 7, b'', 3))
-                dumps[key] = (env.cmd('DUMP', key), empty)
-                env.cmd('RESTORE', key + '-copy', 0, dumps[key][0])
+    for command, dimensions in INIT_COMMANDS:
+        for size in (1, 2, 4, 8):
+            for name, options in SEED_CASES:
+                for empty in (False, True):
+                    key = f'{command}-{size}-{name}-{empty}'
+                    env.cmd(command, key, *dimensions, 'CELL_SIZE', size, *options)
+                    if not empty:
+                        env.assertEqual([7, 3], env.cmd('CMS.INCRBY', key, b'a\0b', 7, b'', 3))
+                    dumps[key] = (env.cmd('DUMP', key), empty)
+                    env.cmd('RESTORE', key + '-copy', 0, dumps[key][0])
 
     for command in ('SAVE', 'BGSAVE'):
         env.cmd('CONFIG', 'SET', 'save', '')
@@ -203,3 +207,81 @@ def test_seed_merge_compatibility():
             with env.assertResponseError(contained='seed is not equal'):
                 env.cmd('CMS.MERGE', destination, 2, *sources)
             env.assertEqual(before, env.cmd('DUMP', destination))
+
+
+def test_seed_public_merge():
+    env = Env(decodeResponses=False)
+    for command, dimensions in INIT_COMMANDS:
+        for size in (1, 2, 4, 8):
+            for _, options in SEED_CASES:
+                env.cmd('DEL', 'a', 'b', 'dest', 'different')
+                env.cmd(command, 'a', *dimensions, 'CELL_SIZE', size, *options)
+                empty = env.cmd('DUMP', 'a')
+                # Copy the empty sketch so random-seeded sources share the same seed.
+                for key in ('b', 'dest'):
+                    env.cmd('RESTORE', key, 0, empty)
+                env.cmd('CMS.INCRBY', 'a', 'item', 3)
+                env.cmd('CMS.INCRBY', 'b', 'item', 2)
+                env.cmd('CMS.MERGE', 'dest', 2, 'a', 'b', 'WEIGHTS', 2, 3)
+                env.assertEqual([12], env.cmd('CMS.QUERY', 'dest', 'item'))
+                env.cmd('CMS.MERGE', 'dest', 2, 'dest', 'a', 'WEIGHTS', 1, -1)
+                env.assertEqual([9], env.cmd('CMS.QUERY', 'dest', 'item'))
+                before = env.cmd('DUMP', 'dest')
+                with env.assertResponseError():
+                    env.cmd('CMS.MERGE', 'dest', 1, 'a', 'WEIGHTS', -1)
+                env.assertEqual(before, env.cmd('DUMP', 'dest'))
+                different = rewrite_module_uint(empty, 4, 0)
+                if different == empty:
+                    different = rewrite_module_uint(empty, 4, 1)
+                env.cmd('RESTORE', 'different', 0, different)
+                for dest, sources in (('dest', ['a', 'different']), ('different', ['a', 'b'])):
+                    before = env.cmd('DUMP', dest)
+                    with env.assertResponseError(contained='seed is not equal'):
+                        env.cmd('CMS.MERGE', dest, 2, *sources)
+                    env.assertEqual(before, env.cmd('DUMP', dest))
+
+
+def test_seed_replica_recovery():
+    env = Env(useSlaves=True, decodeResponses=False, freshEnv=True)
+    env.skipOnCluster()
+    master = env.getConnection()
+    replica = env.getSlaveConnection()
+    keys = []
+    for command, dimensions in INIT_COMMANDS:
+        for size in (1, 2, 4, 8):
+            for name, options in SEED_CASES:
+                for empty in (False, True):
+                    key = f'{command}-{size}-{name}-{empty}'
+                    master.execute_command(command, key, *dimensions, 'CELL_SIZE', size, *options)
+                    if not empty:
+                        master.execute_command('CMS.INCRBY', key, 'item', 7)
+                    keys.append(key)
+    wait_until(env, lambda: master.execute_command('WAIT', 1, 1000) == 1)
+    for key in keys:
+        env.assertEqual(master.execute_command('DUMP', key), replica.execute_command('DUMP', key))
+
+    master.execute_command('CLIENT', 'KILL', 'TYPE', 'replica')
+    changed = keys[-2]  # Populated random-seeded sketch.
+    master.execute_command('CMS.INCRBY', changed, 'item', 1)
+    wait_until(env, lambda: master.execute_command('WAIT', 1, 1000) == 1)
+    env.assertEqual(master.execute_command('DUMP', changed), replica.execute_command('DUMP', changed))
+
+    replication = replica.info('replication')
+    full_syncs = master.info('stats')['sync_full']
+    replica.execute_command('REPLICAOF', 'NO', 'ONE')
+    replica.execute_command('FLUSHALL')
+    replica.execute_command('REPLICAOF', replication['master_host'], replication['master_port'])
+    wait_until(env, lambda: master.info('stats')['sync_full'] > full_syncs)
+    wait_until(env, lambda: master.execute_command('WAIT', 1, 1000) == 1)
+    for key in keys:
+        env.assertEqual(master.execute_command('DUMP', key), replica.execute_command('DUMP', key))
+
+    replica.execute_command('REPLICAOF', 'NO', 'ONE')
+    env.assertEqual('master', replica.info('replication')['role'])
+    for key in keys:
+        for connection in (master, replica):
+            connection.execute_command('CMS.INCRBY', key, 'item', 3)
+            connection.execute_command('CMS.INCRBY', key, 'item', -1)
+        env.assertEqual(master.execute_command('CMS.QUERY', key, 'item'),
+                        replica.execute_command('CMS.QUERY', key, 'item'))
+        env.assertEqual(master.execute_command('DUMP', key), replica.execute_command('DUMP', key))
