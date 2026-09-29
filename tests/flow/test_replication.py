@@ -185,6 +185,7 @@ def _verify_row(env, master, slave, cmd, setup, write, reads):
 
 
 def testWriteCommandsReplicate(env):
+    env.skipOnCluster()  # a cluster env has no replica connection to read
     env = Env(useSlaves=True, protocol=2)
     master, slave = env.getConnection(), env.getSlaveConnection()
     _wait_link_up(env)
