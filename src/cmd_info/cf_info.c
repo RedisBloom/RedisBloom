@@ -53,6 +53,30 @@ static const RedisModuleCommandInfo CF_ADDNX_INFO = {
 };
 
 // ===============================
+// CF.COMPACT key
+// ===============================
+static const RedisModuleCommandKeySpec CF_COMPACT_KEYSPECS[] = {
+    {.flags = REDISMODULE_CMD_KEY_RW,
+     .begin_search_type = REDISMODULE_KSPEC_BS_INDEX,
+     .bs.index = {.pos = 1},
+     .find_keys_type = REDISMODULE_KSPEC_FK_RANGE,
+     .fk.range = {.lastkey = 0, .keystep = 1, .limit = 0}},
+    {0}};
+
+static const RedisModuleCommandArg CF_COMPACT_ARGS[] = {
+    {.name = "key", .type = REDISMODULE_ARG_TYPE_KEY, .key_spec_index = 0}, {0}};
+
+static const RedisModuleCommandInfo CF_COMPACT_INFO = {
+    .version = REDISMODULE_COMMAND_INFO_VERSION,
+    .summary = "Compacts a Cuckoo Filter by moving items into earlier sub-filters",
+    .complexity = "O(n * k), where n is the total number of slots and k is the number of sub-filters",
+    .since = "2.2.0",
+    .arity = 2,
+    .key_specs = (RedisModuleCommandKeySpec *)CF_COMPACT_KEYSPECS,
+    .args = (RedisModuleCommandArg *)CF_COMPACT_ARGS,
+};
+
+// ===============================
 // CF.COUNT key item
 // ===============================
 static const RedisModuleCommandKeySpec CF_COUNT_KEYSPECS[] = {
@@ -400,6 +424,13 @@ int RegisterCFCommandInfos(RedisModuleCtx *ctx) {
     if (!addnx_cmd)
         return REDISMODULE_ERR;
     if (RedisModule_SetCommandInfo(addnx_cmd, &CF_ADDNX_INFO) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+
+    RedisModuleCommand *compact_cmd = RedisModule_GetCommand(ctx, "cf.compact");
+    if (!compact_cmd)
+        return REDISMODULE_ERR;
+    if (RedisModule_SetCommandInfo(compact_cmd, &CF_COMPACT_INFO) == REDISMODULE_ERR) {
         return REDISMODULE_ERR;
     }
 
