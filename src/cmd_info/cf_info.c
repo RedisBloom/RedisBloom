@@ -69,7 +69,8 @@ static const RedisModuleCommandArg CF_COMPACT_ARGS[] = {
 static const RedisModuleCommandInfo CF_COMPACT_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
     .summary = "Compacts a Cuckoo Filter by moving items into earlier sub-filters",
-    .complexity = "O(n * k), where n is the total number of slots and k is the number of sub-filters",
+    .complexity =
+        "O(n * k), where n is the total number of slots and k is the number of sub-filters",
     .since = "2.2.0",
     .arity = 2,
     .key_specs = (RedisModuleCommandKeySpec *)CF_COMPACT_KEYSPECS,
