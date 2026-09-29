@@ -349,7 +349,9 @@ static const RedisModuleCommandArg CF_RESERVE_ARGS[] = {
      .subargs =
          (RedisModuleCommandArg[]){{.name = "expansion", .type = REDISMODULE_ARG_TYPE_INTEGER},
                                    {0}}},
-    {.name = "seed", .type = REDISMODULE_ARG_TYPE_STRING, .token = "SEED",
+    {.name = "seed",
+     .type = REDISMODULE_ARG_TYPE_STRING,
+     .token = "SEED",
      .flags = REDISMODULE_CMD_ARG_OPTIONAL},
     {0}};
 

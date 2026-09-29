@@ -191,18 +191,20 @@ def test_seed_invalid_rdb():
 
 def test_seed_merge_compatibility():
     env = Env(decodeResponses=False)
+    # Shared hash tag keeps all merge keys in the same Redis Cluster slot.
+    dest, a, b, different = ('{cms}:dest', '{cms}:a', '{cms}:b', '{cms}:different')
     env.cmd('CMS.INITBYDIM', 'template', 64, 5)
     template = env.cmd('DUMP', 'template')
     for seed in (0, 123, 0xffffffff):
-        for key in ('dest', 'a', 'b'):
+        for key in (dest, a, b):
             env.cmd('RESTORE', key, 0, rewrite_module_uint(template, 4, seed), 'REPLACE')
-        env.cmd('CMS.INCRBY', 'a', 'item', 3)
-        env.cmd('CMS.INCRBY', 'b', 'item', 2)
-        env.cmd('CMS.MERGE', 'dest', 2, 'a', 'b', 'WEIGHTS', 2, 3)
-        env.assertEqual([12], env.cmd('CMS.QUERY', 'dest', 'item'))
-        env.cmd('RESTORE', 'different', 0, rewrite_module_uint(template, 4, seed ^ 1), 'REPLACE')
-        for destination, sources in (('dest', ['a', 'different']),
-                                     ('different', ['a', 'b']), ('dest', ['dest', 'different'])):
+        env.cmd('CMS.INCRBY', a, 'item', 3)
+        env.cmd('CMS.INCRBY', b, 'item', 2)
+        env.cmd('CMS.MERGE', dest, 2, a, b, 'WEIGHTS', 2, 3)
+        env.assertEqual([12], env.cmd('CMS.QUERY', dest, 'item'))
+        env.cmd('RESTORE', different, 0, rewrite_module_uint(template, 4, seed ^ 1), 'REPLACE')
+        for destination, sources in ((dest, [a, different]),
+                                     (different, [a, b]), (dest, [dest, different])):
             before = env.cmd('DUMP', destination)
             with env.assertResponseError(contained='seed is not equal'):
                 env.cmd('CMS.MERGE', destination, 2, *sources)
@@ -211,30 +213,32 @@ def test_seed_merge_compatibility():
 
 def test_seed_public_merge():
     env = Env(decodeResponses=False)
+    # Shared hash tag keeps MERGE and multi-key DEL valid in Redis Cluster.
+    destination, a, b, different_key = ('{cms}:dest', '{cms}:a', '{cms}:b', '{cms}:different')
     for command, dimensions in INIT_COMMANDS:
         for size in (1, 2, 4, 8):
             for _, options in SEED_CASES:
-                env.cmd('DEL', 'a', 'b', 'dest', 'different')
-                env.cmd(command, 'a', *dimensions, 'CELL_SIZE', size, *options)
-                empty = env.cmd('DUMP', 'a')
+                env.cmd('DEL', a, b, destination, different_key)
+                env.cmd(command, a, *dimensions, 'CELL_SIZE', size, *options)
+                empty = env.cmd('DUMP', a)
                 # Copy the empty sketch so random-seeded sources share the same seed.
-                for key in ('b', 'dest'):
+                for key in (b, destination):
                     env.cmd('RESTORE', key, 0, empty)
-                env.cmd('CMS.INCRBY', 'a', 'item', 3)
-                env.cmd('CMS.INCRBY', 'b', 'item', 2)
-                env.cmd('CMS.MERGE', 'dest', 2, 'a', 'b', 'WEIGHTS', 2, 3)
-                env.assertEqual([12], env.cmd('CMS.QUERY', 'dest', 'item'))
-                env.cmd('CMS.MERGE', 'dest', 2, 'dest', 'a', 'WEIGHTS', 1, -1)
-                env.assertEqual([9], env.cmd('CMS.QUERY', 'dest', 'item'))
-                before = env.cmd('DUMP', 'dest')
+                env.cmd('CMS.INCRBY', a, 'item', 3)
+                env.cmd('CMS.INCRBY', b, 'item', 2)
+                env.cmd('CMS.MERGE', destination, 2, a, b, 'WEIGHTS', 2, 3)
+                env.assertEqual([12], env.cmd('CMS.QUERY', destination, 'item'))
+                env.cmd('CMS.MERGE', destination, 2, destination, a, 'WEIGHTS', 1, -1)
+                env.assertEqual([9], env.cmd('CMS.QUERY', destination, 'item'))
+                before = env.cmd('DUMP', destination)
                 with env.assertResponseError():
-                    env.cmd('CMS.MERGE', 'dest', 1, 'a', 'WEIGHTS', -1)
-                env.assertEqual(before, env.cmd('DUMP', 'dest'))
+                    env.cmd('CMS.MERGE', destination, 1, a, 'WEIGHTS', -1)
+                env.assertEqual(before, env.cmd('DUMP', destination))
                 different = rewrite_module_uint(empty, 4, 0)
                 if different == empty:
                     different = rewrite_module_uint(empty, 4, 1)
-                env.cmd('RESTORE', 'different', 0, different)
-                for dest, sources in (('dest', ['a', 'different']), ('different', ['a', 'b'])):
+                env.cmd('RESTORE', different_key, 0, different)
+                for dest, sources in ((destination, [a, different_key]), (different_key, [a, b])):
                     before = env.cmd('DUMP', dest)
                     with env.assertResponseError(contained='seed is not equal'):
                         env.cmd('CMS.MERGE', dest, 2, *sources)

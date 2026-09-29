@@ -192,7 +192,9 @@ static const RedisModuleCommandArg TOPK_RESERVE_ARGS[] = {
                                           {.name = "depth", .type = REDISMODULE_ARG_TYPE_INTEGER},
                                           {.name = "decay", .type = REDISMODULE_ARG_TYPE_DOUBLE},
                                           {0}}},
-    {.name = "seed", .type = REDISMODULE_ARG_TYPE_STRING, .token = "SEED",
+    {.name = "seed",
+     .type = REDISMODULE_ARG_TYPE_STRING,
+     .token = "SEED",
      .flags = REDISMODULE_CMD_ARG_OPTIONAL},
     {0}};
 

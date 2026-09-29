@@ -56,7 +56,7 @@ class testResp3():
         assert res == True
 
         res = env.cmd('bf.info', 'test')
-        assert res == {b'Capacity': 100, b'Size': 240, b'Number of filters': 1,
+        assert res == {b'Capacity': 100, b'Size': 248, b'Number of filters': 1,
             b'Number of items inserted': 1, b'Expansion rate': 2}
 
         res = env.cmd('bf.insert', 'test', 'ITEMS', 'item2', 'item3', 'item2')

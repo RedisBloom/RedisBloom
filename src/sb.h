@@ -29,7 +29,7 @@ typedef struct SBChain {
     size_t nfilters;  //< Number of links in chain
     unsigned options; //< Options passed directly to bloom_init
     unsigned growth;
-    uint64_t seed;    //< Shared by every link; set before inserting any items.
+    uint64_t seed; //< Shared by every link; set before inserting any items.
 } SBChain;
 
 static inline uint64_t SB_DefaultSeed(unsigned options) {

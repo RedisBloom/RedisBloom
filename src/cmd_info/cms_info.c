@@ -84,7 +84,9 @@ static const RedisModuleCommandArg CMS_INITBYDIM_ARGS[] = {
                                              {.name = "size", .type = REDISMODULE_ARG_TYPE_INTEGER},
                                              {0}},
     },
-    {.name = "seed", .type = REDISMODULE_ARG_TYPE_STRING, .token = "SEED",
+    {.name = "seed",
+     .type = REDISMODULE_ARG_TYPE_STRING,
+     .token = "SEED",
      .flags = REDISMODULE_CMD_ARG_OPTIONAL},
     {0}};
 
@@ -123,7 +125,9 @@ static const RedisModuleCommandArg CMS_INITBYPROB_ARGS[] = {
                                              {.name = "size", .type = REDISMODULE_ARG_TYPE_INTEGER},
                                              {0}},
     },
-    {.name = "seed", .type = REDISMODULE_ARG_TYPE_STRING, .token = "SEED",
+    {.name = "seed",
+     .type = REDISMODULE_ARG_TYPE_STRING,
+     .token = "SEED",
      .flags = REDISMODULE_CMD_ARG_OPTIONAL},
     {0}};
 

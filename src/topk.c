@@ -20,7 +20,7 @@
 #include <stdbool.h>
 
 /* Add the hash offset modulo 2^32; seed zero preserves legacy hashing. */
-#define TOPK_HASH(topk, item, itemlen, i) \
+#define TOPK_HASH(topk, item, itemlen, i)                                                          \
     MurmurHash2(item, itemlen, (uint32_t)((topk)->seed + (uint32_t)(i)))
 #define GA 1919
 
@@ -131,8 +131,8 @@ static HeapBucket *checkExistInHeap(TopK *topk, const char *item, size_t itemlen
 
     /* A valid seeded fingerprint can be zero; unused slots are not items. */
     for (int32_t i = topk->k - 1; i >= 0; --i)
-        if ((runner + i)->item != NULL && fp == (runner + i)->fp && itemlen == (runner + i)->itemlen &&
-            memcmp((runner + i)->item, item, itemlen) == 0) {
+        if ((runner + i)->item != NULL && fp == (runner + i)->fp &&
+            itemlen == (runner + i)->itemlen && memcmp((runner + i)->item, item, itemlen) == 0) {
             return runner + i;
         }
     return NULL;

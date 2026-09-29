@@ -226,7 +226,8 @@ const char *SBChain_GetEncodedChunk(const SBChain *sb, long long *curIter, size_
 }
 
 char *SBChain_GetEncodedHeader(const SBChain *sb, size_t *hdrlen) {
-    *hdrlen = sizeof(dumpedChainHeader) + (sizeof(dumpedChainLink) * sb->nfilters) + sizeof(sb->seed);
+    *hdrlen =
+        sizeof(dumpedChainHeader) + (sizeof(dumpedChainLink) * sb->nfilters) + sizeof(sb->seed);
     dumpedChainHeader *hdr = RedisModule_Calloc(1, *hdrlen);
     hdr->size = sb->size;
     hdr->nfilters = sb->nfilters;

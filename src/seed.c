@@ -57,10 +57,9 @@ SeedInput Seed_Parse(const char *input, size_t len, uint64_t *value) {
 }
 
 /* index points to SEED. Resolve its value and reply on invalid input. */
-int Seed_ParseOption(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
-                                  int index, uint64_t *seed, uint64_t maxSeed) {
-    if (index + 1 == argc ||
-        RMUtil_ArgIndex("SEED", argv + index + 1, argc - index - 1) != -1) {
+int Seed_ParseOption(RedisModuleCtx *ctx, RedisModuleString **argv, int argc, int index,
+                     uint64_t *seed, uint64_t maxSeed) {
+    if (index + 1 == argc || RMUtil_ArgIndex("SEED", argv + index + 1, argc - index - 1) != -1) {
         RedisModule_ReplyWithError(ctx, "ERR expected one SEED value");
         return REDISMODULE_ERR;
     }
@@ -85,8 +84,8 @@ int Seed_ParseOption(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
  * index is the SEED token position, or -1 when the option was omitted.
  * Caller uses RedisModule_AutoMemory for the temporary numeric string.
  */
-void Seed_Replicate(RedisModuleCtx *ctx, const char *command,
-                                 RedisModuleString **argv, int argc, int index, uint64_t seed) {
+void Seed_Replicate(RedisModuleCtx *ctx, const char *command, RedisModuleString **argv, int argc,
+                    int index, uint64_t seed) {
     if (index == -1) {
         RedisModule_ReplicateVerbatim(ctx);
         return;

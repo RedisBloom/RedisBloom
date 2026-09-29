@@ -134,8 +134,10 @@ int CMSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     /* Each validated option consumes one name/value pair. Reject any remaining
      * arguments (unknown or duplicate options), regardless of option order. */
     int expectedArgc = 4;
-    if (RMUtil_ArgIndex("CELL_SIZE", argv + 4, argc - 4) != -1) expectedArgc += 2;
-    if (seedIndex != -1) expectedArgc += 2;
+    if (RMUtil_ArgIndex("CELL_SIZE", argv + 4, argc - 4) != -1)
+        expectedArgc += 2;
+    if (seedIndex != -1)
+        expectedArgc += 2;
     if (argc != expectedArgc) {
         return RedisModule_ReplyWithError(ctx, "CMS: unknown argument");
     }

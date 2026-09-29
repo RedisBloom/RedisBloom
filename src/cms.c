@@ -19,7 +19,7 @@
 
 #define BIT64 64
 /* Add the row modulo 2^32; seed zero preserves the original row-number hashing. */
-#define CMS_HASH(cms, item, itemlen, row)                                                            \
+#define CMS_HASH(cms, item, itemlen, row)                                                          \
     MurmurHash2(item, itemlen, (uint32_t)((cms)->seed + (uint32_t)(row)))
 
 static inline uint64_t cellGet(const CMSketch *cms, size_t loc) {
