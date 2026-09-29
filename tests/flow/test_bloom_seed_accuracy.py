@@ -49,7 +49,6 @@ def test_bloom_seed_accuracy():
         for error in (0.01, 0.001, 0.0001):
             for scenario, count, options in scenarios:
                 false_positives = []
-                seeds = []
                 for mode, seed_option in trials:
                     key = 'seed-accuracy'
                     env.cmd('DEL', key)
@@ -64,13 +63,9 @@ def test_bloom_seed_accuracy():
                     fn = count - count_positive('BF.MEXISTS', key, inserted[:count])
                     fp = count_positive('BF.MEXISTS', key, absent)
                     if mode in ('default', 'random'):
-                        seeds.append(seed)
                         false_positives.append(fp)
                     else:
                         env.assertEqual(int(seed_option[1], 0), seed)
-                        print(f'MANUAL_ACCURACY {error},{dataset},{scenario},{mode},'
-                              f'seed={seed},fp={fp}/{queries},'
-                              f'absent_accuracy={100 * (1 - fp / queries):.6f}%', flush=True)
                     totals[mode][0] += fp
                     totals[mode][1] += queries
                     totals[mode][2] += fn
@@ -88,8 +83,6 @@ def test_bloom_seed_accuracy():
                       f'{min(false_positives[1:])},{max(false_positives[1:])},'
                       f'{100 * (1 - default):.6f},{100 * (1 - random):.6f},'
                       f'{100 * (default - random):+.6f}', flush=True)
-                print(f'TRIALS {dataset}/{error}/{scenario} '
-                      f'seed:false_positives={list(zip(seeds, false_positives))}', flush=True)
     env.cmd('DEL', 'seed-accuracy')
     for mode, (fp, negative_count, fn, positive_count) in totals.items():
         print(f'TOTAL {mode}: false_positives={fp}/{negative_count}, '

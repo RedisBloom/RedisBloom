@@ -1,7 +1,7 @@
 """Top-K recall against exact event counts, with optional real-master comparison.
 
 Run with RLTest --test test_topk_seed_accuracy. Set TOPK_MASTER_MODULE to a
-separately built master module and TOPK_MASTER_REVISION to its commit for comparison.
+separately built master module for comparison.
 The printed accuracy is true heavy hitters found / k, NOT exact count matches.
 Recall comparisons are informational: seed-dependent collisions can help or hurt
 these fixed datasets. Structural correctness assertions still fail the test.
@@ -54,10 +54,6 @@ def test_topk_seed_accuracy():
     baseline_module = os.getenv('TOPK_MASTER_MODULE')
     modes = [('master', baseline_module)] if baseline_module else []
     modes += [('default', None), ('random', None)]
-    print('TOPK_BASELINE ' + json.dumps(dict(module=baseline_module,
-          revision=os.getenv('TOPK_MASTER_REVISION', 'not supplied'), trials=trials)), flush=True)
-    if not baseline_module:
-        print('Master comparison NOT RUN: set TOPK_MASTER_MODULE.', flush=True)
     for mode, module in modes:
         # Separate processes: do not interleave modes through one global rand() state.
         env = Env(module=module, decodeResponses=False, freshEnv=True)
@@ -98,9 +94,6 @@ def test_topk_seed_accuracy():
                 hits = len(selected & mandatory) + min(k - len(mandatory), len(selected & tied))
                 accuracy = 100 * hits / k
                 results[name, mode].append(accuracy)
-                print('TOPK_TRIAL ' + json.dumps(dict(case=name, mode=mode, trial=trial,
-                      seed=seed, stream_seed=17000 + trial, events=len(stream), k=k,
-                      hits=hits, accuracy_pct=accuracy)), flush=True)
                 env.cmd('DEL', 'accuracy')
     for name, k, _, _, _, _, _ in cases:
         for mode, _ in modes:

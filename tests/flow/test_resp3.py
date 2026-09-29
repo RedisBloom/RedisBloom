@@ -113,7 +113,7 @@ class testResp3():
         env.assertEqual(res, 2)
 
         res = env.cmd('cf.info a')
-        assert res == {b'Size': 64, b'Number of buckets': 4,
+        assert res == {b'Size': 72, b'Number of buckets': 4,
                         b'Number of filters': 1, b'Number of items inserted': 5,
                         b'Number of items deleted': 1, b'Bucket size': 2,
                         b'Expansion rate': 0, b'Max iterations': 20}

@@ -104,9 +104,6 @@ def test_cms_seed_accuracy():
                                 total = totals.setdefault((mode, population), [0] * 4)
                                 for i, value in enumerate(metrics):
                                     total[i] += value
-                            print('CMS_TRIAL ' + json.dumps(dict(case=context, queries=metrics[0],
-                                  exact=metrics[1], error_sum=metrics[2], within=within,
-                                  max_error=max(errors), mass=mass)), flush=True)
     env.cmd('DEL', 'cms-seed-accuracy')
     for (mode, population), (count, exact, error_sum, within) in totals.items():
         print('CMS_TOTAL ' + json.dumps(dict(mode=mode, population=population, queries=count,
@@ -127,7 +124,6 @@ def test_cms_accuracy_against_master():
     env.skipOnCluster()
     master_module = os.getenv('CMS_MASTER_MODULE')
     if not master_module:
-        print('CMS master comparison SKIPPED: set CMS_MASTER_MODULE to a master build.', flush=True)
         env.skip()
         return
 
@@ -168,9 +164,6 @@ def test_cms_accuracy_against_master():
     baseline = [populate_and_query(master, case, []) for case in cases]
     env = Env(decodeResponses=False, freshEnv=True)
     totals = {}
-    print('CMS_BASELINE ' + json.dumps(dict(module=master_module,
-          revision=os.getenv('CMS_MASTER_REVISION', 'not supplied'),
-          regression_budget_pp=regression_budget_pp, random_trials=random_trials)), flush=True)
     for case, master_estimates in zip(cases, baseline):
         name, items, absent, truth, error, probability = case
         mass = sum(truth)
@@ -199,9 +192,6 @@ def test_cms_accuracy_against_master():
                 total[0] += len(errors)
                 total[1] += within
                 total[2] += sum(errors) / mass
-                print('CMS_MASTER_TRIAL ' + json.dumps(dict(case=name, mode=mode, seed=seed,
-                      population=population, events=mass, queries=len(errors), within=within,
-                      accuracy_pct=accuracy, mean_error_pct_of_events=normalized_error)), flush=True)
         for population in ('present', 'absent'):
             master_accuracy, master_error = measurements['master', population][0]
             random_accuracy = sum(x[0] for x in measurements['random', population]) / random_trials

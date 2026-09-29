@@ -251,7 +251,9 @@ def test_seed_insert_paths():
         seed = struct.unpack('=Q', header[-8:])[0]
         env.cmd('BF.RESERVE', key + '-reference', 0.000001, 2, 'SEED', str(seed))
         for item in items:
-            env.assertEqual(1, env.cmd('BF.ADD', key, item))
+            # An unseen item may already match the filter due to a false positive.
+            expected = 1 - env.cmd('BF.EXISTS', key, item)
+            env.assertEqual(expected, env.cmd('BF.ADD', key, item))
             env.assertEqual(0, env.cmd('BF.ADD', key, item))
         more = [str(i) for i in range(100)]
         env.cmd('BF.INSERT', key, 'NOCREATE', 'ITEMS', *more)

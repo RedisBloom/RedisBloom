@@ -90,8 +90,6 @@ def test_cuckoo_seed_accuracy():
                             totals[mode][i] += value
                         if mode in ('default', 'random'):
                             measurements[stage].append(fp)
-                        print(f'TRIAL {context},filters={filters},fp={fp}/{queries},'
-                              f'fn={fn}/{len(present)}', flush=True)
                 for stage, counts in measurements.items():
                     if not counts:
                         continue
