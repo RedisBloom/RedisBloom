@@ -119,19 +119,28 @@ int CF_LoadEncodedChunk(const CuckooFilter *cf, long long pos, const char *data,
 }
 
 CuckooFilter *CFHeader_Load(const CFHeader *header, size_t len) {
-    /* Legacy dump headers have no version field and end before seed. Use the exact
-     * header length to recognize them and retain their default seed of zero.
-     * A new header truncated by exactly sizeof(seed) is indistinguishable from legacy. */
-    if (len != offsetof(CFHeader, seed) && len != sizeof(*header)) {
+    if (len < offsetof(CFHeader, seed)) {
         return NULL;
     }
-    if (header->numFilters == 0 || header->numFilters > UINT16_MAX) {
+    /* The flag survives truncation of the trailing seed, so a damaged new header
+     * cannot silently load as legacy. This detects truncation, not deliberate
+     * forgery of both the flag and payload. Unflagged legacy headers use seed zero. */
+    int hasSeed = (header->numFiltersAndFlags & CF_DUMP_HAS_SEED) != 0;
+    if (len != offsetof(CFHeader, seed) + (hasSeed ? sizeof(header->seed) : 0)) {
+        return NULL;
+    }
+    /* Reject reserved bits before masking; otherwise oversized counts get truncated. */
+    if (header->numFiltersAndFlags & CF_DUMP_RESERVED_MASK) {
+        return NULL;
+    }
+    uint64_t numFilters = header->numFiltersAndFlags & CF_DUMP_NUM_FILTERS_MASK;
+    if (numFilters == 0) {
         return NULL;
     }
     CuckooFilter *filter = RedisModule_Calloc(1, sizeof *filter);
     filter->numBuckets = header->numBuckets;
-    filter->numFilters = header->numFilters;
-    filter->seed = len == sizeof(*header) ? header->seed : 0;
+    filter->numFilters = numFilters;
+    filter->seed = hasSeed ? header->seed : 0;
     filter->numItems = header->numItems;
     filter->numDeletes = header->numDeletes;
     filter->bucketSize = header->bucketSize;
@@ -176,7 +185,7 @@ CFHeader fillCFHeader(const CuckooFilter *cf) {
         .numItems = cf->numItems,
         .numBuckets = cf->numBuckets,
         .numDeletes = cf->numDeletes,
-        .numFilters = cf->numFilters,
+        .numFiltersAndFlags = (uint64_t)cf->numFilters | CF_DUMP_HAS_SEED,
         .bucketSize = cf->bucketSize,
         .maxIterations = cf->maxIterations,
         .expansion = cf->expansion,

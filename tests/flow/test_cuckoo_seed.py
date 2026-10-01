@@ -188,11 +188,14 @@ def test_seed_scandump_roundtrip():
             env.assertGreater(len(chunks), 2 if count else 1)
             header = chunks[0][1]
             env.assertEqual(seed, struct.unpack_from('=Q', header, 38)[0])
-            env.assertEqual(len(chunks) - 1, struct.unpack_from('=Q', header, 24)[0])
+            env.assertEqual((1 << 63) | (len(chunks) - 1),
+                            struct.unpack_from('=Q', header, 24)[0])
             targets = [key, key + '-copy']
             if seed == 0:
-                # Generate the old header in memory: it ends before the seed.
-                env.cmd('CF.LOADCHUNK', key + '-legacy', 1, header[:-8])
+                # Legacy headers have neither a seed nor its presence flag.
+                legacy = bytearray(header[:-8])
+                struct.pack_into('=Q', legacy, 24, len(chunks) - 1)
+                env.cmd('CF.LOADCHUNK', key + '-legacy', 1, bytes(legacy))
                 for cursor, chunk in chunks[1:]:
                     env.cmd('CF.LOADCHUNK', key + '-legacy', cursor, chunk)
                 targets.append(key + '-legacy')
@@ -210,6 +213,19 @@ def test_seed_scandump_roundtrip():
                 env.assertEqual(env.cmd('DUMP', key), env.cmd('DUMP', target))
 
 
+def test_seed_truncated_header():
+    env = Env(decodeResponses=False)
+    env.cmd('CF.RESERVE', 'source', 4, 'SEED', 123)
+    env.cmd('CF.ADD', 'source', 'item')
+    cursor, header = env.cmd('CF.SCANDUMP', 'source', 0)
+    env.assertEqual(1, cursor)
+    env.assertEqual(46, len(header))
+    # Removing the seed must not make a new header load as legacy with seed zero.
+    with env.assertResponseError(contained="Couldn't create filter!"):
+        env.cmd('CF.LOADCHUNK', 'restored', cursor, header[:-8])
+    env.assertEqual(0, env.cmd('EXISTS', 'restored'))
+
+
 def test_seed_invalid_scandump():
     env = Env(decodeResponses=False)
     env.cmd('CF.RESERVE', 'source', 4)
@@ -217,10 +233,11 @@ def test_seed_invalid_scandump():
     _, header = env.cmd('CF.SCANDUMP', 'source', 0)
     env.assertEqual(46, len(header))
     overflow = bytearray(header)
-    struct.pack_into('=Q', overflow, 24, 65537)
+    struct.pack_into('=Q', overflow, 24, (1 << 63) | 65537)
     zero_filters = bytearray(header)
-    struct.pack_into('=Q', zero_filters, 24, 0)
-    for invalid in (header[:24], header[:37], header[:39], header[:-1], header + b'\x00',
+    struct.pack_into('=Q', zero_filters, 24, 1 << 63)
+    # Removing exactly the seed must not turn a new header into a legacy one.
+    for invalid in (header[:24], header[:37], header[:39], header[:-8], header[:-1], header + b'\x00',
                     bytes(overflow), bytes(zero_filters)):
         with env.assertResponseError():
             env.cmd('CF.LOADCHUNK', 'invalid', 1, invalid)
