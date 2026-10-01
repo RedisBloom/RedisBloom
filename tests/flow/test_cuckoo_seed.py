@@ -58,6 +58,8 @@ def test_reserve_invalid_seed():
         ['SEED', '0x'], ['SEED', 'abc'], ['SEED', '18446744073709551616'],
         ['SEED', '0x10000000000000000'], ['SEED', '1\x00'], ['SEED', ' 1'],
         ['SEED', 1, 'SEED', 2], ['SEED', 1, 'EXPANSION'],
+        # Option scans must not read past argv when the seed resembles an option.
+        ['SEED', 'MAXITERATIONS'], ['SEED', 'BUCKETSIZE'], ['SEED', 'EXPANSION'],
     ):
         with env.assertResponseError():
             env.cmd('CF.RESERVE', 'invalid', 4, *options)
