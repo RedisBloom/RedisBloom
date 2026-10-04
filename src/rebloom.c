@@ -989,8 +989,9 @@ static int CFScanDump_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
     }
 
     RedisModule_ReplyWithArray(ctx, 2);
-    /* Preserve the legacy empty response, but do not discard a nonzero seed. */
-    if (!cf->numItems && !cf->seed) {
+    /* Empty seeded filters need only the header: the loader allocates zeroed buckets.
+     * Preserve the legacy empty response when the seed is zero. */
+    if (!cf->numItems && (!cf->seed || pos != 0)) {
         RedisModule_ReplyWithLongLong(ctx, 0);
         RedisModule_ReplyWithNull(ctx);
         return REDISMODULE_OK;

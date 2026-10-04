@@ -185,10 +185,14 @@ def test_seed_scandump_roundtrip():
                     break
                 chunks.append((cursor, chunk))
                 env.cmd('CF.LOADCHUNK', key + '-copy', cursor, chunk)
-            env.assertGreater(len(chunks), 2 if count else 1)
+            if count:
+                env.assertGreater(len(chunks), 2)
+            else:
+                env.assertEqual(1, len(chunks))
+                env.assertEqual([0, None], env.cmd('CF.SCANDUMP', key, 1))
             header = chunks[0][1]
             env.assertEqual(seed, struct.unpack_from('=Q', header, 38)[0])
-            env.assertEqual((1 << 63) | (len(chunks) - 1),
+            env.assertEqual((1 << 63) | (len(chunks) - 1 if count else 1),
                             struct.unpack_from('=Q', header, 24)[0])
             targets = [key, key + '-copy']
             if seed == 0:
@@ -211,6 +215,24 @@ def test_seed_scandump_roundtrip():
                                 env.cmd('CF.MEXISTS', target, *(items + more[1:])))
             for target in targets:
                 env.assertEqual(env.cmd('DUMP', key), env.cmd('DUMP', target))
+
+
+def test_seed_scandump_after_delete():
+    env = Env(decodeResponses=False)
+    env.cmd('CF.RESERVE', 'source', 4, 'SEED', 123)
+    items = [str(i) for i in range(100)]
+    env.cmd('CF.INSERT', 'source', 'ITEMS', *items)
+    for item in items:
+        env.assertEqual(1, env.cmd('CF.DEL', 'source', item))
+    cursor, header = env.cmd('CF.SCANDUMP', 'source', 0)
+    env.assertEqual(1, cursor)
+    env.assertEqual(123, struct.unpack_from('=Q', header, 38)[0])
+    env.assertEqual([0, None], env.cmd('CF.SCANDUMP', 'source', cursor))
+    env.cmd('CF.LOADCHUNK', 'restored', cursor, header)
+    env.assertEqual(env.cmd('DUMP', 'source'), env.cmd('DUMP', 'restored'))
+    for key in ('source', 'restored'):
+        env.assertEqual([1] * len(items), env.cmd('CF.INSERT', key, 'ITEMS', *items))
+        env.assertEqual([1] * len(items), env.cmd('CF.MEXISTS', key, *items))
 
 
 def test_seed_truncated_header():
