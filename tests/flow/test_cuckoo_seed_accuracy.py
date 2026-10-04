@@ -7,6 +7,7 @@ seeds allow individual trials to be replayed. This does not test attack resistan
 
 import hashlib
 import math
+import os
 import struct
 
 from common import Env
@@ -14,6 +15,9 @@ from common import Env
 
 def test_cuckoo_seed_accuracy():
     env = Env(decodeResponses=False)
+    # Full statistical sweeps are opt-in; CI runs them once on regular Jammy x64.
+    if os.getenv('SEED_ACCURACY') != '1':
+        env.skip()
     capacity, queries, random_trials, batch_size = 2048, 100_000, 10, 5000
     trials = [('default', [])] + [('random', ['SEED', 'random'])] * random_trials
     trials += [('manual-zero', ['SEED', 0]),

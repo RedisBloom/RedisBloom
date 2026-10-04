@@ -35,6 +35,9 @@ def cms_seed(payload):
 
 def test_cms_seed_accuracy():
     env = Env(decodeResponses=False)
+    # Full statistical sweeps are opt-in; CI runs them once on regular Jammy x64.
+    if os.getenv('SEED_ACCURACY') != '1':
+        env.skip()
     queries, batch_size = 4096, 1024
     trials = [('default', [])] + [('random', ['SEED', 'random'])] * 10
     trials += [('manual-zero', ['SEED', 0]), ('manual-upper', ['SEED', '0x80000000']),

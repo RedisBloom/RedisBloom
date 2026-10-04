@@ -8,6 +8,7 @@ not an application-wide accuracy that depends on the proportion of present items
 
 import hashlib
 import math
+import os
 import struct
 
 from common import Env
@@ -15,6 +16,9 @@ from common import Env
 
 def test_bloom_seed_accuracy():
     env = Env(decodeResponses=False)
+    # Full statistical sweeps are opt-in; CI runs them once on regular Jammy x64.
+    if os.getenv('SEED_ACCURACY') != '1':
+        env.skip()
     queries = 100_000
     random_trials = 10
     capacity = 2_000

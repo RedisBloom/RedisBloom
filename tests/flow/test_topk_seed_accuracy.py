@@ -20,6 +20,9 @@ from rdb_corruption_utils import load_len
 
 def test_topk_seed_accuracy():
     env = Env(decodeResponses=False)
+    # Full statistical sweeps are opt-in; CI runs them once on regular Jammy x64.
+    if os.getenv('SEED_ACCURACY') != '1':
+        env.skip()
     env.skipOnCluster()
     trials = 20
     profiles = [(10, []), (10, [64, 5, 0.9]),
