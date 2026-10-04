@@ -49,7 +49,7 @@ SeedInput Seed_Parse(const char *input, size_t len, uint64_t *value) {
     int base = len >= 2 && input[0] == '0' && (input[1] == 'x' || input[1] == 'X') ? 16 : 10;
     errno = 0;
     unsigned long long parsed = strtoull(buffer, &end, base);
-    if (errno == ERANGE || end != buffer + len || parsed > UINT64_MAX) {
+    if (errno == ERANGE || end != buffer + len) {
         return SEED_INPUT_INVALID;
     }
     *value = parsed;
