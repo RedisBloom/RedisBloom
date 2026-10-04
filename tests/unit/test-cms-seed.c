@@ -1,4 +1,4 @@
-/* Run with gmake unit-tests. Keep assertions active in release builds. */
+/* CMS seed tests. Run with gmake unit-tests. Keep assertions active in release builds. */
 #undef NDEBUG
 #include <assert.h>
 #include <stdlib.h>
