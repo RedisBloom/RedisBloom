@@ -57,6 +57,7 @@ help() {
 		QUICK=1               Perform only GEN=1 test variant
 
 		TEST=name             Run specific test (e.g. test.py:test_name)
+		TEST_TIMEOUT=seconds  Per-test timeout (1800; 10800 with VG=1; 0 disables)
 		TESTFILE=file         Run tests listed in `file`
 		FAILEDFILE=file       Write failed tests into `file`
 
@@ -179,6 +180,16 @@ setup_rltest() {
 	if [[ $RLTEST_CONSOLE == 1 ]]; then
 		RLTEST_ARGS+=" -i"
 	fi
+
+	# Report a stuck test's traceback instead of waiting for the 6-hour job limit.
+	if [[ -z $TEST_TIMEOUT ]]; then
+		if [[ $VG == 1 ]]; then
+			TEST_TIMEOUT=10800
+		else
+			TEST_TIMEOUT=1800
+		fi
+	fi
+	RLTEST_ARGS+=" --test-timeout $TEST_TIMEOUT"
 }
 
 #----------------------------------------------------------------------------------------------

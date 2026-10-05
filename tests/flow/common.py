@@ -1,9 +1,15 @@
 
 import sys
 import os
-from RLTest import Env, Defaults
+from functools import partial
+from RLTest import Env as _Env, Defaults
 from redis import ResponseError
 from packaging import version
+
+# Bound teardown for both explicitly created and runner-provided environments.
+# Without retries, RLTest can wait forever for a replica to exit after SIGTERM.
+Env = partial(_Env, terminateRetries=20, terminateRetrySecs=1)
+Defaults.env_factory = Env
 
 
 #if sys.version_info > (3, 0):
