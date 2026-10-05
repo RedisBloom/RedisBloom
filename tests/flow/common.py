@@ -6,12 +6,6 @@ from RLTest import Env as _Env, Defaults
 from redis import ResponseError
 from packaging import version
 
-# Bound teardown for both explicitly created and runner-provided environments.
-# Without retries, RLTest can wait forever for a replica to exit after SIGTERM.
-Env = partial(_Env, terminateRetries=20, terminateRetrySecs=1)
-Defaults.env_factory = Env
-
-
 #if sys.version_info > (3, 0):
 #    Defaults.decode_responses = True
 
@@ -25,6 +19,11 @@ ONLY_STABLE = os.getenv('ONLY_STABLE', '0') == '1'
 SANITIZER = os.getenv('SANITIZER', '')
 VALGRIND = os.getenv('VALGRIND', '0') == '1'
 CODE_COVERAGE = os.getenv('CODE_COVERAGE', '0') == '1'
+
+# Bound teardown for both explicitly created and runner-provided environments.
+# Valgrind needs extra time for exit-time analysis after Redis finishes shutdown.
+Env = partial(_Env, terminateRetries=300 if VALGRIND else 20, terminateRetrySecs=1)
+Defaults.env_factory = Env
 
 OSNICK = paella.Platform().osnick
 OS = paella.Platform().os
