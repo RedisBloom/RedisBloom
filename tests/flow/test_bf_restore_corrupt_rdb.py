@@ -660,6 +660,8 @@ class testBFRestoreCorruptRDB():
             (b"error_nan", _corrupt_dump_set_nth_double(dump_payload, 1, float("nan"))),
             (b"bpe_inf", _corrupt_dump_set_nth_double(dump_payload, 2, float("inf"))),
             (b"options_narrow", _corrupt_dump_set_nth_uint(dump_payload, 3, 1 << 32)),
+            # A 32-bit filter cannot use the saved 64-bit default seed.
+            (b"seed_narrow", _corrupt_dump_set_nth_uint(dump_payload, 3, 1)),
             (b"hashes_narrow", _corrupt_dump_set_nth_uint(dump_payload, 6, (1 << 32) + 7)),
             (b"n2_narrow", _corrupt_dump_set_nth_uint(dump_payload, 8, (1 << 32) + 14)),
         )

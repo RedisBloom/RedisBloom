@@ -26,6 +26,12 @@
         "type": "pure-token",
         "token": "NONSCALING",
         "optional": true
+      },
+      {
+        "name": "seed",
+        "type": "string",
+        "token": "SEED",
+        "optional": true
       }
     ],
     "since": "1.0.0",
@@ -269,6 +275,12 @@
         "name": "expansion",
         "type": "integer",
         "token": "EXPANSION",
+        "optional": true
+      },
+      {
+        "name": "seed",
+        "type": "string",
+        "token": "SEED",
         "optional": true
       }
     ],
@@ -519,6 +531,12 @@
             "type": "integer"
           }
         ]
+      },
+      {
+        "name": "seed",
+        "type": "string",
+        "token": "SEED",
+        "optional": true
       }
     ],
     "since": "2.0.0",
@@ -555,6 +573,12 @@
             "type": "integer"
           }
         ]
+      },
+      {
+        "name": "seed",
+        "type": "string",
+        "token": "SEED",
+        "optional": true
       }
     ],
     "since": "2.0.0",
@@ -684,6 +708,12 @@
             "type": "double"
           }
         ]
+      },
+      {
+        "name": "seed",
+        "type": "string",
+        "token": "SEED",
+        "optional": true
       }
     ],
     "since": "2.0.0",
