@@ -114,6 +114,9 @@ static int TopK_Create_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
     TopK *topk = NULL;
     if (createTopK(ctx, argv, seedIndex == -1 ? argc : seedIndex, &topk) != REDISMODULE_OK)
         goto final;
+    if (seedIndex == -1 && Seed_ResolveDefault(ctx, &seed, UINT32_MAX, 0)) {
+        seedIndex = argc;
+    }
     topk->seed = (uint32_t)seed;
 
     if (RedisModule_ModuleTypeSetValue(key, TopKType, topk) == REDISMODULE_ERR) {

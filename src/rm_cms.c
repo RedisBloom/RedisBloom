@@ -149,6 +149,9 @@ int CMSketch_Create(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         return REDISMODULE_OK;
     }
 
+    if (seedIndex == -1 && Seed_ResolveDefault(ctx, &seed, UINT32_MAX, 1)) {
+        seedIndex = argc;
+    }
     cms->seed = (uint32_t)seed;
     RedisModule_ModuleTypeSetValue(key, CMSketchType, cms);
 

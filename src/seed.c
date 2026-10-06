@@ -8,6 +8,7 @@
  */
 
 #include "seed.h"
+#include "config.h"
 #include "rmutil/util.h"
 #include <errno.h>
 #include <inttypes.h>
@@ -24,11 +25,22 @@ uint64_t Seed_Generate(void) {
     return seed;
 }
 
+int Seed_ResolveDefault(RedisModuleCtx *ctx, uint64_t *seed, uint64_t maxSeed, int supportsMerge) {
+    if (rm_config.default_seed_policy == SEED_POLICY_LEGACY ||
+        (supportsMerge && rm_config.default_seed_policy == SEED_POLICY_RANDOM_NONMERGE) ||
+        (RedisModule_GetContextFlags(ctx) &
+         (REDISMODULE_CTX_FLAGS_LOADING | REDISMODULE_CTX_FLAGS_REPLICATED))) {
+        return 0;
+    }
+    *seed = Seed_Generate() & maxSeed;
+    return 1;
+}
+
 /* Parse the value following SEED: case-insensitive "random", unsigned decimal,
  * or 0x-prefixed hexadecimal. Accept at most 20 characters, with no sign or
  * whitespace. Input need not be NUL
  * terminated. Write value only for manual input; do not generate randomness
- * here. An omitted SEED option is handled by the command's legacy path.
+ * here. An omitted SEED option is handled by Seed_ResolveDefault.
  */
 SeedInput Seed_Parse(const char *input, size_t len, uint64_t *value) {
     if (input == NULL || value == NULL || len == 0 || len > 20) {
@@ -81,7 +93,7 @@ int Seed_ParseOption(RedisModuleCtx *ctx, RedisModuleString **argv, int argc, in
 }
 
 /* Propagate a concrete seed so replay never generates a new random value.
- * index is the SEED token position, or -1 when the option was omitted.
+ * index is the SEED token position, argc to append it, or -1 for verbatim replay.
  * Caller uses RedisModule_AutoMemory for the temporary numeric string.
  */
 void Seed_Replicate(RedisModuleCtx *ctx, const char *command, RedisModuleString **argv, int argc,
@@ -90,8 +102,12 @@ void Seed_Replicate(RedisModuleCtx *ctx, const char *command, RedisModuleString 
         RedisModule_ReplicateVerbatim(ctx);
         return;
     }
-    RedisModuleString **args = RedisModule_PoolAlloc(ctx, sizeof(*args) * (argc - 1));
+    size_t count = index == argc ? argc + 1 : argc - 1;
+    RedisModuleString **args = RedisModule_PoolAlloc(ctx, sizeof(*args) * count);
     memcpy(args, argv + 1, sizeof(*args) * (argc - 1));
+    if (index == argc) {
+        args[argc - 1] = RedisModule_CreateString(ctx, "SEED", 4);
+    }
     args[index] = RedisModule_CreateStringPrintf(ctx, "%" PRIu64, seed);
-    RedisModule_Replicate(ctx, command, "v", args, (size_t)(argc - 1));
+    RedisModule_Replicate(ctx, command, "v", args, count);
 }

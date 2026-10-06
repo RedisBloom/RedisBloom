@@ -18,6 +18,10 @@ typedef enum { SEED_INPUT_INVALID, SEED_INPUT_MANUAL, SEED_INPUT_RANDOM } SeedIn
 /* Generate once after module API initialization; persist/replicate the result. */
 uint64_t Seed_Generate(void);
 
+/* Resolve an omitted SEED for a new key. Return 1 if the policy randomized it.
+ * Replay keeps legacy defaults; randomized creations propagate a concrete seed. */
+int Seed_ResolveDefault(RedisModuleCtx *ctx, uint64_t *seed, uint64_t maxSeed, int supportsMerge);
+
 /* Accept "random", unsigned decimal, or 0x-prefixed hex (at most 20 characters).
  * Input need not be NUL terminated. Write value only for valid manual input.
  */
@@ -28,7 +32,8 @@ SeedInput Seed_Parse(const char *input, size_t len, uint64_t *value);
 int Seed_ParseOption(RedisModuleCtx *ctx, RedisModuleString **argv, int argc, int index,
                      uint64_t *seed, uint64_t maxSeed);
 
-/* Propagate a concrete seed. index points to SEED, or is -1 if omitted.
+/* Propagate a concrete seed. index points to SEED, is argc to append it,
+ * or -1 to preserve the original command.
  * Caller uses RedisModule_AutoMemory for the temporary numeric string.
  */
 void Seed_Replicate(RedisModuleCtx *ctx, const char *command, RedisModuleString **argv, int argc,

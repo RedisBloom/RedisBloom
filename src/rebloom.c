@@ -221,6 +221,9 @@ static int BFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         return REDISMODULE_OK;
     }
 
+    if (seedIndex == -1 && Seed_ResolveDefault(ctx, &seed, UINT64_MAX, 0)) {
+        seedIndex = argc;
+    }
     sb->seed = seed;
     RedisModule_ReplyWithSimpleString(ctx, "OK");
     /* Propagate the resolved seed so replicas and AOF replay don't generate a different one. */
@@ -298,6 +301,13 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
                 RedisModule_ReplyWithError(ctx, "ERR could not create filter");
             }
             return REDISMODULE_OK;
+        }
+        if (Seed_ResolveDefault(ctx, &sb->seed, UINT64_MAX, 0)) {
+            /* Replay the empty filter's seed and options before the insertion. */
+            size_t len;
+            char *header = SBChain_GetEncodedHeader(sb, &len);
+            RedisModule_Replicate(ctx, "BF.LOADCHUNK", "slb", keystr, 1LL, header, len);
+            SB_FreeEncodedHeader(header);
         }
     } else if (status != SB_OK) {
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
@@ -662,6 +672,9 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
         }
         return REDISMODULE_OK;
     } else {
+        if (seedIndex == -1 && Seed_ResolveDefault(ctx, &seed, UINT64_MAX, 0)) {
+            seedIndex = argc;
+        }
         cf->seed = seed;
         /* Propagate the resolved seed so replicas and AOF replay use the same value. */
         Seed_Replicate(ctx, "CF.RESERVE", argv, argc, seedIndex, seed);
@@ -696,6 +709,12 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
             return REDISMODULE_OK;
         }
         autocreated = true;
+        if (Seed_ResolveDefault(ctx, &cf->seed, UINT64_MAX, 0)) {
+            /* The loader allocates zeroed buckets; only the header is needed here. */
+            CFHeader header = fillCFHeader(cf);
+            RedisModule_Replicate(ctx, "CF.LOADCHUNK", "slb", keystr, 1LL, (const char *)&header,
+                                  sizeof header);
+        }
     } else if (status != SB_OK) {
         return RedisModule_ReplyWithError(ctx, statusStrerror(status));
     }
