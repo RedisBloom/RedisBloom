@@ -1,4 +1,4 @@
-RLTest == 0.7.29
+RLTest == 0.7.31
 # Capped below redis-py 6: from 6 on the client adds connection kwargs (himport_registry)
 # that Redis.__init__ does not take, and tests that rebuild a client from a pool's
 # connection_kwargs then fail with a TypeError (MOD-18341). RLTest's own requirement on
