@@ -1,3 +1,4 @@
+import re
 import struct
 
 from common import *
@@ -914,8 +915,14 @@ class testTDigestRestoreCorruptRDB():
 
         # The PoC uses the Lua CClosure address as its first memory-read target.
         closure_reply = env.cmd("EVAL", "return tostring(string.format)", 0)
-        closure = int(closure_reply.decode().split("0x", 1)[1], 16)
-        payload = _build_p88w_first_restore_payload(seed_dump, closure + 32)
+        if closure_reply == b"function: <opaque>":
+            # RESTORE must reject the forged capacity before reading the fake pointers.
+            fake_address = 0
+        elif re.fullmatch(rb"function: 0x[0-9a-fA-F]+", closure_reply):
+            fake_address = int(closure_reply.split(b"0x", 1)[1], 16) + 32
+        else:
+            raise ValueError(f"Unexpected Lua function representation: {closure_reply!r}")
+        payload = _build_p88w_first_restore_payload(seed_dump, fake_address)
 
         with env.assertResponseError():
             env.cmd("RESTORE", corrupt_key, 0, payload, "REPLACE")
