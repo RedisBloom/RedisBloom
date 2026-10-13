@@ -1,4 +1,5 @@
 import random
+import struct
 
 from common import *
 
@@ -439,6 +440,19 @@ class testRedisBloom():
 class testRedisBloomNoCodec():
     def __init__(self):
         self.env = Env(decodeResponses=False)
+
+    def test_loadchunk_rejects_excessive_hashes(self):
+        header = struct.pack(
+            '=QIIIQQQddIQB',
+            0, 1, 1, 2,                 # chain: size, filters, options, growth
+            1, 8, 0,                    # filter: bytes, bits, size
+            0.01, 3098164007.0,         # error rate, bits per element
+            (1 << 31) - 1, 1, 0,        # hashes, entries, n2
+        )
+
+        self.env.assertRaises(ResponseError, self.env.cmd,
+                              'BF.LOADCHUNK', 'crafted', 1, header)
+        self.env.assertEqual(0, self.env.cmd('EXISTS', 'crafted'))
 
     def test_scandump(self):
         env = self.env
