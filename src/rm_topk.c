@@ -15,6 +15,7 @@
 #include "cmd_info/command_info.h"
 #include "topk.h"
 #include "rm_topk.h"
+#include "seed.h"
 #include "rm_cms.h"
 #include "common.h"
 #include <math.h>
@@ -87,7 +88,8 @@ static int createTopK(RedisModuleCtx *ctx, RedisModuleString **argv, int argc, T
 }
 
 static int TopK_Create_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    if (argc != 3 && argc != 6) {
+    RedisModule_AutoMemory(ctx);
+    if (argc != 3 && argc != 5 && argc != 6 && argc != 8) {
         return RedisModule_WrongArity(ctx);
     }
 
@@ -97,15 +99,32 @@ static int TopK_Create_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         goto final;
     }
 
+    uint64_t seed = 0;
+    int seedIndex = -1;
+    if (argc == 5 || argc == 8) {
+        seedIndex = argc - 2;
+        if (RMUtil_ArgIndex("SEED", argv + seedIndex, 1) == -1) {
+            RedisModule_ReplyWithError(ctx, "TopK: expected SEED value");
+            goto final;
+        }
+        if (Seed_ParseOption(ctx, argv, argc, seedIndex, &seed, UINT32_MAX) != REDISMODULE_OK)
+            goto final;
+    }
+
     TopK *topk = NULL;
-    if (createTopK(ctx, argv, argc, &topk) != REDISMODULE_OK)
+    if (createTopK(ctx, argv, seedIndex == -1 ? argc : seedIndex, &topk) != REDISMODULE_OK)
         goto final;
+    if (seedIndex == -1 && Seed_ResolveDefault(ctx, &seed, UINT32_MAX, 0)) {
+        seedIndex = argc;
+    }
+    topk->seed = (uint32_t)seed;
 
     if (RedisModule_ModuleTypeSetValue(key, TopKType, topk) == REDISMODULE_ERR) {
         goto final;
     }
 
-    RedisModule_ReplicateVerbatim(ctx);
+    /* Replicate the resolved seed so replicas/AOF replay never rerandomize it. */
+    Seed_Replicate(ctx, "TOPK.RESERVE", argv, argc, seedIndex, seed);
     RedisModule_ReplyWithSimpleString(ctx, "OK");
 final:
     RedisModule_CloseKey(key);
@@ -303,6 +322,7 @@ static void TopKRdbSave(RedisModuleIO *io, void *obj) {
             RedisModule_SaveStringBuffer(io, "", 1);
         }
     }
+    RedisModule_SaveUnsigned(io, topk->seed);
 }
 
 static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
@@ -383,6 +403,16 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
             // of sync with the item buffer when the input is malformed.
             bucket->itemlen = (uint32_t)(heapSize - 1);
         }
+    }
+
+    /* Version 0 has no seed; calloc preserves its legacy seed of zero. */
+    if (encver >= 1) {
+        uint64_t seed = LoadUnsigned_IOError(io, err, NULL);
+        if (seed > UINT32_MAX) {
+            err = true;
+            return NULL;
+        }
+        topk->seed = (uint32_t)seed;
     }
 
     /* Initialize lookupTable */

@@ -20,6 +20,12 @@
 #define BF_ERROR_RATE_CAP 0.25
 
 typedef enum {
+    SEED_POLICY_LEGACY,
+    SEED_POLICY_RANDOM_NONMERGE,
+    SEED_POLICY_RANDOM_ALL,
+} SeedPolicy;
+
+typedef enum {
     bf_error_rate,
     bf_initial_size,
     bf_expansion_factor,
@@ -84,6 +90,8 @@ typedef struct {
     /*********************************
      * BLOOM FILTER CONFIG OPTIONS:  *
      *********************************/
+    // Default for new keys without an explicit SEED option.
+    SeedPolicy default_seed_policy;
     // Error ratio.
     RM_ConfigFloat bf_error_rate;
     // Initial capacity.

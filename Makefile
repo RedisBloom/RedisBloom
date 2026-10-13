@@ -166,6 +166,7 @@ _SOURCES=\
 	src/cmd_info/topk_info.c \
 	src/rebloom.c \
 	src/sb.c \
+	src/seed.c \
 	src/cf.c \
 	src/rm_topk.c \
 	src/rm_tdigest.c \
