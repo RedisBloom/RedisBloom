@@ -12,11 +12,6 @@ permissions:
   contents: read
 jobs:
   compare:
-    env:
-      # Match the build host's glibc; the legacy redisbloom-m5 default is Ubuntu 20.04.
-      # Shared us-east-2 Ubuntu 24.04 performance image used by modules-m5.
-      TF_VAR_instance_ami: ami-0ea6aaf5946625af3
-      TF_VAR_os: ubuntu24.04
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     strategy:
@@ -76,6 +71,7 @@ jobs:
             --state "$RUNNER_TEMP/benchmark-aws.json" \
             --private-key "$RUNNER_TEMP/benchmark.pem" \
             --baseline-dir nightly-bundle/baseline --master-dir nightly-bundle/master \
+            --redis-server nightly-bundle/redis-server \
             --plan nightly-bundle/plan.json --shard ${{ matrix.shard }} \
             --output nightly-results/shard-${{ matrix.shard }} --max-retries "${MAX_RETRIES}"
 

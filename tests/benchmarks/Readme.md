@@ -86,8 +86,10 @@ chosen starting commit (for example, current master). The workflow deliberately 
 if the requested baseline branch does not exist; it does not silently pick another ref.
 AWS and publishing use the existing `PERFORMANCE_EC2_*` and `PERFORMANCE_RTS_*` secrets,
 the existing `PERFORMANCE_EC2_PRIVATE_PEM` SSH secret, and the existing Terraform infrastructure.
-The new AWS jobs override the legacy Ubuntu 20.04 AMI with the shared us-east-2 Ubuntu
-24.04 performance image (`ami-0ea6aaf5946625af3`) to match the build host’s glibc.
+Nightly uses the legacy Ubuntu 20.04 AWS image and builds both modules in the original
+`redisfab/rmbuilder:6.2.7-x64-focal` container. A shared Redis 8.6 server is built in the
+same container and uploaded for both sides; the image's older Redis cannot load the
+current module's unprefixed configuration options. Event CI is unchanged.
 The legacy benchmark workflow is unchanged.
 Repository branch rules must permit the scheduled workflow to update `benchmark-baseline`.
 
