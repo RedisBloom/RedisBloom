@@ -157,8 +157,8 @@ static int TopK_AddCommon(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
             TOPK_FREE(expelledItem);
         }
     }
-    RedisModule_Replicate(ctx, "TOPK._ADD_SEEDED", "slv", argv[1], (long long)seed, argv + firstItem,
-                          (size_t)itemCount);
+    RedisModule_Replicate(ctx, "TOPK._ADD_SEEDED", "slv", argv[1], (long long)seed,
+                          argv + firstItem, (size_t)itemCount);
     return REDISMODULE_OK;
 }
 
@@ -193,8 +193,8 @@ static int TopK_IncrbyCommon(RedisModuleCtx *ctx, RedisModuleString **argv, int 
         size_t itemlen;
         const char *item = RedisModule_StringPtrLen(argv[firstItem + i * 2], &itemlen);
         long long increment;
-        if (RedisModule_StringToLongLong(argv[firstItem + i * 2 + 1], &increment) || increment < 0 ||
-            increment > 100000) {
+        if (RedisModule_StringToLongLong(argv[firstItem + i * 2 + 1], &increment) ||
+            increment < 0 || increment > 100000) {
             RedisModule_ReplyWithError(
                 ctx, "TopK: increment must be an integer greater or equal to 0    \
                         and smaller or equal to 100,000");
@@ -210,8 +210,8 @@ static int TopK_IncrbyCommon(RedisModuleCtx *ctx, RedisModuleString **argv, int 
         }
     }
 final:
-    RedisModule_Replicate(ctx, "TOPK._INCRBY_SEEDED", "slv", argv[1], (long long)seed, argv + firstItem,
-                          (size_t)(argc - firstItem));
+    RedisModule_Replicate(ctx, "TOPK._INCRBY_SEEDED", "slv", argv[1], (long long)seed,
+                          argv + firstItem, (size_t)(argc - firstItem));
     return REDISMODULE_OK;
 }
 
@@ -482,8 +482,10 @@ int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RegisterCommand(ctx, "topk.reserve", TopK_Create_Cmd, "write deny-oom", "write fast");
     RegisterCommand(ctx, "topk.add", TopK_Add_Cmd, "write deny-oom", "write");
     RegisterCommand(ctx, "topk.incrby", TopK_Incrby_Cmd, "write deny-oom", "write");
-    RegisterCommand(ctx, "topk._add_seeded", TopK_AddSeeded_Cmd, "write deny-oom internal", "write");
-    RegisterCommand(ctx, "topk._incrby_seeded", TopK_IncrbySeeded_Cmd, "write deny-oom internal", "write");
+    RegisterCommand(ctx, "topk._add_seeded", TopK_AddSeeded_Cmd, "write deny-oom internal",
+                    "write");
+    RegisterCommand(ctx, "topk._incrby_seeded", TopK_IncrbySeeded_Cmd, "write deny-oom internal",
+                    "write");
     RegisterCommand(ctx, "topk.query", TopK_Query_Cmd, "readonly", "read");
     RegisterCommand(ctx, "topk.count", TopK_Count_Cmd, "readonly", "read");
     RegisterCommand(ctx, "topk.list", TopK_List_Cmd, "readonly", "read");

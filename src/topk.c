@@ -144,7 +144,8 @@ static HeapBucket *checkExistInHeap(TopK *topk, const char *item, size_t itemlen
     return NULL;
 }
 
-char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment, uint64_t *rngState) {
+char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment,
+               uint64_t *rngState) {
     assert(topk);
     assert(item);
 
