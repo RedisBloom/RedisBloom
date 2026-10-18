@@ -1,6 +1,141 @@
 
 from common import *
+from contextlib import contextmanager
 import time
+
+
+@contextmanager
+def _internal_connection(env):
+    with env.getConnection().client() as conn:
+        conn.execute_command('DEBUG', 'MARK-INTERNAL-CLIENT')
+        try:
+            yield conn
+        finally:
+            conn.execute_command('DEBUG', 'MARK-INTERNAL-CLIENT', 'UNMARK')
+
+
+def testTopKDecayPersistence(env):
+    env.skipOnCluster()
+    env = Env(decodeResponses=False)
+    results = []
+    for persistence in ('none', 'restore', 'reload', 'restart'):
+        env.cmd('FLUSHALL')
+        env.cmd('TOPK.RESERVE', 'topk{t}', 3, 5, 3, 0.9)
+        replies = []
+        for batch in range(2):
+            with _internal_connection(env) as conn:
+                for i in range(100):
+                    item = f'item-{(i * 7 + batch) % 20}'
+                    seed = batch * 100 + i
+                    replies.append(conn.execute_command('TOPK._ADD_SEEDED', 'topk{t}', seed, item, 'extra'))
+                    replies.append(conn.execute_command('TOPK._INCRBY_SEEDED', 'topk{t}', seed,
+                                                        item, i % 5 + 1, 'extra', 0))
+            if batch == 0:
+                if persistence == 'restore':
+                    env.cmd('RESTORE', 'topk{t}', 0, env.cmd('DUMP', 'topk{t}'), 'REPLACE')
+                elif persistence == 'reload':
+                    env.dumpAndReload(restart=True)
+                elif persistence == 'restart':
+                    env.stop()
+                    env.start()
+        results.append((replies, env.cmd('TOPK.LIST', 'topk{t}', 'WITHCOUNT'),
+                        env.cmd('TOPK.COUNT', 'topk{t}', *[f'item-{i}' for i in range(20)])))
+    env.assertEqual(results[0], results[1], message='decay changed after DUMP/RESTORE')
+    env.assertEqual(results[0], results[2], message='decay changed after restart')
+    env.assertEqual(results[0], results[3], message='decay changed after plain restart')
+
+
+def testTopKPublicWritesReplay(env):
+    env = Env(decodeResponses=False)
+    items = [f'item-{i}' for i in range(20)]
+    for rewrite in (False, True):
+        env.cmd('FLUSHALL')
+        env.cmd('TOPK.RESERVE', 'topk{t}', 3, 5, 3, 0.9)
+        for i in range(100):
+            item = items[i % len(items)]
+            env.cmd('TOPK.ADD', 'topk{t}', item, items[(i + 7) % len(items)])
+            env.cmd('TOPK.INCRBY', 'topk{t}', item, i % 5 + 1, 'extra', 0)
+        reply = env.cmd('TOPK.INCRBY', 'topk{t}', 'extra', 10, 'invalid', -1)
+        env.assertTrue(isinstance(reply[-1], ResponseError))
+        before = [env.cmd('TOPK.LIST', 'topk{t}', 'WITHCOUNT'),
+                  env.cmd('TOPK.COUNT', 'topk{t}', *items)]
+        if rewrite:
+            env.dumpAndReload(restart=True)
+        else:
+            env.stop()
+            env.start()
+        env.assertEqual(before, [env.cmd('TOPK.LIST', 'topk{t}', 'WITHCOUNT'),
+                                 env.cmd('TOPK.COUNT', 'topk{t}', *items)])
+
+
+def testTopKInternalCommands(env):
+    env.skipOnCluster()
+    env = Env(decodeResponses=False)
+    env.cmd('TOPK.RESERVE', 'seeded', 1, 1, 1, 0.5)
+    env.cmd('SET', 'wrongtype', 'value')
+    commands = (('TOPK._ADD_SEEDED', ['item']), ('TOPK._INCRBY_SEEDED', ['item', 1]))
+    for command, items in commands:
+        env.expect(command, 'seeded', 42, *items).error().contains('unknown command')
+        env.expect('EVAL', 'return redis.call(unpack(ARGV))', 0,
+                   command, 'seeded', 42, *items).error()
+    with env.getConnection().client() as conn:
+        conn.set_response_callback('COMMAND', lambda r, **_: r)
+        env.assertEqual(conn.execute_command('COMMAND', 'INFO', *[c for c, _ in commands]),
+                        [None, None])
+    with _internal_connection(env) as conn:
+        conn.set_response_callback('COMMAND', lambda r, **_: r)
+
+        def expect_error(*args, message):
+            try:
+                conn.execute_command(*args)
+            except ResponseError as error:
+                env.assertContains(message, str(error))
+            else:
+                env.assertTrue(False, message=f'Expected {message} for {args}')
+
+        for command, items in commands:
+            env.assertEqual(conn.execute_command('COMMAND', 'GETKEYS', command,
+                                                'seeded', 42, *items), [b'seeded'])
+            for args in ((), ('seeded',), ('seeded', 42)):
+                expect_error(command, *args, message='wrong number of arguments')
+            for seed in (-1, 1 << 63, 'invalid'):
+                before = env.cmd('DUMP', 'seeded')
+                expect_error(command, 'seeded', seed, *items, message='invalid seed')
+                env.assertEqual(before, env.cmd('DUMP', 'seeded'))
+            for seed in (0, (1 << 63) - 1):
+                conn.execute_command(command, 'seeded', seed, *items)
+            expect_error(command, 'missing', 42, *items, message='key does not exist')
+            expect_error(command, 'wrongtype', 42, *items, message='WRONGTYPE')
+        expect_error('TOPK._INCRBY_SEEDED', 'seeded', 42, 'item', 1, 'other',
+                     message='wrong number of arguments')
+    for command, items in commands:
+        env.expect(command, 'seeded', 42, *items).error().contains('unknown command')
+
+
+def testTopKRepeatedDecay(env):
+    for i in range(8):
+        key = f'decay-{i}'
+        env.cmd('TOPK.RESERVE', key, 1, 1, 1, 0.5)
+        env.cmd('TOPK.INCRBY', key, 'resident', 4)
+        # Rejected decay must still advance randomness so repeated challengers can win.
+        challenger = f'challenger-{i}'
+        env.cmd('TOPK.ADD', key, *([challenger] * 1000))
+        env.assertEqual(env.cmd('TOPK.QUERY', key, challenger), [1])
+
+
+def testTopKLegacyRdb(env):
+    # Encoding 0: TOPK.RESERVE legacy 1 1 1 0.5; TOPK.INCRBY legacy old 4.
+    payload = bytes.fromhex(
+        '07814e8a4af9360f100002010201020104000000000000e03f050897fd35d104000000'
+        '051897fd35d10300000030d401e108000000040000000000000005046f6c640000'
+        '0a0075f6263a4f951a78')
+    env.cmd('RESTORE', 'legacy', 0, payload)
+    env.assertEqual(env.cmd('TOPK.COUNT', 'legacy', 'old'), [4])
+    env.cmd('TOPK.ADD', 'legacy', *(['new'] * 1000))
+    env.assertEqual(env.cmd('TOPK.QUERY', 'legacy', 'new'), [1])
+    from rdb_corruption_utils import load_len
+    module_id, _, _, _ = load_len(env.cmd('DUMP', 'legacy'), 1)
+    env.assertEqual(module_id & 1023, 0)
 
 
 class testTopK():

@@ -211,3 +211,36 @@ def testEveryWriteCommandIsCovered(env):
     write_cmds = {c[0].decode().lower() for c in info if c and b'write' in c[2]}
     missing = write_cmds - {cmd for cmd, _, _, _ in ROWS} - KNOWN_EXCLUSIONS
     env.assertEqual(missing, set(), message=f'write commands with no replication test: {missing}')
+
+
+def testTopKDecayReplicates(env):
+    env.skipOnCluster()
+    env.skipOnAOF()
+    env = Env(useSlaves=True, protocol=2)
+    master, slave = env.getConnection(), env.getSlaveConnection()
+    _wait_link_up(env)
+    items = [f'item-{i}' for i in range(20)]
+    for command in ('TOPK.ADD', 'TOPK.INCRBY'):
+        master.execute_command('FLUSHALL')
+        # A narrow sketch forces collisions and probabilistic counter decay.
+        master.execute_command('TOPK.RESERVE', 'k', 3, 5, 3, 0.9)
+        for batch in range(10):
+            for i in range(100):
+                item = items[(i * 7 + batch) % len(items)]
+                args = [item] if command == 'TOPK.ADD' else [item, i % 5 + 1]
+                master.execute_command(command, 'k', *args)
+            env.assertEqual(master.execute_command('WAIT', 1, WAIT_TIMEOUT_MS), 1)
+            for read, args in (('TOPK.LIST', ['WITHCOUNT']),
+                               ('TOPK.QUERY', items), ('TOPK.COUNT', items)):
+                env.assertEqual(master.execute_command(read, 'k', *args),
+                                slave.execute_command(read, 'k', *args),
+                                message=f'{command} batch {batch}: {read} diverged')
+            if batch == 4:
+                # Force a full sync of a populated sketch, then continue the same workload.
+                syncs = master.execute_command('INFO', 'stats')['sync_full']
+                env.stop(masters=False)
+                master.execute_command('DEBUG', 'CHANGE-REPL-ID')
+                env.start(masters=False)
+                slave = env.getSlaveConnection()
+                _wait_link_up(env)
+                env.assertEqual(master.execute_command('INFO', 'stats')['sync_full'], syncs + 1)

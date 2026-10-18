@@ -24,6 +24,15 @@
 
 static inline uint32_t max(uint32_t a, uint32_t b) { return a > b ? a : b; }
 
+static double topkRandom(uint64_t *rngState) {
+    // SplitMix64: per-command state keeps replicated writes deterministic.
+    uint64_t z = (*rngState += UINT64_C(0x9e3779b97f4a7c15));
+    z = (z ^ (z >> 30)) * UINT64_C(0xbf58476d1ce4e5b9);
+    z = (z ^ (z >> 27)) * UINT64_C(0x94d049bb133111eb);
+    z ^= z >> 31;
+    return (z >> 11) * 0x1.0p-53;
+}
+
 static inline char *topKStrndup(const char *s, size_t n) {
     char *ret = TOPK_CALLOC(n + 1, sizeof(char));
     if (ret)
@@ -135,7 +144,7 @@ static HeapBucket *checkExistInHeap(TopK *topk, const char *item, size_t itemlen
     return NULL;
 }
 
-char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment) {
+char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment, uint64_t *rngState) {
     assert(topk);
     assert(item);
 
@@ -170,7 +179,7 @@ char *TopK_Add(TopK *topk, const char *item, size_t itemlen, uint32_t increment)
                                 (*countPtr / (TOPK_DECAY_LOOKUP_TABLE - 1))) *
                             topk->lookupTable[*countPtr % (TOPK_DECAY_LOOKUP_TABLE - 1)];
                 }
-                double chance = rand() / (double)RAND_MAX;
+                double chance = topkRandom(rngState);
                 if (chance < decay) {
                     --*countPtr;
                     if (*countPtr == 0) {
