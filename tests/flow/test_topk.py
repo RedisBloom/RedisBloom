@@ -18,6 +18,8 @@ def _internal_connection(env):
 def testTopKDecayPersistence(env):
     env.skipOnCluster()
     env = Env(decodeResponses=False)
+    if server_version_less_than(env, '8.0.0'):
+        env.skip()
     results = []
     for persistence in ('none', 'restore', 'reload', 'restart'):
         env.cmd('FLUSHALL')
@@ -50,15 +52,17 @@ def testTopKPublicWritesReplay(env):
     env = Env(decodeResponses=False)
     if not env.useAof:
         env.skip()
-    items = [f'item-{i}' for i in range(20)]
+    seeded = server_version_at_least(env, '8.0.0')
+    items = [f'item-{i}' for i in range(20)] if seeded else ['item']
+    extra = 'extra' if seeded else items[0]
     for rewrite in (False, True):
         env.cmd('FLUSHALL')
         env.cmd('TOPK.RESERVE', 'topk{t}', 3, 5, 3, 0.9)
         for i in range(100):
             item = items[i % len(items)]
             env.cmd('TOPK.ADD', 'topk{t}', item, items[(i + 7) % len(items)])
-            env.cmd('TOPK.INCRBY', 'topk{t}', item, i % 5 + 1, 'extra', 0)
-        reply = env.cmd('TOPK.INCRBY', 'topk{t}', 'extra', 10, 'invalid', -1, 'skipped', 7)
+            env.cmd('TOPK.INCRBY', 'topk{t}', item, i % 5 + 1, extra, 0)
+        reply = env.cmd('TOPK.INCRBY', 'topk{t}', extra, 10, 'invalid', -1, 'skipped', 7)
         env.assertTrue(isinstance(reply[-1], ResponseError))
         before = [env.cmd('TOPK.LIST', 'topk{t}', 'WITHCOUNT'),
                   env.cmd('TOPK.COUNT', 'topk{t}', *items)]
@@ -75,7 +79,8 @@ def testTopKPublicWritesReplay(env):
 def testTopKIncrbyPartialFailureReply(env):
     env.skipOnCluster()
     env = Env(decodeResponses=False, protocol=2)
-    for seeded, invalid, failed in product((False, True), (-1, 100001, 'invalid'), range(3)):
+    modes = (False, True) if server_version_at_least(env, '8.0.0') else (False,)
+    for seeded, invalid, failed in product(modes, (-1, 100001, 'invalid'), range(3)):
         env.cmd('DEL', 'partial')
         env.cmd('TOPK.RESERVE', 'partial', 3, 100, 3, 0.9)
         args = ['a', 5, 'b', 5, 'c', 5]
@@ -114,6 +119,8 @@ def testTopKInternalCommands(env):
         conn.set_response_callback('COMMAND', lambda r, **_: r)
         env.assertEqual(conn.execute_command('COMMAND', 'INFO', *[c for c, _ in commands]),
                         [None, None])
+    if server_version_less_than(env, '8.0.0'):
+        return
     with _internal_connection(env) as conn:
         conn.set_response_callback('COMMAND', lambda r, **_: r)
 

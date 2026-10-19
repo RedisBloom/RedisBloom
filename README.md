@@ -44,10 +44,12 @@ https://redis.io/docs/latest/develop/data-types/probabilistic/
 
 ### Top-K replication upgrade and rollback
 
-Top-K writes now replicate through the internal `TOPK._ADD_SEEDED` and
-`TOPK._INCRBY_SEEDED` commands. Both primary and replicas must support these commands;
+On Redis 8.0 and later, Top-K writes replicate through the internal `TOPK._ADD_SEEDED`
+and `TOPK._INCRBY_SEEDED` commands. Both primary and replicas must support these commands;
 older replicas reject them and can lose writes or stop, depending on the configured
-propagation error behavior. Redis core must also support internal module commands.
+propagation error behavior. On older Redis servers, these commands are not registered
+and writes replicate through the public commands without a seed. The original
+probabilistic decay divergence remains on that fallback path.
 
 Pause Top-K writes while module versions differ. Upgrade replicas before the primary,
 and prevent failover to an upgraded node while any replica still uses the old module.
