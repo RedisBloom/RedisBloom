@@ -213,34 +213,10 @@ def testEveryWriteCommandIsCovered(env):
     env.assertEqual(missing, set(), message=f'write commands with no replication test: {missing}')
 
 
-def testTopKReplicationCommandVersion(env):
-    env.skipOnCluster()
-    env.skipOnAOF()
-    env = Env(useSlaves=True, protocol=2)
-    master, slave = env.getConnection(), env.getSlaveConnection()
-    _wait_link_up(env)
-    master.execute_command('TOPK.RESERVE', 'k', 3, 5, 3, 0.9)
-    master.execute_command('TOPK.ADD', 'k', 'item', 'item')
-    master.execute_command('TOPK.INCRBY', 'k', 'item', 3)
-    env.assertEqual(master.execute_command('WAIT', 1, WAIT_TIMEOUT_MS), 1)
-    env.assertEqual(slave.execute_command('TOPK.COUNT', 'k', 'item'), [5])
-    stats = slave.info('commandstats')
-    for command in ('add', 'incrby'):
-        public = f'cmdstat_topk.{command}'
-        seeded = f'cmdstat_topk._{command}_seeded'
-        expected, absent = ((seeded, public) if server_version_at_least(env, '8.0.0')
-                            else (public, seeded))
-        env.assertEqual(stats.get(expected, {}).get('calls', 0), 1)
-        env.assertEqual(stats.get(absent, {}).get('calls', 0), 0)
-    env.assertEqual(slave.info('stats')['unexpected_error_replies'], 0)
-
-
 def testTopKDecayReplicates(env):
     env.skipOnCluster()
     env.skipOnAOF()
     env = Env(useSlaves=True, protocol=2)
-    if server_version_less_than(env, '8.0.0'):
-        env.skip()
     master, slave = env.getConnection(), env.getSlaveConnection()
     _wait_link_up(env)
     items = [f'item-{i}' for i in range(20)]
@@ -299,9 +275,7 @@ def testTopKIncrbyPartialFailureReplicates(env):
         env.assertEqual(master.execute_command('WAIT', 1, WAIT_TIMEOUT_MS), 1)
         env.assertEqual(slave.info('stats')['unexpected_error_replies'], errors)
         if len(args) == 2:
-            command = ('topk._incrby_seeded' if server_version_at_least(env, '8.0.0')
-                       else 'topk.incrby')
-            env.assertEqual(slave.info('commandstats').get(f'cmdstat_{command}', {})
+            env.assertEqual(slave.info('commandstats').get('cmdstat_topk._incrby_seeded', {})
                             .get('calls', 0), 0)
         env.assertEqual(master.execute_command('TOPK.LIST', 'partial', 'WITHCOUNT'),
                         slave.execute_command('TOPK.LIST', 'partial', 'WITHCOUNT'))

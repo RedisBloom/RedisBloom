@@ -33,7 +33,6 @@
 // clang-format on
 
 RedisModuleType *TopKType;
-static bool topkUseSeededReplication;
 
 static int GetTopKKey(RedisModuleCtx *ctx, RedisModuleString *keyName, TopK **topk, int mode) {
     // All using this function should call RedisModule_AutoMemory to prevent memory leak
@@ -158,12 +157,8 @@ static int TopK_AddCommon(RedisModuleCtx *ctx, RedisModuleString **argv, int arg
             TOPK_FREE(expelledItem);
         }
     }
-    if (topkUseSeededReplication) {
-        RedisModule_Replicate(ctx, "TOPK._ADD_SEEDED", "slv", argv[1], (long long)seed,
-                              argv + firstItem, (size_t)itemCount);
-    } else {
-        RedisModule_ReplicateVerbatim(ctx);
-    }
+    RedisModule_Replicate(ctx, "TOPK._ADD_SEEDED", "slv", argv[1], (long long)seed,
+                          argv + firstItem, (size_t)itemCount);
     return REDISMODULE_OK;
 }
 
@@ -218,13 +213,8 @@ static int TopK_IncrbyCommon(RedisModuleCtx *ctx, RedisModuleString **argv, int 
 final:
     RedisModule_ReplySetArrayLength(ctx, i < itemCount ? i + 1 : itemCount);
     if (i > 0) {
-        if (topkUseSeededReplication) {
-            RedisModule_Replicate(ctx, "TOPK._INCRBY_SEEDED", "slv", argv[1], (long long)seed,
-                                  argv + firstItem, (size_t)i * 2);
-        } else {
-            RedisModule_Replicate(ctx, "TOPK.INCRBY", "sv", argv[1], argv + firstItem,
-                                  (size_t)i * 2);
-        }
+        RedisModule_Replicate(ctx, "TOPK._INCRBY_SEEDED", "slv", argv[1], (long long)seed,
+                              argv + firstItem, (size_t)i * 2);
     }
     return REDISMODULE_OK;
 }
@@ -473,7 +463,6 @@ static size_t TopKMemUsage(const void *value) {
 }
 
 int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    topkUseSeededReplication = RedisModule_GetServerVersion() >= 0x00080000;
     // TODO: add option to set defaults from command line and in program
     RedisModuleTypeMethods tm = {
         .version = REDISMODULE_TYPE_METHOD_VERSION,
@@ -497,12 +486,10 @@ int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RegisterCommand(ctx, "topk.reserve", TopK_Create_Cmd, "write deny-oom", "write fast");
     RegisterCommand(ctx, "topk.add", TopK_Add_Cmd, "write deny-oom", "write");
     RegisterCommand(ctx, "topk.incrby", TopK_Incrby_Cmd, "write deny-oom", "write");
-    if (topkUseSeededReplication) {
-        RegisterCommand(ctx, "topk._add_seeded", TopK_AddSeeded_Cmd, "write deny-oom internal",
-                        "write");
-        RegisterCommand(ctx, "topk._incrby_seeded", TopK_IncrbySeeded_Cmd,
-                        "write deny-oom internal", "write");
-    }
+    RegisterCommand(ctx, "topk._add_seeded", TopK_AddSeeded_Cmd, "write deny-oom internal",
+                    "write");
+    RegisterCommand(ctx, "topk._incrby_seeded", TopK_IncrbySeeded_Cmd, "write deny-oom internal",
+                    "write");
     RegisterCommand(ctx, "topk.query", TopK_Query_Cmd, "readonly", "read");
     RegisterCommand(ctx, "topk.count", TopK_Count_Cmd, "readonly", "read");
     RegisterCommand(ctx, "topk.list", TopK_List_Cmd, "readonly", "read");
