@@ -1,6 +1,7 @@
 
 from common import *
 from contextlib import contextmanager
+from itertools import product
 import time
 
 
@@ -41,12 +42,14 @@ def testTopKDecayPersistence(env):
         results.append((replies, env.cmd('TOPK.LIST', 'topk{t}', 'WITHCOUNT'),
                         env.cmd('TOPK.COUNT', 'topk{t}', *[f'item-{i}' for i in range(20)])))
     env.assertEqual(results[0], results[1], message='decay changed after DUMP/RESTORE')
-    env.assertEqual(results[0], results[2], message='decay changed after restart')
+    env.assertEqual(results[0], results[2], message='decay changed after dumpAndReload')
     env.assertEqual(results[0], results[3], message='decay changed after plain restart')
 
 
 def testTopKPublicWritesReplay(env):
     env = Env(decodeResponses=False)
+    if not env.useAof:
+        env.skip()
     items = [f'item-{i}' for i in range(20)]
     for rewrite in (False, True):
         env.cmd('FLUSHALL')
@@ -55,7 +58,7 @@ def testTopKPublicWritesReplay(env):
             item = items[i % len(items)]
             env.cmd('TOPK.ADD', 'topk{t}', item, items[(i + 7) % len(items)])
             env.cmd('TOPK.INCRBY', 'topk{t}', item, i % 5 + 1, 'extra', 0)
-        reply = env.cmd('TOPK.INCRBY', 'topk{t}', 'extra', 10, 'invalid', -1)
+        reply = env.cmd('TOPK.INCRBY', 'topk{t}', 'extra', 10, 'invalid', -1, 'skipped', 7)
         env.assertTrue(isinstance(reply[-1], ResponseError))
         before = [env.cmd('TOPK.LIST', 'topk{t}', 'WITHCOUNT'),
                   env.cmd('TOPK.COUNT', 'topk{t}', *items)]
@@ -66,6 +69,35 @@ def testTopKPublicWritesReplay(env):
             env.start()
         env.assertEqual(before, [env.cmd('TOPK.LIST', 'topk{t}', 'WITHCOUNT'),
                                  env.cmd('TOPK.COUNT', 'topk{t}', *items)])
+        env.assertEqual(env.cmd('INFO', 'stats')['unexpected_error_replies'], 0)
+
+
+def testTopKIncrbyPartialFailureReply(env):
+    env.skipOnCluster()
+    env = Env(decodeResponses=False, protocol=2)
+    for seeded, invalid, failed in product((False, True), (-1, 100001, 'invalid'), range(3)):
+        env.cmd('DEL', 'partial')
+        env.cmd('TOPK.RESERVE', 'partial', 3, 100, 3, 0.9)
+        args = ['a', 5, 'b', 5, 'c', 5]
+        args[2 * failed + 1] = invalid
+        command = ('TOPK._INCRBY_SEEDED', 'partial', 42) if seeded else ('TOPK.INCRBY', 'partial')
+        with _internal_connection(env) if seeded else env.getConnection().client() as conn:
+            connection = conn.connection
+            try:
+                connection.send_command(*command, *args)
+                # Extra replies expose an oversized array without blocking the reader.
+                for _ in range(3):
+                    connection.send_command('PING')
+                reply = connection.read_response()
+                env.assertEqual(len(reply), failed + 1)
+                env.assertTrue(isinstance(reply[failed], ResponseError))
+                if len(reply) == failed + 1:
+                    for _ in range(3):
+                        env.assertEqual(connection.read_response(), b'PONG')
+            finally:
+                connection.disconnect()
+        env.assertEqual(env.cmd('TOPK.COUNT', 'partial', 'a', 'b', 'c'),
+                        [5] * failed + [0] * (3 - failed))
 
 
 def testTopKInternalCommands(env):
@@ -91,7 +123,7 @@ def testTopKInternalCommands(env):
             except ResponseError as error:
                 env.assertContains(message, str(error))
             else:
-                env.assertTrue(False, message=f'Expected {message} for {args}')
+                raise AssertionError(f'Expected {message} for {args}')
 
         for command, items in commands:
             env.assertEqual(conn.execute_command('COMMAND', 'GETKEYS', command,

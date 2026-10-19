@@ -187,9 +187,10 @@ static int TopK_IncrbyCommon(RedisModuleCtx *ctx, RedisModuleString **argv, int 
 
     uint64_t rngState = seed;
     int itemCount = (argc - firstItem) / 2;
-    RedisModule_ReplyWithArray(ctx, itemCount);
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
 
-    for (int i = 0; i < itemCount; ++i) {
+    int i = 0;
+    for (; i < itemCount; ++i) {
         size_t itemlen;
         const char *item = RedisModule_StringPtrLen(argv[firstItem + i * 2], &itemlen);
         long long increment;
@@ -210,8 +211,11 @@ static int TopK_IncrbyCommon(RedisModuleCtx *ctx, RedisModuleString **argv, int 
         }
     }
 final:
-    RedisModule_Replicate(ctx, "TOPK._INCRBY_SEEDED", "slv", argv[1], (long long)seed,
-                          argv + firstItem, (size_t)(argc - firstItem));
+    RedisModule_ReplySetArrayLength(ctx, i < itemCount ? i + 1 : itemCount);
+    if (i > 0) {
+        RedisModule_Replicate(ctx, "TOPK._INCRBY_SEEDED", "slv", argv[1], (long long)seed,
+                              argv + firstItem, (size_t)i * 2);
+    }
     return REDISMODULE_OK;
 }
 

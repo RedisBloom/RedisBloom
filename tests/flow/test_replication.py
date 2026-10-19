@@ -220,21 +220,35 @@ def testTopKDecayReplicates(env):
     master, slave = env.getConnection(), env.getSlaveConnection()
     _wait_link_up(env)
     items = [f'item-{i}' for i in range(20)]
+    master.execute_command('FUNCTION', 'LOAD', '''#!lua name=topk_replay
+redis.register_function('topk_replay', function(keys, args)
+    return redis.call(args[1], keys[1], unpack(args, 2))
+end)''')
     for command in ('TOPK.ADD', 'TOPK.INCRBY'):
         master.execute_command('FLUSHALL')
         # A narrow sketch forces collisions and probabilistic counter decay.
         master.execute_command('TOPK.RESERVE', 'k', 3, 5, 3, 0.9)
         for batch in range(10):
-            for i in range(100):
-                item = items[(i * 7 + batch) % len(items)]
-                args = [item] if command == 'TOPK.ADD' else [item, i % 5 + 1]
-                master.execute_command(command, 'k', *args)
+            mode = ('direct', 'transaction', 'eval', 'fcall')[batch % 4]
+            with master.pipeline(transaction=mode == 'transaction') as pipeline:
+                for i in range(100):
+                    item = items[(i * 7 + batch) % len(items)]
+                    args = [item] if command == 'TOPK.ADD' else [item, i % 5 + 1]
+                    if mode == 'eval':
+                        pipeline.execute_command('EVAL',
+                            'return redis.call(ARGV[1], KEYS[1], unpack(ARGV, 2))',
+                            1, 'k', command, *args)
+                    elif mode == 'fcall':
+                        pipeline.execute_command('FCALL', 'topk_replay', 1, 'k', command, *args)
+                    else:
+                        pipeline.execute_command(command, 'k', *args)
+                pipeline.execute()
             env.assertEqual(master.execute_command('WAIT', 1, WAIT_TIMEOUT_MS), 1)
             for read, args in (('TOPK.LIST', ['WITHCOUNT']),
                                ('TOPK.QUERY', items), ('TOPK.COUNT', items)):
                 env.assertEqual(master.execute_command(read, 'k', *args),
                                 slave.execute_command(read, 'k', *args),
-                                message=f'{command} batch {batch}: {read} diverged')
+                                message=f'{command} {mode} batch {batch}: {read} diverged')
             if batch == 4:
                 # Force a full sync of a populated sketch, then continue the same workload.
                 syncs = master.execute_command('INFO', 'stats')['sync_full']
@@ -244,3 +258,24 @@ def testTopKDecayReplicates(env):
                 slave = env.getSlaveConnection()
                 _wait_link_up(env)
                 env.assertEqual(master.execute_command('INFO', 'stats')['sync_full'], syncs + 1)
+
+
+def testTopKIncrbyPartialFailureReplicates(env):
+    env.skipOnCluster()
+    env.skipOnAOF()
+    env = Env(useSlaves=True, protocol=2)
+    master, slave = env.getConnection(), env.getSlaveConnection()
+    _wait_link_up(env)
+    master.execute_command('TOPK.RESERVE', 'partial', 3, 5, 3, 0.9)
+    env.assertEqual(master.execute_command('WAIT', 1, WAIT_TIMEOUT_MS), 1)
+    errors = slave.info('stats')['unexpected_error_replies']
+    for args in (('invalid', -1), ('a', 5, 'invalid', -1)):
+        reply = master.execute_command('TOPK.INCRBY', 'partial', *args)
+        env.assertTrue(isinstance(reply[-1], ResponseError))
+        env.assertEqual(master.execute_command('WAIT', 1, WAIT_TIMEOUT_MS), 1)
+        env.assertEqual(slave.info('stats')['unexpected_error_replies'], errors)
+        if len(args) == 2:
+            env.assertEqual(slave.info('commandstats').get('cmdstat_topk._incrby_seeded', {})
+                            .get('calls', 0), 0)
+        env.assertEqual(master.execute_command('TOPK.LIST', 'partial', 'WITHCOUNT'),
+                        slave.execute_command('TOPK.LIST', 'partial', 'WITHCOUNT'))
