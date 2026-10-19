@@ -811,3 +811,19 @@ def test_cf_loadchunk_invalid_header_length():
     # A rejected header must leave the destination available for a valid load.
     env.assertEqual(env.cmd('CF.LOADCHUNK', 'header-destination', 1, header), b'OK')
     env.assertEqual(env.cmd('CF.INFO', 'header-destination'), env.cmd('CF.INFO', 'header-source'))
+
+
+def test_cf_loadchunk_rejects_existing_destination():
+    env = Env(decodeResponses=False)
+    env.cmd('CF.ADD', 'existing-filter', 'sample')
+    _, header = env.cmd('CF.SCANDUMP', 'existing-filter', 0)
+    info = env.cmd('CF.INFO', 'existing-filter')
+
+    # Random load tests only occasionally choose the header cursor on an
+    # existing key. Assert both destination types and preserve their contents.
+    env.expect('CF.LOADCHUNK', 'existing-filter', 1, header).error().contains('item exists')
+    env.assertEqual(env.cmd('CF.INFO', 'existing-filter'), info)
+    env.assertEqual(env.cmd('CF.EXISTS', 'existing-filter', 'sample'), 1)
+    env.cmd('SET', 'existing-string', 'keep-me')
+    env.expect('CF.LOADCHUNK', 'existing-string', 1, header).error().contains('WRONGTYPE')
+    env.assertEqual(env.cmd('GET', 'existing-string'), b'keep-me')
