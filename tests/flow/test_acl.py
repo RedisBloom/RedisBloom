@@ -31,6 +31,7 @@ class testACL():
       ])
       TOPK_COMMANDS = set([
         "topk.reserve", "topk.add", "topk.incrby", "topk.query", "topk.count", "topk.list", "topk.info",
+        "topk._add_seeded", "topk._incrby_seeded",
       ])
       TDIGEST_COMMANDS = set([
         "tdigest.create", "tdigest.add", "tdigest.reset", "tdigest.merge", "tdigest.min", "tdigest.max",
