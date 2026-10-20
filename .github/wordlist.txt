@@ -82,4 +82,8 @@ MERCHANTABILITY
 sublicense
 licensable
 repo
+AOF
+RDB
+failover
+resynchronize
 
