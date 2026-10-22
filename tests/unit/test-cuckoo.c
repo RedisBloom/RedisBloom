@@ -25,9 +25,9 @@ TEST_F(cuckoo, testBasicOps) {
     ASSERT_EQ(1, ck.numFilters);
     // ASSERT_EQ(16, ck.numBuckets);
 
-    CuckooHash kfoo = CUCKOO_GEN_HASH("foo", 3);
-    CuckooHash kbar = CUCKOO_GEN_HASH("bar", 3);
-    CuckooHash kbaz = CUCKOO_GEN_HASH("baz", 3);
+    CuckooHash kfoo = CUCKOO_GEN_HASH("foo", 3, ck.seed);
+    CuckooHash kbar = CUCKOO_GEN_HASH("bar", 3, ck.seed);
+    CuckooHash kbaz = CUCKOO_GEN_HASH("baz", 3, ck.seed);
 
     ASSERT_EQ(CuckooInsert_Inserted, CuckooFilter_Insert(&ck, kfoo));
     ASSERT_EQ(CuckooInsert_Inserted, CuckooFilter_Insert(&ck, kbar));
@@ -60,7 +60,7 @@ TEST_F(cuckoo, testBasicOps) {
 TEST_F(cuckoo, testCount) {
     CuckooFilter ck;
     CuckooFilter_Init(&ck, 10, DEFAULT_BUCKETSIZE, 500, 1);
-    CuckooHash kfoo = CUCKOO_GEN_HASH("foo", 3);
+    CuckooHash kfoo = CUCKOO_GEN_HASH("foo", 3, ck.seed);
 
     ASSERT_EQ(0, CuckooFilter_Count(&ck, kfoo));
 
@@ -91,21 +91,21 @@ TEST_F(cuckoo, testRelocations) {
 
     for (size_t ii = 0; ii < NUM_BULK; ++ii) {
         size_t jj;
-        CuckooHash hash = CUCKOO_GEN_HASH(&ii, sizeof ii);
+        CuckooHash hash = CUCKOO_GEN_HASH(&ii, sizeof ii, ck.seed);
         ASSERT_EQ(CuckooInsert_Inserted, CuckooFilter_Insert(&ck, hash));
         for(jj = 0; jj < ii; ++jj) {
-            CuckooHash hashjj = CUCKOO_GEN_HASH(&jj, sizeof jj);
+            CuckooHash hashjj = CUCKOO_GEN_HASH(&jj, sizeof jj, ck.seed);
             ASSERT_NE(0, CuckooFilter_Check(&ck, hashjj));
         }
     }
 
     for (size_t ii = 0; ii < NUM_BULK; ++ii) {
-        CuckooHash hash = CUCKOO_GEN_HASH(&ii, sizeof ii);
+        CuckooHash hash = CUCKOO_GEN_HASH(&ii, sizeof ii, ck.seed);
         ASSERT_NE(0, CuckooFilter_Check(&ck, hash));
     }
 
     for (size_t ii = 0; ii < NUM_BULK; ++ii) {
-        CuckooHash hash = CUCKOO_GEN_HASH(&ii, sizeof ii);
+        CuckooHash hash = CUCKOO_GEN_HASH(&ii, sizeof ii, ck.seed);
         ASSERT_EQ(CuckooInsert_Exists, CuckooFilter_InsertUnique(&ck, hash));
         ASSERT_EQ(CuckooInsert_Inserted, CuckooFilter_Insert(&ck, hash));
     }
@@ -115,7 +115,7 @@ TEST_F(cuckoo, testRelocations) {
 
 static void doFill(CuckooFilter *ck) {
     for (size_t ii = 0; ii < NUM_BULK; ++ii) {
-        CuckooHash hash = CUCKOO_GEN_HASH(&ii, sizeof ii);
+        CuckooHash hash = CUCKOO_GEN_HASH(&ii, sizeof ii, ck->seed);
         CuckooFilter_Insert(ck, hash);
     }
 }
@@ -123,7 +123,7 @@ static void doFill(CuckooFilter *ck) {
 static size_t countColls(CuckooFilter *ck) {
     size_t ret = 0;
     for (size_t ii = 0; ii < NUM_BULK; ++ii) {
-        CuckooHash hash = CUCKOO_GEN_HASH(&ii, sizeof ii);
+        CuckooHash hash = CUCKOO_GEN_HASH(&ii, sizeof ii, ck->seed);
         size_t count = CuckooFilter_Count(ck, hash);
         ASSERT_NE(count, 0);
         if (count > 1) {
@@ -173,7 +173,7 @@ TEST_F(cuckoo, testBulkDel) {
     CuckooFilter_Init(&ck, NUM_BULK / 8, DEFAULT_BUCKETSIZE, 500, 1);
     doFill(&ck);
     for (size_t ii = 0; ii < NUM_BULK; ++ii) {
-        ASSERT_EQ(1, CuckooFilter_Delete(&ck, CUCKOO_GEN_HASH(&ii, sizeof ii)));
+        ASSERT_EQ(1, CuckooFilter_Delete(&ck, CUCKOO_GEN_HASH(&ii, sizeof ii, ck.seed)));
     }
     ASSERT_EQ(0, ck.numItems);
     CuckooFilter_Free(&ck);
@@ -184,7 +184,7 @@ TEST_F(cuckoo, testBulkDelwithExpansion) {
     CuckooFilter_Init(&ck, NUM_BULK / 8, DEFAULT_BUCKETSIZE, 500, 2);
     doFill(&ck);
     for (size_t ii = 0; ii < NUM_BULK; ++ii) {
-        ASSERT_EQ(1, CuckooFilter_Delete(&ck, CUCKOO_GEN_HASH(&ii, sizeof ii)));
+        ASSERT_EQ(1, CuckooFilter_Delete(&ck, CUCKOO_GEN_HASH(&ii, sizeof ii, ck.seed)));
     }
     ASSERT_EQ(0, ck.numItems);
     CuckooFilter_Free(&ck);
@@ -207,6 +207,65 @@ TEST_F(cuckoo, testBucketSize) {
     ASSERT_EQ(4, ck.bucketSize);
     ASSERT_EQ(10, ck.numFilters);
     CuckooFilter_Free(&ck);
+}
+
+TEST_F(cuckoo, testSeeds) {
+    const uint64_t seeds[] = {0, 123, UINT64_C(0x100000000), UINT64_MAX};
+    ASSERT_NE(CUCKOO_GEN_HASH("foo", 3, 0), CUCKOO_GEN_HASH("foo", 3, seeds[2]));
+    for (size_t s = 0; s < sizeof(seeds) / sizeof(*seeds); ++s) {
+        CuckooFilter ck, reference;
+        memset(&ck, 0xff, sizeof(ck));
+        ASSERT_EQ(0, CuckooFilter_Init(&ck, 4, DEFAULT_BUCKETSIZE, 500, 2));
+        ASSERT_EQ(0, ck.seed);
+        ck.seed = seeds[s];
+        ASSERT_EQ(0, CuckooFilter_Init(&reference, 4, DEFAULT_BUCKETSIZE, 500, 2));
+
+        CuckooHash hash = CUCKOO_GEN_HASH("foo", 3, ck.seed);
+        ASSERT_EQ(CuckooInsert_Inserted, CuckooFilter_InsertUnique(&ck, hash));
+        ASSERT_EQ(CuckooInsert_Exists, CuckooFilter_InsertUnique(&ck, hash));
+        ASSERT_EQ(CuckooInsert_Inserted, CuckooFilter_Insert(&ck, hash));
+        // Count can overestimate when the two candidate buckets coincide.
+        ASSERT_GE(CuckooFilter_Count(&ck, hash), 2);
+        ASSERT_EQ(1, CuckooFilter_Delete(&ck, hash));
+        ASSERT_GE(CuckooFilter_Count(&ck, hash), 1);
+        ASSERT_EQ(1, CuckooFilter_Delete(&ck, hash));
+        ASSERT_EQ(0, CuckooFilter_Count(&ck, hash));
+
+        for (uint32_t item = 0; item < 200; ++item) {
+            hash = CUCKOO_GEN_HASH(&item, sizeof(item), ck.seed);
+            CuckooHash expected = MurmurHash64A_Bloom(&item, sizeof(item), seeds[s]);
+            ASSERT_EQ(expected, hash);
+            ASSERT_EQ(CuckooInsert_Inserted, CuckooFilter_Insert(&ck, hash));
+            ASSERT_EQ(CuckooInsert_Inserted, CuckooFilter_Insert(&reference, expected));
+        }
+        ASSERT_GT(ck.numFilters, 1);
+        ASSERT_EQ(reference.numFilters, ck.numFilters);
+        // Seed zero must reproduce the old layout; other seeds use the full 64 bits.
+        for (size_t i = 0; i < ck.numFilters; ++i) {
+            ASSERT_EQ(reference.filters[i].numBuckets, ck.filters[i].numBuckets);
+            ASSERT_EQ(0, memcmp(reference.filters[i].data, ck.filters[i].data,
+                                ck.filters[i].numBuckets * ck.bucketSize));
+        }
+        for (uint32_t item = 0; item < 200; ++item) {
+            hash = CUCKOO_GEN_HASH(&item, sizeof(item), ck.seed);
+            ASSERT_EQ(1, CuckooFilter_Check(&ck, hash));
+            ASSERT_GE(CuckooFilter_Count(&ck, hash), 1);
+            ASSERT_EQ(CuckooInsert_Exists, CuckooFilter_InsertUnique(&ck, hash));
+        }
+        for (uint32_t item = 0; item < 100; ++item) {
+            ASSERT_EQ(1, CuckooFilter_Delete(&ck, CUCKOO_GEN_HASH(&item, sizeof(item), ck.seed)));
+        }
+        CuckooFilter_Compact(&ck, true);
+        ASSERT_EQ(seeds[s], ck.seed);
+        for (uint32_t item = 100; item < 200; ++item) {
+            hash = CUCKOO_GEN_HASH(&item, sizeof(item), ck.seed);
+            ASSERT_EQ(1, CuckooFilter_Check(&ck, hash));
+            ASSERT_EQ(1, CuckooFilter_Delete(&ck, hash));
+        }
+        ASSERT_EQ(0, ck.numItems);
+        CuckooFilter_Free(&reference);
+        CuckooFilter_Free(&ck);
+    }
 }
 
 TEST_F(cuckoo, testValidationSecurity) {

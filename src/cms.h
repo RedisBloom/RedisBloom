@@ -36,6 +36,7 @@ typedef struct CMS {
     void *array;
     size_t counter;
     uint8_t cellSize; // bytes per cell: 1, 2, 4 or 8
+    uint32_t seed;    // Zero preserves legacy row seeds. Fixed for the sketch's lifetime.
 } CMSketch;
 
 typedef struct {
@@ -82,7 +83,7 @@ uint64_t CMS_Query(CMSketch *cms, const char *item, size_t strlen);
 int CMS_ValidateLoaded(const CMSketch *cms);
 
 /*  Merges multiple CMSketches into a single one.
-    All sketches must have identical width, depth and cell size.
+    All sketches must have identical width, depth, cell size and seed.
     dest must be already initialized.
 
     Returns non-zero if overflow validation fails. In this case,

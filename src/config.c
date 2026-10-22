@@ -12,6 +12,7 @@
 
 // Default configuration values.
 RM_Config rm_config = {
+    .default_seed_policy = SEED_POLICY_LEGACY,
     // A value greater than BF_ERROR_RATE_CAP is treated as BF_ERROR_RATE_CAP
     .bf_error_rate =
         {
@@ -146,7 +147,21 @@ static RedisModuleString *getIntegerValue(const char *name, void *privdata) {
         RedisModule_Log(ctx, "notice", "\t{ %-*s:%*s }", 20, name, 10, default_val);               \
     } while (0)
 
+static int getSeedPolicy(const char *name, void *privdata) { return rm_config.default_seed_policy; }
+
+static int setSeedPolicy(const char *name, int value, void *privdata, RedisModuleString **err) {
+    rm_config.default_seed_policy = value;
+    return REDISMODULE_OK;
+}
+
 int RM_RegisterConfigs(RedisModuleCtx *ctx) {
+    const char *policies[] = {"legacy", "random-nonmerge", "random-all"};
+    const int values[] = {SEED_POLICY_LEGACY, SEED_POLICY_RANDOM_NONMERGE, SEED_POLICY_RANDOM_ALL};
+    if (RedisModule_RegisterEnumConfig(ctx, "default-seed-policy", SEED_POLICY_LEGACY, 0, policies,
+                                       values, 3, getSeedPolicy, setSeedPolicy, NULL,
+                                       NULL) != REDISMODULE_OK) {
+        return REDISMODULE_ERR;
+    }
     RedisModule_Log(ctx, "notice", "Registering configuration options: [");
     registerConfigVar(bf_error_rate);
     registerConfigVar(bf_initial_size);

@@ -1,5 +1,6 @@
 #include "redismodule.h"
 #include "sb.h"
+#include "murmur2/murmurhash2.h"
 #include "test.h"
 #include <limits.h>
 #include <stdio.h>
@@ -103,6 +104,75 @@ TEST_F(basic, sbExpansion) {
     }
     ASSERT_GT(chain->nfilters, 1);
     SBChain_Free(chain);
+}
+
+TEST_F(basic, sbDefaultSeedCompatibility) {
+    unsigned modes[] = {0, BLOOM_OPT_FORCE64 | BLOOM_OPT_NOROUND};
+    for (size_t mode = 0; mode < 2; ++mode) {
+        int err;
+        SBChain *chain = SB_NewChain(100, 0.001, modes[mode], 2, &err);
+        ASSERT_NE(NULL, chain);
+        ASSERT_EQ(mode ? UINT64_C(0xc6a4a7935bd1e995) : UINT64_C(0x9747b28c), chain->seed);
+        struct bloom expected;
+        ASSERT_EQ(0, bloom_init(&expected, 100, 0.0005, modes[mode]));
+        for (uint32_t item = 0; item < 50; ++item) {
+            bloom_hashval hash;
+            if (mode) {
+                hash.a = MurmurHash64A_Bloom(&item, sizeof(item), UINT64_C(0xc6a4a7935bd1e995));
+                hash.b = MurmurHash64A_Bloom(&item, sizeof(item), hash.a);
+            } else {
+                hash.a = murmurhash2(&item, sizeof(item), UINT32_C(0x9747b28c));
+                hash.b = murmurhash2(&item, sizeof(item), hash.a);
+            }
+            bloom_add_h(&expected, hash);
+            ASSERT_GE(SBChain_Add(chain, &item, sizeof(item)), 0);
+            ASSERT_EQ(1, SBChain_Check(chain, &item, sizeof(item)));
+        }
+        ASSERT_EQ(expected.bytes, chain->filters[0].inner.bytes);
+        ASSERT_EQ(0, memcmp(expected.bf, chain->filters[0].inner.bf, expected.bytes));
+
+        size_t len;
+        const char *errmsg = NULL;
+        char *header = SBChain_GetEncodedHeader(chain, &len);
+        SBChain *loaded = SB_NewChainFromHeader(header, len, &errmsg);
+        ASSERT_NE(NULL, loaded);
+        ASSERT_EQ(chain->seed, loaded->seed);
+        SBChain_Free(loaded);
+        SB_FreeEncodedHeader(header);
+        bloom_free(&expected);
+        SBChain_Free(chain);
+    }
+}
+
+TEST_F(basic, sbCustomSeedExpansion) {
+    uint64_t seeds[] = {0, UINT64_C(0x100000000), UINT64_MAX};
+    for (size_t s = 0; s < sizeof(seeds) / sizeof(*seeds); ++s) {
+        int err;
+        SBChain *chain = SB_NewChain(4, 0.000001, BLOOM_OPT_FORCE64 | BLOOM_OPT_NOROUND, 2, &err);
+        ASSERT_NE(NULL, chain);
+        chain->seed = seeds[s];
+        for (uint32_t item = 0; item < 100; ++item) {
+            ASSERT_GE(SBChain_Add(chain, &item, sizeof(item)), 0);
+            bloom_hashval hash;
+            hash.a = MurmurHash64A_Bloom(&item, sizeof(item), seeds[s]);
+            hash.b = MurmurHash64A_Bloom(&item, sizeof(item), hash.a);
+            int found = 0;
+            for (size_t link = 0; link < chain->nfilters; ++link) {
+                found |= bloom_check_h(&chain->filters[link].inner, hash);
+            }
+            ASSERT_EQ(1, found);
+        }
+        ASSERT_GT(chain->nfilters, 1);
+        ASSERT_EQ(seeds[s], chain->seed);
+        for (uint32_t item = 0; item < 100; ++item) {
+            ASSERT_EQ(1, SBChain_Check(chain, &item, sizeof(item)));
+            ASSERT_EQ(0, SBChain_Add(chain, &item, sizeof(item)));
+        }
+        SBChain_Free(chain);
+    }
+    bloom_hashval zero = bloom_calc_hash64_seed("apple", 5, 0);
+    bloom_hashval high = bloom_calc_hash64_seed("apple", 5, UINT64_C(0x100000000));
+    ASSERT_NE(zero.a, high.a);
 }
 /*
 // Disabled due to issue 178
