@@ -794,3 +794,36 @@ def test_cf_add_autocreate_expansion_limit_replicates_to_replica():
     env.assertEqual(existsOnMaster, existsOnSlave,
                     message='newkey existence diverged: master=%s replica=%s' %
                             (existsOnMaster, existsOnSlave))
+
+
+def test_cf_loadchunk_invalid_header_length():
+    env = Env(decodeResponses=False)
+    env.cmd('CF.RESERVE', 'header-source', 100)
+    env.cmd('CF.ADD', 'header-source', 'sample')
+    _, header = env.cmd('CF.SCANDUMP', 'header-source', 0)
+
+    # Exercise the header-length error deterministically, without relying on
+    # random scan/load positions to happen to select the header cursor (1).
+    for malformed in (b'', header[:-1], header + b'\x00'):
+        env.expect('CF.LOADCHUNK', 'header-destination', 1, malformed).error().contains('Invalid header')
+        env.assertEqual(env.cmd('EXISTS', 'header-destination'), 0)
+
+    # A rejected header must leave the destination available for a valid load.
+    env.assertEqual(env.cmd('CF.LOADCHUNK', 'header-destination', 1, header), b'OK')
+    env.assertEqual(env.cmd('CF.INFO', 'header-destination'), env.cmd('CF.INFO', 'header-source'))
+
+
+def test_cf_loadchunk_rejects_existing_destination():
+    env = Env(decodeResponses=False)
+    env.cmd('CF.ADD', 'existing-filter', 'sample')
+    _, header = env.cmd('CF.SCANDUMP', 'existing-filter', 0)
+    info = env.cmd('CF.INFO', 'existing-filter')
+
+    # Random load tests only occasionally choose the header cursor on an
+    # existing key. Assert both destination types and preserve their contents.
+    env.expect('CF.LOADCHUNK', 'existing-filter', 1, header).error().contains('item exists')
+    env.assertEqual(env.cmd('CF.INFO', 'existing-filter'), info)
+    env.assertEqual(env.cmd('CF.EXISTS', 'existing-filter', 'sample'), 1)
+    env.cmd('SET', 'existing-string', 'keep-me')
+    env.expect('CF.LOADCHUNK', 'existing-string', 1, header).error().contains('WRONGTYPE')
+    env.assertEqual(env.cmd('GET', 'existing-string'), b'keep-me')
