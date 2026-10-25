@@ -54,24 +54,25 @@ static void topkMultiAdd(TopK *topk, const char *str, size_t strlen, int repeat)
 }
 
 int controlledTest() {
+    uint64_t rngState = 0;
     TopK *topk = TopK_Create(3, 100, 3, 0.925);
-    TopK_Add(topk, "1", 2, 1);
-    TopK_Add(topk, "2", 2, 1);
-    TopK_Add(topk, "3", 2, 1);
-    TopK_Add(topk, "4", 2, 1);
-    TopK_Add(topk, "1", 2, 1);
-    TopK_Add(topk, "1", 2, 1);
-    TopK_Add(topk, "4", 2, 1);
-    TopK_Add(topk, "3", 2, 1);
-    TopK_Add(topk, "4", 2, 1);
-    TopK_Add(topk, "1", 2, 1);
-    TopK_Add(topk, "3", 2, 1);
-    TopK_Add(topk, "4", 2, 1);
-    TopK_Add(topk, "1", 2, 1);
-    TopK_Add(topk, "1", 2, 1);
-    TopK_Add(topk, "2", 2, 1);
-    TopK_Add(topk, "2", 2, 1);
-    TopK_Add(topk, "2", 2, 1);
+    TopK_Add(topk, "1", 2, 1, &rngState);
+    TopK_Add(topk, "2", 2, 1, &rngState);
+    TopK_Add(topk, "3", 2, 1, &rngState);
+    TopK_Add(topk, "4", 2, 1, &rngState);
+    TopK_Add(topk, "1", 2, 1, &rngState);
+    TopK_Add(topk, "1", 2, 1, &rngState);
+    TopK_Add(topk, "4", 2, 1, &rngState);
+    TopK_Add(topk, "3", 2, 1, &rngState);
+    TopK_Add(topk, "4", 2, 1, &rngState);
+    TopK_Add(topk, "1", 2, 1, &rngState);
+    TopK_Add(topk, "3", 2, 1, &rngState);
+    TopK_Add(topk, "4", 2, 1, &rngState);
+    TopK_Add(topk, "1", 2, 1, &rngState);
+    TopK_Add(topk, "1", 2, 1, &rngState);
+    TopK_Add(topk, "2", 2, 1, &rngState);
+    TopK_Add(topk, "2", 2, 1, &rngState);
+    TopK_Add(topk, "2", 2, 1, &rngState);
     
     printHeap(topk);
     TopK_Destroy(topk);
@@ -80,6 +81,7 @@ int controlledTest() {
 }
 
 int testLong() {
+    uint64_t rngState = 0;
     int arr[TEST_SIZE][2] = { 0 }, total = 0, idx = 0;
     char str[TEST_SIZE * 10] = { 0 };
     TopK *topk = TopK_Create(31, TEST_SIZE/6, 5, 0.925);
@@ -97,7 +99,7 @@ int testLong() {
     for(int i = 0; i < total - pow(TEST_SIZE, 2) * 3;) {
         idx = rand() % TEST_SIZE;
         if(arr[idx][0] > 0) {
-            TopK_Add(topk, str + 10 * idx, strlen(str + 10 * idx), 1);
+            TopK_Add(topk, str + 10 * idx, strlen(str + 10 * idx), 1, &rngState);
             --arr[idx][0];
             ++i;
         }
@@ -115,19 +117,20 @@ int testLong() {
 }
 
 int testDecay() {
+    uint64_t rngState = 0;
     TopK *topk = TopK_Create(63, TEST_SIZE / 4, 5, 0.925);
     char str[32] = { 0 };
 
     for(int i = 0; i < 30; ++i) {
         for(int j = 0; j < TEST_SIZE; j += 20) {
             sprintf(str, "%d", j);
-            TopK_Add(topk, str, strlen(str), 1);
+            TopK_Add(topk, str, strlen(str), 1, &rngState);
         }
     }
     for(int i = 0; i < 10; ++i) {
         for(int j = 0; j < TEST_SIZE; j += 10) {
             sprintf(str, "%d", j);
-            TopK_Add(topk, str, strlen(str), 1);
+            TopK_Add(topk, str, strlen(str), 1, &rngState);
         }
     }
     printHeap(topk);
@@ -135,7 +138,7 @@ int testDecay() {
         for(int j = 0; j < TEST_SIZE; ++j) {
             sprintf(str, "%d", j);
             uint32_t len = strlen(str);
-            TopK_Add(topk, str, len, 1);
+            TopK_Add(topk, str, len, 1, &rngState);
         }
     }
     printHeap(topk);
@@ -144,23 +147,24 @@ int testDecay() {
 }
 
 int testIncrby() {
+    uint64_t rngState = 0;
     TopK *topk = TopK_Create(3, 5, 3, 0.9);
-    TopK_Add(topk, "1", 2, 1);
-    TopK_Add(topk, "2", 2, 1);
-    TopK_Add(topk, "3", 2, 1);
+    TopK_Add(topk, "1", 2, 1, &rngState);
+    TopK_Add(topk, "2", 2, 1, &rngState);
+    TopK_Add(topk, "3", 2, 1, &rngState);
     printHeap(topk);
-    TopK_Add(topk, "4", 2, 3);
-    TopK_Add(topk, "5", 2, 1);
+    TopK_Add(topk, "4", 2, 3, &rngState);
+    TopK_Add(topk, "5", 2, 1, &rngState);
     printHeap(topk);
-    TopK_Add(topk, "5", 2, 10);
-    TopK_Add(topk, "1", 2, 5);
-    TopK_Add(topk, "2", 2, 20);
-    TopK_Add(topk, "3", 2, 30);
-    TopK_Add(topk, "1", 2, 5);
+    TopK_Add(topk, "5", 2, 10, &rngState);
+    TopK_Add(topk, "1", 2, 5, &rngState);
+    TopK_Add(topk, "2", 2, 20, &rngState);
+    TopK_Add(topk, "3", 2, 30, &rngState);
+    TopK_Add(topk, "1", 2, 5, &rngState);
     printHeap(topk);
-    TopK_Add(topk, "5", 2, 10);
-    TopK_Add(topk, "4", 2, 5);
-    TopK_Add(topk, "4", 2, 15);
+    TopK_Add(topk, "5", 2, 10, &rngState);
+    TopK_Add(topk, "4", 2, 5, &rngState);
+    TopK_Add(topk, "4", 2, 15, &rngState);
     printHeap(topk);
 
     return 0;

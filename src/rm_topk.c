@@ -112,23 +112,43 @@ final:
     return REDISMODULE_OK;
 }
 
-static int TopK_Add_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+static int GetTopKSeed(RedisModuleCtx *ctx, RedisModuleString **argv, bool seeded, uint64_t *seed) {
+    if (seeded) {
+        long long value;
+        if (RedisModule_StringToLongLong(argv[2], &value) != REDISMODULE_OK || value < 0) {
+            INNER_ERROR("TopK: invalid seed");
+        }
+        *seed = (uint64_t)value;
+    } else {
+        RedisModule_GetRandomBytes((unsigned char *)seed, sizeof(*seed));
+        *seed >>= 1; // Keep the seed representable by the replication integer argument.
+    }
+    return REDISMODULE_OK;
+}
 
-    if (argc < 3)
+static int TopK_AddCommon(RedisModuleCtx *ctx, RedisModuleString **argv, int argc, bool seeded) {
+
+    int firstItem = seeded ? 3 : 2;
+    if (argc <= firstItem)
         return RedisModule_WrongArity(ctx);
+
+    uint64_t seed;
+    if (GetTopKSeed(ctx, argv, seeded, &seed) != REDISMODULE_OK)
+        return REDISMODULE_OK;
 
     TopK *topk;
     if (GetTopKKey(ctx, argv[1], &topk, REDISMODULE_READ | REDISMODULE_WRITE) != REDISMODULE_OK) {
         return REDISMODULE_OK;
     }
 
-    int itemCount = argc - 2;
+    uint64_t rngState = seed;
+    int itemCount = argc - firstItem;
     RedisModule_ReplyWithArray(ctx, itemCount);
 
     for (int i = 0; i < itemCount; ++i) {
         size_t itemlen;
-        const char *item = RedisModule_StringPtrLen(argv[i + 2], &itemlen);
-        char *expelledItem = TopK_Add(topk, item, itemlen, 1);
+        const char *item = RedisModule_StringPtrLen(argv[i + firstItem], &itemlen);
+        char *expelledItem = TopK_Add(topk, item, itemlen, 1, &rngState);
 
         if (expelledItem == NULL) {
             RedisModule_ReplyWithNull(ctx);
@@ -137,35 +157,51 @@ static int TopK_Add_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
             TOPK_FREE(expelledItem);
         }
     }
-    RedisModule_ReplicateVerbatim(ctx);
+    RedisModule_Replicate(ctx, "TOPK._ADD_SEEDED", "slv", argv[1], (long long)seed,
+                          argv + firstItem, (size_t)itemCount);
     return REDISMODULE_OK;
 }
 
-static int TopK_Incrby_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+static int TopK_Add_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    return TopK_AddCommon(ctx, argv, argc, false);
+}
 
-    if (argc < 4 || (argc % 2) == 1)
+static int TopK_AddSeeded_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    return TopK_AddCommon(ctx, argv, argc, true);
+}
+
+static int TopK_IncrbyCommon(RedisModuleCtx *ctx, RedisModuleString **argv, int argc, bool seeded) {
+
+    int firstItem = seeded ? 3 : 2;
+    if (argc < firstItem + 2 || (argc - firstItem) % 2 != 0)
         return RedisModule_WrongArity(ctx);
+
+    uint64_t seed;
+    if (GetTopKSeed(ctx, argv, seeded, &seed) != REDISMODULE_OK)
+        return REDISMODULE_OK;
 
     TopK *topk;
     if (GetTopKKey(ctx, argv[1], &topk, REDISMODULE_READ | REDISMODULE_WRITE) != REDISMODULE_OK) {
         return REDISMODULE_OK;
     }
 
-    int itemCount = (argc - 2) / 2;
-    RedisModule_ReplyWithArray(ctx, itemCount);
+    uint64_t rngState = seed;
+    int itemCount = (argc - firstItem) / 2;
+    RedisModule_ReplyWithArray(ctx, REDISMODULE_POSTPONED_ARRAY_LEN);
 
-    for (int i = 0; i < itemCount; ++i) {
+    int i = 0;
+    for (; i < itemCount; ++i) {
         size_t itemlen;
-        const char *item = RedisModule_StringPtrLen(argv[2 + i * 2], &itemlen);
+        const char *item = RedisModule_StringPtrLen(argv[firstItem + i * 2], &itemlen);
         long long increment;
-        if (RedisModule_StringToLongLong(argv[2 + i * 2 + 1], &increment) || increment < 0 ||
-            increment > 100000) {
+        if (RedisModule_StringToLongLong(argv[firstItem + i * 2 + 1], &increment) ||
+            increment < 0 || increment > 100000) {
             RedisModule_ReplyWithError(
                 ctx, "TopK: increment must be an integer greater or equal to 0    \
                         and smaller or equal to 100,000");
             goto final;
         }
-        char *expelledItem = TopK_Add(topk, item, itemlen, (uint32_t)increment);
+        char *expelledItem = TopK_Add(topk, item, itemlen, (uint32_t)increment, &rngState);
 
         if (expelledItem == NULL) {
             RedisModule_ReplyWithNull(ctx);
@@ -175,8 +211,20 @@ static int TopK_Incrby_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
         }
     }
 final:
-    RedisModule_ReplicateVerbatim(ctx);
+    RedisModule_ReplySetArrayLength(ctx, i < itemCount ? i + 1 : itemCount);
+    if (i > 0) {
+        RedisModule_Replicate(ctx, "TOPK._INCRBY_SEEDED", "slv", argv[1], (long long)seed,
+                              argv + firstItem, (size_t)i * 2);
+    }
     return REDISMODULE_OK;
+}
+
+static int TopK_Incrby_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    return TopK_IncrbyCommon(ctx, argv, argc, false);
+}
+
+static int TopK_IncrbySeeded_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    return TopK_IncrbyCommon(ctx, argv, argc, true);
 }
 
 static int TopK_Query_Cmd(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
@@ -387,7 +435,7 @@ static void *TopKRdbLoad(RedisModuleIO *io, int encver) {
 
     /* Initialize lookupTable */
     for (uint32_t i = 0; i < TOPK_DECAY_LOOKUP_TABLE; ++i) {
-        topk->lookupTable[i] = i == 0 ? 1 : topk->lookupTable[i - 1] * topk->decay;
+        topk->lookupTable[i] = pow(topk->decay, i);
     }
 
     return topk;
@@ -438,6 +486,10 @@ int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RegisterCommand(ctx, "topk.reserve", TopK_Create_Cmd, "write deny-oom", "write fast");
     RegisterCommand(ctx, "topk.add", TopK_Add_Cmd, "write deny-oom", "write");
     RegisterCommand(ctx, "topk.incrby", TopK_Incrby_Cmd, "write deny-oom", "write");
+    RegisterCommand(ctx, "topk._add_seeded", TopK_AddSeeded_Cmd, "write deny-oom internal",
+                    "write");
+    RegisterCommand(ctx, "topk._incrby_seeded", TopK_IncrbySeeded_Cmd, "write deny-oom internal",
+                    "write");
     RegisterCommand(ctx, "topk.query", TopK_Query_Cmd, "readonly", "read");
     RegisterCommand(ctx, "topk.count", TopK_Count_Cmd, "readonly", "read");
     RegisterCommand(ctx, "topk.list", TopK_List_Cmd, "readonly", "read");

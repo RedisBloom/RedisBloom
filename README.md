@@ -42,6 +42,30 @@ Answering each of these questions accurately can require a huge amount of memory
 
 https://redis.io/docs/latest/develop/data-types/probabilistic/
 
+### Top-K replication upgrade and rollback
+
+Top-K writes now replicate through the internal `TOPK._ADD_SEEDED` and
+`TOPK._INCRBY_SEEDED` commands. Both primary and replicas must support these commands;
+older replicas reject them and can lose writes or stop, depending on the configured
+propagation error behavior. Redis core must also support internal module commands.
+
+Pause Top-K writes while module versions differ. Upgrade replicas before the primary,
+and prevent failover to an upgraded node while any replica still uses the old module.
+After all nodes are upgraded, fully resynchronize replicas from the primary before
+resuming Top-K writes: this fix does not repair existing divergence.
+
+Before rolling back the module on an AOF-enabled node, pause Top-K writes throughout
+the topology, run `BGREWRITEAOF` on every node being downgraded, and wait for
+`aof_rewrite_scheduled:0`, `aof_rewrite_in_progress:0`, and
+`aof_last_bgrewrite_status:ok`. Keep writes paused until
+rollback completes so new seeded commands cannot enter the AOF. The rewrite replaces
+seeded command history with serialized state; Top-K RDB encoding remains 0. An older
+module cannot load an AOF that still contains the seeded command names.
+
+On replicas, Top-K write command statistics and latency metrics use the internal
+command names, and ordinary `MONITOR` clients no longer see these writes. Primary
+client commands keep their public names.
+
 ## License
 
 Starting with Redis 8, RedisBloom is licensed under your choice of: (i) Redis Source Available License 2.0 (RSALv2); (ii) the Server Side Public License v1 (SSPLv1); or (iii) the GNU Affero General Public License version 3 (AGPLv3). Please review the license folder for the full license terms and conditions. Prior versions remain subject to (i) and (ii).
