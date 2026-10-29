@@ -624,6 +624,14 @@ class testCuckooNoCodec():
             self.cmd('cf.scandump', 'cf', random.randint(0, size * 2))
 
 
+    def test_loadchunk_header_rejects_existing_filter(self):
+        self.cmd('FLUSHALL')
+        self.cmd('CF.ADD', 'cf', 'item')
+        position, header = self.cmd('CF.SCANDUMP', 'cf', 0)
+        self.assertEqual(position, 1)
+        self.env.expect('CF.LOADCHUNK', 'cf', position, header).error().contains('item exists')
+        self.assertEqual(self.cmd('CF.COUNT', 'cf', 'item'), 1)
+
     def test_scandump_load_small(self):
         self.cmd('FLUSHALL')
         self.cmd('cf.reserve', 'cf', 10)
