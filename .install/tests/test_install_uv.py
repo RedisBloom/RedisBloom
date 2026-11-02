@@ -20,7 +20,7 @@ count = root / 'count'
 n = int(count.read_text()) if count.exists() else 0
 count.write_text(str(n + 1))
 args = sys.argv[1:]
-assert args[:5] == ['-LsSf', '--connect-timeout', '15', '--max-time', '60']
+assert args[:9] == ['--proto', '=https', '--proto-redir', '=https', '-LsSf', '--connect-timeout', '15', '--max-time', '60']
 output = Path(args[args.index('-o') + 1])
 (root / 'output').write_text(str(output))
 output.write_text('echo executed >> "$PROBE_ROOT/executed"\\nexit ' + os.environ['INSTALLER_STATUS'] + '\\n')

@@ -6,7 +6,7 @@ installer=$(mktemp)
 trap 'rm -f "$installer"' EXIT
 
 for attempt in 1 2 3; do
-    if curl -LsSf --connect-timeout 15 --max-time 60 \
+    if curl --proto =https --proto-redir =https -LsSf --connect-timeout 15 --max-time 60 \
         https://astral.sh/uv/install.sh -o "$installer"; then
         sh "$installer"
         exit 0
@@ -20,7 +20,7 @@ for attempt in 1 2 3; do
         6|7|18|28|52|56) ;;
         *) exit "$status" ;;
     esac
-    if [ "$attempt" -eq 3 ]; then
+    if [[ "$attempt" -eq 3 ]]; then
         exit "$status"
     fi
     echo "uv installer download failed (curl $status); retrying" >&2
