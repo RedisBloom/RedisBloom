@@ -37,9 +37,7 @@ typedef struct {
     long long value;
 } CMSPair;
 
-static int GetCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName, CMSketch **cms, int mode) {
-    // All using this function should call RedisModule_AutoMemory to prevent memory leak
-    RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, mode);
+static int GetCMSValue(RedisModuleCtx *ctx, RedisModuleKey *key, CMSketch **cms) {
     if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
         INNER_ERROR("CMS: key does not exist");
     } else if (RedisModule_ModuleTypeGetType(key) != CMSketchType) {
@@ -47,6 +45,12 @@ static int GetCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName, CMSketch *
     }
     *cms = RedisModule_ModuleTypeGetValue(key);
     return REDISMODULE_OK;
+}
+
+static int GetCMSKey(RedisModuleCtx *ctx, RedisModuleString *keyName, CMSketch **cms, int mode) {
+    // All using this function should call RedisModule_AutoMemory to prevent memory leak
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, mode);
+    return GetCMSValue(ctx, key, cms);
 }
 
 static int parseCellSize(RedisModuleCtx *ctx, RedisModuleString **argv, int argc,
@@ -156,8 +160,6 @@ static int parseIncrByArgs(RedisModuleCtx *ctx, RedisModuleString **argv, int ar
 }
 
 int CMSketch_IncrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-
     if (argc < 4 || (argc % 2) == 1) {
         return RedisModule_WrongArity(ctx);
     }
@@ -165,6 +167,7 @@ int CMSketch_IncrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModuleString *keyName = argv[1];
     RedisModuleKey *key = RedisModule_OpenKey(ctx, keyName, REDISMODULE_WRITE);
     CMSketch *cms = NULL;
+    CMSPair singlePair;
     CMSPair *pairArray = NULL;
 
     if (RedisModule_KeyType(key) == REDISMODULE_KEYTYPE_EMPTY) {
@@ -178,7 +181,7 @@ int CMSketch_IncrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     }
 
     int pairCount = (argc - 2) / 2;
-    pairArray = CMS_CALLOC(pairCount, sizeof(CMSPair));
+    pairArray = pairCount == 1 ? &singlePair : CMS_CALLOC(pairCount, sizeof(CMSPair));
     if (parseIncrByArgs(ctx, argv, argc, &pairArray, pairCount) != REDISMODULE_OK) {
         goto done;
     }
@@ -201,21 +204,21 @@ int CMSketch_IncrBy(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_ReplicateVerbatim(ctx);
 
 done:
-    if (pairArray)
+    if (pairArray && pairArray != &singlePair)
         CMS_FREE(pairArray);
     RedisModule_CloseKey(key);
     return REDISMODULE_OK;
 }
 
 int CMSketch_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
     if (argc < 3) {
         return RedisModule_WrongArity(ctx);
     }
 
     CMSketch *cms = NULL;
-    if (GetCMSKey(ctx, argv[1], &cms, REDISMODULE_READ) != REDISMODULE_OK) {
-        return REDISMODULE_OK;
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ);
+    if (GetCMSValue(ctx, key, &cms) != REDISMODULE_OK) {
+        goto done;
     }
 
     int itemCount = argc - 2;
@@ -226,6 +229,8 @@ int CMSketch_Query(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         RedisModule_ReplyWithLongLong(ctx, (long long)CMS_Query(cms, str, length));
     }
 
+done:
+    RedisModule_CloseKey(key);
     return REDISMODULE_OK;
 }
 
