@@ -2,7 +2,7 @@
 # Download completely before executing; never run a partial installer.
 set -euo pipefail
 
-installer=$(mktemp)
+installer=$(mktemp "${TMPDIR:-/tmp}/redisbloom-uv.XXXXXX")
 trap 'rm -f "$installer"' EXIT
 
 for attempt in 1 2 3; do
