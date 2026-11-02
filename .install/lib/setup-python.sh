@@ -41,7 +41,7 @@ if [ "${DRY_RUN:-0}" = 1 ]; then
     # only if uv is missing; venv + pip only if the venv doesn't exist yet
     # (mirrors the real `[ ! -d venv ]` guard below).
     if [ ! -d "$ROOT/venv" ]; then
-        _have_uv || _dry_line "curl -LsSf https://astral.sh/uv/install.sh | sh"
+        _have_uv || _dry_line "bash \"$HERE/lib/install-uv.sh\""
         # uv installs to ~/.local/bin (or ~/.cargo/bin), which may not be on
         # PATH — export it so the uv commands below resolve when pasted, exactly
         # as bootstrap does after installing uv.
@@ -61,7 +61,7 @@ fi
 
 if ! command -v uv >/dev/null 2>&1; then
     echo "==> [redisbloom] installing uv"
-    curl -LsSf https://astral.sh/uv/install.sh | sh
+    bash "$HERE/lib/install-uv.sh"
     export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 fi
 
