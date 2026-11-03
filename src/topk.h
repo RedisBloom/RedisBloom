@@ -50,6 +50,7 @@ typedef struct topk {
     uint32_t k;
     uint32_t width;
     uint32_t depth;
+    uint32_t seed; // Zero preserves the original row and fingerprint seeds.
     double decay;
 
     Bucket *data;

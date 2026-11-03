@@ -121,6 +121,58 @@ jobs:
           echo "matrix=${MATRIX}" >> $GITHUB_OUTPUT
           echo "Generated matrix for ${{ inputs.arch }}: ${MATRIX}"
 
+  # Run once outside the OS matrix and instrumented test jobs.
+  seed-accuracy:
+    name: Seed accuracy (Jammy x64)
+    if: ${{ inputs.arch == 'x64' && !inputs.run_valgrind && !inputs.run_sanitizer }}
+    runs-on: ubuntu-latest
+    needs: setup-environment
+    timeout-minutes: 60
+    env:
+      REDIS_REF: ${{ needs.setup-environment.outputs.redis-ref }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: 'recursive'
+
+      - name: Prepare Jammy image
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          USE_PREBUILT_IMAGES: ${{ inputs.use_prebuilt_images }}
+        run: |
+          repo="$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+          image_tag="${REDIS_REF:-$(.install/get-redis-ref.sh)}"
+          image="ghcr.io/${repo}/redisbloom-x86-jammy:${image_tag}"
+          echo "DOCKER_IMAGE=${image}" >> "$GITHUB_ENV"
+          if [ "$USE_PREBUILT_IMAGES" = "true" ]; then
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          fi
+          if [ "$USE_PREBUILT_IMAGES" != "true" ] || ! docker pull "$image"; then
+            docker build -f Dockerfile.jammy --build-arg REDIS_REF="$REDIS_REF" -t "$image" .
+          fi
+
+      - name: Build module
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace \
+            "$DOCKER_IMAGE" make build
+
+      - name: Run seed accuracy sweeps
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace \
+            -e SEED_ACCURACY=1 "$DOCKER_IMAGE" \
+            make flow-tests GEN=1 SLAVES=0 AOF=0 CLUSTER=0 OSS_CLUSTER=0 \
+              TEST="test_bloom_seed_accuracy test_cuckoo_seed_accuracy test_cms_seed_accuracy test_topk_seed_accuracy"
+
+      - name: Upload accuracy test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: seed-accuracy-logs
+          path: |
+            tests/**/logs/
+            tests/**/*.log
+
   build-linux:
     name: ${{ inputs.arch }}-${{ matrix.platform.os }}, ${{ needs.setup-environment.outputs.redis-ref }}
     runs-on: ${{ needs.setup-environment.outputs.runner }}
