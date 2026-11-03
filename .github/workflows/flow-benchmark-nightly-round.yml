@@ -130,6 +130,8 @@ jobs:
           python tests/benchmarks/benchmark_jobs.py merge \
             --plan nightly-bundle/plan.json --results nightly-shards --output nightly-benchmark-results
       - name: Publish final throughput to Grafana data source
+        id: grafana
+        continue-on-error: true # Publication must not block benchmark-based promotion.
         if: ${{ !cancelled() && inputs.phase == 'initial' }}
         env:
           PERFORMANCE_RTS_HOST: ${{ secrets.PERFORMANCE_RTS_HOST }}
@@ -158,7 +160,13 @@ jobs:
           python tests/benchmarks/nightly_baseline.py evaluate nightly-benchmark-results/comparison.json "${arguments[@]}"
       - name: Publish comparison summary
         if: always()
+        env:
+          GRAFANA_OUTCOME: ${{ steps.grafana.outcome }}
         run: |
+          if [ "$GRAFANA_OUTCOME" = failure ]; then
+            echo '::warning::Grafana publication failed; benchmark results still determine promotion eligibility.'
+            echo '⚠️ Grafana publication failed. Benchmark results still determine promotion eligibility.' >> "$GITHUB_STEP_SUMMARY"
+          fi
           echo 'Baseline versus current branch.' >> "$GITHUB_STEP_SUMMARY"
           if [ -f nightly-benchmark-results/summary.md ]; then
             cat nightly-benchmark-results/summary.md >> "$GITHUB_STEP_SUMMARY"
