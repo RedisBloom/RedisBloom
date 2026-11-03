@@ -58,20 +58,32 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install build and benchmark tools
+      - name: Check out the shared Redis server
+        uses: actions/checkout@v5
+        with:
+          repository: redis/redis
+          ref: '8.6'
+          path: benchmark-redis
+          persist-credentials: false
+
+      - name: Install benchmark tools
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake libclang-dev autoconf automake libtool pkg-config libssl-dev
           python -m pip install -r benchmark-driver/tests/benchmarks/requirements.txt
 
-      - name: Build both pinned revisions
+      - name: Build both pinned revisions for Ubuntu 20.04
         run: |
-          for source in benchmark-master benchmark-baseline; do
-            # Keep embedded source paths identical without reusing build artifacts.
-            mv "$source" benchmark-build
-            (cd benchmark-build && make -j"$(nproc)" build)
-            mv benchmark-build "$source"
-          done
+          # Match the legacy AWS image using the original benchmark build container.
+          docker run --rm -v "$GITHUB_WORKSPACE:/workspace" -w /workspace \
+            redisfab/rmbuilder:6.2.7-x64-focal bash -euc '
+              git config --global --add safe.directory "*"
+              make -C benchmark-redis -j"$(nproc)" redis-server
+              for source in benchmark-master benchmark-baseline; do
+                # Keep embedded source paths identical without reusing build artifacts.
+                mv "$source" benchmark-build
+                (cd benchmark-build && make -j"$(nproc)" build)
+                mv benchmark-build "$source"
+              done
+            '
 
       - name: Package shared builds and distribute all workloads
         env:
@@ -80,6 +92,7 @@ jobs:
           mkdir -p nightly-bundle/{master,baseline}/bin/linux-x64-release nightly-bundle/master/tests
           cp benchmark-master/bin/linux-x64-release/redisbloom.so nightly-bundle/master/bin/linux-x64-release/
           cp benchmark-baseline/bin/linux-x64-release/redisbloom.so nightly-bundle/baseline/bin/linux-x64-release/
+          cp benchmark-redis/src/redis-server nightly-bundle/redis-server
           sha256sum nightly-bundle/{baseline,master}/bin/linux-x64-release/redisbloom.so
           cp -R benchmark-master/tests/benchmarks nightly-bundle/master/tests/
           python - <<'PYTHON'

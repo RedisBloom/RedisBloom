@@ -83,7 +83,7 @@ def configure_affinity(output, inventory, key):
     inventory['server_cpulist'] = settings['server']['cpulist']
 
 
-def run_one(spec, module, directory, datasets, inventory, key, remote_config):
+def run_one(spec, module, directory, datasets, inventory, key, remote_config, redis_server):
     directory.mkdir(parents=True)
     (directory / 'datasets').symlink_to(datasets, target_is_directory=True)
     # redisbench-admin caches uploads by remote basename, not file contents.
@@ -106,6 +106,7 @@ def run_one(spec, module, directory, datasets, inventory, key, remote_config):
     command = [
         'redisbench-admin', 'run-remote', '--test', 'test.yml',
         '--module_path', str(module_alias), '--required-module', 'bf',
+        '--redis-server-binary', str(redis_server),
         '--inventory', hosts, '--user', inventory['user'], '--private_key', str(key),
         '--db_port', str(inventory['port']), '--keep_env_and_topo',
         '--allowed-envs', 'oss-standalone', '--allowed-setups', 'oss-standalone', '--github_org', 'RedisBloom',
@@ -187,7 +188,7 @@ def compare(args):
     configure_affinity(output, inventory, args.private_key.resolve())
     def run(spec, module, directory):
         value = run_one(spec, module, directory, datasets,
-                        inventory, args.private_key.resolve(), remote_config)
+                        inventory, args.private_key.resolve(), remote_config, args.redis_server.resolve())
         if results.setdefault('redis', value['redis_version']) != value['redis_version']:
             raise ValueError('Redis version changed during comparison')
         return value
@@ -204,12 +205,13 @@ def main():
     parser.add_argument('--private-key', type=Path)
     parser.add_argument('--baseline-dir', type=Path)
     parser.add_argument('--master-dir', type=Path)
+    parser.add_argument('--redis-server', type=Path)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--plan', type=Path)
     parser.add_argument('--max-retries', type=int, choices=range(4), default=3)
     parser.add_argument('--shard', type=int, default=0)
     args = parser.parse_args()
-    required = {'provision': ['benchmarks_dir'], 'run': ['private_key', 'baseline_dir', 'master_dir', 'output'],
+    required = {'provision': ['benchmarks_dir'], 'run': ['private_key', 'baseline_dir', 'master_dir', 'output', 'redis_server'],
                 'destroy': []}[args.command]
     if any(getattr(args, name) is None for name in required):
         parser.error(f'{args.command} requires: {", ".join(required)}')
