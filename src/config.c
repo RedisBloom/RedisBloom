@@ -148,9 +148,6 @@ static RedisModuleString *getIntegerValue(const char *name, void *privdata) {
 
 int RM_RegisterConfigs(RedisModuleCtx *ctx) {
     RedisModule_Log(ctx, "notice", "Registering configuration options: [");
-    registerConfigVar(bf_error_rate);
-    registerConfigVar(bf_initial_size);
-    registerConfigVar(bf_expansion_factor);
     registerConfigVar(cf_bucket_size);
     registerConfigVar(cf_initial_size);
     registerConfigVar(cf_max_iterations);

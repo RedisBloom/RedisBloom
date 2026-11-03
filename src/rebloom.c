@@ -1633,45 +1633,15 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     RedisModule_SetModuleOptions(ctx, REDISMODULE_OPTIONS_HANDLE_IO_ERRORS);
 
     for (int ii = 0; ii < argc; ii += 2) {
-        tryGetConfigFromArgs(ctx, argv, ii, BF_INITIAL_SIZE_LEGACY, bf_initial_size);
-        tryGetConfigFromArgs(ctx, argv, ii, BF_ERROR_RATE_LEGACY, bf_error_rate);
         tryGetConfigFromArgs(ctx, argv, ii, CF_MAX_EXPANSIONS_LEGACY, cf_max_expansions);
         BAIL("Unrecognized option");
     }
-    if (rm_config.bf_error_rate.value > BF_ERROR_RATE_CAP) {
-        rm_config.bf_error_rate.value = BF_ERROR_RATE_CAP;
-        RedisModule_Log(ctx, "warning", "%s is capped at %f",
-                        RM_ConfigOptionToString(bf_error_rate), BF_ERROR_RATE_CAP);
-    }
-
     if (!RedisModule_RegisterStringConfig || !RedisModule_LoadConfigs) {
         // nothing to do
     } else if (RM_RegisterConfigs(ctx) != REDISMODULE_OK ||
                RedisModule_LoadConfigs(ctx) != REDISMODULE_OK) {
         return REDISMODULE_ERR;
     }
-
-#define RegisterCommand(ctx, name, cmd, mode, acl)                                                 \
-    RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl " bloom");
-
-    RegisterAclCategory(ctx, "bloom");
-    RegisterCommand(ctx, "bf.reserve", BFReserve_RedisCommand, "write deny-oom", "write fast");
-    RegisterCommand(ctx, "bf.add", BFAdd_RedisCommand, "write deny-oom", "write");
-    RegisterCommand(ctx, "bf.madd", BFAdd_RedisCommand, "write deny-oom", "write");
-    RegisterCommand(ctx, "bf.insert", BFInsert_RedisCommand, "write deny-oom", "write");
-    RegisterCommand(ctx, "bf.exists", BFCheck_RedisCommand, "readonly fast", "read");
-    RegisterCommand(ctx, "bf.mexists", BFCheck_RedisCommand, "readonly fast", "read");
-    RegisterCommand(ctx, "bf.info", BFInfo_RedisCommand, "readonly fast", "read fast");
-    RegisterCommand(ctx, "bf.card", BFCard_RedisCommand, "readonly fast", "read fast");
-
-    // Bloom - Debug
-    RegisterCommand(ctx, "bf.debug", BFDebug_RedisCommand, "readonly fast", "read");
-
-    // Bloom - AOF
-    RegisterCommand(ctx, "bf.scandump", BFScanDump_RedisCommand, "readonly fast", "read");
-    RegisterCommand(ctx, "bf.loadchunk", BFLoadChunk_RedisCommand, "write deny-oom", "write");
-
-#undef RegisterCommand
 
 #define RegisterCommand(ctx, name, cmd, mode, acl)                                                 \
     RegisterCommandWithModesAndAcls(ctx, name, cmd, mode, acl " cuckoo")
@@ -1699,8 +1669,6 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     RegisterCommand(ctx, "cf.debug", CFDebug_RedisCommand, "readonly fast", "read");
     if (RegisterCFCommandInfos(ctx) != REDISMODULE_OK)
         return REDISMODULE_ERR;
-    if (RegisterBFCommandInfos(ctx) != REDISMODULE_OK)
-        return REDISMODULE_ERR;
 #undef RegisterCommand
 
     if (CMSModule_onLoad(ctx, argv, argc) == REDISMODULE_ERR)
@@ -1709,20 +1677,6 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
         return REDISMODULE_ERR;
     if (TDigestModule_onLoad(ctx, argv, argc) == REDISMODULE_ERR)
         return REDISMODULE_ERR;
-
-    static RedisModuleTypeMethods typeprocs = {
-        .version = REDISMODULE_TYPE_METHOD_VERSION,
-        .rdb_load = BFRdbLoad,
-        .rdb_save = BFRdbSave,
-        .aof_rewrite = BFAofRewrite,
-        .free = BFFree,
-        .mem_usage = BFMemUsage,
-        .defrag = BFDefrag,
-    };
-    BFType = RedisModule_CreateDataType(ctx, "MBbloom--", BF_MIN_GROWTH_ENC, &typeprocs);
-    if (BFType == NULL) {
-        return REDISMODULE_ERR;
-    }
 
     static RedisModuleTypeMethods cfTypeProcs = {
         .version = REDISMODULE_TYPE_METHOD_VERSION,
