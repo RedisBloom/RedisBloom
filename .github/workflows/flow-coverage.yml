@@ -65,6 +65,7 @@ jobs:
           profile: administrator
           profile-region: us-east-1
           async: true
+          ssh-key-name: tracebit_ci_canary
       - name: Resolve redis-ref
         id: redis
         env:
@@ -91,7 +92,7 @@ jobs:
           # it the build is instrumented but no report is produced. The test step
           # records its status in the Makefile so the report is still produced
           # when tests fail, then `make coverage` returns that failing status.
-          docker run --rm \
+          python3 .github/scripts/tracebit-docker-run.py --rm \
             -v ${{ github.workspace }}:/workspace \
             -w /workspace \
             --cap-add=SYS_PTRACE \

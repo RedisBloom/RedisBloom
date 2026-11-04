@@ -96,6 +96,7 @@ jobs:
           profile: administrator
           profile-region: us-east-1
           async: true
+          ssh-key-name: tracebit_ci_canary
       - name: set env
         id: set-env
         uses: ./.github/actions/setup-env
@@ -161,6 +162,7 @@ jobs:
           profile: administrator
           profile-region: us-east-1
           async: true
+          ssh-key-name: tracebit_ci_canary
       - name: Set Docker Image
         run: |
           repo="$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
@@ -200,7 +202,7 @@ jobs:
 
       - name: Build module
         run: |
-          docker run --rm \
+          python3 .github/scripts/tracebit-docker-run.py --rm \
             -v ${{ github.workspace }}:/workspace \
             -w /workspace \
             -e SAN=${{ inputs.run_sanitizer && 'addr' || '' }} \
@@ -209,7 +211,7 @@ jobs:
 
       - name: Run tests
         run: |
-          docker run --rm \
+          python3 .github/scripts/tracebit-docker-run.py --rm \
             -v ${{ github.workspace }}:/workspace \
             -w /workspace \
             --cap-add=SYS_PTRACE \
@@ -234,7 +236,7 @@ jobs:
         env:
           BETA_VERSION: ${{ inputs.beta-version }}
         run: |
-          docker run --rm \
+          python3 .github/scripts/tracebit-docker-run.py --rm \
             -v ${{ github.workspace }}:/workspace \
             -w /workspace \
             -e BRANCH=${{ env.BRANCH }} \
@@ -249,7 +251,7 @@ jobs:
         env:
           BETA_VERSION: ${{ inputs.beta-version }}
         run: |
-          docker run --rm \
+          python3 .github/scripts/tracebit-docker-run.py --rm \
             -v ${{ github.workspace }}:/workspace \
             -w /workspace \
             -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
