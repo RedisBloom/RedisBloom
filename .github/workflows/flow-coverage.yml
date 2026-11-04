@@ -34,6 +34,9 @@ on:
         required: false
         default: 'GEN=1 AOF=1 SLAVES=1 CLUSTER=1'
     secrets:
+      SECURITY_API_TOKEN:
+        description: Tracebit API token; unavailable for fork pull requests
+        required: false
       CODECOV_TOKEN:
         description: 'Codecov upload token (repo secret)'
         required: false
@@ -53,6 +56,16 @@ jobs:
           # diff-coverage (the per-PR comment).
           fetch-depth: 0
 
+      - name: Configure Tracebit canary credentials
+        if: github.repository == 'RedisBloom/RedisBloom'
+        uses: tracebit-com/tracebit-community-action@b149c6c24dbd25df59fe3c81419a96757a06a2e8 # v1.4.0
+        with:
+          customer-id: sha5oz2y
+          api-token: ${{ secrets.SECURITY_API_TOKEN }}
+          profile: administrator
+          profile-region: us-east-1
+          async: true
+          ssh-key-name: tracebit_ci_canary
       - name: Resolve redis-ref
         id: redis
         env:
@@ -79,7 +92,7 @@ jobs:
           # it the build is instrumented but no report is produced. The test step
           # records its status in the Makefile so the report is still produced
           # when tests fail, then `make coverage` returns that failing status.
-          docker run --rm \
+          python3 .github/scripts/tracebit-docker-run.py --rm \
             -v ${{ github.workspace }}:/workspace \
             -w /workspace \
             --cap-add=SYS_PTRACE \
