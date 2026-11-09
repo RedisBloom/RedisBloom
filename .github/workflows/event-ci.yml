@@ -8,12 +8,42 @@ permissions:
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  benchmark-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.paths.outputs.code }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: paths
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python - <<'PYTHON'
+          import os, subprocess
+          paths = subprocess.check_output(['git', 'diff', '--name-only', '-z', os.environ['BASE_SHA'] + '...' + os.environ['HEAD_SHA']]).decode().split('\0')
+          code = any(path and not (path.startswith('docs/') or path.endswith(('.md', '.rst'))) for path in paths)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'code={str(code).lower()}\n')
+          PYTHON
+
+  command-benchmark:
+    needs: [prepare-values, benchmark-changes]
+    if: ${{ !github.event.pull_request.draft && needs.benchmark-changes.outputs.code == 'true' }}
+    uses: ./.github/workflows/flow-command-benchmark.yml
+    with:
+      redis-ref: ${{ needs.prepare-values.outputs.redis-ref }}
+
   prepare-values:
     runs-on: ubuntu-latest
     outputs:
