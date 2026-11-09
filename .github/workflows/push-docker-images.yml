@@ -67,6 +67,7 @@ jobs:
           profile: administrator
           profile-region: us-east-1
           async: true
+          ssh-key-name: tracebit_ci_canary
       - name: Check Docker image version change
         id: check
         run: |
@@ -117,6 +118,7 @@ jobs:
           profile: administrator
           profile-region: us-east-1
           async: true
+          ssh-key-name: tracebit_ci_canary
       - name: Set matrix
         id: set-matrix
         env:
@@ -182,6 +184,7 @@ jobs:
           profile: administrator
           profile-region: us-east-1
           async: true
+          ssh-key-name: tracebit_ci_canary
       - name: Login to GHCR
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -239,7 +242,7 @@ jobs:
           # fails with "unknown blob" (the loaded image references a config/layer
           # blob the classic pusher can't find). buildx uploads a correct manifest
           # directly to GHCR. --provenance=false keeps it a plain single-arch image.
-          docker buildx build \
+          bash .github/scripts/tracebit-docker.sh buildx \
             --platform "${DOCKER_PLATFORM}" \
             -f "Dockerfile.${OS}" \
             --build-arg REDIS_REF="${REDIS_REF}" \

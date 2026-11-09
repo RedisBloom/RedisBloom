@@ -193,7 +193,7 @@ jobs:
           else
             echo "::notice title=Docker image::Building image locally because prebuilt images are disabled: ${DOCKER_IMAGE}"
           fi
-          docker build \
+          bash .github/scripts/tracebit-docker.sh build \
             -f Dockerfile.${{ matrix.platform.os }} \
             --build-arg REDIS_REF=${{ env.REDIS_REF }} \
             --build-arg SANITIZER=${{ inputs.run_sanitizer && 'address' || '' }} \
@@ -202,7 +202,7 @@ jobs:
 
       - name: Build module
         run: |
-          python3 .github/scripts/tracebit-docker-run.py --rm \
+          bash .github/scripts/tracebit-docker.sh run --rm \
             -v ${{ github.workspace }}:/workspace \
             -w /workspace \
             -e SAN=${{ inputs.run_sanitizer && 'addr' || '' }} \
@@ -211,7 +211,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python3 .github/scripts/tracebit-docker-run.py --rm \
+          bash .github/scripts/tracebit-docker.sh run --rm \
             -v ${{ github.workspace }}:/workspace \
             -w /workspace \
             --cap-add=SYS_PTRACE \
@@ -236,7 +236,7 @@ jobs:
         env:
           BETA_VERSION: ${{ inputs.beta-version }}
         run: |
-          python3 .github/scripts/tracebit-docker-run.py --rm \
+          bash .github/scripts/tracebit-docker.sh run --rm \
             -v ${{ github.workspace }}:/workspace \
             -w /workspace \
             -e BRANCH=${{ env.BRANCH }} \
@@ -251,7 +251,7 @@ jobs:
         env:
           BETA_VERSION: ${{ inputs.beta-version }}
         run: |
-          python3 .github/scripts/tracebit-docker-run.py --rm \
+          bash .github/scripts/tracebit-docker.sh run --rm \
             -v ${{ github.workspace }}:/workspace \
             -w /workspace \
             -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \

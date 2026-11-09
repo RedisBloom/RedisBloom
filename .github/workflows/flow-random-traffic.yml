@@ -135,7 +135,7 @@ jobs:
           else
             echo "::notice title=Docker image::Building image locally because prebuilt images are disabled: ${DOCKER_IMAGE}"
           fi
-          docker build \
+          bash .github/scripts/tracebit-docker.sh build \
             -f "Dockerfile.${SELECTED_OS}" \
             --build-arg REDIS_REF="${REDIS_REF}" \
             -t "${DOCKER_IMAGE}" \
@@ -143,7 +143,7 @@ jobs:
 
       - name: Build module
         run: |
-          python3 .github/scripts/tracebit-docker-run.py --rm \
+          bash .github/scripts/tracebit-docker.sh run --rm \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -w /workspace \
             "${DOCKER_IMAGE}" \
@@ -151,7 +151,7 @@ jobs:
 
       - name: Run Random Traffic - ${{ matrix.generator }}
         run: |
-          python3 .github/scripts/tracebit-docker-run.py --rm \
+          bash .github/scripts/tracebit-docker.sh run --rm \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -w /workspace \
             "${DOCKER_IMAGE}" \

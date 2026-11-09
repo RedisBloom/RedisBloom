@@ -79,7 +79,7 @@ jobs:
         env:
           REDIS_REF: ${{ steps.redis.outputs.ref }}
         run: |
-          docker build -f Dockerfile.jammy --build-arg REDIS_REF="$REDIS_REF" -t "$DOCKER_IMAGE" .
+          bash .github/scripts/tracebit-docker.sh build -f Dockerfile.jammy --build-arg REDIS_REF="$REDIS_REF" -t "$DOCKER_IMAGE" .
 
       - name: Run coverage
         env:
@@ -92,7 +92,7 @@ jobs:
           # it the build is instrumented but no report is produced. The test step
           # records its status in the Makefile so the report is still produced
           # when tests fail, then `make coverage` returns that failing status.
-          python3 .github/scripts/tracebit-docker-run.py --rm \
+          bash .github/scripts/tracebit-docker.sh run --rm \
             -v ${{ github.workspace }}:/workspace \
             -w /workspace \
             --cap-add=SYS_PTRACE \
