@@ -1573,8 +1573,8 @@ static int rsStrcasecmp(const RedisModuleString *rs1, const char *s2) {
 
 #define RM_StrToNum(config, rm_str, num)                                                           \
     if (_Generic(num,                                                                              \
-        long long: RedisModule_StringToLongLong,                                                   \
-        double: RedisModule_StringToDouble)(rm_str, &num) != REDISMODULE_OK) {                     \
+            long long: RedisModule_StringToLongLong,                                               \
+            double: RedisModule_StringToDouble)(rm_str, &num) != REDISMODULE_OK) {                 \
         BAIL("Invalid argument for '%s'", RM_ConfigOptionToString(config));                        \
     }
 
