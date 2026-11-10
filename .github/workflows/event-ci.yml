@@ -8,12 +8,53 @@ permissions:
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  benchmark-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.paths.outputs.code }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Configure Tracebit canary credentials
+        if: github.repository == 'RedisBloom/RedisBloom'
+        uses: tracebit-com/tracebit-community-action@b149c6c24dbd25df59fe3c81419a96757a06a2e8 # v1.4.0
+        with:
+          customer-id: sha5oz2y
+          api-token: ${{ secrets.SECURITY_API_TOKEN }}
+          profile: administrator
+          profile-region: us-east-1
+          async: true
+      - id: paths
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python - <<'PYTHON'
+          import os, subprocess
+          paths = subprocess.check_output(['git', 'diff', '--name-only', '-z', os.environ['BASE_SHA'] + '...' + os.environ['HEAD_SHA']]).decode().split('\0')
+          code = any(path and not (path.startswith('docs/') or path.endswith(('.md', '.rst'))) for path in paths)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'code={str(code).lower()}\n')
+          PYTHON
+
+  command-benchmark:
+    needs: [prepare-values, benchmark-changes]
+    if: ${{ !github.event.pull_request.draft && needs.benchmark-changes.outputs.code == 'true' }}
+    uses: ./.github/workflows/flow-command-benchmark.yml
+    secrets:
+      SECURITY_API_TOKEN: ${{ secrets.SECURITY_API_TOKEN }}
+    with:
+      redis-ref: ${{ needs.prepare-values.outputs.redis-ref }}
+
   prepare-values:
     runs-on: ubuntu-latest
     outputs:
@@ -21,6 +62,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Configure Tracebit canary credentials
+        if: github.repository == 'RedisBloom/RedisBloom'
+        uses: tracebit-com/tracebit-community-action@b149c6c24dbd25df59fe3c81419a96757a06a2e8 # v1.4.0
+        with:
+          customer-id: sha5oz2y
+          api-token: ${{ secrets.SECURITY_API_TOKEN }}
+          profile: administrator
+          profile-region: us-east-1
+          async: true
       - name: set env
         id: set-env
         run: |
@@ -84,4 +134,5 @@ jobs:
     with:
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
     secrets:
+      SECURITY_API_TOKEN: ${{ secrets.SECURITY_API_TOKEN }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

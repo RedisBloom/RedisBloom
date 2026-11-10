@@ -58,6 +58,16 @@ jobs:
         with:
           fetch-depth: 2
 
+      - name: Configure Tracebit canary credentials
+        if: github.repository == 'RedisBloom/RedisBloom'
+        uses: tracebit-com/tracebit-community-action@b149c6c24dbd25df59fe3c81419a96757a06a2e8 # v1.4.0
+        with:
+          customer-id: sha5oz2y
+          api-token: ${{ secrets.SECURITY_API_TOKEN }}
+          profile: administrator
+          profile-region: us-east-1
+          async: true
+          ssh-key-name: tracebit_ci_canary
       - name: Check Docker image version change
         id: check
         run: |
@@ -99,6 +109,16 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
+      - name: Configure Tracebit canary credentials
+        if: github.repository == 'RedisBloom/RedisBloom'
+        uses: tracebit-com/tracebit-community-action@b149c6c24dbd25df59fe3c81419a96757a06a2e8 # v1.4.0
+        with:
+          customer-id: sha5oz2y
+          api-token: ${{ secrets.SECURITY_API_TOKEN }}
+          profile: administrator
+          profile-region: us-east-1
+          async: true
+          ssh-key-name: tracebit_ci_canary
       - name: Set matrix
         id: set-matrix
         env:
@@ -155,6 +175,16 @@ jobs:
         with:
           submodules: 'recursive'
 
+      - name: Configure Tracebit canary credentials
+        if: github.repository == 'RedisBloom/RedisBloom'
+        uses: tracebit-com/tracebit-community-action@b149c6c24dbd25df59fe3c81419a96757a06a2e8 # v1.4.0
+        with:
+          customer-id: sha5oz2y
+          api-token: ${{ secrets.SECURITY_API_TOKEN }}
+          profile: administrator
+          profile-region: us-east-1
+          async: true
+          ssh-key-name: tracebit_ci_canary
       - name: Login to GHCR
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -212,7 +242,7 @@ jobs:
           # fails with "unknown blob" (the loaded image references a config/layer
           # blob the classic pusher can't find). buildx uploads a correct manifest
           # directly to GHCR. --provenance=false keeps it a plain single-arch image.
-          docker buildx build \
+          bash .github/scripts/tracebit-docker.sh buildx \
             --platform "${DOCKER_PLATFORM}" \
             -f "Dockerfile.${OS}" \
             --build-arg REDIS_REF="${REDIS_REF}" \
