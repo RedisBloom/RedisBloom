@@ -87,6 +87,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+      - name: Configure Tracebit canary credentials
+        if: github.repository == 'RedisBloom/RedisBloom'
+        uses: tracebit-com/tracebit-community-action@b149c6c24dbd25df59fe3c81419a96757a06a2e8 # v1.4.0
+        with:
+          customer-id: sha5oz2y
+          api-token: ${{ secrets.SECURITY_API_TOKEN }}
+          profile: administrator
+          profile-region: us-east-1
+          async: true
+          ssh-key-name: tracebit_ci_canary
       - name: set env
         id: set-env
         uses: ./.github/actions/setup-env
@@ -143,6 +153,16 @@ jobs:
         with:
           submodules: 'recursive'
 
+      - name: Configure Tracebit canary credentials
+        if: github.repository == 'RedisBloom/RedisBloom'
+        uses: tracebit-com/tracebit-community-action@b149c6c24dbd25df59fe3c81419a96757a06a2e8 # v1.4.0
+        with:
+          customer-id: sha5oz2y
+          api-token: ${{ secrets.SECURITY_API_TOKEN }}
+          profile: administrator
+          profile-region: us-east-1
+          async: true
+          ssh-key-name: tracebit_ci_canary
       - name: Set Docker Image
         run: |
           repo="$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
@@ -173,7 +193,7 @@ jobs:
           else
             echo "::notice title=Docker image::Building image locally because prebuilt images are disabled: ${DOCKER_IMAGE}"
           fi
-          docker build \
+          bash .github/scripts/tracebit-docker.sh build \
             -f Dockerfile.${{ matrix.platform.os }} \
             --build-arg REDIS_REF=${{ env.REDIS_REF }} \
             --build-arg SANITIZER=${{ inputs.run_sanitizer && 'address' || '' }} \
@@ -182,7 +202,7 @@ jobs:
 
       - name: Build module
         run: |
-          docker run --rm \
+          bash .github/scripts/tracebit-docker.sh run --rm \
             -v ${{ github.workspace }}:/workspace \
             -w /workspace \
             -e SAN=${{ inputs.run_sanitizer && 'addr' || '' }} \
@@ -191,7 +211,7 @@ jobs:
 
       - name: Run tests
         run: |
-          docker run --rm \
+          bash .github/scripts/tracebit-docker.sh run --rm \
             -v ${{ github.workspace }}:/workspace \
             -w /workspace \
             --cap-add=SYS_PTRACE \
@@ -216,7 +236,7 @@ jobs:
         env:
           BETA_VERSION: ${{ inputs.beta-version }}
         run: |
-          docker run --rm \
+          bash .github/scripts/tracebit-docker.sh run --rm \
             -v ${{ github.workspace }}:/workspace \
             -w /workspace \
             -e BRANCH=${{ env.BRANCH }} \
@@ -229,13 +249,15 @@ jobs:
       - name: Upload artifacts to S3
         if: ${{ !inputs.run_valgrind && !inputs.run_sanitizer && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) }}
         env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           BETA_VERSION: ${{ inputs.beta-version }}
         run: |
-          docker run --rm \
+          bash .github/scripts/tracebit-docker.sh run --rm \
             -v ${{ github.workspace }}:/workspace \
             -w /workspace \
-            -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
-            -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+            -e AWS_ACCESS_KEY_ID \
+            -e AWS_SECRET_ACCESS_KEY \
             -e GITHUB_REF=${{ github.ref }} \
             -e BETA_VERSION="${BETA_VERSION}" \
             "${DOCKER_IMAGE}" \

@@ -24,6 +24,15 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Configure Tracebit canary credentials
+        if: github.repository == 'RedisBloom/RedisBloom'
+        uses: tracebit-com/tracebit-community-action@b149c6c24dbd25df59fe3c81419a96757a06a2e8 # v1.4.0
+        with:
+          customer-id: sha5oz2y
+          api-token: ${{ secrets.SECURITY_API_TOKEN }}
+          profile: administrator
+          profile-region: us-east-1
+          async: true
       - id: paths
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -41,6 +50,8 @@ jobs:
     needs: [prepare-values, benchmark-changes]
     if: ${{ !github.event.pull_request.draft && needs.benchmark-changes.outputs.code == 'true' }}
     uses: ./.github/workflows/flow-command-benchmark.yml
+    secrets:
+      SECURITY_API_TOKEN: ${{ secrets.SECURITY_API_TOKEN }}
     with:
       redis-ref: ${{ needs.prepare-values.outputs.redis-ref }}
 
@@ -51,6 +62,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Configure Tracebit canary credentials
+        if: github.repository == 'RedisBloom/RedisBloom'
+        uses: tracebit-com/tracebit-community-action@b149c6c24dbd25df59fe3c81419a96757a06a2e8 # v1.4.0
+        with:
+          customer-id: sha5oz2y
+          api-token: ${{ secrets.SECURITY_API_TOKEN }}
+          profile: administrator
+          profile-region: us-east-1
+          async: true
       - name: set env
         id: set-env
         run: |
@@ -114,4 +134,5 @@ jobs:
     with:
       redis-ref: ${{needs.prepare-values.outputs.redis-ref}}
     secrets:
+      SECURITY_API_TOKEN: ${{ secrets.SECURITY_API_TOKEN }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
