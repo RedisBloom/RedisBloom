@@ -32,6 +32,14 @@
 
 #define TOPK_DECAY_LOOKUP_TABLE 256
 
+/* SplitMix64: advance caller-owned state and return a pseudorandom 64-bit value. */
+static inline uint64_t TopK_NextRandom(uint64_t *state) {
+    uint64_t z = (*state += UINT64_C(0x9e3779b97f4a7c15));
+    z = (z ^ (z >> 30)) * UINT64_C(0xbf58476d1ce4e5b9);
+    z = (z ^ (z >> 27)) * UINT64_C(0x94d049bb133111eb);
+    return z ^ (z >> 31);
+}
+
 typedef uint32_t counter_t;
 
 typedef struct HeapBucket {
