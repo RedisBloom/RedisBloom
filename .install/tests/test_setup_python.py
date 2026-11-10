@@ -61,10 +61,13 @@ exit "$CURL_RESULT"
             if dry_run:
                 self.assertEqual("--retry-all-errors" in result.stdout, modern)
                 self.assertFalse((root / "curl-args").exists())
+                self.assertIn("--proto '=https' --proto-redir '=https'", result.stdout)
             else:
                 args = (root / "curl-args").read_text().splitlines()
                 self.assertEqual("--retry-all-errors" in args, modern)
                 self.assertNotIn("", args)
+                self.assertEqual(args[args.index("--proto") + 1], "=https")
+                self.assertEqual(args[args.index("--proto-redir") + 1], "=https")
                 self.assertEqual((root / "installer-ran").exists(), not failure)
                 self.assertFalse(Path((root / "installer-path").read_text().strip()).exists())
 
