@@ -1,0 +1,29 @@
+name: Bootstrap shell regression tests
+on:
+  pull_request:
+    paths:
+      - '.install/lib/setup-python.sh'
+      - '.install/tests/test_setup_python.py'
+      - '.github/workflows/bootstrap-tests.yml'
+  push:
+    branches: [master]
+    paths:
+      - '.install/lib/setup-python.sh'
+      - '.install/tests/test_setup_python.py'
+      - '.github/workflows/bootstrap-tests.yml'
+jobs:
+  bootstrap:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Bootstrap with modern and legacy curl under nounset
+        env:
+          BOOTSTRAP_BASH: /bin/bash
+        run: python3 .install/tests/test_setup_python.py
