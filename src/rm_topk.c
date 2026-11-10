@@ -33,6 +33,7 @@
 // clang-format on
 
 RedisModuleType *TopKType;
+static uint64_t topkSeedState;
 
 static int GetTopKKey(RedisModuleCtx *ctx, RedisModuleString *keyName, TopK **topk, int mode) {
     // All using this function should call RedisModule_AutoMemory to prevent memory leak
@@ -120,8 +121,8 @@ static int GetTopKSeed(RedisModuleCtx *ctx, RedisModuleString **argv, bool seede
         }
         *seed = (uint64_t)value;
     } else {
-        RedisModule_GetRandomBytes((unsigned char *)seed, sizeof(*seed));
-        *seed >>= 1; // Keep the seed representable by the replication integer argument.
+        // Commands run serially; keep the seed within the replication integer range.
+        *seed = TopK_NextRandom(&topkSeedState) >> 1;
     }
     return REDISMODULE_OK;
 }
@@ -499,5 +500,6 @@ int TopKModule_onLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     if (RegisterTopKCommandInfos(ctx) != REDISMODULE_OK)
         return REDISMODULE_ERR;
 
+    RedisModule_GetRandomBytes((unsigned char *)&topkSeedState, sizeof(topkSeedState));
     return REDISMODULE_OK;
 }
