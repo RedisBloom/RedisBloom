@@ -25,12 +25,8 @@
 static inline uint32_t max(uint32_t a, uint32_t b) { return a > b ? a : b; }
 
 static double topkRandom(uint64_t *rngState) {
-    // SplitMix64: per-command state keeps replicated writes deterministic.
-    uint64_t z = (*rngState += UINT64_C(0x9e3779b97f4a7c15));
-    z = (z ^ (z >> 30)) * UINT64_C(0xbf58476d1ce4e5b9);
-    z = (z ^ (z >> 27)) * UINT64_C(0x94d049bb133111eb);
-    z ^= z >> 31;
-    return (z >> 11) * 0x1.0p-53;
+    // Per-command state keeps replicated writes deterministic.
+    return (TopK_NextRandom(rngState) >> 11) * 0x1.0p-53;
 }
 
 static inline char *topKStrndup(const char *s, size_t n) {
