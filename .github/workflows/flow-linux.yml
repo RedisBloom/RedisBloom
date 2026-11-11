@@ -133,7 +133,9 @@ jobs:
 
   build-linux:
     name: ${{ inputs.arch }}-${{ matrix.platform.os }}, ${{ needs.setup-environment.outputs.redis-ref }}
-    runs-on: ${{ needs.setup-environment.outputs.runner }}
+    # Keep x64 sanitizer jobs on the last passing host image. On Ubuntu 26.04,
+    # the existing sanitizer containers crash at unit-test startup.
+    runs-on: ${{ inputs.run_sanitizer && inputs.arch == 'x64' && 'ubuntu-24.04' || needs.setup-environment.outputs.runner }}
     needs: setup-environment
     strategy:
       fail-fast: false
