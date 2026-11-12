@@ -1,3 +1,5 @@
-RLTest == 0.7.5
+RLTest == 0.7.31
 numpy
 setuptools<81
+# Keep the client contract used by the maintained test harness.
+redis ~= 5.0.8
