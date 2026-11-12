@@ -16,7 +16,8 @@
 #define DEFAULT_DEPTH 5
 
 // Version 1 added the per-sketch cell_size to the serialized form.
-#define CMS_ENC_VER 1
+// Version 2 added the per-sketch seed.
+#define CMS_ENC_VER 2
 
 static inline bool _is_resp3(RedisModuleCtx *ctx) {
     int ctxFlags = RedisModule_GetContextFlags(ctx);

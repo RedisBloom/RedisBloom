@@ -305,6 +305,10 @@ static const RedisModuleCommandArg BF_RESERVE_ARGS[] = {
      .type = REDISMODULE_ARG_TYPE_PURE_TOKEN,
      .flags = REDISMODULE_CMD_ARG_OPTIONAL,
      .token = "NONSCALING"},
+    {.name = "seed",
+     .type = REDISMODULE_ARG_TYPE_STRING,
+     .flags = REDISMODULE_CMD_ARG_OPTIONAL,
+     .token = "SEED"},
     {0}};
 static const RedisModuleCommandInfo BF_RESERVE_INFO = {
     .version = REDISMODULE_COMMAND_INFO_VERSION,
