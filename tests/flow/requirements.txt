@@ -1,3 +1,4 @@
-RLTest == 0.7.5
+RLTest == 0.7.31
 numpy
 setuptools<81
+redis ~= 5.0.8
