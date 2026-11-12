@@ -2,5 +2,6 @@ setuptools<81
 pip
 jinja2
 ramp-packer
-RLTest == 0.7.5
+RLTest == 0.7.31
 numpy<2
+redis ~= 5.0.8
