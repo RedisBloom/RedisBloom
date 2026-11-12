@@ -34,6 +34,10 @@ if [ "${CHECK_DEPS:-0}" = 1 ]; then
     return 0 2>/dev/null || exit 0
 fi
 
+# Older distro curl versions support --retry but not --retry-all-errors.
+_uv_retry_all_errors=''
+curl --retry-all-errors --version >/dev/null 2>&1 && _uv_retry_all_errors=--retry-all-errors
+
 if [ "${DRY_RUN:-0}" = 1 ]; then
     # Print the exact uv + venv + pip sequence bootstrap would run (nothing is
     # executed) so dry-run output is a copy-pasteable script. Guarded on what's
@@ -41,7 +45,7 @@ if [ "${DRY_RUN:-0}" = 1 ]; then
     # only if uv is missing; venv + pip only if the venv doesn't exist yet
     # (mirrors the real `[ ! -d venv ]` guard below).
     if [ ! -d "$ROOT/venv" ]; then
-        _have_uv || _dry_line "curl -LsSf https://astral.sh/uv/install.sh | sh"
+        _have_uv || _dry_line "( installer=\$(mktemp) && trap 'rm -f \"\$installer\"' EXIT && curl --proto '=https' --proto-redir '=https' -LsSf --retry 2 ${_uv_retry_all_errors} --connect-timeout 15 --max-time 60 https://astral.sh/uv/install.sh -o \"\$installer\" && sh \"\$installer\" )"
         # uv installs to ~/.local/bin (or ~/.cargo/bin), which may not be on
         # PATH — export it so the uv commands below resolve when pasted, exactly
         # as bootstrap does after installing uv.
@@ -61,7 +65,7 @@ fi
 
 if ! command -v uv >/dev/null 2>&1; then
     echo "==> [redisbloom] installing uv"
-    curl -LsSf https://astral.sh/uv/install.sh | sh
+    ( installer=$(mktemp) && trap 'rm -f "$installer"' EXIT && curl --proto '=https' --proto-redir '=https' -LsSf --retry 2 ${_uv_retry_all_errors:+"$_uv_retry_all_errors"} --connect-timeout 15 --max-time 60 https://astral.sh/uv/install.sh -o "$installer" && sh "$installer" )
     export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 fi
 

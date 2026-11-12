@@ -416,3 +416,9 @@ endif
 endif
 
 #----------------------------------------------------------------------------------------------
+
+.PHONY: bootstrap-tests
+bootstrap-tests:
+	python3 $(ROOT)/.install/tests/test_setup_python.py
+
+flow-tests: bootstrap-tests
