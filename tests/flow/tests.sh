@@ -504,6 +504,13 @@ if [[ $CLEAR_LOGS != 0 ]]; then
 	rm -rf $HERE/logs
 fi
 
+# Redis8.12 requires this opt-out for isolated, unauthenticated cluster tests.
+# Instrumented tests use Redis7.4, which does not recognize the directive.
+CLUSTER_BUS_DEFAULT=no
+[[ $VG == 1 || -n $SAN ]] && CLUSTER_BUS_DEFAULT=""
+CLUSTER_BUS_ARGS="--cluster_bus_port_protected_mode ${CLUSTER_BUS_PROTECTED_MODE-$CLUSTER_BUS_DEFAULT}"
+[[ -z ${CLUSTER_BUS_PROTECTED_MODE-$CLUSTER_BUS_DEFAULT} ]] && CLUSTER_BUS_ARGS=""
+
 E=0
 
 if [[ $GEN == 1 ]]; then
@@ -516,7 +523,7 @@ if [[ $AOF == 1 ]]; then
 	{ (RLTEST_ARGS+=" --use-aof --enable-debug-command" run_tests "--use-aof"); (( E |= $? )); } || true
 fi
 if [[ $CLUSTER == 1 ]]; then
-	{ (RLTEST_ARGS+=" --env oss-cluster --shards-count 1 --enable-debug-command" run_tests "--env oss-cluster"); (( E |= $? )); } || true
+	{ (RLTEST_ARGS+=" --env oss-cluster --shards-count 1 --enable-debug-command $CLUSTER_BUS_ARGS" run_tests "--env oss-cluster"); (( E |= $? )); } || true
 fi
 
 #-------------------------------------------------------------------------------------- Summary
