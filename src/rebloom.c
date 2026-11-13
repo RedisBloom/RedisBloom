@@ -219,13 +219,21 @@ static int isMulti(const RedisModuleString *rs) {
     return s[3] == 'm' || s[3] == 'M';
 }
 
+static int replyWithBool(RedisModuleCtx *ctx, int value) {
+    // The reply API already emits an integer for RESP2 and a boolean for RESP3.
+    // Older servers without this API only support our integer replies.
+    if (RedisModule_ReplyWithBool != NULL) {
+        return RedisModule_ReplyWithBool(ctx, value);
+    }
+    return RedisModule_ReplyWithLongLong(ctx, value);
+}
+
 /**
  * Check for the existence of an item
  * BF.CHECK <KEY>
  * Returns true or false
  */
 static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
     int is_multi = isMulti(argv[0]);
 
     if ((is_multi == 0 && argc != 3) || (is_multi && argc < 3)) {
@@ -256,13 +264,10 @@ static int BFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
             int exists = SBChain_Check(sb, s, n);
             reply = !!exists;
         }
-        if (_is_resp3(ctx)) {
-            RedisModule_ReplyWithBool(ctx, reply);
-        } else {
-            RedisModule_ReplyWithLongLong(ctx, reply ? 1 : 0);
-        }
+        replyWithBool(ctx, reply);
     }
 
+    RedisModule_CloseKey(key);
     return REDISMODULE_OK;
 }
 
@@ -282,10 +287,11 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
             } else {
                 RedisModule_ReplyWithError(ctx, "ERR could not create filter");
             }
-            return REDISMODULE_OK;
+            goto done;
         }
     } else if (status != SB_OK) {
-        return RedisModule_ReplyWithError(ctx, statusStrerror(status));
+        RedisModule_ReplyWithError(ctx, statusStrerror(status));
+        goto done;
     }
 
     if (options->is_multi) {
@@ -303,11 +309,7 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
         } else if (rv == -1) {
             RedisModule_ReplyWithError(ctx, "ERR problem inserting into filter");
         } else {
-            if (_is_resp3(ctx)) {
-                RedisModule_ReplyWithBool(ctx, !!rv);
-            } else {
-                RedisModule_ReplyWithLongLong(ctx, !!rv);
-            }
+            replyWithBool(ctx, !!rv);
         }
         array_len++;
     }
@@ -316,6 +318,8 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
         RedisModule_ReplySetArrayLength(ctx, array_len);
     }
     RedisModule_ReplicateVerbatim(ctx);
+done:
+    RedisModule_CloseKey(key);
     return REDISMODULE_OK;
 }
 
@@ -326,7 +330,6 @@ static int bfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
  * added, or had previously existed, respectively.
  */
 static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
     BFInsertOptions options = {
         .capacity = rm_config.bf_initial_size.value,
         .error_rate = rm_config.bf_error_rate.value,
@@ -349,7 +352,6 @@ static int BFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
  * -> (Array) (or error )
  */
 static int BFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
     BFInsertOptions options = {
         .capacity = rm_config.bf_initial_size.value,
         .error_rate = rm_config.bf_error_rate.value,
@@ -664,11 +666,12 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
             } else {
                 RedisModule_ReplyWithError(ctx, "ERR Could not create filter");
             }
-            return REDISMODULE_OK;
+            goto done;
         }
         autocreated = true;
     } else if (status != SB_OK) {
-        return RedisModule_ReplyWithError(ctx, statusStrerror(status));
+        RedisModule_ReplyWithError(ctx, statusStrerror(status));
+        goto done;
     }
 
     if (cf->numFilters >= rm_config.cf_max_expansions.value) {
@@ -681,7 +684,8 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
         if (autocreated) {
             RedisModule_ReplicateVerbatim(ctx);
         }
-        return RedisModule_ReplyWithError(ctx, "Maximum expansions reached");
+        RedisModule_ReplyWithError(ctx, "Maximum expansions reached");
+        goto done;
     }
 
     // See if we can add the element
@@ -701,20 +705,17 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
         }
         switch (insStatus) {
         case CuckooInsert_Inserted:
-            if (_is_resp3(ctx) && (!options->is_nx || !options->is_multi)) {
-                // resp3 and CF.INSERT/CF.ADD/CF.ADDNX
-                RedisModule_ReplyWithBool(ctx, 1);
+            if (!options->is_nx || !options->is_multi) {
+                replyWithBool(ctx, 1);
             } else {
-                // CF.INSERTNX or resp2
+                // CF.INSERTNX always returns integers.
                 RedisModule_ReplyWithLongLong(ctx, 1);
             }
             break;
         case CuckooInsert_Exists:
-            if (_is_resp3(ctx) && (!options->is_nx || !options->is_multi)) {
-                // resp3 and CF.ADDNX
-                RedisModule_ReplyWithBool(ctx, 0);
+            if (!options->is_nx || !options->is_multi) {
+                replyWithBool(ctx, 0);
             } else {
-                // CF.INSERTNX or resp2
                 RedisModule_ReplyWithLongLong(ctx, 0);
             }
             break;
@@ -723,7 +724,8 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
                 if (autocreated) {
                     RedisModule_ReplicateVerbatim(ctx);
                 }
-                return RedisModule_ReplyWithError(ctx, "Filter is full");
+                RedisModule_ReplyWithError(ctx, "Filter is full");
+                goto done;
             } else {
                 if (_is_resp3(ctx) && !options->is_nx) {
                     // resp3 and CF.INSERT
@@ -739,7 +741,8 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
                 if (autocreated) {
                     RedisModule_ReplicateVerbatim(ctx);
                 }
-                return RedisModule_ReplyWithError(ctx, "ERR Insufficient memory");
+                RedisModule_ReplyWithError(ctx, "ERR Insufficient memory");
+                goto done;
             } else {
                 if (_is_resp3(ctx) && !options->is_nx) {
                     // resp3 and CF.INSERT
@@ -756,6 +759,8 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
     }
 
     RedisModule_ReplicateVerbatim(ctx);
+done:
+    RedisModule_CloseKey(key);
     return REDISMODULE_OK;
 }
 
@@ -765,7 +770,6 @@ static int cfInsertCommon(RedisModuleCtx *ctx, RedisModuleString *keystr, RedisM
  * Adds an item to a cuckoo filter, potentially creating a new cuckoo filter
  */
 static int CFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
     CFInsertOptions options = {
         .autocreate = 1,
         .capacity = rm_config.cf_initial_size.value,
@@ -784,7 +788,6 @@ static int CFAdd_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
  * CF.INSERT <KEY> [NOCREATE] [CAPACITY <cap>] ITEMS <item...>
  */
 static int CFInsert_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
     CFInsertOptions options = {
         .autocreate = 1,
         .capacity = rm_config.cf_initial_size.value,
@@ -848,8 +851,6 @@ static int isCount(RedisModuleString *s) {
  * Copy-paste from BFCheck :'(
  */
 static int CFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    RedisModule_AutoMemory(ctx);
-
     int is_multi = isMulti(argv[0]);
     int is_count = isCount(argv[0]);
 
@@ -873,8 +874,8 @@ static int CFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
 
     for (size_t ii = 2; ii < argc; ++ii) {
         if (is_empty == 1) {
-            if (_is_resp3(ctx) && !is_count) {
-                RedisModule_ReplyWithBool(ctx, 0);
+            if (!is_count) {
+                replyWithBool(ctx, 0);
             } else {
                 RedisModule_ReplyWithLongLong(ctx, 0);
             }
@@ -888,13 +889,14 @@ static int CFCheck_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, i
             } else {
                 rv = CuckooFilter_Check(cf, hash);
             }
-            if (_is_resp3(ctx) && !is_count) {
-                RedisModule_ReplyWithBool(ctx, !!rv);
+            if (!is_count) {
+                replyWithBool(ctx, !!rv);
             } else {
                 RedisModule_ReplyWithLongLong(ctx, rv);
             }
         }
     }
+    RedisModule_CloseKey(key);
     return REDISMODULE_OK;
 }
 
