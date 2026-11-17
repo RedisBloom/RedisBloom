@@ -578,6 +578,9 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     long long maxIterations = rm_config.cf_max_iterations.value;
     int mi_loc = RMUtil_ArgIndex("MAXITERATIONS", argv, argc);
     if (mi_loc != -1) {
+        if (mi_loc + 1 >= argc) {
+            return RedisModule_ReplyWithError(ctx, "Missing MAXITERATIONS value");
+        }
         if (RedisModule_StringToLongLong(argv[mi_loc + 1], &maxIterations) != REDISMODULE_OK) {
             return RedisModule_ReplyWithError(ctx, "Couldn't parse MAXITERATIONS");
         }
@@ -591,6 +594,9 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     long long bucketSize = rm_config.cf_bucket_size.value;
     int bs_loc = RMUtil_ArgIndex("BUCKETSIZE", argv, argc);
     if (bs_loc != -1) {
+        if (bs_loc + 1 >= argc) {
+            return RedisModule_ReplyWithError(ctx, "Missing BUCKETSIZE value");
+        }
         if (RedisModule_StringToLongLong(argv[bs_loc + 1], &bucketSize) != REDISMODULE_OK) {
             return RedisModule_ReplyWithError(ctx, "Couldn't parse BUCKETSIZE");
         } else if (!isConfigValid(bucketSize, rm_config.cf_bucket_size)) {
@@ -603,6 +609,9 @@ static int CFReserve_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv,
     long long expansion = rm_config.cf_expansion_factor.value;
     int ex_loc = RMUtil_ArgIndex("EXPANSION", argv, argc);
     if (ex_loc != -1) {
+        if (ex_loc + 1 >= argc) {
+            return RedisModule_ReplyWithError(ctx, "Missing EXPANSION value");
+        }
         if (RedisModule_StringToLongLong(argv[ex_loc + 1], &expansion) != REDISMODULE_OK) {
             return RedisModule_ReplyWithError(ctx, "Couldn't parse EXPANSION");
         } else if (!isConfigValid(expansion, rm_config.cf_expansion_factor)) {
