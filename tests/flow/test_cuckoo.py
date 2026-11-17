@@ -379,6 +379,14 @@ class testCuckoo():
         self.assertEqual(info[info.index('Expansion rate') + 1], 32768)
         self.assertEqual(info[info.index('Max iterations') + 1], 65535)
 
+    def test_reserve_trailing_keyword(self):
+        # a keyword as the last argument must not read past argv
+        self.cmd('FLUSHALL')
+        for kw in ['MAXITERATIONS', 'BUCKETSIZE', 'EXPANSION']:
+            self.assertRaises(ResponseError, self.cmd, 'CF.RESERVE', 'cf', '100', 'x', kw)
+            self.assertEqual(self.cmd('PING'), True)
+            self.assertEqual(self.cmd('EXISTS', 'cf'), 0)
+
 class testCuckooNoCodec():
     def __init__(self):
         self.env = Env(decodeResponses=False)
