@@ -56,16 +56,27 @@ def destroy(state):
         raise RuntimeError(f'AWS teardown failed: {stdout}\n{stderr}')
 
 
-def remote_commands(inventory, key, commands, host='server_public_ip'):
+def remote_commands(inventory, key, commands, host='server_public_ip', diagnostics=None):
     from redisbench_admin.utils.remote import execute_remote_commands
 
     results = execute_remote_commands(
         inventory[host], inventory['user'], str(key), commands, 22, timeout=30,
     )
+    cleaned = []
     for code, stdout, stderr in results:
+        # Preserve diagnostics before raising, and keep the JSON result parseable.
+        stdout_lines = ''.join(stdout).splitlines(keepends=True)
+        if diagnostics is not None:
+            with diagnostics.open('a') as log:
+                for line in stdout_lines + ''.join(stderr).splitlines(keepends=True):
+                    if line.startswith('AFFINITY_DEBUG '):
+                        print(f'{host}: {line.rstrip()}', flush=True)
+                        log.write(line)
+            stdout_lines = [line for line in stdout_lines if not line.startswith('AFFINITY_DEBUG ')]
+        cleaned.append(''.join(stdout_lines))
         if code:
             raise RuntimeError(f'Remote command failed: {stderr}')
-    return [''.join(stdout) for _, stdout, _ in results]
+    return cleaned
 
 
 def configure_affinity(output, inventory, key):
@@ -76,7 +87,8 @@ def configure_affinity(output, inventory, key):
         if host == 'client':
             # Resolve in the SSH user's PATH before sudo changes it.
             command += ' "$(command -v redis-benchmark)" "$(command -v memtier_benchmark)"'
-        result, = remote_commands(inventory, key, [command], host + '_public_ip')
+        result, = remote_commands(inventory, key, [command], host + '_public_ip',
+                                   diagnostics=output / f'affinity-{host}.log')
         settings[host] = json.loads(result)
         (output / 'affinity.json').write_text(json.dumps(settings, indent=2) + '\n')
         print(f"{host} benchmark CPUs: {settings[host]['cpulist']}", flush=True)

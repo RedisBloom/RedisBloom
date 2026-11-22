@@ -10,6 +10,27 @@ import sys
 import time
 
 
+def debug(event, **data):
+    # stdout is explicitly forwarded by compare_aws, even on remote failure.
+    print('AFFINITY_DEBUG ' + json.dumps(dict(event=event, monotonic=time.monotonic(), **data)), flush=True)
+
+
+def debug_read(path):
+    try:
+        return Path(path).read_text().strip()
+    except OSError as error:
+        return f'unavailable: {error}'
+
+
+def debug_irqs(event, targets, **data):
+    interrupts = debug_read('/proc/interrupts').splitlines()
+    debug(event, targets=targets, irqs={irq: {
+        name: debug_read(f'/proc/irq/{irq}/{name}')
+        for name in ('smp_affinity_list', 'effective_affinity_list', 'affinity_hint')
+    } for irq in targets}, interrupts=[line for line in interrupts
+        if ':' not in line or line.split(':', 1)[0].strip() in targets], **data)
+
+
 def cpus(value):
     result = set()
     for part in value.strip().split(','):
@@ -60,15 +81,28 @@ def select_isolated_cores(targets, allowed, siblings, count):
     # Exclude BOTH current and requested CPUs, including their SMT siblings,
     # so a later migration cannot enter the selected benchmark cores.
     deadline = time.monotonic() + 10
+    next_debug = 0
     while True:
         effective = {irq: (Path('/proc/irq') / irq / 'effective_affinity_list').read_text().strip()
                      for irq in targets}
         excluded = set(targets.values()).union(*(cpus(value) for value in effective.values()))
+        now = time.monotonic()
+        if now >= next_debug:
+            debug_irqs('waiting', targets, excluded=sorted(excluded),
+                       eligible_groups=[list(group) for group in sorted({tuple(sorted(siblings[cpu]))
+                           for cpu in allowed})[1:] if not set(group).intersection(excluded)])
+            next_debug = now + 1
         try:
             selected, reserved = select_cores(allowed, siblings, count, excluded)
+            debug_irqs('selected', targets, selected=selected, reserved=sorted(reserved))
             return selected, reserved, effective
         except RuntimeError:
             if time.monotonic() >= deadline:
+                debug_irqs('timeout', targets, excluded=sorted(excluded),
+                           kernel_irq_state={irq: debug_read(f'/sys/kernel/debug/irq/irqs/{irq}')
+                                             for irq in targets},
+                           irqbalance_active=subprocess.run(['systemctl', 'is-active', '--quiet',
+                                                             'irqbalance']).returncode == 0)
                 raise RuntimeError(f'Not enough IRQ-free physical cores; requested={targets}, '
                                    f'effective={effective}, allowed={sorted(allowed)}') from None
         time.sleep(0.1)
@@ -91,14 +125,28 @@ def configure(role, clients):
     active = subprocess.run(['systemctl', 'is-active', '--quiet', 'irqbalance']).returncode == 0
     if active:
         subprocess.run(['systemctl', 'stop', 'irqbalance'], check=True)
+    debug('host', role=role, kernel=os.uname().release, allowed=sorted(allowed),
+          sibling_groups=groups, housekeeping=housekeeping, irqbalance_was_active=active,
+          irqbalance_active=subprocess.run(['systemctl', 'is-active', '--quiet', 'irqbalance']).returncode == 0,
+          interfaces=[dict(name=interface.name, driver=str((interface / 'device/driver').resolve()))
+                      for interface in interfaces])
+    targets = {irq.name: housekeeping[index % len(housekeeping)]
+               for interface in interfaces
+               for index, irq in enumerate(sorted((interface / 'device/msi_irqs').iterdir()))}
+    debug_irqs('before', targets)
     irqs = {}
     for interface in interfaces:
         for index, irq in enumerate(sorted((interface / 'device/msi_irqs').iterdir())):
             directory = Path('/proc/irq') / irq.name
             target = housekeeping[index % len(housekeeping)]
-            (directory / 'smp_affinity_list').write_text(str(target))
+            try:
+                (directory / 'smp_affinity_list').write_text(str(target))
+            except OSError as error:
+                debug_irqs('write_failed', targets, irq=irq.name, error=str(error))
+                raise
             requested = (directory / 'smp_affinity_list').read_text().strip()
             if cpus(requested) != {target}:
+                debug_irqs('write_rejected', targets, irq=irq.name)
                 raise RuntimeError(f'IRQ {irq.name} rejected CPU {target}: requested={requested}')
             irqs[irq.name] = target
         # Disable software packet steering, which can otherwise bypass IRQ affinity.
@@ -106,6 +154,7 @@ def configure(role, clients):
             rps.write_text('0')
             if int(rps.read_text().strip().replace(',', ''), 16):
                 raise RuntimeError(f'RPS still enabled: {rps}')
+    debug_irqs('after_writes', irqs)
     selected, reserved, effective = select_isolated_cores(
         irqs, allowed, siblings, 2)
     data = dict(role=role, cpulist=','.join(map(str, selected)),
