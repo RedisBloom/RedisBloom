@@ -13,6 +13,7 @@ import sys
 import time
 
 
+IRQ_SELECTION_TIMEOUT = 30
 DEBUG_LOG = io.StringIO()
 
 
@@ -83,7 +84,7 @@ def wrap_client(path, selected):
     return str(path)
 
 
-def select_isolated_cores(targets, allowed, siblings, count, timeout=10):
+def select_isolated_cores(targets, allowed, siblings, count, timeout=IRQ_SELECTION_TIMEOUT):
     # An idle IRQ can retain its old effective CPU until its next interrupt.
     # Exclude BOTH current and requested CPUs, including their SMT siblings,
     # so a later migration cannot enter the selected benchmark cores.
@@ -135,7 +136,7 @@ def probe_network(peer):
 
 
 def diagnose_selection(irqs, allowed, siblings, peer):
-    debug('quiet_start', timeout_seconds=10)
+    debug('quiet_start', timeout_seconds=IRQ_SELECTION_TIMEOUT)
     try:
         return select_isolated_cores(irqs, allowed, siblings, 2)
     except RuntimeError:

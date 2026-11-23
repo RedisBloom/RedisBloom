@@ -84,7 +84,9 @@ def remote_commands(inventory, key, commands, host='server_public_ip', diagnosti
     from redisbench_admin.utils.remote import execute_remote_commands
 
     results = execute_remote_commands(
-        inventory[host], inventory['user'], str(key), commands, 22, timeout=30,
+        inventory[host], inventory['user'], str(key), commands, 22,
+        # Affinity setup needs room for its 30-second wait, probe, and log export.
+        timeout=60 if diagnostics is not None else 30,
     )
     cleaned = []
     for code, stdout, stderr in results:

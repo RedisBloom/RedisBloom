@@ -120,7 +120,9 @@ They are then forwarded to the job log and the shard artifacts as
 `affinity-server.log` and `affinity-client.log`. No debug output is streamed
 while selecting cores; unrelated network and SSH transport traffic may still occur.
 
-The original 10-second selection window is unchanged. If it times out, the
+The selection window is 30 seconds; setup finishes early when enough cores are
+available. The enclosing SSH command allows 60 seconds for setup, the probe, and
+log export. If core selection times out, the
 same host makes 32 bounded TCP connections to its paired host's SSH port
 (without authenticating), records IRQ counters and destinations before and
 after, and immediately checks core availability again. Look for `probe_after`

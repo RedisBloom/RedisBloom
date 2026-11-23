@@ -39,6 +39,14 @@ class AffinityDiagnosticsTests(unittest.TestCase):
         self.assertEqual(reserved, {2, 3, 6, 7})
         self.assertEqual(effective, {'27': '5'})
 
+    def test_selection_can_succeed_after_ten_seconds(self):
+        with patch.object(Path, 'read_text', side_effect=['1', '0']), \
+                patch.object(affinity.time, 'monotonic', side_effect=[0, 11, 11, 12]), \
+                patch.object(affinity.time, 'sleep'), patch.object(affinity, 'debug_irqs'):
+            selected, _, _ = affinity.select_isolated_cores(
+                {'27': 0}, {0, 1, 2}, {i: {i} for i in range(3)}, 2)
+        self.assertEqual(selected, [1, 2])
+
     def test_timeout_keeps_original_failure_and_logs_final_state(self):
         with patch.object(Path, 'read_text', return_value='1'), \
                 patch.object(affinity.time, 'monotonic', side_effect=itertools.count(0, 6)), \
@@ -100,6 +108,7 @@ class AffinityDiagnosticsTests(unittest.TestCase):
                     else:
                         result, = compare_aws.remote_commands(inventory, 'key', ['command'], diagnostics=log)
                         self.assertEqual(json.loads(result), {'cpulist': '2,3'})
+                    self.assertEqual(remote.execute_remote_commands.call_args.kwargs['timeout'], 60)
                     self.assertEqual(log.read_text(), line)
                     self.assertIn('server_public_ip: AFFINITY_DEBUG', console.getvalue())
 
