@@ -80,11 +80,11 @@ def destroy(state):
         raise RuntimeError(f'AWS teardown failed: {stdout}\n{stderr}')
 
 
-def remote_commands(inventory, key, commands, host='server_public_ip'):
+def remote_commands(inventory, key, commands, host='server_public_ip', timeout=30):
     from redisbench_admin.utils.remote import execute_remote_commands
 
     results = execute_remote_commands(
-        inventory[host], inventory['user'], str(key), commands, 22, timeout=30,
+        inventory[host], inventory['user'], str(key), commands, 22, timeout=timeout,
     )
     for code, stdout, stderr in results:
         if code:
@@ -100,7 +100,8 @@ def configure_affinity(output, inventory, key):
         if host == 'client':
             # Resolve in the SSH user's PATH before sudo changes it.
             command += ' "$(command -v redis-benchmark)" "$(command -v memtier_benchmark)"'
-        result, = remote_commands(inventory, key, [command], host + '_public_ip')
+        # Allow the 30-second IRQ wait plus remote setup overhead.
+        result, = remote_commands(inventory, key, [command], host + '_public_ip', timeout=60)
         settings[host] = json.loads(result)
         (output / 'affinity.json').write_text(json.dumps(settings, indent=2) + '\n')
         print(f"{host} benchmark CPUs: {settings[host]['cpulist']}", flush=True)

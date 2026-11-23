@@ -124,3 +124,9 @@ still handles final failure or step timeout.
 The provisioning window counts toward the existing six-hour job limit. The
 five-hour benchmark-step limit and six-hour AWS resource watchdog TTL are
 unchanged, as are instance types, subnet, and availability zone.
+
+### IRQ isolation timeout
+
+Affinity setup waits up to 30 seconds for IRQ-free physical cores, finishing
+early when enough cores are available. Its SSH command allows 60 seconds for
+the wait and setup overhead; other remote commands retain their 30-second limit.
