@@ -66,6 +66,8 @@ jobs:
           PYTHON
 
       - name: Provision a dedicated AWS topology for this shard
+        # Also bounds an in-flight Terraform apply, whose SDK retries can be long.
+        timeout-minutes: 90
         run: |
           python tests/benchmarks/compare_aws.py provision \
             --state "$RUNNER_TEMP/benchmark-aws.json" \

@@ -8,6 +8,7 @@ from pathlib import Path
 import shlex
 import shutil
 import subprocess
+import time
 
 from redis.client import parse_info
 import yaml
@@ -20,21 +21,44 @@ class RemoteResetError(RuntimeError):
 
 
 def provision(state, source, shard=0):
-    from python_terraform import Terraform
+    from python_terraform import Terraform, TerraformCommandError
     from redisbench_admin.utils.remote import fetch_remote_setup_from_config, setup_remote_environment
 
+    deadline = time.monotonic() + 90 * 60
     config = yaml.safe_load((source / 'defaults.yml').read_text())
     directory, _, _ = fetch_remote_setup_from_config(config['remote'])
     # Persist before apply so the always() step can clean up a partial deployment.
     data = {'terraform_dir': directory}
     state.write_text(json.dumps(data))
     organization, repository = os.environ['GITHUB_REPOSITORY'].split('/')
-    result = setup_remote_environment(
-        Terraform(working_dir=directory), os.environ['GITHUB_SHA'],
-        os.environ['GITHUB_ACTOR'],
-        f"redisbloom-nightly-{os.environ['GITHUB_RUN_ID']}-{os.environ['GITHUB_RUN_ATTEMPT']}-{shard}",
-        organization, repository, 'github-actions.nightly-comparison', 21600,
-    )
+    attempt = 0
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError('AWS provisioning exceeded its 90-minute retry window')
+        attempt += 1
+        print(f'Provisioning attempt {attempt}; {remaining / 60:.1f} minutes remaining', flush=True)
+        try:
+            result = setup_remote_environment(
+                Terraform(working_dir=directory), os.environ['GITHUB_SHA'],
+                os.environ['GITHUB_ACTOR'],
+                f"redisbloom-nightly-{os.environ['GITHUB_RUN_ID']}-{os.environ['GITHUB_RUN_ATTEMPT']}-{shard}",
+                organization, repository, 'github-actions.nightly-comparison', 21600,
+            )
+            break
+        except TerraformCommandError as error:
+            # python_terraform stores captured stderr in .err, not .stderr.
+            if 'InsufficientInstanceCapacity' not in (error.err or ''):
+                raise
+            print('AWS instance capacity unavailable; cleaning up the partial topology', flush=True)
+            destroy(state)
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError('AWS capacity unavailable within the 90-minute retry window') from error
+            delay = min(60, remaining)
+            print(f'Retrying capacity allocation in {delay:.0f}s; '
+                  f'{remaining / 60:.1f} minutes remaining', flush=True)
+            time.sleep(delay)
     code, user, server_private, server_public, port, _, client_public = result
     if code:
         raise RuntimeError(f'Terraform apply failed: {code}')
