@@ -128,3 +128,16 @@ after, and immediately checks core availability again. Look for `probe_after`
 fails the job with the original timeout, so a diagnostic recovery cannot hide
 the setup failure or feed a benchmark result. Connection timeouts or refusals
 must be considered when interpreting a probe that did not recover.
+
+### AWS provisioning capacity retries
+
+Nightly provisioning retries `InsufficientInstanceCapacity` for up to 90 minutes,
+with a 60-second pause between failed attempts. Each capacity failure tears down
+the partial server/client topology before retrying; cleanup failures and other
+Terraform errors fail immediately. The workflow's 90-minute provisioning-step
+limit also bounds an in-flight Terraform call. The existing always-run teardown
+still handles final failure or step timeout.
+
+The provisioning window counts toward the existing six-hour job limit. The
+five-hour benchmark-step limit and six-hour AWS resource watchdog TTL are
+unchanged, as are instance types, subnet, and availability zone.
