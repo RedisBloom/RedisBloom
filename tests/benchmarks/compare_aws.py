@@ -83,7 +83,8 @@ def configure_affinity(output, inventory, key):
     script = Path(__file__).with_name('configure_affinity.py').read_text()
     settings = {}
     for host in ('server', 'client'):
-        command = 'sudo -n python3 -c ' + shlex.quote(script) + ' ' + host
+        peer = inventory['client_public_ip'] if host == 'server' else inventory['server_private_ip']
+        command = 'sudo -n python3 -c ' + shlex.quote(script) + ' ' + shlex.join([host, peer])
         if host == 'client':
             # Resolve in the SSH user's PATH before sudo changes it.
             command += ' "$(command -v redis-benchmark)" "$(command -v memtier_benchmark)"'

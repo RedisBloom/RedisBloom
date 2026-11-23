@@ -111,3 +111,20 @@ Use `--benchmark NAME.yml` (repeatable) to select workloads and
 on a final degradation of 5% or more. Results include `comparison.json`, an HTML table
 in `summary.md`, attempt histories, and runner logs. The timeout is per revision per
 workload, defaulting to 1800 seconds; large datasets require sufficient memory/disk.
+
+### IRQ affinity diagnostic experiment (MOD-21452)
+
+On the diagnostic branch, affinity snapshots stay in
+`/tmp/redisbloom-affinity-debug.log` on each AWS host until setup finishes.
+They are then forwarded to the job log and the shard artifacts as
+`affinity-server.log` and `affinity-client.log`. No debug output is streamed
+while selecting cores; unrelated network and SSH transport traffic may still occur.
+
+The original 10-second selection window is unchanged. If it times out, the
+same host makes 32 bounded TCP connections to its paired host's SSH port
+(without authenticating), records IRQ counters and destinations before and
+after, and immediately checks core availability again. Look for `probe_after`
+(connection outcomes) and `probe_result` (`recovered`). A recovered probe still
+fails the job with the original timeout, so a diagnostic recovery cannot hide
+the setup failure or feed a benchmark result. Connection timeouts or refusals
+must be considered when interpreting a probe that did not recover.

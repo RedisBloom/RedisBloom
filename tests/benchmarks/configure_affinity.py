@@ -1,18 +1,25 @@
 """Reserve benchmark cores on the disposable nightly AWS hosts (run as root)."""
 
+from concurrent.futures import ThreadPoolExecutor
+import io
 import json
 import os
 from pathlib import Path
 import shlex
 import shutil
+import socket
 import subprocess
 import sys
 import time
 
 
+DEBUG_LOG = io.StringIO()
+
+
 def debug(event, **data):
-    # stdout is explicitly forwarded by compare_aws, even on remote failure.
-    print('AFFINITY_DEBUG ' + json.dumps(dict(event=event, monotonic=time.monotonic(), **data)), flush=True)
+    # Do not send SSH traffic while observing IRQ migration.
+    print('AFFINITY_DEBUG ' + json.dumps(dict(event=event, monotonic=time.monotonic(), **data)),
+          file=DEBUG_LOG, flush=True)
 
 
 def debug_read(path):
@@ -76,11 +83,11 @@ def wrap_client(path, selected):
     return str(path)
 
 
-def select_isolated_cores(targets, allowed, siblings, count):
+def select_isolated_cores(targets, allowed, siblings, count, timeout=10):
     # An idle IRQ can retain its old effective CPU until its next interrupt.
     # Exclude BOTH current and requested CPUs, including their SMT siblings,
     # so a later migration cannot enter the selected benchmark cores.
-    deadline = time.monotonic() + 10
+    deadline = time.monotonic() + timeout
     next_debug = 0
     while True:
         effective = {irq: (Path('/proc/irq') / irq / 'effective_affinity_list').read_text().strip()
@@ -108,7 +115,45 @@ def select_isolated_cores(targets, allowed, siblings, count):
         time.sleep(0.1)
 
 
-def configure(role, clients):
+def probe_network(peer):
+    # Fresh source ports exercise multiple network flows; no SSH authentication.
+    # 32 connections / 8 workers, each bounded by connect and read timeouts.
+    def connect(_):
+        try:
+            with socket.create_connection((peer, 22), timeout=0.25) as connection:
+                try:
+                    banner = connection.recv(256)
+                    return 'banner' if banner else 'closed'
+                except OSError as error:
+                    return f'connected: {type(error).__name__}'
+        except OSError as error:
+            return f'connect: {type(error).__name__}'
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(connect, range(32)))
+    return {result: results.count(result) for result in sorted(set(results))}
+
+
+def diagnose_selection(irqs, allowed, siblings, peer):
+    debug('quiet_start', timeout_seconds=10)
+    try:
+        return select_isolated_cores(irqs, allowed, siblings, 2)
+    except RuntimeError:
+        # Preserve the original failure, even if the diagnostic probe helps.
+        debug_irqs('probe_before', irqs)
+        debug('probe_start', connections=32, port=22)
+        outcomes = probe_network(peer)
+        debug_irqs('probe_after', irqs, outcomes=outcomes)
+        try:
+            selected, reserved, _ = select_isolated_cores(irqs, allowed, siblings, 2, timeout=0)
+        except RuntimeError:
+            debug('probe_result', recovered=False)
+        else:
+            debug('probe_result', recovered=True, selected=selected, reserved=sorted(reserved))
+        raise
+
+
+def configure(role, clients, peer):
     # Validate every client before changing IRQ settings or wrapping either tool.
     clients = [validate_client(path) for path in clients]
     allowed = set(os.sched_getaffinity(0))
@@ -155,8 +200,7 @@ def configure(role, clients):
             if int(rps.read_text().strip().replace(',', ''), 16):
                 raise RuntimeError(f'RPS still enabled: {rps}')
     debug_irqs('after_writes', irqs)
-    selected, reserved, effective = select_isolated_cores(
-        irqs, allowed, siblings, 2)
+    selected, reserved, effective = diagnose_selection(irqs, allowed, siblings, peer)
     data = dict(role=role, cpulist=','.join(map(str, selected)),
                 reserved_cpus=sorted(reserved), nic_irqs=effective, requested_nic_irqs=irqs,
                 irqbalance_stopped=active,
@@ -166,4 +210,12 @@ def configure(role, clients):
 
 
 if __name__ == '__main__':
-    print(json.dumps(configure(sys.argv[1], sys.argv[2:])))
+    # Keep the full log on the host, then forward it only after all observations.
+    with open('/tmp/redisbloom-affinity-debug.log', 'w+') as DEBUG_LOG:
+        try:
+            result = configure(sys.argv[1], sys.argv[3:], sys.argv[2])
+        finally:
+            DEBUG_LOG.seek(0)
+            sys.stdout.write(DEBUG_LOG.read())
+            sys.stdout.flush()
+    print(json.dumps(result))

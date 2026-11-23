@@ -23,8 +23,10 @@ class AffinityDiagnosticsTests(unittest.TestCase):
             raise FileNotFoundError(str(path))
 
         output = io.StringIO()
-        with patch.object(Path, 'read_text', read), redirect_stdout(output):
+        with patch.object(Path, 'read_text', read), patch.object(affinity, 'DEBUG_LOG', output), \
+                redirect_stdout(io.StringIO()) as network_output:
             affinity.debug_irqs('before', {'27': 0})
+        self.assertEqual(network_output.getvalue(), '')
         record = json.loads(output.getvalue().removeprefix('AFFINITY_DEBUG '))
         self.assertEqual(record['interrupts'], ['CPU0 CPU1', ' 27: 12 34 PCI-MSI eth0'])
         self.assertIn('unavailable:', record['irqs']['27']['effective_affinity_list'])
@@ -46,6 +48,40 @@ class AffinityDiagnosticsTests(unittest.TestCase):
                 affinity.select_isolated_cores({'27': 0}, {0, 1, 2}, {i: {i} for i in range(3)}, 2)
         self.assertEqual(debug.call_args.args[0], 'timeout')
         self.assertEqual(debug.call_args.kwargs['excluded'], [0, 1])
+
+    def test_quiet_success_never_probes(self):
+        expected = ([2, 3], {2, 3}, {})
+        with patch.object(affinity, 'select_isolated_cores', return_value=expected), \
+                patch.object(affinity, 'probe_network') as probe:
+            self.assertEqual(affinity.diagnose_selection({}, {0, 1, 2, 3}, {}, 'peer'), expected)
+        probe.assert_not_called()
+
+    def test_probe_records_recovery_but_preserves_original_failure(self):
+        for recovery in (([2, 3], {2, 3}, {}), RuntimeError('still blocked')):
+            original = RuntimeError('original quiet timeout')
+            with self.subTest(recovery=recovery), \
+                    patch.object(affinity, 'select_isolated_cores', side_effect=[original, recovery]) as select, \
+                    patch.object(affinity, 'probe_network', return_value={'banner': 32}) as probe, \
+                    patch.object(affinity, 'debug_irqs'), patch.object(affinity, 'debug') as debug:
+                with self.assertRaises(RuntimeError) as caught:
+                    affinity.diagnose_selection({}, {0, 1, 2, 3}, {}, 'peer')
+                self.assertIs(caught.exception, original)
+                probe.assert_called_once_with('peer')
+                self.assertEqual(select.call_args.kwargs, {'timeout': 0})
+                self.assertEqual(debug.call_args.kwargs['recovered'], not isinstance(recovery, Exception))
+
+    def test_probe_reads_banners_and_closes_connections(self):
+        with patch.object(affinity.socket, 'create_connection') as connect:
+            connect.return_value.__enter__.return_value.recv.return_value = b'SSH-2.0-test\r\n'
+            self.assertEqual(affinity.probe_network('peer'), {'banner': 32})
+            self.assertEqual(connect.return_value.__exit__.call_count, 32)
+
+    def test_probe_is_bounded_and_reports_connection_failures(self):
+        with patch.object(affinity.socket, 'create_connection', side_effect=TimeoutError) as connect:
+            self.assertEqual(affinity.probe_network('peer'), {'connect: TimeoutError': 32})
+        self.assertEqual(connect.call_count, 32)
+        self.assertEqual(connect.call_args.args, (('peer', 22),))
+        self.assertEqual(connect.call_args.kwargs, {'timeout': 0.25})
 
     def test_remote_logs_survive_success_and_failure_without_breaking_json(self):
         remote = ModuleType('redisbench_admin.utils.remote')
