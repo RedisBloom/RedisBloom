@@ -66,8 +66,8 @@ jobs:
           PYTHON
 
       - name: Provision a dedicated AWS topology for this shard
-        # Terraform gets 75 minutes plus 10 minutes to stop before this hard cutoff.
-        timeout-minutes: 90
+        # Terraform gets 90 minutes plus 10 minutes to stop before this hard cutoff.
+        timeout-minutes: 105
         run: |
           python tests/benchmarks/compare_aws.py provision \
             --state "$RUNNER_TEMP/benchmark-aws.json" \
@@ -76,7 +76,7 @@ jobs:
       - name: Compare assigned full workloads on AWS
         env:
           MAX_RETRIES: ${{ inputs.phase == 'confirmation' && '0' || '3' }}
-        # Leave 30 minutes for setup and cleanup after 90 minutes of provisioning.
+        # Leave 15 minutes for setup and cleanup after the 105-minute provisioning step.
         timeout-minutes: 240
         run: |
           python tests/benchmarks/compare_aws.py run \

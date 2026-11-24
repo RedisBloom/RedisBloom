@@ -8,6 +8,7 @@ from pathlib import Path
 import shlex
 import shutil
 import subprocess
+import sys
 import time
 
 from redis.client import parse_info
@@ -25,19 +26,15 @@ def provision(state, source, shard=0):
     from redisbench_admin.utils.remote import fetch_remote_setup_from_config, setup_remote_environment
 
     # Leave 10 minutes for Terraform to stop, then 5 before GitHub's hard cutoff.
-    deadline = time.monotonic() + 75 * 60
-    timeout = shutil.which('timeout')
-    if not timeout:
-        raise RuntimeError('GNU timeout is required for bounded Terraform provisioning')
+    deadline = time.monotonic() + 90 * 60
+    supervisor = str(Path(__file__).with_name('terraform_timeout.py').resolve())
 
     class ProvisioningTerraform(Terraform):
         def generate_cmd_string(self, cmd, *args, **kwargs):
             remaining = deadline - time.monotonic()
             if remaining <= 0:
-                raise TimeoutError('AWS provisioning exceeded its 75-minute retry window')
-            # Signal Terraform only; let it stop providers and release state locks.
-            return [timeout, '--foreground', '--signal=INT', '--kill-after=10m',
-                    '--verbose', f'{remaining}s',
+                raise TimeoutError('AWS provisioning exceeded its 90-minute retry window')
+            return [sys.executable, supervisor, str(remaining),
                     *super().generate_cmd_string(cmd, *args, **kwargs)]
 
     config = yaml.safe_load((source / 'defaults.yml').read_text())
@@ -50,7 +47,7 @@ def provision(state, source, shard=0):
     while True:
         remaining = deadline - time.monotonic()
         if remaining <= 0:
-            raise TimeoutError('AWS provisioning exceeded its 75-minute retry window')
+            raise TimeoutError('AWS provisioning exceeded its 90-minute retry window')
         try:
             result = setup_remote_environment(
                 terraform, os.environ['GITHUB_SHA'],
@@ -69,7 +66,7 @@ def provision(state, source, shard=0):
             destroy(state, terraform=terraform)
             remaining = deadline - time.monotonic()
             if remaining <= 0:
-                raise TimeoutError('AWS capacity unavailable within the 75-minute retry window') from error
+                raise TimeoutError('AWS capacity unavailable within the 90-minute retry window') from error
             delay = min(60, remaining)
             print(f'Retrying capacity allocation in {delay:.0f}s; '
                   f'{remaining / 60:.1f} minutes remaining', flush=True)
