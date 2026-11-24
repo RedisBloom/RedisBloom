@@ -76,7 +76,8 @@ jobs:
       - name: Compare assigned full workloads on AWS
         env:
           MAX_RETRIES: ${{ inputs.phase == 'confirmation' && '0' || '3' }}
-        timeout-minutes: 300
+        # Leave 30 minutes for setup and cleanup after 90 minutes of provisioning.
+        timeout-minutes: 240
         run: |
           python tests/benchmarks/compare_aws.py run \
             --state "$RUNNER_TEMP/benchmark-aws.json" \
