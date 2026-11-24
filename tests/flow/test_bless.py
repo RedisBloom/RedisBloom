@@ -77,6 +77,10 @@ def testWriteCommandsKeepNoEvict(env):
 
 
 def testNoEvictSurvivesRdbAndAofRewrite(env):
+    # Start with AOF on so RLTest gives this test its own AOF file name.
+    # CONFIG SET appendonly yes would use the default name in the shared
+    # appendonlydir, where parallel tests break each other's rewrites.
+    env = Env(useAof=True)
     _skip_without_bless(env)
     _create_blessed_keys(env)
 
@@ -86,8 +90,6 @@ def testNoEvictSurvivesRdbAndAofRewrite(env):
     # Without the RDB preamble the rewrite emits each type's aof_rewrite callback
     # output followed by BLESS SET.
     env.cmd('CONFIG', 'SET', 'aof-use-rdb-preamble', 'no')
-    env.cmd('CONFIG', 'SET', 'appendonly', 'yes')
-    _wait_aof_rewrite(env)
     env.cmd('BGREWRITEAOF')
     _wait_aof_rewrite(env)
     env.cmd('DEBUG', 'LOADAOF')
