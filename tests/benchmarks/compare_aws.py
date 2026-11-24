@@ -24,33 +24,52 @@ def provision(state, source, shard=0):
     from python_terraform import Terraform, TerraformCommandError
     from redisbench_admin.utils.remote import fetch_remote_setup_from_config, setup_remote_environment
 
-    deadline = time.monotonic() + 90 * 60
+    # Leave 10 minutes for Terraform to stop, then 5 before GitHub's hard cutoff.
+    deadline = time.monotonic() + 75 * 60
+    timeout = shutil.which('timeout')
+    if not timeout:
+        raise RuntimeError('GNU timeout is required for bounded Terraform provisioning')
+
+    class ProvisioningTerraform(Terraform):
+        def generate_cmd_string(self, cmd, *args, **kwargs):
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError('AWS provisioning exceeded its 75-minute retry window')
+            # Signal Terraform only; let it stop providers and release state locks.
+            return [timeout, '--foreground', '--signal=INT', '--kill-after=10m',
+                    '--verbose', f'{remaining}s',
+                    *super().generate_cmd_string(cmd, *args, **kwargs)]
+
     config = yaml.safe_load((source / 'defaults.yml').read_text())
     directory, _, _ = fetch_remote_setup_from_config(config['remote'])
     # Persist before apply so the always() step can clean up a partial deployment.
     data = {'terraform_dir': directory}
     state.write_text(json.dumps(data))
     organization, repository = os.environ['GITHUB_REPOSITORY'].split('/')
+    terraform = ProvisioningTerraform(working_dir=directory)
     while True:
         remaining = deadline - time.monotonic()
         if remaining <= 0:
-            raise TimeoutError('AWS provisioning exceeded its 90-minute retry window')
+            raise TimeoutError('AWS provisioning exceeded its 75-minute retry window')
         try:
             result = setup_remote_environment(
-                Terraform(working_dir=directory), os.environ['GITHUB_SHA'],
+                terraform, os.environ['GITHUB_SHA'],
                 os.environ['GITHUB_ACTOR'],
                 f"redisbloom-nightly-{os.environ['GITHUB_RUN_ID']}-{os.environ['GITHUB_RUN_ATTEMPT']}-{shard}",
                 organization, repository, 'github-actions.nightly-comparison', 21600,
             )
             break
         except TerraformCommandError as error:
+            if error.returncode in (124, 137):
+                raise TimeoutError(f'Terraform exceeded the provisioning deadline (exit {error.returncode}): '
+                                   f'{error.err}') from error
             # python_terraform stores captured stderr in .err, not .stderr.
             if 'InsufficientInstanceCapacity' not in (error.err or ''):
                 raise
-            destroy(state)
+            destroy(state, terraform=terraform)
             remaining = deadline - time.monotonic()
             if remaining <= 0:
-                raise TimeoutError('AWS capacity unavailable within the 90-minute retry window') from error
+                raise TimeoutError('AWS capacity unavailable within the 75-minute retry window') from error
             delay = min(60, remaining)
             print(f'Retrying capacity allocation in {delay:.0f}s; '
                   f'{remaining / 60:.1f} minutes remaining', flush=True)
@@ -63,13 +82,14 @@ def provision(state, source, shard=0):
     state.write_text(json.dumps(data))
 
 
-def destroy(state):
+def destroy(state, terraform=None):
     if not state.exists():
         return
     from python_terraform import Terraform, IsNotFlagged
 
     data = json.loads(state.read_text())
-    code, stdout, stderr = Terraform(working_dir=data['terraform_dir']).destroy(
+    terraform = terraform if terraform is not None else Terraform(working_dir=data['terraform_dir'])
+    code, stdout, stderr = terraform.destroy(
         capture_output=True, no_color=IsNotFlagged, force=IsNotFlagged, auto_approve=True,
     )
     if code:
