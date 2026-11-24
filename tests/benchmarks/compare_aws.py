@@ -113,12 +113,14 @@ def configure_affinity(output, inventory, key):
     settings = {}
     for host in ('server', 'client'):
         command = 'sudo -n python3 -c ' + shlex.quote(script) + ' ' + host
+        peer = inventory['client_public_ip' if host == 'server' else 'server_public_ip']
+        command += ' ' + shlex.quote(peer)
         if host == 'client':
             # Resolve in the SSH user's PATH before sudo changes it.
             command += ' "$(command -v redis-benchmark)" "$(command -v memtier_benchmark)"'
-        # Allow the 30-second IRQ wait plus remote setup overhead.
+        # Allow two 30-second waits, bounded probe connections, and remote setup overhead.
         try:
-            result, = remote_commands(inventory, key, [command], host + '_public_ip', timeout=60)
+            result, = remote_commands(inventory, key, [command], host + '_public_ip', timeout=120)
         finally:
             # Preserve diagnostics even when affinity setup fails.
             try:
