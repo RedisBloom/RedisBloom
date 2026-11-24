@@ -31,13 +31,10 @@ def provision(state, source, shard=0):
     data = {'terraform_dir': directory}
     state.write_text(json.dumps(data))
     organization, repository = os.environ['GITHUB_REPOSITORY'].split('/')
-    attempt = 0
     while True:
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             raise TimeoutError('AWS provisioning exceeded its 90-minute retry window')
-        attempt += 1
-        print(f'Provisioning attempt {attempt}; {remaining / 60:.1f} minutes remaining', flush=True)
         try:
             result = setup_remote_environment(
                 Terraform(working_dir=directory), os.environ['GITHUB_SHA'],
@@ -50,7 +47,6 @@ def provision(state, source, shard=0):
             # python_terraform stores captured stderr in .err, not .stderr.
             if 'InsufficientInstanceCapacity' not in (error.err or ''):
                 raise
-            print('AWS instance capacity unavailable; cleaning up the partial topology', flush=True)
             destroy(state)
             remaining = deadline - time.monotonic()
             if remaining <= 0:

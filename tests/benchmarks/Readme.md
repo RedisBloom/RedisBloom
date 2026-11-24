@@ -111,22 +111,3 @@ Use `--benchmark NAME.yml` (repeatable) to select workloads and
 on a final degradation of 5% or more. Results include `comparison.json`, an HTML table
 in `summary.md`, attempt histories, and runner logs. The timeout is per revision per
 workload, defaulting to 1800 seconds; large datasets require sufficient memory/disk.
-
-### AWS provisioning capacity retries
-
-Nightly provisioning retries `InsufficientInstanceCapacity` for up to 90 minutes,
-with a 60-second pause between failed attempts. Each capacity failure tears down
-the partial server/client topology before retrying; cleanup failures and other
-Terraform errors fail immediately. The workflow's 90-minute provisioning-step
-limit also bounds an in-flight Terraform call. The existing always-run teardown
-still handles final failure or step timeout.
-
-The provisioning window counts toward the existing six-hour job limit. The
-five-hour benchmark-step limit and six-hour AWS resource watchdog TTL are
-unchanged, as are instance types, subnet, and availability zone.
-
-### IRQ isolation timeout
-
-Affinity setup waits up to 30 seconds for IRQ-free physical cores, finishing
-early when enough cores are available. Its SSH command allows 60 seconds for
-the wait and setup overhead; other remote commands retain their 30-second limit.
