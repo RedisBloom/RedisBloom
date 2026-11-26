@@ -1,10 +1,6 @@
 name: Nightly AWS Benchmark Round
 on:
   workflow_call:
-    inputs:
-      phase:
-        type: string
-        required: true
     outputs:
       eligible:
         value: ${{ jobs.report.outputs.eligible }}
@@ -72,8 +68,6 @@ jobs:
             --benchmarks-dir nightly-bundle/master/tests/benchmarks --shard ${{ matrix.shard }}
 
       - name: Compare assigned full workloads on AWS
-        env:
-          MAX_RETRIES: ${{ inputs.phase == 'confirmation' && '0' || '3' }}
         timeout-minutes: 300
         run: |
           python tests/benchmarks/compare_aws.py run \
@@ -82,7 +76,7 @@ jobs:
             --baseline-dir nightly-bundle/baseline --master-dir nightly-bundle/master \
             --redis-server nightly-bundle/redis-server \
             --plan nightly-bundle/plan.json --shard ${{ matrix.shard }} \
-            --output nightly-results/shard-${{ matrix.shard }} --max-retries "${MAX_RETRIES}"
+            --output nightly-results/shard-${{ matrix.shard }} --pairs 3
 
       - name: Tear down AWS resources even after benchmark failures
         if: always()
@@ -98,7 +92,7 @@ jobs:
       - uses: actions/upload-artifact@v6
         if: always()
         with:
-          name: nightly-${{ inputs.phase }}-shard-${{ matrix.shard }}-${{ github.run_id }}
+          name: nightly-initial-shard-${{ matrix.shard }}-${{ github.run_id }}
           path: shard-${{ matrix.shard }}.tar.gz
           compression-level: 0
           overwrite: true
@@ -133,7 +127,7 @@ jobs:
       - uses: actions/download-artifact@v7
         continue-on-error: true # Merge reports missing shards as failures.
         with:
-          pattern: nightly-${{ inputs.phase }}-shard-*-${{ github.run_id }}
+          pattern: nightly-initial-shard-*-${{ github.run_id }}
           path: nightly-downloads
           merge-multiple: true
       - name: Merge and verify complete coverage
@@ -150,7 +144,7 @@ jobs:
       - name: Publish final throughput to Grafana data source
         id: grafana
         continue-on-error: true # Publication must not block benchmark-based promotion.
-        if: ${{ !cancelled() && inputs.phase == 'initial' }}
+        if: ${{ !cancelled() }}
         env:
           PERFORMANCE_RTS_HOST: ${{ secrets.PERFORMANCE_RTS_HOST }}
           PERFORMANCE_RTS_PORT: ${{ secrets.PERFORMANCE_RTS_PORT }}
@@ -160,22 +154,9 @@ jobs:
             --plan nightly-bundle/plan.json \
             --results nightly-benchmark-results/comparison.json \
             --benchmarks-dir nightly-bundle/master/tests/benchmarks
-      - name: Download initial round for confirmation validation
-        if: inputs.phase == 'confirmation'
-        uses: actions/download-artifact@v7
-        with:
-          name: nightly-initial-benchmarks-${{ github.run_id }}
-          path: initial-round
       - name: Evaluate promotion criteria
         id: decision
-        env:
-          PHASE: ${{ inputs.phase }}
-        run: |
-          arguments=()
-          if [ "$PHASE" = confirmation ]; then
-            arguments+=(--previous initial-round/nightly-benchmark-results/comparison.json)
-          fi
-          python tests/benchmarks/nightly_baseline.py evaluate nightly-benchmark-results/comparison.json "${arguments[@]}"
+        run: python tests/benchmarks/nightly_baseline.py evaluate nightly-benchmark-results/comparison.json
       - name: Publish comparison summary
         if: always()
         env:
@@ -192,7 +173,7 @@ jobs:
       - uses: actions/upload-artifact@v6
         if: always()
         with:
-          name: nightly-${{ inputs.phase }}-benchmarks-${{ github.run_id }}
+          name: nightly-initial-benchmarks-${{ github.run_id }}
           overwrite: true
           path: |
             nightly-benchmark-results/

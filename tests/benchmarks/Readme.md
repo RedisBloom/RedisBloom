@@ -50,19 +50,23 @@ two physical cores on their respective hosts, away from NIC interrupts and house
 SMT siblings are reserved too. Memtier and redis-benchmark are pinned with `taskset` wrappers.
 Affinity setup or cleanup failures stop measurements rather than mixing environments.
 
-A first-pair difference greater than 5% in either direction triggers three additional
-paired attempts. The order alternates baseline/candidate and candidate/baseline.
-The report shows each side's median throughput and the median of the paired percentage
-changes. Smaller differences run once. Execution errors are reported, not retried.
+Nightly always runs three measurement pairs per workload, regardless of the first
+result, alternating baseline/candidate and candidate/baseline. The report shows each
+side's median throughput and the median of the three paired percentage changes.
+There are no additional conditional retries in nightly.
+
+Event CI and local comparisons retain conditional retries: a first-pair difference
+greater than 5% in either direction triggers three additional paired attempts;
+smaller differences run once. Execution errors are reported, not retried in either mode.
 
 - Green percentage: improvement.
 - Yellow percentage: degradation below 5%.
 - Red percentage: degradation of 5% or more, or an execution error.
 - Orange benchmark name: retries were needed.
 
-The initial AWS report publishes final throughput medians to the existing Grafana
+The AWS report publishes final throughput medians to the existing Grafana
 RedisTimeSeries data source, using the legacy repository, workload, metric and `circleci`
-labels. Baseline and candidate have separate branch/commit identities. All workloads publish operations/sec. Confirmation does not publish duplicate measurements.
+labels. Baseline and candidate have separate branch/commit identities. All workloads publish operations/sec.
 
 ### Baseline promotion
 
@@ -71,13 +75,15 @@ Only scheduled master runs may update **`benchmark-baseline`**, and only when:
 1. Every standalone workload has valid results, with none degrading by 5% or more.
 2. The geometric mean of all paired throughput changes is positive (no 5% overall
    improvement requirement). Each workload has equal weight.
-3. A separate confirmation round on fresh AWS hosts, using the exact same builds and
-   no retries, also meets those criteria with identical coverage and Redis version.
+
+Only one comparison round runs, split across five shards, with three measurement
+pairs per workload. Promotion uses the median paired changes from this round
+without a second confirmation run.
 
 If baseline and candidate commits are identical, builds and comparisons are skipped.
 Promotion uses a lease on the original baseline SHA: concurrent changes prevent the
 push. No other branch is written. Manual runs never promote. Failed jobs can reuse
-successful build/initial-round artifacts when rerun because artifact names use the run
+successful build/shard artifacts when rerun because artifact names use the run
 ID rather than its attempt number. Cancelled runs do not start report jobs; AWS teardown
 still runs.
 
