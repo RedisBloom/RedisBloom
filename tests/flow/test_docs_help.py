@@ -20,6 +20,7 @@ class testCommandDocsAndHelp():
                 ('bucketsize', 'block'),
                 ('maxiterations', 'block'),
                 ('expansion', 'block'),
+                ('seed', 'string'),
             ],
             key_pos=1,
         )
@@ -148,7 +149,7 @@ class testCommandDocsAndHelp():
             complexity='O(1)',
             arity=-4,
             since='1.0.0',
-            args=[('key', 'key'), ('error_rate', 'double'), ('capacity', 'integer'), ('expansion', 'block'), ('nonscaling', 'pure-token')],
+            args=[('key', 'key'), ('error_rate', 'double'), ('capacity', 'integer'), ('expansion', 'block'), ('nonscaling', 'pure-token'), ('seed', 'string')],
             key_pos=1,
         )
 
@@ -260,7 +261,7 @@ class testCommandDocsAndHelp():
             complexity='O(1)',
             arity=-3,
             since='2.0.0',
-            args=[('key', 'key'), ('topk', 'integer'), ('params', 'block')],
+            args=[('key', 'key'), ('topk', 'integer'), ('params', 'block'), ('seed', 'string')],
             key_pos=1,
         )
 
@@ -303,7 +304,7 @@ class testCommandDocsAndHelp():
             arity=-4,
             since='2.0.0',
             args=[('key', 'key'), ('width', 'integer'), ('depth', 'integer'),
-                  ('cellsize', 'block')],
+                  ('cellsize', 'block'), ('seed', 'string')],
             key_pos=1,
         )
 
@@ -318,7 +319,7 @@ class testCommandDocsAndHelp():
             arity=-4,
             since='2.0.0',
             args=[('key', 'key'), ('error', 'double'), ('probability', 'double'),
-                  ('cellsize', 'block')],
+                  ('cellsize', 'block'), ('seed', 'string')],
             key_pos=1,
         )
 
@@ -699,4 +700,3 @@ class testCommandDocsAndHelp():
             args=[('key', 'key'), ('low_cut_quantile', 'double'), ('high_cut_quantile', 'double')],
             key_pos=1,
         )
-

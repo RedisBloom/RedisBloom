@@ -63,15 +63,23 @@ inline static int test_bit_set_bit(unsigned char *buf, uint64_t x, int mode) {
 }
 
 bloom_hashval bloom_calc_hash(const void *buffer, int len) {
+    return bloom_calc_hash_seed(buffer, len, BLOOM_DEFAULT_SEED32);
+}
+
+bloom_hashval bloom_calc_hash_seed(const void *buffer, int len, uint32_t seed) {
     bloom_hashval rv;
-    rv.a = murmurhash2(buffer, len, 0x9747b28c);
+    rv.a = murmurhash2(buffer, len, seed);
     rv.b = murmurhash2(buffer, len, rv.a);
     return rv;
 }
 
 bloom_hashval bloom_calc_hash64(const void *buffer, int len) {
+    return bloom_calc_hash64_seed(buffer, len, BLOOM_DEFAULT_SEED64);
+}
+
+bloom_hashval bloom_calc_hash64_seed(const void *buffer, int len, uint64_t seed) {
     bloom_hashval rv;
-    rv.a = MurmurHash64A_Bloom(buffer, len, 0xc6a4a7935bd1e995ULL);
+    rv.a = MurmurHash64A_Bloom(buffer, len, seed);
     rv.b = MurmurHash64A_Bloom(buffer, len, rv.a);
     return rv;
 }

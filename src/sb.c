@@ -19,8 +19,6 @@
 
 #include <string.h>
 
-bloom_hashval bloom_calc_hash64(const void *buffer, int len);
-
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 /// Core                                                                     ///
@@ -74,9 +72,9 @@ static int SBChain_AddToLink(SBLink *lb, bloom_hashval hash) {
 
 static bloom_hashval SBChain_GetHash(const SBChain *chain, const void *buf, size_t len) {
     if (chain->options & BLOOM_OPT_FORCE64) {
-        return bloom_calc_hash64(buf, len);
+        return bloom_calc_hash64_seed(buf, len, chain->seed);
     } else {
-        return bloom_calc_hash(buf, len);
+        return bloom_calc_hash_seed(buf, len, (uint32_t)chain->seed);
     }
 }
 
@@ -134,6 +132,7 @@ SBChain *SB_NewChain(uint64_t initsize, double error_rate, unsigned options, uns
     SBChain *sb = RedisModule_Calloc(1, sizeof(*sb));
     sb->growth = growth;
     sb->options = options;
+    sb->seed = SB_DefaultSeed(options);
     double tightening = (options & BLOOM_OPT_NO_SCALING) ? 1 : ERROR_TIGHTENING_RATIO;
     *err = SBChain_AddLink(sb, initsize, error_rate * tightening);
     if (*err != SB_SUCCESS) {
@@ -172,6 +171,9 @@ typedef struct __attribute__((packed)) {
     uint32_t growth;
     dumpedChainLink links[];
 } dumpedChainHeader;
+
+/* Dump-only flag: an eight-byte seed follows the link headers. */
+#define SB_DUMP_HAS_SEED (UINT32_C(1) << 31)
 
 static SBLink *getLinkPos(const SBChain *sb, long long curIter, size_t *offset) {
     if (curIter < 1) {
@@ -224,11 +226,12 @@ const char *SBChain_GetEncodedChunk(const SBChain *sb, long long *curIter, size_
 }
 
 char *SBChain_GetEncodedHeader(const SBChain *sb, size_t *hdrlen) {
-    *hdrlen = sizeof(dumpedChainHeader) + (sizeof(dumpedChainLink) * sb->nfilters);
+    *hdrlen =
+        sizeof(dumpedChainHeader) + (sizeof(dumpedChainLink) * sb->nfilters) + sizeof(sb->seed);
     dumpedChainHeader *hdr = RedisModule_Calloc(1, *hdrlen);
     hdr->size = sb->size;
     hdr->nfilters = sb->nfilters;
-    hdr->options = sb->options;
+    hdr->options = sb->options | SB_DUMP_HAS_SEED;
     hdr->growth = sb->growth;
 
     for (size_t ii = 0; ii < sb->nfilters; ++ii) {
@@ -239,6 +242,7 @@ char *SBChain_GetEncodedHeader(const SBChain *sb, size_t *hdrlen) {
         X_ENCODED_LINK(X, dstlink, srclink)
 #undef X
     }
+    memcpy((char *)hdr + *hdrlen - sizeof(sb->seed), &sb->seed, sizeof(sb->seed));
     return (char *)hdr;
 }
 
@@ -278,14 +282,23 @@ SBChain *SB_NewChainFromHeader(const char *buf, size_t bufLen, const char **errm
         goto err;
     }
 
-    if (bufLen != sizeof(*header) + (sizeof(header->links[0]) * header->nfilters)) {
+    int hasSeed = (header->options & SB_DUMP_HAS_SEED) != 0;
+    size_t seedSize = hasSeed ? sizeof(uint64_t) : 0;
+    if (bufLen != sizeof(*header) + (sizeof(header->links[0]) * header->nfilters) + seedSize) {
         goto err;
     }
 
     sb = RedisModule_Calloc(1, sizeof(*sb));
     sb->filters = RedisModule_Calloc(header->nfilters, sizeof(*sb->filters));
     sb->nfilters = header->nfilters;
-    sb->options = header->options;
+    sb->options = header->options & ~SB_DUMP_HAS_SEED;
+    sb->seed = SB_DefaultSeed(sb->options);
+    if (hasSeed) {
+        memcpy(&sb->seed, buf + bufLen - seedSize, seedSize);
+        if (!(sb->options & BLOOM_OPT_FORCE64) && sb->seed > UINT32_MAX) {
+            goto err;
+        }
+    }
     sb->size = header->size;
     sb->growth = header->growth;
 

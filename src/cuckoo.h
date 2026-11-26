@@ -39,6 +39,7 @@ typedef struct {
     uint64_t numBuckets;
     uint64_t numItems;
     uint64_t numDeletes;
+    uint64_t seed; /* Zero preserves legacy hashing. Fixed for the filter's lifetime. */
     uint16_t numFilters;
     uint16_t bucketSize;
     uint16_t maxIterations;
@@ -46,7 +47,7 @@ typedef struct {
     SubCF *filters;
 } CuckooFilter;
 
-#define CUCKOO_GEN_HASH(s, n) MurmurHash64A_Bloom(s, n, 0)
+#define CUCKOO_GEN_HASH(s, n, seed) MurmurHash64A_Bloom(s, n, seed)
 
 /*
 #define CUCKOO_GEN_HASH(s, n)                       \

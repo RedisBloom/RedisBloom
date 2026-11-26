@@ -340,7 +340,7 @@ static const RedisModuleCommandInfo CF_MEXISTS_INFO = {
 
 // ===============================
 // CF.RESERVE key capacity [BUCKETSIZE bucketsize] [MAXITERATIONS maxiterations] [EXPANSION
-// expansion]
+// expansion] [SEED seed]
 // ===============================
 static const RedisModuleCommandKeySpec CF_RESERVE_KEYSPECS[] = {
     {.flags = REDISMODULE_CMD_KEY_RW,
@@ -374,6 +374,10 @@ static const RedisModuleCommandArg CF_RESERVE_ARGS[] = {
      .subargs =
          (RedisModuleCommandArg[]){{.name = "expansion", .type = REDISMODULE_ARG_TYPE_INTEGER},
                                    {0}}},
+    {.name = "seed",
+     .type = REDISMODULE_ARG_TYPE_STRING,
+     .token = "SEED",
+     .flags = REDISMODULE_CMD_ARG_OPTIONAL},
     {0}};
 
 static const RedisModuleCommandInfo CF_RESERVE_INFO = {

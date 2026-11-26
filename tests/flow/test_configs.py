@@ -1,5 +1,18 @@
 from common import *
 
+def test_default_seed_policy():
+    env = Env(decodeResponses=True)
+    name = 'bf.default-seed-policy'
+    env.assertEqual(env.cmd('CONFIG', 'GET', name)[1], 'legacy')
+    try:
+        for policy in ('random-nonmerge', 'random-all', 'legacy'):
+            env.expect('CONFIG', 'SET', name, policy).ok()
+            env.assertEqual(env.cmd('CONFIG', 'GET', name)[1], policy)
+        env.expect('CONFIG', 'SET', name, 'invalid').error()
+        env.assertEqual(env.cmd('CONFIG', 'GET', name)[1], 'legacy')
+    finally:
+        env.cmd('CONFIG', 'SET', name, 'legacy')
+
 class testConfigs():
   def __init__(self):
     self.env = Env(decodeResponses=True)
