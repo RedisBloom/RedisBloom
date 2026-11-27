@@ -8,6 +8,7 @@ from pathlib import Path
 import shlex
 import shutil
 import subprocess
+import time
 
 from redis.client import parse_info
 import yaml
@@ -20,8 +21,24 @@ class RemoteResetError(RuntimeError):
 
 
 def provision(state, source, shard=0):
-    from python_terraform import Terraform
+    from python_terraform import Terraform, TerraformCommandError
     from redisbench_admin.utils.remote import fetch_remote_setup_from_config, setup_remote_environment
+
+    # Leave 10 minutes for Terraform to stop, then 5 before GitHub's hard cutoff.
+    deadline = time.monotonic() + 75 * 60
+    timeout = shutil.which('timeout')
+    if not timeout:
+        raise RuntimeError('GNU timeout is required for bounded Terraform provisioning')
+
+    class ProvisioningTerraform(Terraform):
+        def generate_cmd_string(self, cmd, *args, **kwargs):
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError('AWS provisioning exceeded its 75-minute retry window')
+            # Signal Terraform only; let it stop providers and release state locks.
+            return [timeout, '--foreground', '--signal=INT', '--kill-after=10m',
+                    '--verbose', f'{remaining}s',
+                    *super().generate_cmd_string(cmd, *args, **kwargs)]
 
     config = yaml.safe_load((source / 'defaults.yml').read_text())
     directory, _, _ = fetch_remote_setup_from_config(config['remote'])
@@ -29,12 +46,34 @@ def provision(state, source, shard=0):
     data = {'terraform_dir': directory}
     state.write_text(json.dumps(data))
     organization, repository = os.environ['GITHUB_REPOSITORY'].split('/')
-    result = setup_remote_environment(
-        Terraform(working_dir=directory), os.environ['GITHUB_SHA'],
-        os.environ['GITHUB_ACTOR'],
-        f"redisbloom-nightly-{os.environ['GITHUB_RUN_ID']}-{os.environ['GITHUB_RUN_ATTEMPT']}-{shard}",
-        organization, repository, 'github-actions.nightly-comparison', 21600,
-    )
+    terraform = ProvisioningTerraform(working_dir=directory)
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError('AWS provisioning exceeded its 75-minute retry window')
+        try:
+            result = setup_remote_environment(
+                terraform, os.environ['GITHUB_SHA'],
+                os.environ['GITHUB_ACTOR'],
+                f"redisbloom-nightly-{os.environ['GITHUB_RUN_ID']}-{os.environ['GITHUB_RUN_ATTEMPT']}-{shard}",
+                organization, repository, 'github-actions.nightly-comparison', 21600,
+            )
+            break
+        except TerraformCommandError as error:
+            if error.returncode in (124, 137):
+                raise TimeoutError(f'Terraform exceeded the provisioning deadline (exit {error.returncode}): '
+                                   f'{error.err}') from error
+            # python_terraform stores captured stderr in .err, not .stderr.
+            if 'InsufficientInstanceCapacity' not in (error.err or ''):
+                raise
+            destroy(state, terraform=terraform)
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError('AWS capacity unavailable within the 75-minute retry window') from error
+            delay = min(60, remaining)
+            print(f'Retrying capacity allocation in {delay:.0f}s; '
+                  f'{remaining / 60:.1f} minutes remaining', flush=True)
+            time.sleep(delay)
     code, user, server_private, server_public, port, _, client_public = result
     if code:
         raise RuntimeError(f'Terraform apply failed: {code}')
@@ -43,24 +82,25 @@ def provision(state, source, shard=0):
     state.write_text(json.dumps(data))
 
 
-def destroy(state):
+def destroy(state, terraform=None):
     if not state.exists():
         return
     from python_terraform import Terraform, IsNotFlagged
 
     data = json.loads(state.read_text())
-    code, stdout, stderr = Terraform(working_dir=data['terraform_dir']).destroy(
+    terraform = terraform if terraform is not None else Terraform(working_dir=data['terraform_dir'])
+    code, stdout, stderr = terraform.destroy(
         capture_output=True, no_color=IsNotFlagged, force=IsNotFlagged, auto_approve=True,
     )
     if code:
         raise RuntimeError(f'AWS teardown failed: {stdout}\n{stderr}')
 
 
-def remote_commands(inventory, key, commands, host='server_public_ip'):
+def remote_commands(inventory, key, commands, host='server_public_ip', timeout=30):
     from redisbench_admin.utils.remote import execute_remote_commands
 
     results = execute_remote_commands(
-        inventory[host], inventory['user'], str(key), commands, 22, timeout=30,
+        inventory[host], inventory['user'], str(key), commands, 22, timeout=timeout,
     )
     for code, stdout, stderr in results:
         if code:
@@ -76,7 +116,8 @@ def configure_affinity(output, inventory, key):
         if host == 'client':
             # Resolve in the SSH user's PATH before sudo changes it.
             command += ' "$(command -v redis-benchmark)" "$(command -v memtier_benchmark)"'
-        result, = remote_commands(inventory, key, [command], host + '_public_ip')
+        # Allow the 30-second IRQ wait plus remote setup overhead.
+        result, = remote_commands(inventory, key, [command], host + '_public_ip', timeout=60)
         settings[host] = json.loads(result)
         (output / 'affinity.json').write_text(json.dumps(settings, indent=2) + '\n')
         print(f"{host} benchmark CPUs: {settings[host]['cpulist']}", flush=True)

@@ -59,7 +59,7 @@ def select_isolated_cores(targets, allowed, siblings, count):
     # An idle IRQ can retain its old effective CPU until its next interrupt.
     # Exclude BOTH current and requested CPUs, including their SMT siblings,
     # so a later migration cannot enter the selected benchmark cores.
-    deadline = time.monotonic() + 10
+    deadline = time.monotonic() + 30
     while True:
         effective = {irq: (Path('/proc/irq') / irq / 'effective_affinity_list').read_text().strip()
                      for irq in targets}
