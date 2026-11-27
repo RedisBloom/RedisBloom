@@ -22,9 +22,13 @@ class testCuckoo():
 
     def test_number_of_buckets_does_not_overflow(self):
         self.cmd('FLUSHALL')
-        self.cmd('CF.LOADCHUNK', 'cf',  '1',
-                 "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x01\x00\x01\x00")
-        self.cmd('CF.INSERT', 'cf', 'ITEMS', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1')
+        # Keep 2^32 buckets to exercise 64-bit indexing during eviction. Disable
+        # expansion so Valgrind only needs one 4 GiB filter instead of five.
+        self.assertEqual(self.cmd('CF.LOADCHUNK', 'cf', '1',
+                 "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x01\x00\x00\x00"), 'OK')
+        # Two duplicates fill the candidate buckets; the third exercises eviction.
+        self.assertEqual(self.cmd('CF.INSERT', 'cf', 'ITEMS', '1', '1', '1'), [1, 1, -1])
+        self.assertEqual(self.cmd('CF.COUNT', 'cf', '1'), 2)
 
     def test_counter_overflow_with_large_number_of_items(self):
         self.cmd('FLUSHALL')
@@ -619,6 +623,14 @@ class testCuckooNoCodec():
         for i in range(0, 100):
             self.cmd('cf.scandump', 'cf', random.randint(0, size * 2))
 
+
+    def test_loadchunk_header_rejects_existing_filter(self):
+        self.cmd('FLUSHALL')
+        self.cmd('CF.ADD', 'cf', 'item')
+        position, header = self.cmd('CF.SCANDUMP', 'cf', 0)
+        self.assertEqual(position, 1)
+        self.env.expect('CF.LOADCHUNK', 'cf', position, header).error().contains('item exists')
+        self.assertEqual(self.cmd('CF.COUNT', 'cf', 'item'), 1)
 
     def test_scandump_load_small(self):
         self.cmd('FLUSHALL')
